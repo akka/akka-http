@@ -432,6 +432,30 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 512001))) // more than default `incoming-stream-level-buffer-size = 512kB`
         expectRST_STREAM(TheStreamId, ErrorCode.FLOW_CONTROL_ERROR)
       }
+      "not leak stream if request entity is not fully pulled when connection dies" inAssertAllStagesStopped new WaitingForRequestData {
+        sendDATA(TheStreamId, endStream = false, ByteString("0000"))
+        entityDataIn.expectUtf8EncodedString("0000")
+        pollForWindowUpdates(500.millis)
+
+        sendDATA(TheStreamId, endStream = false, ByteString("1111"))
+        sendDATA(TheStreamId, endStream = true, ByteString.empty)
+
+        // DATA is left in IncomingStreamBuffer because we never pulled
+        // test infra closes connection
+      }
+      "fail if DATA frame arrives after incoming stream has already been closed (before response was sent)" inAssertAllStagesStopped new WaitingForRequestData {
+        sendDATA(TheStreamId, endStream = false, ByteString("0000"))
+        entityDataIn.expectUtf8EncodedString("0000")
+        pollForWindowUpdates(500.millis)
+
+        sendDATA(TheStreamId, endStream = false, ByteString("1111"))
+        sendDATA(TheStreamId, endStream = true, ByteString.empty) // close stream
+
+        // now send more DATA: checks that we have moved into a state where DATA is not expected any more
+        sendDATA(TheStreamId, endStream = false, ByteString("more data"))
+        val (_, errorCode) = expectGOAWAY()
+        errorCode shouldEqual ErrorCode.PROTOCOL_ERROR
+      }
       "fail entity stream if advertised content-length doesn't match" in pending
     }
 
