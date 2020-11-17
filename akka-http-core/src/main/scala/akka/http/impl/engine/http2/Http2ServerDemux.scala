@@ -27,7 +27,6 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.StageLogging
 import akka.stream.stage.TimerGraphStageLogic
 import akka.util.ByteString
-import akka.util.OptionVal
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
@@ -279,9 +278,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             // are enforced from the start of the connection so there's no need to invoke
             // `enforceSettings(initialLocalSettings)`
 
-            case PingFrame(true, _) =>
-              // FIXME should we verify the pong data?
-              pingState.onPingAck()
+            case PingFrame(true, data) =>
+              if (data != ConfigurablePing.Ping.data) {
+                // We only ever push static data, responding with anything else is wrong
+                pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Ping ack contained unexpected data")
+              } else {
+                pingState.onPingAck()
+              }
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
@@ -373,7 +376,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             pingState.onTick()
             val now = System.nanoTime()
             if (pingState.pingAckOverdue(now)) {
-              // FIXME this does not actually close connection currently
               pushGOAWAY(ErrorCode.CANCEL, "Ping ack timeout")
             } else if (pingState.shouldEmitPing()) {
               pingState.sendingPing(now)

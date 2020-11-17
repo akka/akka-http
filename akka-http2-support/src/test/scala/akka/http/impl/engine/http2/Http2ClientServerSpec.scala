@@ -109,33 +109,24 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
     }
   }
   class TestSetup {
-    def serverSettings: Option[ServerSettings] = None
-    def clientSettings: Option[ClientConnectionSettings] = None
+    def serverSettings: ServerSettings = ServerSettings(system)
+    def clientSettings: ClientConnectionSettings = ClientConnectionSettings(system)
     private lazy val serverRequestProbe = TestProbe()
     private lazy val handler: HttpRequest => Future[HttpResponse] = { req =>
       val p = Promise[HttpResponse]()
       serverRequestProbe.ref ! ServerRequest(req, p)
       p.future
     }
-    lazy val binding = {
-      val a = Http().newServerAt("localhost", 0).enableHttps(ExampleHttpContexts.exampleServerContext)
-      val b = serverSettings match {
-        case Some(settings) => a.withSettings(settings)
-        case None           => a
-      }
-      b.bind(handler).futureValue
-    }
-
-    lazy val clientFlow = {
-      val actualClientSettings = (clientSettings match {
-        case Some(custom) => custom
-        case None         => ClientConnectionSettings(system)
-      }).withTransport(ExampleHttpContexts.proxyTransport(binding.localAddress))
+    lazy val binding =
+      Http().newServerAt("localhost", 0)
+        .enableHttps(ExampleHttpContexts.exampleServerContext)
+        .withSettings(serverSettings)
+        .bind(handler).futureValue
+    lazy val clientFlow =
       Http().connectionTo("akka.example.org")
         .withCustomHttpsConnectionContext(ExampleHttpContexts.exampleClientContext)
-        .withClientConnectionSettings(actualClientSettings)
+        .withClientConnectionSettings(clientSettings.withTransport(ExampleHttpContexts.proxyTransport(binding.localAddress)))
         .http2()
-    }
     lazy val clientRequestsOut = TestPublisher.probe[HttpRequest]()
     lazy val clientResponsesIn = TestSubscriber.probe[HttpResponse]()
     Source.fromPublisher(clientRequestsOut)
