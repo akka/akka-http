@@ -69,7 +69,25 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 private[http2] object ConfigurablePing {
   case object Tick
   val Ping = PingFrame(false, ByteString("abcdefgh"))
-  final class PingState(pingEveryNTickWithoutData: Long, maxKeepaliveTimeoutNanos: Long) {
+  trait PingState {
+    def onDataFrameSeen(): Unit
+    def onPingAck(): Unit
+    def onTick(): Unit
+    def clear(): Unit
+    def shouldEmitPing(): Boolean
+    def sendingPing(timestamp: Long): Unit
+    def pingAckOverdue(timestampNanos: Long): Boolean
+  }
+  object DisabledPingState extends PingState {
+    def onDataFrameSeen(): Unit = ()
+    def onPingAck(): Unit = ()
+    def onTick(): Unit = ()
+    def clear(): Unit = ()
+    def shouldEmitPing(): Boolean = false
+    def sendingPing(timestamp: Long): Unit = ()
+    def pingAckOverdue(timestampNanos: Long): Boolean = false
+  }
+  final class EnabledPingState(pingEveryNTickWithoutData: Long, maxKeepaliveTimeoutNanos: Long) extends PingState {
     def this(settings: Http2CommonSettings) = this(settings.pingInterval.toSeconds, settings.pingTimeout.toNanos)
 
     private var ticksWithoutData = 0L
@@ -93,7 +111,6 @@ private[http2] object ConfigurablePing {
 
     def pingAckOverdue(timestampNanos: Long): Boolean =
       maxKeepaliveTimeoutNanos > 0L && lastPingTimestampNanos > 0L && (timestampNanos - lastPingTimestampNanos) > maxKeepaliveTimeoutNanos
-
   }
 }
 
@@ -174,24 +191,17 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
-      def pushFrameOut(event: FrameEvent): Unit = {
-        pingState match {
-          case OptionVal.None =>
-          case OptionVal.Some(state) =>
-            event match {
-              case _: StreamFrameEvent => state.onDataFrameSeen()
-              case _                   =>
-            }
-        }
+      override def pushFrameOut(event: FrameEvent): Unit = {
+        pingState.onDataFrameSeen()
         frameOut.push(event)
       }
 
-      val multiplexer = createMultiplexer(pushFrameOut, StreamPrioritizer.first())
+      val multiplexer = createMultiplexer(StreamPrioritizer.first())
       frameOut.setHandler(multiplexer)
 
-      val pingState: OptionVal[ConfigurablePing.PingState] =
-        if (http2Settings.pingInterval.toSeconds > 0L) OptionVal.Some(new ConfigurablePing.PingState(http2Settings))
-        else OptionVal.None
+      val pingState: ConfigurablePing.PingState =
+        if (http2Settings.pingInterval.toSeconds > 0L) new ConfigurablePing.EnabledPingState(http2Settings)
+        else ConfigurablePing.DisabledPingState
 
       // Send initial settings based on the local application.conf. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
@@ -213,9 +223,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         // both client and server must send a settings frame as first frame
         multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))
 
-        if (pingState.isDefined) {
+        if (pingState != ConfigurablePing.DisabledPingState) {
           // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
-          // FIXME does that really matter (I think the idle timeout logic touches nanotime for every frame)?
           schedulePeriodically(ConfigurablePing.Tick, 1.second)
         }
       }
@@ -252,10 +261,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ => multiplexer.updateConnectionLevelWindow(increment)
             case p: PriorityFrame => multiplexer.updatePriority(p)
             case s: StreamFrameEvent =>
-              pingState match {
-                case OptionVal.Some(state) => state.onDataFrameSeen()
-                case _                     =>
-              }
+              pingState.onDataFrameSeen()
               handleStreamEvent(s)
 
             case SettingsFrame(settings) =>
@@ -275,10 +281,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
             case PingFrame(true, _) =>
               // FIXME should we verify the pong data?
-              pingState match {
-                case OptionVal.Some(state) => state.onPingAck()
-                case _                     =>
-              }
+              pingState.onPingAck()
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
@@ -365,21 +368,19 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
         case ConfigurablePing.Tick =>
-          val state = pingState.get // no tick scheduled if state is not set
-
           // don't do anything unless there are active streams
           if (activeStreamCount() > 0) {
-            state.onTick()
+            pingState.onTick()
             val now = System.nanoTime()
-            if (state.pingAckOverdue(now)) {
+            if (pingState.pingAckOverdue(now)) {
               // FIXME this does not actually close connection currently
               pushGOAWAY(ErrorCode.CANCEL, "Ping ack timeout")
-            } else if (state.shouldEmitPing()) {
-              state.sendingPing(now)
+            } else if (pingState.shouldEmitPing()) {
+              pingState.sendingPing(now)
               multiplexer.pushControlFrame(ConfigurablePing.Ping)
             }
           } else {
-            state.clear()
+            pingState.clear()
           }
       }
 

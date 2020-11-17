@@ -77,7 +77,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
   /** Called by the multiplexer after SETTINGS_INITIAL_WINDOW_SIZE has changed */
   def distributeWindowDeltaToAllStreams(delta: Int): Unit
 
-  def createMultiplexer(pushFrameOut: FrameEvent => Unit, prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
+  def pushFrameOut(event: FrameEvent): Unit
+
+  def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogHelper { self =>
       def log: LoggingAdapter = logic.log
 
