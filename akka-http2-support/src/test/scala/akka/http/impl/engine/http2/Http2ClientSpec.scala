@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
@@ -127,6 +128,29 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         val (_, errorCode) = expectGOAWAY(3)
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
+      }
+
+      "GOAWAY when the response has headers mid stream" in new TestSetup with NetProbes with Http2FrameHpackSupport {
+        val streamId = 0x1
+        emitRequest(streamId, Get("/"))
+        expectDecodedHEADERS(streamId, endStream = true)
+
+        sendHEADERS(streamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          RawHeader("content-type", "application/octet-stream")
+        ))
+
+        val response = expectResponse()
+        response.entity shouldBe a[Chunked]
+
+        sendDATA(streamId, endStream = false, ByteString("asdf"))
+        expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE)
+
+        sendHEADERS(streamId, endStream = false, Seq(RawHeader("X-mid-stream", "badvalue")))
+
+        val goAwayFrame = expect[GoAwayFrame]()
+        goAwayFrame.errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+        goAwayFrame.debug.utf8String should ===("Got unexpected mid-stream HEADERS frame")
       }
 
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {

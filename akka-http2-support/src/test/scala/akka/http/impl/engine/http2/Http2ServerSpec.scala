@@ -342,7 +342,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       // Reproducing https://github.com/akka/akka-http/issues/2957
       "close the stream when we receive a RST after we have half-closed ourselves as well" inAssertAllStagesStopped new WaitingForRequestData {
-        // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's whet grpcurl does ;)
+        // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's what grpcurl does ;)
         sendDATA(streamId = TheStreamId, endStream = false, ByteString(0, 0, 0, 0, 0x10, 0x22, 0x0e) ++ ByteString.fromString("GreeterService"))
 
         // We emit a 404 response, half-closing the stream.
