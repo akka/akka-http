@@ -1,5 +1,6 @@
 # New settings added for configurable ping
 ProblemFilters.exclude[Problem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.*")
+ProblemFilters.exclude[Problem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.*")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.pingInterval")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.pingTimeout")
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.pingInterval")
