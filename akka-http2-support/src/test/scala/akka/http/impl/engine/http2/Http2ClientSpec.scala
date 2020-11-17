@@ -141,13 +141,13 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         response.entity shouldBe a[Chunked]
 
         sendDATA(streamId, endStream = false, ByteString("asdf"))
+        expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE)
+
         sendHEADERS(streamId, endStream = false, Seq(RawHeader("X-mid-stream", "badvalue")))
 
-        // FIXME need something like the Http2ServerSpec.expectWindowUpdate() here
-        expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE)
-        
-        val (_, error) = expectGOAWAY(streamId)
-        error should ===(ErrorCode.PROTOCOL_ERROR)
+        val goAwayFrame = expect[GoAwayFrame]()
+        goAwayFrame.errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+        goAwayFrame.debug.utf8String should ===("Got unexpected mid-stream HEADERS frame")
       }
 
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
