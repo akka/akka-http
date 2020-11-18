@@ -86,7 +86,7 @@ private[http2] object ConfigurablePing {
     def sendingPing(timestamp: Long): Unit = ()
     def pingAckOverdue(timestampNanos: Long): Boolean = false
   }
-  final class EnabledPingState(pingEveryNTickWithoutData: Long, maxKeepaliveTimeoutNanos: Long) extends PingState {
+  final class EnabledPingState(pingEveryNTickWithoutData: Long, pingTimeoutNanos: Long) extends PingState {
     def this(settings: Http2CommonSettings) = this(settings.pingInterval.toSeconds, settings.pingTimeout.toNanos)
 
     private var ticksWithoutData = 0L
