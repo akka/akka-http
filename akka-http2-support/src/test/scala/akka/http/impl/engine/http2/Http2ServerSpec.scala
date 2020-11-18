@@ -442,8 +442,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.sendDATA(TheStreamId, endStream = true, ByteString.empty)
 
         // DATA is left in IncomingStreamBuffer because we never pulled
-        toNet.cancel()
-        fromNet.sendError(new RuntimeException("connection crashed"))
+        network.toNet.cancel()
+        network.fromNet.sendError(new RuntimeException("connection crashed"))
 
         // we have received all data for the stream, but the substream cannot push it any more because the owning stage is gone
         entityDataIn.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
