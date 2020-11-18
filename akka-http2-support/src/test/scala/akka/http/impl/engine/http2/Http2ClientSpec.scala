@@ -216,6 +216,12 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendCONTINUATION(0x1, endHeaders = true, fragment3)
         user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
       }
+
+      "automatically add `date` header" in new TestSetup with NetProbes {
+        user.emitRequest(0x1, Get("https://www.example.com/"))
+        network.expectDecodedHEADERS(0x1, endStream = true).headers.exists(_.is("date"))
+      }
+
     }
 
     "respect flow-control" should {
