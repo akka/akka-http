@@ -65,6 +65,14 @@ public class UriTest extends JUnitSuite {
     //#dont-double-decode
   }
 
+  @Test
+  public void testAddingQueryParams() {
+    //#create-uri-with-query
+    Uri uri = Uri.create("http://foo.com").query(Query.create(Pair.create("foo","bar")));
+    //#create-uri-with-query
+    assertEquals(Optional.of("foo=bar"),uri.rawQueryString());
+  }
+
   //#illegal-scheme
   @Test(expected = IllegalUriException.class)
   public void testIllegalScheme() {

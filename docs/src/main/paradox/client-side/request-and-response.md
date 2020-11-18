@@ -12,6 +12,11 @@ Scala
 Java
 :  @@snip[ClientSingleRequestExample.java](/docs/src/test/java/docs/http/javadsl/ClientSingleRequestExample.java){ #create-simple-request }
 
+@@@ note
+@scala[@apidoc[HttpRequest](HttpRequest) also]@java[@apidoc[HttpRequest]'s method `HttpRequest::withUri()`] takes @apidoc[Uri] as a parameter.
+@ref[Query String in URI](../common/uri-model.md#query-string-in-uri) section describes a fluent API for building URIs with query parameters.
+@@@ 
+
 Or more complicated ones, like this `POST`:
 
 Scala
