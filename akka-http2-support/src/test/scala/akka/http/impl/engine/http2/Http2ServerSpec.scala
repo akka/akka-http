@@ -76,7 +76,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           network.sendHEADERS(streamId, endStream = true, endHeaders = true, requestHeaderBlock)
           user.expectRequest() shouldBe expectedRequest
 
-          user.responseOut.sendNext(response.addAttribute(Http2.streamId, streamId))
+          user.emitResponse(streamId, response)
           val headerPayload = network.expectHeaderBlock(streamId)
           headerPayload shouldBe expectedResponseHeaderBlock
         }
@@ -169,7 +169,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         request.uri shouldBe Uri("http://www.example.com/")
 
         val streamId = request.attribute(Http2.streamId).getOrElse(Http2Compliance.missingHttpIdHeaderException)
-        user.responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
+        user.emitResponse(streamId, HPackSpecExamples.FirstResponse)
         val headerPayload = network.expectHeaderBlock(1)
         headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
       }
@@ -191,7 +191,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         request.uri shouldBe Uri("http://www.example.com/")
 
         val streamId = request.attribute(Http2.streamId).getOrElse(Http2Compliance.missingHttpIdHeaderException)
-        user.responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
+        user.emitResponse(streamId, HPackSpecExamples.FirstResponse)
         val headerPayload = network.expectHeaderBlock(1)
         headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
       }
@@ -254,7 +254,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         request.uri shouldBe Uri("http://www.example.com/")
 
         val streamId = request.attribute(Http2.streamId).getOrElse(Http2Compliance.missingHttpIdHeaderException)
-        user.responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
+        user.emitResponse(streamId, HPackSpecExamples.FirstResponse)
         val headerPayload = network.expectHeaderBlock(1)
 
         // Dynamic Table Size Update (https://tools.ietf.org/html/rfc7541#section-6.3) is
@@ -1061,7 +1061,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 1)
       ) with RequestResponseProbes {
         def openStream(streamId: Int) = network.sendHEADERS(streamId, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        def closeStream(streamId: Int) = user.responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
+        def closeStream(streamId: Int) = user.emitResponse(streamId, HPackSpecExamples.FirstResponse)
 
         // client set SETTINGS_MAX_CONCURRENT_STREAMS to 1 so an attempt from the server to open more streams
         // should fail. But as long as the outgoing streams are a result of client-initiated communication
