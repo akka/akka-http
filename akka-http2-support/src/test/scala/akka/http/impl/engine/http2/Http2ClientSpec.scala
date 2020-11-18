@@ -16,7 +16,8 @@ import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, Chunked, LastChunk }
 import akka.http.scaladsl.model.HttpMethods.GET
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.CacheDirectives._
+import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control` }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
@@ -222,6 +223,23 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.expectDecodedHEADERS(0x1, endStream = true).headers.exists(_.is("date"))
       }
 
+      "parse headers to modeled headers" in new TestSetup with NetProbes {
+        user.emitRequest(0x1, Get("https://www.example.com/"))
+        network.expect[HeadersFrame]()
+
+        network.sendHEADERS(0x1, true, Seq(
+          RawHeader(":status", "401"),
+          RawHeader("cache-control", "no-cache"),
+          RawHeader("cache-control", "max-age=1000"),
+          RawHeader("access-control-allow-origin", "*")
+        ))
+
+        val response = user.expectResponse()
+        response.status should be(StatusCodes.Unauthorized)
+        response.headers should contain(`Cache-Control`(`no-cache`))
+        response.headers should contain(`Cache-Control`(`max-age`(1000)))
+        response.headers should contain(`Access-Control-Allow-Origin`.`*`)
+      }
     }
 
     "respect flow-control" should {
