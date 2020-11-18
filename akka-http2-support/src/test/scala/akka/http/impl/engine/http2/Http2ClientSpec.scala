@@ -24,7 +24,6 @@ import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
-import org.scalatest.concurrent.PatienceConfiguration
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -192,6 +191,17 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         )
       }
 
+      "accept response with one HEADERS and one CONTINUATION frame" in new TestSetup with NetProbes {
+        user.emitRequest(0x1, Get("https://www.example.com/"))
+        network.expect[HeadersFrame]()
+
+        val headerBlock = HPackSpecExamples.C61FirstResponseWithHuffman
+        val fragment1 = headerBlock.take(8) // must be grouped by octets
+        val fragment2 = headerBlock.drop(8)
+        network.sendHEADERS(0x1, endStream = true, endHeaders = false, fragment1)
+        network.sendCONTINUATION(0x1, endHeaders = true, fragment2)
+        user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
+      }
     }
 
     "respect flow-control" should {
