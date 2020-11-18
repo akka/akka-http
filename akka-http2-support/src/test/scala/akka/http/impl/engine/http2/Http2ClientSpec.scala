@@ -202,6 +202,20 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendCONTINUATION(0x1, endHeaders = true, fragment2)
         user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
       }
+
+      "accept response with one HEADERS and two CONTINUATION frames" in new TestSetup with NetProbes {
+        user.emitRequest(0x1, Get("https://www.example.com/"))
+        network.expect[HeadersFrame]()
+
+        val headerBlock = HPackSpecExamples.C61FirstResponseWithHuffman
+        val fragment1 = headerBlock.take(8) // must be grouped by octets
+        val fragment2 = headerBlock.drop(8).take(8)
+        val fragment3 = headerBlock.drop(16)
+        network.sendHEADERS(0x1, endStream = true, endHeaders = false, fragment1)
+        network.sendCONTINUATION(0x1, endHeaders = false, fragment2)
+        network.sendCONTINUATION(0x1, endHeaders = true, fragment3)
+        user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
+      }
     }
 
     "respect flow-control" should {
