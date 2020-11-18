@@ -432,29 +432,38 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 512001))) // more than default `incoming-stream-level-buffer-size = 512kB`
         network.expectRST_STREAM(TheStreamId, ErrorCode.FLOW_CONTROL_ERROR)
       }
-      "not leak stream if request entity is not fully pulled when connection dies" inAssertAllStagesStopped new WaitingForRequestData {
+      "fail stream if request entity is not fully pulled when connection dies" inAssertAllStagesStopped new WaitingForRequestData {
         network.sendDATA(TheStreamId, endStream = false, ByteString("0000"))
         entityDataIn.expectUtf8EncodedString("0000")
         network.pollForWindowUpdates(500.millis)
 
-        network.sendDATA(TheStreamId, endStream = false, ByteString("1111"))
+        val bigData = ByteString("1" * 100000) // more than configured request-entity-chunk-size, so that something is left in buffer
+        network.sendDATA(TheStreamId, endStream = false, bigData)
         network.sendDATA(TheStreamId, endStream = true, ByteString.empty)
 
         // DATA is left in IncomingStreamBuffer because we never pulled
-        // test infra closes connection
+        toNet.cancel()
+        fromNet.sendError(new RuntimeException("connection crashed"))
+
+        // we have received all data for the stream, but the substream cannot push it any more because the owning stage is gone
+        entityDataIn.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
       }
       "fail if DATA frame arrives after incoming stream has already been closed (before response was sent)" inAssertAllStagesStopped new WaitingForRequestData {
         network.sendDATA(TheStreamId, endStream = false, ByteString("0000"))
         entityDataIn.expectUtf8EncodedString("0000")
         network.pollForWindowUpdates(500.millis)
 
-        network.sendDATA(TheStreamId, endStream = false, ByteString("1111"))
+        val bigData = ByteString("1" * 100000) // more than configured request-entity-chunk-size, so that something is left in buffer
+        network.sendDATA(TheStreamId, endStream = false, bigData)
         network.sendDATA(TheStreamId, endStream = true, ByteString.empty) // close stream
 
         // now send more DATA: checks that we have moved into a state where DATA is not expected any more
         network.sendDATA(TheStreamId, endStream = false, ByteString("more data"))
         val (_, errorCode) = network.expectGOAWAY()
         errorCode shouldEqual ErrorCode.PROTOCOL_ERROR
+
+        // we have received all data for the stream, but the substream cannot push it any more because the owning stage is gone
+        entityDataIn.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
       }
       "fail entity stream if advertised content-length doesn't match" in pending
     }
