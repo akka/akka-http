@@ -17,7 +17,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, Chunked, LastChunk }
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.headers.CacheDirectives._
-import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control` }
+import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control`, `Content-Length`, `Content-Type` }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
@@ -267,18 +267,16 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     }
 
     "support stream for response data" should {
-      abstract class WaitingForResponseData extends TestSetup with NetProbes {
+      abstract class WaitingForResponse extends TestSetup with NetProbes {
         val TheStreamId = 0x1
         user.emitRequest(TheStreamId, Get("/"))
-        network.expect[HeadersFrame]
-        network.sendHEADERS(TheStreamId, false, Seq(RawHeader(":status", "200")))
-
-        val receivedResponse = user.expectResponse()
-        val entityDataIn = ByteStringSinkProbe()
-        receivedResponse.entity.dataBytes.runWith(entityDataIn.sink)
-        entityDataIn.ensureSubscription()
+        network.expect[HeadersFrame]()
       }
-      "send data frames to entity stream" in new WaitingForResponseData {
+      "send data frames to entity stream" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+
         val data1 = ByteString("abcdef")
         network.sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
@@ -290,6 +288,25 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val data3 = ByteString("mnopq")
         network.sendDATA(TheStreamId, endStream = true, data3)
         entityDataIn.expectBytes(data3)
+        entityDataIn.expectComplete()
+      }
+      "handle content-length and content-type of incoming response" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          `Content-Type`(ContentTypes.`application/json`),
+          `Content-Length`(2000)
+        ))
+
+        val response = user.expectResponse()
+        response.entity.contentType should ===(ContentTypes.`application/json`)
+        response.entity.isIndefiniteLength should ===(false)
+        response.entity.contentLengthOption should ===(Some(2000L))
+
+        network.sendDATA(TheStreamId, endStream = false, ByteString("x" * 1000))
+        network.sendDATA(TheStreamId, endStream = true, ByteString("x" * 1000))
+
+        val entityDataIn = ByteStringSinkProbe(response.entity.dataBytes)
+        entityDataIn.expectBytes(2000)
         entityDataIn.expectComplete()
       }
     }
