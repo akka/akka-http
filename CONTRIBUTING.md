@@ -330,7 +330,6 @@ Integration:
 
 * Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/view/PR%20Validators/job/pr-validator-akka-http/)
 * Jenkins [runs a nightly performance test suite](https://jenkins.akka.io:8498/view/Akka-http/) against master
-* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka-http)
 * Travis [is used for publishing releases](https://github.com/akka/akka-http/blob/master/.travis.yml#L33)
 
 The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
