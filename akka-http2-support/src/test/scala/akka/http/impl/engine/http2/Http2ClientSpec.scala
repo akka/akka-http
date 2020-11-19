@@ -240,6 +240,30 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         response.headers should contain(`Cache-Control`(`max-age`(1000)))
         response.headers should contain(`Access-Control-Allow-Origin`.`*`)
       }
+
+      "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" in new TestSetup with NetProbes {
+        network.sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, 8192)
+        network.expectSettingsAck()
+
+        user.emitRequest(0x1, Get("/"))
+        val headerPayload = network.expectHeaderBlock(1)
+
+        // Dynamic Table Size Update (https://tools.ietf.org/html/rfc7541#section-6.3) is
+        //
+        // 0   1   2   3   4   5   6   7
+        // +---+---+---+---+---+---+---+---+
+        // | 0 | 0 | 1 |   Max size (5+)   |
+        // +---+---------------------------+
+        //
+        // 8192 is 10000000000000 = 14 bits, i.e. needs more than 4 bits
+        // 8192 - 16 = 8176 = 111111 1110000
+        // 001 11111 = 63
+        // 1 1110000 = 225
+        // 0 0111111 = 63
+
+        val dynamicTableUpdateTo8192 = ByteString(63, 225, 63)
+        headerPayload.take(3) shouldBe dynamicTableUpdateTo8192
+      }
     }
 
     "respect flow-control" should {
