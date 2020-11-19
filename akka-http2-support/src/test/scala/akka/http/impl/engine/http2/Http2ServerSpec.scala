@@ -1277,22 +1277,22 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     "must not swallow errors / warnings" in pending
 
     "support configurable pings" should {
-      "send pings when there is an active but slow stream to server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+      "send pings when there is an active but slow stream to server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
         override def settings: ServerSettings = {
           val default = super.settings
           default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
         }
 
-        sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
-        expectRequest()
+        network.sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
+        val request = user.expectRequest()
 
-        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
-        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
-        fromNet.sendComplete()
+        network.toNet.cancel()
       })
 
-      "send pings when there is an active but slow stream from server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+      "send pings when there is an active but slow stream from server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
 
         override def settings: ServerSettings = {
           val default = super.settings
@@ -1300,36 +1300,35 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         }
 
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
-        sendRequest(1, theRequest)
-        expectRequest() shouldBe theRequest
+        network.sendRequest(1, theRequest)
+        user.expectRequest() shouldBe theRequest
 
         val responseStream = TestPublisher.probe[ByteString]()
         val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(responseStream)))
-        emitResponse(1, response1)
-        expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
-        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
-        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        user.emitResponse(1, response1)
+        network.expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
-        fromNet.sendComplete()
+        network.toNet.cancel()
       })
 
-      "send GOAWAY when ping times out" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+      "send GOAWAY when ping times out" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
         override def settings: ServerSettings = {
           val default = super.settings
           default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
         }
 
-        sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
-        expectRequest()
+        network.sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
+        user.expectRequest()
 
-        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
-        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
-        expectNoBytes(500.millis) // timeout is 1 second from client emitting ping, (so not really 1s here)
-        expectGOAWAY(1)
+        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        network.expectNoBytes(500.millis) // timeout is 1 second from client emitting ping, (so not really 1s here)
+        network.expectGOAWAY(1)
 
         // FIXME should also verify close of connection, but it isn't implemented yet
-
-        fromNet.sendComplete()
+        network.toNet.cancel()
       })
 
     }

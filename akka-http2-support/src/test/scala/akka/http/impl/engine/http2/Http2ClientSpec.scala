@@ -339,58 +339,53 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     }
 
     "support for configurable ping" should {
-      "send pings when there is an active but slow stream from client" in new TestSetup with NetProbes with Http2FrameHpackSupport {
+      "send pings when there is an active but slow stream from client" in new TestSetup with NetProbes {
         override def settings = super.settings.mapHttp2Settings(_.withPingInterval(2.seconds).withPingTimeout(1.second))
         val streamId = 0x1
         val requestStream = TestPublisher.probe[ByteString]()
-        emitRequest(streamId, HttpRequest(
+        user.emitRequest(streamId, HttpRequest(
           protocol = HttpProtocols.`HTTP/2.0`,
           entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
-        expectDecodedHEADERS(streamId, endStream = false)
-        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
-        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
-        expectNoBytes(1.second) // no data after ping
-        fromNet.sendComplete()
+        network.expectDecodedHEADERS(streamId, endStream = false)
+        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        network.expectNoBytes(1.second) // no data after ping
       }
-      "send pings when there is an active but slow stream to client" in new TestSetup with NetProbes with Http2FrameHpackSupport {
+      "send pings when there is an active but slow stream to client" in new TestSetup with NetProbes {
         override def settings = {
           val default = super.settings
           default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
         }
         val streamId = 0x1
-        emitRequest(streamId, HttpRequest(
+        user.emitRequest(streamId, HttpRequest(
           protocol = HttpProtocols.`HTTP/2.0`,
         ))
-        expectDecodedHEADERS(streamId)
+        network.expectDecodedHEADERS(streamId)
 
-        sendHEADERS(streamId, endStream = false, Seq(
+        network.sendHEADERS(streamId, endStream = false, Seq(
           RawHeader(":status", "200"),
           RawHeader("content-type", "application/octet-stream")
         ))
-        expectResponse()
-        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
-        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
-
-        fromNet.sendComplete()
+        user.expectResponse()
+        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
       }
 
-      "send GOAWAY when ping ack times out" in new TestSetup with NetProbes with Http2FrameHpackSupport {
+      "send GOAWAY when ping ack times out" in new TestSetup with NetProbes {
         override def settings = {
           val default = super.settings
           default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
         }
         val streamId = 0x1
         val requestStream = TestPublisher.probe[ByteString]()
-        emitRequest(streamId, HttpRequest(
+        user.emitRequest(streamId, HttpRequest(
           protocol = HttpProtocols.`HTTP/2.0`,
           entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
-        expectDecodedHEADERS(streamId, endStream = false)
-        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
-        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
-        expectNoBytes(500.millis) // timeout is 1 second from server emitting ping, (so not really 1s here)
-        expectGOAWAY(streamId)
-
-        fromNet.sendComplete()
+        network.expectDecodedHEADERS(streamId, endStream = false)
+        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        network.expectNoBytes(500.millis) // timeout is 1 second from server emitting ping, (so not really 1s here)
+        network.expectGOAWAY(streamId)
       }
     }
   }
