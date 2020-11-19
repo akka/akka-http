@@ -321,6 +321,41 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val error = entityDataIn.expectError()
         error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
       }
+      "not fail the whole connection when one stream is RST twice" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+        network.sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+        val error = entityDataIn.expectError()
+        error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
+
+        // https://http2.github.io/http2-spec/#StreamStates
+        // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
+        network.sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
+        // especially no GOAWAY frame should be sent in response
+        network.expectNoBytes(100.millis)
+      }
+      "not fail the whole connection when data frames are received after stream was cancelled" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+        entityDataIn.cancel()
+        network.expectRST_STREAM(TheStreamId)
+
+        network.sendDATA(TheStreamId, endStream = false, ByteString("test"))
+        // should just be ignored, especially no GOAWAY frame should be sent in response
+        network.expectNoBytes(100.millis)
+      }
+      "send RST_STREAM if entity stream is canceled" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+        val data1 = ByteString("abcdef")
+        network.sendDATA(TheStreamId, endStream = false, data1)
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+        entityDataIn.expectBytes(data1)
+
+        network.pollForWindowUpdates(10.millis)
+
+        entityDataIn.cancel()
+        network.expectRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+      }
     }
 
     "respect flow-control" should {
@@ -528,7 +563,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     lazy val network = new NetworkSide(fromNet, toNet, framesOut)
   }
-  class NetworkSide(val fromNet: TestPublisher.Probe[ByteString], val toNet: ByteStringSinkProbe, val framesOut: Http2FrameProbe) extends Http2FrameProbeDelegator with Http2FrameHpackSupport with Http2FrameSending {
+  class NetworkSide(val fromNet: TestPublisher.Probe[ByteString], val toNet: ByteStringSinkProbe, val framesOut: Http2FrameProbe) extends WindowTracking with Http2FrameHpackSupport {
     override def frameProbeDelegate: Http2FrameProbe = framesOut
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)

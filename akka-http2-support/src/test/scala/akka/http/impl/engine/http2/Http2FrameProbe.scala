@@ -63,6 +63,8 @@ private[http2] trait Http2FrameProbe {
   def remainingFromServerWindowFor(streamId: Int): Int
 
   def expectComplete(): Unit
+
+  def within[T](max: FiniteDuration)(f: => T): T = plainDataProbe.within(max)(f)
 }
 
 /**
