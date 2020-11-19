@@ -1160,7 +1160,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       }
       "NOT respond to PING ACK frames (spec 6_7)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         val AckFlag = new ByteFlag(0x1)
-        network.sendFrame(FrameType.PING, AckFlag, 0, ByteString("data1234"))
+        network.sendFrame(FrameType.PING, AckFlag, 0, ConfigurablePing.Ping.data) // other ack payload than this causes GOAWAY
 
         network.expectNoBytes(100.millis)
       }
@@ -1284,7 +1284,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         }
 
         network.sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
-        val request = user.expectRequest()
+        user.expectRequest()
 
         network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
         network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
