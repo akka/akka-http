@@ -309,6 +309,18 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.expectBytes(2000)
         entityDataIn.expectComplete()
       }
+      "fail entity stream if peer sends RST_STREAM frame" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+        val data1 = ByteString("abcdef")
+        network.sendDATA(TheStreamId, endStream = false, data1)
+
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+        entityDataIn.expectBytes(data1)
+
+        network.sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
+        val error = entityDataIn.expectError()
+        error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
+      }
     }
 
     "respect flow-control" should {
