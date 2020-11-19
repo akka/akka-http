@@ -336,6 +336,11 @@ Integration:
 The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
 The cluster is made out of real bare-metal boxes, and maintained by the Akka team (and other very helpful people at Lightbend).
 
+## Snapshots
+
+Snapshots are published to a snapshot repository. See the latest information about how to use snapshots in the
+[documentation](https://doc.akka.io/docs/akka-http/snapshot/contributing.html#snapshots).
+
 ## Related links
 
 * [Akka Contributor License Agreement](https://www.lightbend.com/contribute/cla)
