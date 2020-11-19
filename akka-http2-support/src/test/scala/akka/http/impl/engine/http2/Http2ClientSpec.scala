@@ -405,6 +405,10 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // close 1 and 3
         network.sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         network.sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        // outstanding 5 received 1 3 (none fetched)
+        user.expectResponse()
+        user.expectResponse()
+        // outstanding 5 done 1 3
         user.emitRequest(request)
         user.emitRequest(request)
         // expect 7 and 9 on the line
@@ -412,14 +416,23 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.expect[HeadersFrame]().streamId shouldBe (9)
         network.expectNoBytes(100.millis)
 
+        // outstanding 5 7 9 done 1 3
+
         // close 5 7 9
         network.sendFrame(HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         network.sendFrame(HeadersFrame(streamId = 7, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         network.sendFrame(HeadersFrame(streamId = 9, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        // received but not fetched 5 7 9 done 1 3
+        user.expectResponse()
+        // received but not fetched 7 9 done 1 3 5
         user.emitRequest(request)
-        // expect 11 the line
+        // outstanding 11 received but not fetched 7 9 done 1 3 5
+        // expect 11 on the line
         network.expect[HeadersFrame]().streamId shouldBe (11)
+        user.expectResponse()
+        // outstanding 11 received but not fetched 9 done 1 3 5 7
         network.expect[HeadersFrame]().streamId shouldBe (13)
+        // outstanding 11 13 received but not fetched 9 done 1 3 5 7
       }
       "increasing SETTINGS_MAX_CONCURRENT_STREAMS should flush backpressured outgoing streams" in new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
@@ -468,6 +481,10 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         // Once 1 and 3 are closed, there'll be capacity for 7 to go through
         network.sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        // 7 is still buffered, 5 is outstanding and 1 + 3 have not been fetched
+        user.expectResponse()
+        user.expectResponse()
+
         network.expect[HeadersFrame]().streamId shouldBe (7)
         // .. but not enough capacity for 9
         user.emitRequest(request)
@@ -551,6 +568,36 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val (_, errorCode) = network.expectGOAWAY(streamId)
         errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
+    }
+
+    "apply backpressure to request input when responses are not collected" in new TestSetup(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 5)) with NetProbes {
+      override def settings: ClientConnectionSettings =
+        super.settings.mapHttp2Settings(_.withMaxConcurrentStreams(5))
+
+      def sendOneRequest(streamId: Int): Unit = {
+        user.emitRequest(HttpRequest())
+        network.expectDecodedHEADERS(streamId, endStream = true)
+      }
+
+      user.responseIn.ensureSubscription()
+
+      (1 to 5).foreach(i => sendOneRequest(i * 2 - 1))
+      user.emitRequest(HttpRequest()) // one extra is requested (some buffering?) but not send on the wire
+      network.expectNoBytes(100.millis)
+      user.requestOut.pending shouldBe 0
+      user.requestOut.expectNoMessage(100.millis) // no further request expected
+
+      network.sendHEADERS(3, endStream = false, Seq(RawHeader(":status", "404")))
+      network.expectNoBytes(100.millis)
+      network.sendDATA(3, endStream = true, ByteString.empty)
+      network.expectWindowUpdate()
+
+      user.requestOut.pending shouldBe 0
+      user.requestOut.expectNoMessage(100.millis)
+
+      user.expectResponse() // now we fetch the first response
+      network.expectDecodedHEADERS(11, endStream = true) // expect request 6 to be sent
+      user.requestOut.expectRequest()
     }
   }
 

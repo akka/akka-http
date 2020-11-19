@@ -279,13 +279,11 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       }
       def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
 
-      def tryPullSubStreams(): Unit = {
-        if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn)) {
+      def tryPullSubStreams(): Unit =
+        if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn))
           // While we don't support PUSH_PROMISE there's only capacity control on the client
           if (isServer) pull(substreamIn)
-          else if (hasCapacityToCreateStreams) pull(substreamIn)
-        }
-      }
+          else if (hasCapacityToCreateStreams(bufferedSubStreamOutput.buffer.size())) pull(substreamIn)
 
       setHandler(frameIn, new InHandler {
 
@@ -357,11 +355,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         }
       })
 
-      // FIXME: What if user handler doesn't pull in new substreams? Should we reject them
-      //        after a while or buffer only a limited amount? We should also be able to
-      //        keep the buffer limited to the number of concurrent streams as negotiated
-      //        with the other side.
-      val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
+      val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut) {
+        override def onPull(): Unit = {
+          super.onPull()
+          // we might be able to pull another incoming substream
+          tryPullSubStreams()
+        }
+      }
       override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
         bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
 
