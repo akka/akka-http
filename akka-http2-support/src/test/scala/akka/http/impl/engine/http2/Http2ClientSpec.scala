@@ -266,6 +266,34 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
+    "support stream for response data" should {
+      abstract class WaitingForResponseData extends TestSetup with NetProbes {
+        val TheStreamId = 0x1
+        user.emitRequest(TheStreamId, Get("/"))
+        network.expect[HeadersFrame]
+        network.sendHEADERS(TheStreamId, false, Seq(RawHeader(":status", "200")))
+
+        val receivedResponse = user.expectResponse()
+        val entityDataIn = ByteStringSinkProbe()
+        receivedResponse.entity.dataBytes.runWith(entityDataIn.sink)
+        entityDataIn.ensureSubscription()
+      }
+      "send data frames to entity stream" in new WaitingForResponseData {
+        val data1 = ByteString("abcdef")
+        network.sendDATA(TheStreamId, endStream = false, data1)
+        entityDataIn.expectBytes(data1)
+
+        val data2 = ByteString("zyxwvu")
+        network.sendDATA(TheStreamId, endStream = false, data2)
+        entityDataIn.expectBytes(data2)
+
+        val data3 = ByteString("mnopq")
+        network.sendDATA(TheStreamId, endStream = true, data3)
+        entityDataIn.expectBytes(data3)
+        entityDataIn.expectComplete()
+      }
+    }
+
     "respect flow-control" should {
       "accept window updates when done sending the request" in new TestSetup {
         user.emitRequest(0x1, Get("/"))
