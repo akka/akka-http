@@ -340,19 +340,16 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     "support for configurable ping" should {
       "send pings when there is an active but slow stream from client" in new TestSetup with NetProbes with Http2FrameHpackSupport {
-        override def settings = {
-          val default = super.settings
-          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
-        }
+        override def settings = super.settings.mapHttp2Settings(_.withPingInterval(2.seconds).withPingTimeout(1.second))
         val streamId = 0x1
         val requestStream = TestPublisher.probe[ByteString]()
         emitRequest(streamId, HttpRequest(
           protocol = HttpProtocols.`HTTP/2.0`,
           entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
         expectDecodedHEADERS(streamId, endStream = false)
-        Thread.sleep(2000) // no data for this interval should trigger ping
+        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
-
+        expectNoBytes(1.second) // no data after ping
         fromNet.sendComplete()
       }
       "send pings when there is an active but slow stream to client" in new TestSetup with NetProbes with Http2FrameHpackSupport {
@@ -370,8 +367,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           RawHeader(":status", "200"),
           RawHeader("content-type", "application/octet-stream")
         ))
-        val response = expectResponse()
-        Thread.sleep(2000) // no data for this interval should trigger ping
+        expectResponse()
+        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
         fromNet.sendComplete()
@@ -388,10 +385,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           protocol = HttpProtocols.`HTTP/2.0`,
           entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
         expectDecodedHEADERS(streamId, endStream = false)
-        Thread.sleep(2000) // no data for this interval should trigger ping
+        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but server counts from emitting last frame, so it's not really 2s here)
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
-        Thread.sleep(1000)
-        // no ack sent back
+        expectNoBytes(500.millis) // timeout is 1 second from server emitting ping, (so not really 1s here)
         expectGOAWAY(streamId)
 
         fromNet.sendComplete()

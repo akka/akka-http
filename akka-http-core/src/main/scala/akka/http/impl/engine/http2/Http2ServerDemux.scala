@@ -67,6 +67,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 @InternalApi
 private[http2] object ConfigurablePing {
   case object Tick
+  // single instance used each time, only a single ping in flight ever so no need to use changing payloads
   val Ping = PingFrame(false, ByteString("abcdefgh"))
   trait PingState {
     def onDataFrameSeen(): Unit
@@ -109,7 +110,7 @@ private[http2] object ConfigurablePing {
     def sendingPing(timestamp: Long): Unit = lastPingTimestampNanos = timestamp
 
     def pingAckOverdue(timestampNanos: Long): Boolean =
-      maxKeepaliveTimeoutNanos > 0L && lastPingTimestampNanos > 0L && (timestampNanos - lastPingTimestampNanos) > maxKeepaliveTimeoutNanos
+      pingTimeoutNanos > 0L && lastPingTimestampNanos > 0L && (timestampNanos - lastPingTimestampNanos) > pingTimeoutNanos
   }
 }
 
@@ -256,12 +257,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       setHandler(frameIn, new InHandler {
 
         def onPush(): Unit = {
-          grab(frameIn) match {
+          val frame = grab(frameIn)
+          frame match {
+            case _: PingFrame => // handle later
+            case _            => pingState.onDataFrameSeen()
+          }
+          frame match {
             case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ => multiplexer.updateConnectionLevelWindow(increment)
             case p: PriorityFrame => multiplexer.updatePriority(p)
-            case s: StreamFrameEvent =>
-              pingState.onDataFrameSeen()
-              handleStreamEvent(s)
+            case s: StreamFrameEvent => handleStreamEvent(s)
 
             case SettingsFrame(settings) =>
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")

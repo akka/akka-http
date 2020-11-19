@@ -1286,8 +1286,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
         expectRequest()
 
-        // No data for 2s to trigger the ping
-        Thread.sleep(2000) // slow test but 2s is current minimum :(
+        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
         fromNet.sendComplete()
@@ -1308,8 +1307,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(responseStream)))
         emitResponse(1, response1)
         expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
-        // No data for 2s to trigger the ping
-        Thread.sleep(2000) // slow test but 2s is current minimum :(
+        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
         fromNet.sendComplete()
@@ -1324,11 +1322,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
         expectRequest()
 
-        // No data for 2s to trigger the ping
-        Thread.sleep(2000) // slow test but 2s is current minimum :(
+        expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
-        // no ack to make it time out
-        Thread.sleep(1000)
+        expectNoBytes(500.millis) // timeout is 1 second from client emitting ping, (so not really 1s here)
         expectGOAWAY(1)
 
         // FIXME should also verify close of connection, but it isn't implemented yet

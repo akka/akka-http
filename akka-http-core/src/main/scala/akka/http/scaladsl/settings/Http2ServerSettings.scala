@@ -43,7 +43,7 @@ private[http] object Http2CommonSettings {
     import settings._
     if (pingInterval.toSeconds > 0) {
       require(pingInterval.toSeconds.seconds == pingInterval, s"ping-interval must be whole seconds, was $pingInterval")
-      require(pingTimeout < pingInterval && pingTimeout > 0.seconds, "ping-timeout must be positive and smaller than ping-interval")
+      require(pingTimeout == 0.seconds || pingTimeout < pingInterval, "ping-timeout must be zero, or positive and smaller than ping-interval")
       require(pingTimeout.toSeconds.seconds == pingTimeout, s"ping-timeout must be whole seconds, was $pingTimeout")
     }
   }
