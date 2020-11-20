@@ -11,7 +11,7 @@ import akka.http.impl.util._
 import akka.http.javadsl
 import com.typesafe.config.Config
 
-import scala.concurrent.duration.DurationLong
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -41,10 +41,10 @@ private[http] trait Http2CommonSettings {
 private[http] object Http2CommonSettings {
   def validate(settings: Http2CommonSettings): Unit = {
     import settings._
-    if (pingInterval.toSeconds > 0) {
-      require(pingInterval.toSeconds.seconds == pingInterval, s"ping-interval must be whole seconds, was $pingInterval")
-      require(pingTimeout == 0.seconds || pingTimeout < pingInterval, "ping-timeout must be zero, or positive and smaller than ping-interval")
-      require(pingTimeout.toSeconds.seconds == pingTimeout, s"ping-timeout must be whole seconds, was $pingTimeout")
+    if (pingInterval > Duration.Zero && pingTimeout > Duration.Zero) {
+      require(
+        pingTimeout <= pingInterval && pingInterval.toMillis % pingTimeout.toMillis == 0,
+        s"ping-timeout must be less than and evenly divisible by the ping-interval ($pingInterval)")
     }
   }
 }
@@ -138,24 +138,24 @@ private[http] trait Http2InternalClientSettings
 
 @ApiMayChange
 @DoNotInherit
-trait Http2ClientSettings extends /*FIXME: javadsl.settings.Http2ClientSettings with*/ Http2CommonSettings { self: Http2ClientSettings.Http2ClientSettingsImpl =>
+trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http2CommonSettings { self: Http2ClientSettings.Http2ClientSettingsImpl =>
   def requestEntityChunkSize: Int
-  def withRequestEntityChunkSize(newValue: Int): Http2ClientSettings = copy(requestEntityChunkSize = newValue)
+  override def withRequestEntityChunkSize(newValue: Int): Http2ClientSettings = copy(requestEntityChunkSize = newValue)
 
   def incomingConnectionLevelBufferSize: Int
-  def withIncomingConnectionLevelBufferSize(newValue: Int): Http2ClientSettings = copy(incomingConnectionLevelBufferSize = newValue)
+  override def withIncomingConnectionLevelBufferSize(newValue: Int): Http2ClientSettings = copy(incomingConnectionLevelBufferSize = newValue)
 
   def incomingStreamLevelBufferSize: Int
-  def withIncomingStreamLevelBufferSize(newValue: Int): Http2ClientSettings = copy(incomingStreamLevelBufferSize = newValue)
+  override def withIncomingStreamLevelBufferSize(newValue: Int): Http2ClientSettings = copy(incomingStreamLevelBufferSize = newValue)
 
   def maxConcurrentStreams: Int
-  def withMaxConcurrentStreams(newValue: Int): Http2ClientSettings = copy(maxConcurrentStreams = newValue)
+  override def withMaxConcurrentStreams(newValue: Int): Http2ClientSettings = copy(maxConcurrentStreams = newValue)
 
   def outgoingControlFrameBufferSize: Int
-  def withOutgoingControlFrameBufferSize(newValue: Int): Http2ClientSettings = copy(outgoingControlFrameBufferSize = newValue)
+  override def withOutgoingControlFrameBufferSize(newValue: Int): Http2ClientSettings = copy(outgoingControlFrameBufferSize = newValue)
 
   def logFrames: Boolean
-  def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
+  override def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
 
   def pingInterval: FiniteDuration
   def withPingInterval(time: FiniteDuration): Http2ClientSettings = copy(pingInterval = time)
@@ -185,7 +185,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
     internalSettings:                  Option[Http2InternalClientSettings])
-    extends Http2ClientSettings {
+    extends Http2ClientSettings with javadsl.settings.Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")

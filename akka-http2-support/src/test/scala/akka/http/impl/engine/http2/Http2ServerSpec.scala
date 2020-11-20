@@ -1276,17 +1276,17 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
     "must not swallow errors / warnings" in pending
 
-    "support configurable pings" should {
+    "support for configurable pings" should {
       "send pings when there is an active but slow stream to server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
         override def settings: ServerSettings = {
           val default = super.settings
-          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
+          default.withHttp2Settings(default.http2Settings.withPingInterval(500.millis))
         }
 
         network.sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
         user.expectRequest()
 
-        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
+        network.expectNoBytes(250.millis) // no data for 500ms interval should trigger ping (but client counts from emitting last frame, so it's not really 500ms here)
         network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
         network.toNet.cancel()
@@ -1296,7 +1296,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         override def settings: ServerSettings = {
           val default = super.settings
-          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
+          default.withHttp2Settings(default.http2Settings.withPingInterval(500.millis))
         }
 
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
@@ -1307,7 +1307,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(responseStream)))
         user.emitResponse(1, response1)
         network.expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
-        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
+        network.expectNoBytes(250.millis) // no data for 500ms interval should trigger ping (but client counts from emitting last frame, so it's not really 500ms here)
         network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
         network.toNet.cancel()
@@ -1316,15 +1316,15 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       "send GOAWAY when ping times out" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
         override def settings: ServerSettings = {
           val default = super.settings
-          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
+          default.withHttp2Settings(default.http2Settings.withPingInterval(800.millis).withPingTimeout(400.millis))
         }
 
         network.sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
         user.expectRequest()
 
-        network.expectNoBytes(1.5.seconds) // no data for 2s interval should trigger ping (but client counts from emitting last frame, so it's not really 2s here)
+        network.expectNoBytes(400.millis) // no data for 800ms interval should trigger ping (but client counts from emitting last frame, so it's not really 800ms here)
         network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
-        network.expectNoBytes(500.millis) // timeout is 1 second from client emitting ping, (so not really 1s here)
+        network.expectNoBytes(200.millis) // timeout is 400ms from client emitting ping, (so not really 400ms here)
         network.expectGOAWAY(1)
 
         // FIXME should also verify close of connection, but it isn't implemented yet

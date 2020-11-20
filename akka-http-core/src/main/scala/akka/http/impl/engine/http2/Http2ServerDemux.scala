@@ -30,7 +30,9 @@ import akka.util.ByteString
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
 /**
@@ -69,48 +71,75 @@ private[http2] object ConfigurablePing {
   case object Tick
   // single instance used each time, only a single ping in flight ever so no need to use changing payloads
   val Ping = PingFrame(false, ByteString("abcdefgh"))
+
+  object PingState {
+    def apply(settings: Http2CommonSettings): PingState = {
+      if (settings.pingInterval == 0.seconds) DisabledPingState
+      else {
+        // this means timeout is always one tick, but ping interval can be multiple ticks
+        val tickInterval =
+          if (settings.pingTimeout == Duration.Zero) settings.pingInterval
+          else settings.pingInterval.min(settings.pingTimeout)
+        new EnabledPingState(
+          tickInterval,
+          pingEveryNTickWithoutData = settings.pingInterval.toMillis / tickInterval.toMillis
+        )
+      }
+    }
+  }
   trait PingState {
+    def tickInterval(): Option[FiniteDuration]
     def onDataFrameSeen(): Unit
     def onPingAck(): Unit
     def onTick(): Unit
     def clear(): Unit
     def shouldEmitPing(): Boolean
-    def sendingPing(timestamp: Long): Unit
-    def pingAckOverdue(timestampNanos: Long): Boolean
+    def sendingPing(): Unit
+    def pingAckOverdue(): Boolean
   }
   object DisabledPingState extends PingState {
+    def tickInterval(): Option[FiniteDuration] = None
     def onDataFrameSeen(): Unit = ()
     def onPingAck(): Unit = ()
     def onTick(): Unit = ()
     def clear(): Unit = ()
     def shouldEmitPing(): Boolean = false
-    def sendingPing(timestamp: Long): Unit = ()
-    def pingAckOverdue(timestampNanos: Long): Boolean = false
+    def sendingPing(): Unit = ()
+    def pingAckOverdue(): Boolean = false
   }
-  final class EnabledPingState(pingEveryNTickWithoutData: Long, pingTimeoutNanos: Long) extends PingState {
-    def this(settings: Http2CommonSettings) = this(settings.pingInterval.toSeconds, settings.pingTimeout.toNanos)
-
+  final class EnabledPingState(tickInterval: FiniteDuration, pingEveryNTickWithoutData: Long) extends PingState {
     private var ticksWithoutData = 0L
-    private var lastPingTimestampNanos = 0L
+    private var ticksSincePing = 0L
+    private var pingInFlight = false
+
+    def tickInterval(): Option[FiniteDuration] = Some(tickInterval)
+
     def onDataFrameSeen(): Unit = {
       ticksWithoutData = 0L
     }
     def onPingAck(): Unit = {
-      lastPingTimestampNanos = 0L
+      ticksSincePing = 0L
+      pingInFlight = false
     }
     def onTick(): Unit = {
       ticksWithoutData += 1L
+      if (pingInFlight) ticksSincePing += 1L
     }
     def clear(): Unit = {
       ticksWithoutData = 0L
-      lastPingTimestampNanos = 0L
+      ticksSincePing = 0L
     }
     def shouldEmitPing(): Boolean =
       ticksWithoutData > 0L && ticksWithoutData % pingEveryNTickWithoutData == 0
-    def sendingPing(timestamp: Long): Unit = lastPingTimestampNanos = timestamp
 
-    def pingAckOverdue(timestampNanos: Long): Boolean =
-      pingTimeoutNanos > 0L && lastPingTimestampNanos > 0L && (timestampNanos - lastPingTimestampNanos) > pingTimeoutNanos
+    def sendingPing(): Unit = {
+      ticksSincePing = 0L
+      pingInFlight = true
+    }
+
+    def pingAckOverdue(): Boolean = {
+      pingInFlight && ticksSincePing > 1L
+    }
   }
 }
 
@@ -199,9 +228,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       val multiplexer = createMultiplexer(StreamPrioritizer.first())
       frameOut.setHandler(multiplexer)
 
-      val pingState: ConfigurablePing.PingState =
-        if (http2Settings.pingInterval.toSeconds > 0L) new ConfigurablePing.EnabledPingState(http2Settings)
-        else ConfigurablePing.DisabledPingState
+      val pingState = ConfigurablePing.PingState(http2Settings)
 
       // Send initial settings based on the local application.conf. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
@@ -223,10 +250,10 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         // both client and server must send a settings frame as first frame
         multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))
 
-        if (pingState != ConfigurablePing.DisabledPingState) {
+        pingState.tickInterval().foreach(interval =>
           // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
-          schedulePeriodically(ConfigurablePing.Tick, 1.second)
-        }
+          schedulePeriodically(ConfigurablePing.Tick, interval)
+        )
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
@@ -378,11 +405,10 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           // don't do anything unless there are active streams
           if (activeStreamCount() > 0) {
             pingState.onTick()
-            val now = System.nanoTime()
-            if (pingState.pingAckOverdue(now)) {
+            if (pingState.pingAckOverdue()) {
               pushGOAWAY(ErrorCode.CANCEL, "Ping ack timeout")
             } else if (pingState.shouldEmitPing()) {
-              pingState.sendingPing(now)
+              pingState.sendingPing()
               multiplexer.pushControlFrame(ConfigurablePing.Ping)
             }
           } else {
