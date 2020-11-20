@@ -7,9 +7,7 @@ package akka.http.javadsl.settings
 import java.time.Duration
 
 import akka.http.scaladsl
-
-import scala.jdk.DurationConverters.JavaDurationOps
-import scala.jdk.DurationConverters.ScalaDurationOps
+import scala.concurrent.duration._
 
 trait Http2ClientSettings { self: scaladsl.settings.Http2ClientSettings.Http2ClientSettingsImpl =>
   def requestEntityChunkSize: Int
@@ -30,10 +28,10 @@ trait Http2ClientSettings { self: scaladsl.settings.Http2ClientSettings.Http2Cli
   def logFrames: Boolean
   def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
 
-  def getPingInterval: Duration = pingInterval.toJava
-  def withPingInterval(interval: Duration): Http2ClientSettings = copy(pingInterval = interval.toScala)
+  def getPingInterval: Duration = Duration.ofMillis(pingInterval.toMillis)
+  def withPingInterval(interval: Duration): Http2ClientSettings = copy(pingInterval = interval.toMillis.millis)
 
-  def getPingTimeout: Duration = pingTimeout.toJava
-  def withPingTimeout(timeout: Duration): Http2ClientSettings = copy(pingTimeout = timeout.toScala)
+  def getPingTimeout: Duration = Duration.ofMillis(pingTimeout.toMillis)
+  def withPingTimeout(timeout: Duration): Http2ClientSettings = copy(pingTimeout = timeout.toMillis.millis)
 
 }
