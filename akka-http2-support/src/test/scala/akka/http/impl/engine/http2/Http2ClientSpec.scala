@@ -384,7 +384,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.expectNoBytes(250.millis) // no data for 800ms interval should trigger ping (but server counts from emitting last frame, so it's not really 800ms here)
         network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
         network.expectNoBytes(200.millis) // timeout is 400ms second from server emitting ping, (so not really 400ms here)
-        network.expectGOAWAY(streamId)
+        val (_, errorCode) = network.expectGOAWAY(streamId)
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
     }
   }

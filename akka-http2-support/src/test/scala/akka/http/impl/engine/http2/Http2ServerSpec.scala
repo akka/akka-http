@@ -1325,7 +1325,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.expectNoBytes(400.millis) // no data for 800ms interval should trigger ping (but client counts from emitting last frame, so it's not really 800ms here)
         network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
         network.expectNoBytes(200.millis) // timeout is 400ms from client emitting ping, (so not really 400ms here)
-        network.expectGOAWAY(1)
+        val (_, errorCode) = network.expectGOAWAY(1)
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
 
         // FIXME should also verify close of connection, but it isn't implemented yet
         network.toNet.cancel()

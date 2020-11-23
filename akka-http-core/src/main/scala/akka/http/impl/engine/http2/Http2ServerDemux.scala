@@ -406,7 +406,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           if (activeStreamCount() > 0) {
             pingState.onTick()
             if (pingState.pingAckOverdue()) {
-              pushGOAWAY(ErrorCode.CANCEL, "Ping ack timeout")
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Ping ack timeout")
             } else if (pingState.shouldEmitPing()) {
               pingState.sendingPing()
               multiplexer.pushControlFrame(ConfigurablePing.Ping)
