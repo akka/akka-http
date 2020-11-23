@@ -35,8 +35,10 @@ class OtherRequestResponseExamples {
   public void request() {
     //#create-simple-request
     HttpRequest.create("https://akka.io");
-    //#create-simple-request
 
+    // with query params
+    HttpRequest.create("https://akka.io?foo=bar");
+    //#create-simple-request
     //#create-post-request
     HttpRequest.POST("https://userservice.example/users")
       .withEntity(HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, "data"));

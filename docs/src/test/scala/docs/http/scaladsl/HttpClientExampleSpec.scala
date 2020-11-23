@@ -276,6 +276,10 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
     // or:
     import akka.http.scaladsl.client.RequestBuilding.Get
     Get("https://akka.io")
+
+    // with query params
+    Get("https://akka.io?foo=bar")
+
     //#create-simple-request
 
     implicit val ec: ExecutionContext = null

@@ -93,6 +93,14 @@ which are typically [percent encoded](https://en.wikipedia.org/wiki/Percent-enco
 When you instantiate a @apidoc[Uri] class by passing a URI string, the query string is stored in its raw string form.
 Then, when you call the `query()` method, the query string is parsed from the raw string.
 
+You can add query parameters with @apidoc[Uri] class's @scala[`withQuery()` method]@java[`Uri::query()` method]
+
+Scala
+:   @@snip [UriSpec.scala](/akka-http-core/src/test/scala/akka/http/scaladsl/model/UriSpec.scala) { #create-uri-with-query }
+
+Java
+:   @@snip [UriTest.java](/akka-http-core/src/test/java/akka/http/javadsl/model/UriTest.java) { #create-uri-with-query }
+
 The below code illustrates how valid query strings are parsed.
 Especially, you can check how percent encoding is used and how special characters like `+` and `;` are parsed.
 
