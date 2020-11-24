@@ -16,7 +16,8 @@ import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, Chunked, LastChunk }
 import akka.http.scaladsl.model.HttpMethods.GET
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.CacheDirectives._
+import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control`, `Content-Length`, `Content-Type` }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
@@ -24,7 +25,6 @@ import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
-import org.scalatest.concurrent.PatienceConfiguration
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -192,6 +192,170 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         )
       }
 
+      "accept response with one HEADERS and one CONTINUATION frame" in new TestSetup with NetProbes {
+        user.emitRequest(0x1, Get("https://www.example.com/"))
+        network.expect[HeadersFrame]()
+
+        val headerBlock = HPackSpecExamples.C61FirstResponseWithHuffman
+        val fragment1 = headerBlock.take(8) // must be grouped by octets
+        val fragment2 = headerBlock.drop(8)
+        network.sendHEADERS(0x1, endStream = true, endHeaders = false, fragment1)
+        network.sendCONTINUATION(0x1, endHeaders = true, fragment2)
+        user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
+      }
+
+      "accept response with one HEADERS and two CONTINUATION frames" in new TestSetup with NetProbes {
+        user.emitRequest(0x1, Get("https://www.example.com/"))
+        network.expect[HeadersFrame]()
+
+        val headerBlock = HPackSpecExamples.C61FirstResponseWithHuffman
+        val fragment1 = headerBlock.take(8) // must be grouped by octets
+        val fragment2 = headerBlock.drop(8).take(8)
+        val fragment3 = headerBlock.drop(16)
+        network.sendHEADERS(0x1, endStream = true, endHeaders = false, fragment1)
+        network.sendCONTINUATION(0x1, endHeaders = false, fragment2)
+        network.sendCONTINUATION(0x1, endHeaders = true, fragment3)
+        user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
+      }
+
+      "automatically add `date` header" in new TestSetup with NetProbes {
+        user.emitRequest(0x1, Get("https://www.example.com/"))
+        network.expectDecodedHEADERS(0x1, endStream = true).headers.exists(_.is("date"))
+      }
+
+      "parse headers to modeled headers" in new TestSetup with NetProbes {
+        user.emitRequest(0x1, Get("https://www.example.com/"))
+        network.expect[HeadersFrame]()
+
+        network.sendHEADERS(0x1, true, Seq(
+          RawHeader(":status", "401"),
+          RawHeader("cache-control", "no-cache"),
+          RawHeader("cache-control", "max-age=1000"),
+          RawHeader("access-control-allow-origin", "*")
+        ))
+
+        val response = user.expectResponse()
+        response.status should be(StatusCodes.Unauthorized)
+        response.headers should contain(`Cache-Control`(`no-cache`))
+        response.headers should contain(`Cache-Control`(`max-age`(1000)))
+        response.headers should contain(`Access-Control-Allow-Origin`.`*`)
+      }
+
+      "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" in new TestSetup with NetProbes {
+        network.sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, 8192)
+        network.expectSettingsAck()
+
+        user.emitRequest(0x1, Get("/"))
+        val headerPayload = network.expectHeaderBlock(1)
+
+        // Dynamic Table Size Update (https://tools.ietf.org/html/rfc7541#section-6.3) is
+        //
+        // 0   1   2   3   4   5   6   7
+        // +---+---+---+---+---+---+---+---+
+        // | 0 | 0 | 1 |   Max size (5+)   |
+        // +---+---------------------------+
+        //
+        // 8192 is 10000000000000 = 14 bits, i.e. needs more than 4 bits
+        // 8192 - 16 = 8176 = 111111 1110000
+        // 001 11111 = 63
+        // 1 1110000 = 225
+        // 0 0111111 = 63
+
+        val dynamicTableUpdateTo8192 = ByteString(63, 225, 63)
+        headerPayload.take(3) shouldBe dynamicTableUpdateTo8192
+      }
+    }
+
+    "support stream for response data" should {
+      abstract class WaitingForResponse extends TestSetup with NetProbes {
+        val TheStreamId = 0x1
+        user.emitRequest(TheStreamId, Get("/"))
+        network.expect[HeadersFrame]()
+      }
+      "send data frames to entity stream" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+
+        val data1 = ByteString("abcdef")
+        network.sendDATA(TheStreamId, endStream = false, data1)
+        entityDataIn.expectBytes(data1)
+
+        val data2 = ByteString("zyxwvu")
+        network.sendDATA(TheStreamId, endStream = false, data2)
+        entityDataIn.expectBytes(data2)
+
+        val data3 = ByteString("mnopq")
+        network.sendDATA(TheStreamId, endStream = true, data3)
+        entityDataIn.expectBytes(data3)
+        entityDataIn.expectComplete()
+      }
+      "handle content-length and content-type of incoming response" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          `Content-Type`(ContentTypes.`application/json`),
+          `Content-Length`(2000)
+        ))
+
+        val response = user.expectResponse()
+        response.entity.contentType should ===(ContentTypes.`application/json`)
+        response.entity.isIndefiniteLength should ===(false)
+        response.entity.contentLengthOption should ===(Some(2000L))
+
+        network.sendDATA(TheStreamId, endStream = false, ByteString("x" * 1000))
+        network.sendDATA(TheStreamId, endStream = true, ByteString("x" * 1000))
+
+        val entityDataIn = ByteStringSinkProbe(response.entity.dataBytes)
+        entityDataIn.expectBytes(2000)
+        entityDataIn.expectComplete()
+      }
+      "fail entity stream if peer sends RST_STREAM frame" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+        val data1 = ByteString("abcdef")
+        network.sendDATA(TheStreamId, endStream = false, data1)
+
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+        entityDataIn.expectBytes(data1)
+
+        network.sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
+        val error = entityDataIn.expectError()
+        error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
+      }
+      "not fail the whole connection when one stream is RST twice" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+        network.sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+        val error = entityDataIn.expectError()
+        error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
+
+        // https://http2.github.io/http2-spec/#StreamStates
+        // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
+        network.sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
+        // especially no GOAWAY frame should be sent in response
+        network.expectNoBytes(100.millis)
+      }
+      "not fail the whole connection when data frames are received after stream was cancelled" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+        entityDataIn.cancel()
+        network.expectRST_STREAM(TheStreamId)
+
+        network.sendDATA(TheStreamId, endStream = false, ByteString("test"))
+        // should just be ignored, especially no GOAWAY frame should be sent in response
+        network.expectNoBytes(100.millis)
+      }
+      "send RST_STREAM if entity stream is canceled" in new WaitingForResponse {
+        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+        val data1 = ByteString("abcdef")
+        network.sendDATA(TheStreamId, endStream = false, data1)
+        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
+        entityDataIn.expectBytes(data1)
+
+        network.pollForWindowUpdates(10.millis)
+
+        entityDataIn.cancel()
+        network.expectRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+      }
     }
 
     "respect flow-control" should {
@@ -399,7 +563,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     lazy val network = new NetworkSide(fromNet, toNet, framesOut)
   }
-  class NetworkSide(val fromNet: TestPublisher.Probe[ByteString], val toNet: ByteStringSinkProbe, val framesOut: Http2FrameProbe) extends Http2FrameProbeDelegator with Http2FrameHpackSupport with Http2FrameSending {
+  class NetworkSide(val fromNet: TestPublisher.Probe[ByteString], val toNet: ByteStringSinkProbe, val framesOut: Http2FrameProbe) extends WindowTracking with Http2FrameHpackSupport {
     override def frameProbeDelegate: Http2FrameProbe = framesOut
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
