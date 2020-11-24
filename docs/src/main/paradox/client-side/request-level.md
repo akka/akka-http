@@ -32,10 +32,10 @@ The request must have either an absolute URI or a valid
 ### Example
 
 Scala
-:   @@snip [HttpClientSingleRequest.scala]($test$/scala/docs/http/scaladsl/HttpClientSingleRequest.scala)
+:   @@snip [HttpClientSingleRequest.scala](/docs/src/test/scala/docs/http/scaladsl/HttpClientSingleRequest.scala)
 
 Java
-:   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #single-request-example }
+:   @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #single-request-example }
 
 ### Using the Future-Based API in Actors
 
@@ -45,10 +45,10 @@ with the futures completion. For example, you should not access the actor's stat
 to the actor as a message:
 
 Scala
-:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-in-actor-example }
+:   @@snip [HttpClientExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-in-actor-example }
 
 Java
-:   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #single-request-in-actor-example }
+:   @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #single-request-in-actor-example }
 
 @@@ warning
 
@@ -89,7 +89,7 @@ to direct the request to.
 Sometimes we would like to get only headers of specific type which are sent from a server. In order to collect headers in a type safe way Akka HTTP API provides a type for each HTTP header. Here is an example for getting all cookies set by a server (`Set-Cookie` header):
 
 Scala
-:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientCollectingHeaders.scala)
+:   @@snip [HttpClientExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpClientCollectingHeaders.scala)
 
 Java
-:   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #collecting-headers-example }
+:   @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #collecting-headers-example }

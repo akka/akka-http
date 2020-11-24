@@ -17,7 +17,7 @@ For rejecting a request if it doesn't match a specified scheme name, see the @re
 ## Example
 
 Scala
-:  @@snip [SchemeDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala) { #example-1 }
+:  @@snip [SchemeDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala) { #example-1 }
 
 Java
-:  @@snip [SchemeDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #extractScheme }
+:  @@snip [SchemeDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #extractScheme }

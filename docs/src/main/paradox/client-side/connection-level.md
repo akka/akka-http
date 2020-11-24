@@ -17,10 +17,10 @@ returned by the builder returned by @scala[`Http().connectionTo(...)`]@java[`Htt
 Here is an example:
 
 Scala
-:  @@snip [HttpClientOutgoingConnection.scala]($test$/scala/docs/http/scaladsl/HttpClientOutgoingConnection.scala)
+:  @@snip [HttpClientOutgoingConnection.scala](/docs/src/test/scala/docs/http/scaladsl/HttpClientOutgoingConnection.scala)
 
 Java
-:  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #outgoing-connection-example }
+:  @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #outgoing-connection-example }
 
 In addition to the host name and port the builder @apidoc[OutgoingConnectionBuilder] returned by @scala[`Http().connectionTo(...)`]@java[`Http.get(system).connectionTo(...)`]
 method also allows you to specify additional properties and as the final step deciding which protocol to use 
@@ -54,11 +54,11 @@ In this sample the built in @scala[`akka.http.scaladsl.model.ResponsePromise`]@j
 a @scala[`Future`]@java[`CompletionStage`] for the response:
 
 Scala
-:  @@snip [HttpClientOutgoingConnection.scala]($test$scala/docs/http/scaladsl/Http2ClientApp.scala) { #response-future-association }
+:  @@snip [HttpClientOutgoingConnection.scala](/docs/src/test/scala/docs/http/scaladsl/Http2ClientApp.scala) { #response-future-association }
 
 Java
 
-:  @@snip [HttpClientExampleDocTest.java]($test$java/docs/http/javadsl/Http2ClientApp.java) { #response-future-association }
+:  @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/Http2ClientApp.java) { #response-future-association }
 
 
 ## Closing Connections

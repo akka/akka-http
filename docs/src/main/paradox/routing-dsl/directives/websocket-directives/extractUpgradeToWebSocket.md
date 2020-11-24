@@ -16,7 +16,7 @@ If you are looking for a building block for @ref[Custom Directives](../custom-di
 we recommend using the @apidoc[WebSocketUpgrade] @ref[attribute](../../../common/http-model.md#attributes) instead:
 
 Scala
-:  @@snip [WebSocketDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #extractWebSocketUpgrade }
+:  @@snip [WebSocketDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #extractWebSocketUpgrade }
 
 Java
-:  @@snip [WebSocketDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java) { #extractWebSocketUpgrade }
+:  @@snip [WebSocketDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java) { #extractWebSocketUpgrade }

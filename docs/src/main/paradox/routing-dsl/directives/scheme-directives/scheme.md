@@ -24,7 +24,7 @@ For simply extracting the scheme name, see the @ref[extractScheme](extractScheme
 ## Example
 
 Scala
-:  @@snip [SchemeDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala) { #example-2 }
+:  @@snip [SchemeDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala) { #example-2 }
 
 Java
-:  @@snip [SchemeDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #scheme }
+:  @@snip [SchemeDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java) { #scheme }

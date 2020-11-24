@@ -46,33 +46,33 @@ inner route following this rules:
 Matching a list of hosts:
 
 Scala
-:  @@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #list-of-hosts }
+:  @@snip [HostDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #list-of-hosts }
 
 Java
-:  @@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #host1 }
+:  @@snip [HostDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #host1 }
 
 Making sure the host satisfies the given predicate
 
 Scala
-:  @@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #predicate }
+:  @@snip [HostDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #predicate }
 
 Java
-:  @@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #host2 }
+:  @@snip [HostDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #host2 }
 
 Using a regular expressions:
 
 Scala
-:  @@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #using-regex }
+:  @@snip [HostDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #using-regex }
 
 Java
-:  @@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #matchAndExtractHost }
+:  @@snip [HostDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #matchAndExtractHost }
 
 Beware that in the case of introducing multiple capturing groups in the regex such as in the case bellow, the
 directive will fail at runtime, at the moment the route tree is evaluated for the first time. This might cause
 your http handler actor to enter in a fail/restart loop depending on your supervision strategy.
 
 Scala
-:  @@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #failing-regex }
+:  @@snip [HostDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #failing-regex }
 
 Java
-:  @@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #failing-matchAndExtractHost }
+:  @@snip [HostDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #failing-matchAndExtractHost }

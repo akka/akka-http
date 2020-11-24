@@ -42,10 +42,10 @@ defines a matcher which only extracts a single value of type `T`.]
 Here is an example of a more complex `PathMatcher` expression:
 
 Scala
-:  @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-matcher }
+:  @@snip [PathDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-matcher }
 
 Java
-:  @@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-matcher }
+:  @@snip [PathDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-matcher }
 
 This will match paths like `foo/bar/X42/edit` or @scala[`foo/bar/X/create`]@java[`foo/bar/X37/create`].
 
@@ -278,8 +278,8 @@ how to use them.
 Here's a collection of path matching examples:
 
 Scala
-:   @@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-dsl }
+:   @@snip [PathDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-dsl }
 
 Java
-:   @@snip [PathDirectiveExampleTest.java]($test$/java/docs/http/javadsl/server/PathDirectiveExampleTest.java) { #path-examples }
+:   @@snip [PathDirectiveExampleTest.java](/docs/src/test/java/docs/http/javadsl/server/PathDirectiveExampleTest.java) { #path-examples }
 

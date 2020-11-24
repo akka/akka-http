@@ -39,10 +39,10 @@ See the @ref[HTTPS section](server-https-support.md) for how to set up HTTPS.
 You can use @scala[@scaladoc[Http().newServerAt(...).bind()](akka.http.scaladsl.ServerBuilder)]@java[@javadoc[Http().get(system).newServerAt(...).bind()](akka.http.javadsl.ServerBuilder)] as long as you followed the above steps:
 
 Scala
-:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleSecure }
+:   @@snip[Http2Spec.scala](/docs/src/test/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleSecure }
 
 Java
-:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleSecure }
+:   @@snip[Http2Test.java](/docs/src/test/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleSecure }
 
 Note that currently only `newServerAt(...).bind` and `newServerAt(...).bindSync`
 support HTTP/2 but not `bindFlow` or `connectionSource(): Source`.
@@ -61,10 +61,10 @@ HTTP/2 support.
 We support both approaches transparently on the same port. This feature is automatically enabled when HTTP/2 is enabled:
 
 Scala
-:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandlePlain }
+:   @@snip[Http2Spec.scala](/docs/src/test/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandlePlain }
 
 Java
-:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandlePlain }
+:   @@snip[Http2Test.java](/docs/src/test/java/docs/http/javadsl/Http2Test.java) { #bindAndHandlePlain }
 
 #### h2c Upgrade
 

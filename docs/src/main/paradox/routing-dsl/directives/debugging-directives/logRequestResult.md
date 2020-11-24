@@ -27,10 +27,10 @@ See @ref[logRequest](logRequest.md) for the general description how these direct
 ## Example
 
 Scala
-:  @@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResult }
+:  @@snip [DebuggingDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResult }
 
 Java
-:  @@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResult }
+:  @@snip [DebuggingDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResult }
 
 ## Building Advanced Directives
 
@@ -38,7 +38,7 @@ This example will showcase the advanced logging using the @apidoc[DebuggingDirec
 The built *logResponseTime* directive will log the request time (or rejection reason):
 
 Scala
-:  @@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }
+:  @@snip [DebuggingDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }
 
 Java
-:  @@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResultWithResponseTime }
+:  @@snip [DebuggingDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logRequestResultWithResponseTime }
