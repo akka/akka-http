@@ -86,8 +86,8 @@ public class HttpServerActorInteractionExample extends AllDirectives {
     interface Message {}
 
     static class Bid implements Message {
-      final String userId;
-      final int offer;
+      public final String userId;
+      public final int offer;
 
       Bid(String userId, int offer) {
         this.userId = userId;
