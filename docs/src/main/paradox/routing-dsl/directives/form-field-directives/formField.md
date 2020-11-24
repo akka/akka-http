@@ -1,13 +1,5 @@
 # formField
 
-@@@ div { .group-scala }
-
-## Signature
-
-@@signature [FormFieldDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formField }
-
-@@@
-
 ## Description
 
 Allows extracting a single Form field sent in the request. Data posted from [HTML Forms](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4) is either of type `application/x-www-form-urlencoded` or of type `multipart/form-data`.
