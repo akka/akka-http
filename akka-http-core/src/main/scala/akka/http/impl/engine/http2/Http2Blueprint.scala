@@ -103,7 +103,7 @@ private[http] object Http2Blueprint {
     // HttpHeaderParser is not thread safe and should not be called concurrently,
     // the internal trie, however, has built-in protection and will do copy-on-write
     val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log)
-    httpLayerClient(masterHttpHeaderParser, settings.parserSettings, log) atop
+    httpLayerClient(masterHttpHeaderParser, settings, log) atop
       clientDemux(settings.http2Settings, masterHttpHeaderParser) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
@@ -111,15 +111,15 @@ private[http] object Http2Blueprint {
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
 
-  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, settings: ParserSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] = {
+  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] = {
     BidiFlow.fromFlows(
       Flow[HttpRequest].statefulMapConcat { () =>
-        val renderer = RequestRendering.createRenderer(log)
+        val renderer = RequestRendering.createRenderer(settings, log)
         request => renderer(request) :: Nil
       },
       StreamUtils.statefulAttrsMap[Http2SubStream, HttpResponse] { attrs =>
         val headerParser = masterHttpHeaderParser.createShallowCopy()
-        stream => ResponseParsing.parseResponse(headerParser, settings, attrs)(stream)
+        stream => ResponseParsing.parseResponse(headerParser, settings.parserSettings, attrs)(stream)
       }
     )
   }

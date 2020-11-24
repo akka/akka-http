@@ -677,7 +677,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         case newData: ByteString          => buffer ++= newData
         case HttpEntity.Chunk(newData, _) => buffer ++= newData
         case HttpEntity.LastChunk(_, headers) =>
-          trailer = Some(ParsedHeadersFrame(streamId, endStream = true, ResponseRendering.renderHeaders(headers, log, isServer), None))
+          trailer = Some(ParsedHeadersFrame(streamId, endStream = true, CommonRendering.renderHeaders(headers, log, isServer), None))
       }
 
       maybePull()

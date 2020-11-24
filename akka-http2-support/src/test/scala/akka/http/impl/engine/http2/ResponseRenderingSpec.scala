@@ -36,7 +36,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
         RawHeader("raw", "whatever"),
         new MyCustomHeader("whatever", renderInResponses = true)
       )
-      ResponseRendering.renderHeaders(headers, builder, None, NoLogging, isServer = true)
+      CommonRendering.renderHeaders(headers, builder, None, NoLogging, isServer = true)
       val out = builder.result()
       out.exists(_._1 == "etag") shouldBe true
       out.exists(_._1 == "raw") shouldBe true
@@ -45,7 +45,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
 
     "add a date header when none is present" in {
       val builder = new VectorBuilder[(String, String)]
-      ResponseRendering.renderHeaders(Seq.empty, builder, None, NoLogging, isServer = true)
+      CommonRendering.renderHeaders(Seq.empty, builder, None, NoLogging, isServer = true)
       val date = builder.result().collectFirst {
         case ("date", str) => str
       }
@@ -59,7 +59,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
     "keep the date header if it already is present" in {
       val builder = new VectorBuilder[(String, String)]
       val originalDateTime = DateTime(1981, 3, 6, 20, 30, 24)
-      ResponseRendering.renderHeaders(Seq(Date(originalDateTime)), builder, None, NoLogging, isServer = true)
+      CommonRendering.renderHeaders(Seq(Date(originalDateTime)), builder, None, NoLogging, isServer = true)
       val date = builder.result().collectFirst {
         case ("date", str) => str
       }
@@ -69,14 +69,14 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
 
     "add server header if default provided" in {
       val builder = new VectorBuilder[(String, String)]
-      ResponseRendering.renderHeaders(Seq.empty, builder, Some(("server", "default server")), NoLogging, isServer = true)
+      CommonRendering.renderHeaders(Seq.empty, builder, Some(("server", "default server")), NoLogging, isServer = true)
       val result = builder.result().find(_._1 == "server").map(_._2)
       result shouldEqual Some("default server")
     }
 
     "keep server header if explicitly provided" in {
       val builder = new VectorBuilder[(String, String)]
-      ResponseRendering.renderHeaders(Seq(Server("explicit server")), builder, Some(("server", "default server")), NoLogging, isServer = true)
+      CommonRendering.renderHeaders(Seq(Server("explicit server")), builder, Some(("server", "default server")), NoLogging, isServer = true)
       val result = builder.result().find(_._1 == "server").map(_._2)
       result shouldEqual Some("explicit server")
     }
@@ -89,7 +89,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
         `Content-Type`(ContentTypes.`application/json`),
         `Transfer-Encoding`(TransferEncodings.gzip)
       )
-      ResponseRendering.renderHeaders(invalidExplicitHeaders, builder, None, NoLogging, isServer = true)
+      CommonRendering.renderHeaders(invalidExplicitHeaders, builder, None, NoLogging, isServer = true)
       builder.result().exists(_._1 != "date") shouldBe false
     }
 
@@ -99,7 +99,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
         Host("example.com", 80),
         new MyCustomHeader("whatever", renderInResponses = false)
       )
-      ResponseRendering.renderHeaders(shouldNotBeRendered, builder, None, NoLogging, isServer = true)
+      CommonRendering.renderHeaders(shouldNotBeRendered, builder, None, NoLogging, isServer = true)
       builder.result().exists(_._1 != "date") shouldBe false
 
     }
@@ -109,7 +109,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
       val invalidRawHeaders = Seq(
         "connection", "content-length", "content-type", "transfer-encoding", "date", "server"
       ).map(name => RawHeader(name, "whatever"))
-      ResponseRendering.renderHeaders(invalidRawHeaders, builder, None, NoLogging, isServer = true)
+      CommonRendering.renderHeaders(invalidRawHeaders, builder, None, NoLogging, isServer = true)
       builder.result().exists(_._1 != "date") shouldBe false
     }
 

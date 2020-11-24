@@ -9,29 +9,33 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.FrameEvent.ParsedHeadersFrame
-import akka.http.scaladsl.model.{ HttpRequest, RequestResponseAssociation }
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.settings.ClientConnectionSettings
 
 import scala.collection.immutable.VectorBuilder
 
 @InternalApi
 private[http2] object RequestRendering {
-  def createRenderer(log: LoggingAdapter): HttpRequest => Http2SubStream = {
+
+  def createRenderer(settings: ClientConnectionSettings, log: LoggingAdapter): HttpRequest => Http2SubStream = {
     val streamId = new AtomicInteger(1)
 
-    { request =>
-      val headerPairs = new VectorBuilder[(String, String)]()
-      headerPairs += ":method" -> request.method.value
-      headerPairs += ":scheme" -> request.uri.scheme
-      headerPairs += ":authority" -> request.uri.authority.toString
-      headerPairs += ":path" -> request.uri.toHttpRequestTargetOriginForm.toString
+    new CommonRendering[HttpRequest] {
 
-      ResponseRendering.addContentHeaders(headerPairs, request.entity)
-      ResponseRendering.renderHeaders(request.headers, headerPairs, None /* FIXME: render user agent */ , log, isServer = false)
+      override def nextStreamId(r: HttpRequest): Int = streamId.getAndAdd(2)
 
-      val headersFrame = ParsedHeadersFrame(streamId.getAndAdd(2), endStream = request.entity.isKnownEmpty, headerPairs.result(), None)
+      override def initialHeaderPairs(request: HttpRequest): VectorBuilder[(String, String)] = {
+        val headerPairs = new VectorBuilder[(String, String)]()
+        headerPairs += ":method" -> request.method.value
+        headerPairs += ":scheme" -> request.uri.scheme
+        headerPairs += ":authority" -> request.uri.authority.toString
+        headerPairs += ":path" -> request.uri.toHttpRequestTargetOriginForm.toString
+        headerPairs
+      }
 
-      Http2SubStream(request.entity, headersFrame, request.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
-    }
+      override lazy val peerIdHeader: Option[(String, String)] = settings.userAgentHeader.map(h => h.lowercaseName -> h.value)
+
+    }.createRenderer(log)
+
   }
 }
