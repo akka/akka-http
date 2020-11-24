@@ -129,6 +129,12 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
+      def frameOutFinished(): Unit = {
+        // make sure we clean up/fail substreams with a custom failure before stage is canceled
+        // and substream autoclean kicks in
+        shutdownStreamHandling()
+      }
+
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
       // Send initial settings based on the local application.conf. For simplicity, these settings are
