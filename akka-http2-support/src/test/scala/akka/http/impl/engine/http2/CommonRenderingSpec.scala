@@ -25,9 +25,9 @@ class MyCustomHeader(val value: String, val renderInResponses: Boolean) extends 
   override def renderInRequests(): Boolean = false
 }
 
-class ResponseRenderingSpec extends AnyWordSpec with Matchers {
+class CommonRenderingSpec extends AnyWordSpec with Matchers {
 
-  "The response header logic" should {
+  "The request/response common header logic" should {
 
     "output headers" in {
       val builder = new VectorBuilder[(String, String)]
@@ -67,18 +67,32 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
       date shouldEqual Some(originalDateTime.toRfc1123DateTimeString)
     }
 
-    "add server header if default provided" in {
+    "add server header if default provided (in server mode)" in {
       val builder = new VectorBuilder[(String, String)]
       CommonRendering.renderHeaders(Seq.empty, builder, Some(("server", "default server")), NoLogging, isServer = true)
       val result = builder.result().find(_._1 == "server").map(_._2)
       result shouldEqual Some("default server")
     }
 
-    "keep server header if explicitly provided" in {
+    "keep server header if explicitly provided (in server mode)" in {
       val builder = new VectorBuilder[(String, String)]
       CommonRendering.renderHeaders(Seq(Server("explicit server")), builder, Some(("server", "default server")), NoLogging, isServer = true)
       val result = builder.result().find(_._1 == "server").map(_._2)
       result shouldEqual Some("explicit server")
+    }
+
+    "add user-agent header if default provided (in client mode)" in {
+      val builder = new VectorBuilder[(String, String)]
+      CommonRendering.renderHeaders(Seq.empty, builder, Some(("user-agent", "fancy browser")), NoLogging, isServer = false)
+      val result = builder.result().find(_._1 == "user-agent").map(_._2)
+      result shouldEqual Some("fancy browser")
+    }
+
+    "keep user-agent header if explicitly provided (in server mode)" in {
+      val builder = new VectorBuilder[(String, String)]
+      CommonRendering.renderHeaders(Seq(`User-Agent`("fancier client")), builder, Some(("user-agent", "fancy browser")), NoLogging, isServer = false)
+      val result = builder.result().find(_._1 == "user-agent").map(_._2)
+      result shouldEqual Some("fancier client")
     }
 
     "exclude explicit headers that is not valid for HTTP/2" in {
