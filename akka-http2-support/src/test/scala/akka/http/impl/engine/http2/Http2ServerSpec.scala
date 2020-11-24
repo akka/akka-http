@@ -775,7 +775,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         fromNet.sendError(new RuntimeException("Connection broke"))
 
         // now all stream stages should be closed
-        reqProbe.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
+        // up to Akka 2.6.10: "The HTTP/2 connection was shut down while the request was still ongoing"
+        // later: "Connection broke" (in 10.2.x, we will make sure only the first error is ever thrown)
+        reqProbe.expectError()
         responseEntityProbe.expectCancellation()
       })
     }
