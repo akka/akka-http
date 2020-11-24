@@ -4,48 +4,66 @@
 
 package akka.http.impl.engine.http2
 
+import java.util.concurrent.atomic.AtomicInteger
+
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent.ParsedHeadersFrame
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Date
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ServerSettings
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 
-private[http2] object ResponseRendering {
+private[http2] class ResponseRendering(settings: ServerSettings, log: LoggingAdapter) extends RenderFactory[HttpResponse](log) {
 
-  def renderResponse(settings: ServerSettings, log: LoggingAdapter): HttpResponse => Http2SubStream = {
-    def failBecauseOfMissingAttribute: Nothing =
-      // attribute is missing, shutting down because we will most likely otherwise miss a response and leak a substream
-      // TODO: optionally a less drastic measure would be only resetting all the active substreams
-      throw new RuntimeException("Received response for HTTP/2 request without x-http2-stream-id attribute. Failing connection.")
+  def failBecauseOfMissingAttribute: Nothing =
+    // attribute is missing, shutting down because we will most likely otherwise miss a response and leak a substream
+    // TODO: optionally a less drastic measure would be only resetting all the active substreams
+    throw new RuntimeException("Received response for HTTP/2 request without x-http2-stream-id attribute. Failing connection.")
 
-    new CommonRendering[HttpResponse] {
-      override def nextStreamId(response: HttpResponse): Int = response.attribute(Http2.streamId).getOrElse(failBecauseOfMissingAttribute)
+  override def nextStreamId(response: HttpResponse): Int = response.attribute(Http2.streamId).getOrElse(failBecauseOfMissingAttribute)
 
-      override def initialHeaderPairs(response: HttpResponse): VectorBuilder[(String, String)] = {
-        val headerPairs = new VectorBuilder[(String, String)]()
-        // From https://tools.ietf.org/html/rfc7540#section-8.1.2.4:
-        //   HTTP/2 does not define a way to carry the version or reason phrase
-        //   that is included in an HTTP/1.1 status line.
-        headerPairs += ":status" -> response.status.intValue.toString
-      }
-
-      override lazy val peerIdHeader: Option[(String, String)] = settings.serverHeader.map(h => h.lowercaseName -> h.value)
-    }.createRenderer(log)
-
+  override def initialHeaderPairs(response: HttpResponse): VectorBuilder[(String, String)] = {
+    val headerPairs = new VectorBuilder[(String, String)]()
+    // From https://tools.ietf.org/html/rfc7540#section-8.1.2.4:
+    //   HTTP/2 does not define a way to carry the version or reason phrase
+    //   that is included in an HTTP/1.1 status line.
+    headerPairs += ":status" -> response.status.intValue.toString
   }
+
+  override lazy val peerIdHeader: Option[(String, String)] = settings.serverHeader.map(h => h.lowercaseName -> h.value)
+
 }
 
-trait CommonRendering[R <: HttpMessage] {
+@InternalApi
+private[http2] class RequestRendering(settings: ClientConnectionSettings, log: LoggingAdapter) extends RenderFactory[HttpRequest](log) {
+
+  val streamId = new AtomicInteger(1)
+  override def nextStreamId(r: HttpRequest): Int = streamId.getAndAdd(2)
+
+  override def initialHeaderPairs(request: HttpRequest): VectorBuilder[(String, String)] = {
+    val headerPairs = new VectorBuilder[(String, String)]()
+    headerPairs += ":method" -> request.method.value
+    headerPairs += ":scheme" -> request.uri.scheme
+    headerPairs += ":authority" -> request.uri.authority.toString
+    headerPairs += ":path" -> request.uri.toHttpRequestTargetOriginForm.toString
+    headerPairs
+  }
+
+  override lazy val peerIdHeader: Option[(String, String)] = settings.userAgentHeader.map(h => h.lowercaseName -> h.value)
+}
+
+abstract class RenderFactory[R <: HttpMessage](log: LoggingAdapter) {
 
   def nextStreamId(r: R): Int
   def initialHeaderPairs(r: R): VectorBuilder[(String, String)]
   def peerIdHeader: Option[(String, String)]
 
-  def createRenderer(log: LoggingAdapter): R => Http2SubStream = { (r: R) =>
+  val renderer: R => Http2SubStream = { (r: R) =>
 
     val headerPairs = initialHeaderPairs(r)
 
