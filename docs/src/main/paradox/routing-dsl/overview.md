@@ -5,10 +5,10 @@ an application to respond to incoming HTTP requests by mapping requests to respo
 (excerpt from @ref[Low-level server side example](../server-side/low-level-api.md#http-low-level-server-side-example)):
 
 Scala
-:  @@snip [HttpServerLowLevel.scala]($test$/scala/docs/http/scaladsl/HttpServerLowLevel.scala)
+:  @@snip [HttpServerLowLevel.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerLowLevel.scala)
 
 Java
-:  @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #request-handler }
+:  @@snip [HttpServerExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #request-handler }
 
 While it'd be perfectly possible to define a complete REST API service purely by @scala[pattern-matching against]@java[inspecting] the incoming
 @apidoc[HttpRequest] @scala[(maybe with the help of a few extractors in the way of [Unfiltered](https://unfiltered.ws/))] this approach becomes somewhat
@@ -25,10 +25,10 @@ using `Route.handlerFlow` or, otherwise, the conversion is also provided implici
 Here's the complete example rewritten using the composable high-level API:
 
 Scala
-:   @@snip [HttpServerHighLevel.scala]($test$/scala/docs/http/scaladsl/HttpServerHighLevel.scala)
+:   @@snip [HttpServerHighLevel.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerHighLevel.scala)
 
 Java
-:   @@snip [HighLevelServerExample.java]($test$/java/docs/http/javadsl/server/HighLevelServerExample.java) { #high-level-server-example }
+:   @@snip [HighLevelServerExample.java](/docs/src/test/java/docs/http/javadsl/server/HighLevelServerExample.java) { #high-level-server-example }
 
 The core of the Routing DSL becomes available with a single import:
 

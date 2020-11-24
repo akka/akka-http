@@ -128,7 +128,7 @@ However, you can also use the unmarshalling infrastructure directly if you wish,
 The best entry point for this is the @scala[`akka.http.scaladsl.unmarshalling.Unmarshal` object]@java[`akka.http.javadsl.unmarshalling.StringUnmarshallers` class], which you can use like this:
 
 Scala
-:  @@snip [UnmarshalSpec.scala]($test$/scala/docs/http/scaladsl/UnmarshalSpec.scala) { #use-unmarshal }
+:  @@snip [UnmarshalSpec.scala](/docs/src/test/scala/docs/http/scaladsl/UnmarshalSpec.scala) { #use-unmarshal }
 
 Java
-:  @@snip [UnmarshalTest.scala]($test$/java/docs/http/javadsl/UnmarshalTest.java) { #imports #use-unmarshal }
+:  @@snip [UnmarshalTest.scala](/docs/src/test/java/docs/http/javadsl/UnmarshalTest.java) { #imports #use-unmarshal }

@@ -25,10 +25,10 @@ Here is an example of what a simple test with the routing testkit might look lik
 [scalatest](http://www.scalatest.org) and [specs2](http://etorreborre.github.io/specs2/):
 
 ScalaTest
-:  @@snip [FullTestKitExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
+:  @@snip [FullTestKitExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
 
 specs2
-:  @@snip [FullSpecs2TestKitExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/FullSpecs2TestKitExampleSpec.scala) { #source-quote }
+:  @@snip [FullSpecs2TestKitExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/FullSpecs2TestKitExampleSpec.scala) { #source-quote }
 
 The basic structure of a test built with the testkit is this (expression placeholder in all-caps):
 
@@ -105,7 +105,7 @@ a `TestResponse`
 To see the testkit in action consider the following simple calculator app service:
 
 Java
-:   @@snip [MyAppService.java]($test$/java/docs/http/javadsl/server/testkit/MyAppService.java) { #simple-app }
+:   @@snip [MyAppService.java](/docs/src/test/java/docs/http/javadsl/server/testkit/MyAppService.java) { #simple-app }
 
 `MyAppService` extends from `AllDirectives` which brings all of the directives into scope. We define a method called `createRoute`
 that provides the routes to serve to `bind`.
@@ -113,7 +113,7 @@ that provides the routes to serve to `bind`.
 Here's how you would test that service:
 
 Java
-:   @@snip [TestkitExampleTest.java]($test$/java/docs/http/javadsl/server/testkit/TestkitExampleTest.java) { #simple-app-testing }
+:   @@snip [TestkitExampleTest.java](/docs/src/test/java/docs/http/javadsl/server/testkit/TestkitExampleTest.java) { #simple-app-testing }
 
 ## Writing Asserting against the HttpResponse
 
@@ -175,18 +175,18 @@ Since the testkit is request-based, you cannot test requests that are illegal or
 such instance is testing a route that begins with the `pathEnd` directive, such as `routeFragment` here:
 
 Scala
-:   @@snip [TestKitFragmentSpec.scala]($test$/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #fragment }
+:   @@snip [TestKitFragmentSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #fragment }
 
 Java
-:   @@snip [MyAppFragment.java]($test$/java/docs/http/javadsl/server/testkit/MyAppFragment.java) { #fragment}
+:   @@snip [MyAppFragment.java](/docs/src/test/java/docs/http/javadsl/server/testkit/MyAppFragment.java) { #fragment}
 
 You might create a route such as this to be able to compose it into another route such as:
 
 Scala
-:   @@snip [FragmentExample.scala]($test$/scala/docs/http/scaladsl/server/FragmentExample.scala) { #source-quote }
+:   @@snip [FragmentExample.scala](/docs/src/test/scala/docs/http/scaladsl/server/FragmentExample.scala) { #source-quote }
 
 Java
-:   @@snip [MyAppFragment.java]($test$/java/docs/http/javadsl/server/testkit/MyAppFragment.java) { #source-quote }
+:   @@snip [MyAppFragment.java](/docs/src/test/java/docs/http/javadsl/server/testkit/MyAppFragment.java) { #source-quote }
 
 
 However, it is impossible to unit test this Route directly using testkit, since it is impossible to create an
@@ -195,10 +195,10 @@ empty HTTP request. To test this type of route, embed it in a synthetic route in
 This is what the full working test looks like:
 
 Scala
-:   @@snip [TestKitFragmentSpec.scala]($test$/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #source-quote }
+:   @@snip [TestKitFragmentSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #source-quote }
 
 Java
-:   @@snip [TestKitFragmentTest.java]($test$/java/docs/http/javadsl/server/testkit/TestKitFragmentTest.java) { #source-quote }
+:   @@snip [TestKitFragmentTest.java](/docs/src/test/java/docs/http/javadsl/server/testkit/TestKitFragmentTest.java) { #source-quote }
 
 ## Accounting for Slow Test Systems
 

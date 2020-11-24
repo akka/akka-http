@@ -174,7 +174,7 @@ request using the @ref[Routing DSL](../routing-dsl/index.md).
 However, you can also use the marshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the @scaladoc[Marshal](akka.http.scaladsl.marshalling.Marshal) object, which you can use like this:
 
-@@snip [MarshalSpec.scala]($test$/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }
+@@snip [MarshalSpec.scala](/docs/src/test/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }
 
 @@@
 

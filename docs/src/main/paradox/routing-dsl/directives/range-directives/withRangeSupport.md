@@ -38,7 +38,7 @@ See also: [RFC 7233](https://tools.ietf.org/html/rfc7233)
 ## Example
 
 Scala
-:  @@snip [RangeDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RangeDirectivesExamplesSpec.scala) { #withRangeSupport }
+:  @@snip [RangeDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/RangeDirectivesExamplesSpec.scala) { #withRangeSupport }
 
 Java
-:  @@snip [RangeDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RangeDirectivesExamplesTest.java) { #withRangeSupport }
+:  @@snip [RangeDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/RangeDirectivesExamplesTest.java) { #withRangeSupport }

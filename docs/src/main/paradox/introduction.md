@@ -82,10 +82,10 @@ The
 created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
 Scala
-:   @@snip [HttpServerRoutingMinimal.scala]($test$/scala/docs/http/scaladsl/HttpServerRoutingMinimal.scala)
+:   @@snip [HttpServerRoutingMinimal.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerRoutingMinimal.scala)
 
 Java
-:   @@snip [HttpServerMinimalExampleTest.java]($test$/java/docs/http/javadsl/HttpServerMinimalExampleTest.java) { #minimal-routing-example }
+:   @@snip [HttpServerMinimalExampleTest.java](/docs/src/test/java/docs/http/javadsl/HttpServerMinimalExampleTest.java) { #minimal-routing-example }
 
 When you run this server, you can either open the page in a browser,
 at the following url: [http://localhost:8080/hello](http://localhost:8080/hello), or call it in your terminal, via `curl http://localhost:8080/hello`.
@@ -131,10 +131,10 @@ this case shown by two separate routes. The first route queries an asynchronous 
 saves it to the database and replies with an OK when done.
 
 Scala
-:   @@snip [SprayJsonExample2.scala]($test$/scala/docs/http/scaladsl/SprayJsonExample.scala)
+:   @@snip [SprayJsonExample2.scala](/docs/src/test/scala/docs/http/scaladsl/SprayJsonExample.scala)
 
 Java
-:   @@snip [JacksonExampleTest.java]($test$/java/docs/http/javadsl/JacksonExampleTest.java) { #second-jackson-example }
+:   @@snip [JacksonExampleTest.java](/docs/src/test/java/docs/http/javadsl/JacksonExampleTest.java) { #second-jackson-example }
 
 When you run this server, you can update the inventory via `curl -H "Content-Type: application/json" -X POST -d '{"items":[{"name":"hhgtg","id":42}]}' http://localhost:8080/create-order` on your terminal - adding an item named `"hhgtg"` and having an `id=42`; and then view the inventory either in a browser, at a url like: [http://localhost:8080/item/42](http://localhost:8080/item/42) - or on the terminal,
 via `curl http://localhost:8080/item/42`.
@@ -154,10 +154,10 @@ body.
 Example that streams random numbers as long as the client accepts them:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerStreamingRandomNumbers.scala)
+:   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerStreamingRandomNumbers.scala)
 
 Java
-:   @@snip [HttpServerStreamRandomNumbersTest.java]($test$/java/docs/http/javadsl/HttpServerStreamRandomNumbersTest.java) { #stream-random-numbers }
+:   @@snip [HttpServerStreamRandomNumbersTest.java](/docs/src/test/java/docs/http/javadsl/HttpServerStreamRandomNumbersTest.java) { #stream-random-numbers }
 
 Connecting to this service with a slow HTTP client would backpressure so that the next random number is produced on
 demand with constant memory usage on the server. This can be seen using curl and limiting the rate
@@ -168,10 +168,10 @@ style while the second route contains a request-response interaction with an act
 as json and returned when the response arrives from the actor.
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerWithActorInteraction.scala)
+:   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerWithActorInteraction.scala)
 
 Java
-:   @@snip [HttpServerActorInteractionExample.java]($test$/java/docs/http/javadsl/HttpServerActorInteractionExample.java) { #actor-interaction }
+:   @@snip [HttpServerActorInteractionExample.java](/docs/src/test/java/docs/http/javadsl/HttpServerActorInteractionExample.java) { #actor-interaction }
 
 When you run this server, you can add an auction bid via `curl -X PUT "http://localhost:8080/auction?bid=22&user=MartinO"` on the terminal; and then you can view the auction status either in a browser, at the url [http://localhost:8080/auction](http://localhost:8080/auction), or, on the terminal, via `curl http://localhost:8080/auction`.
 
@@ -187,10 +187,10 @@ which is included automatically when you depend on `akka-http` but can also be u
 APIs for handling such request-responses as function calls and as a @apidoc[Flow[HttpRequest, HttpResponse, \_]] are available.
 
 Scala
-:   @@snip [HttpServerLowLevel.scala]($test$/scala/docs/http/scaladsl/HttpServerLowLevel.scala)
+:   @@snip [HttpServerLowLevel.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerLowLevel.scala)
 
 Java
-:   @@snip [HttpServerLowLevelExample.java]($test$/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
+:   @@snip [HttpServerLowLevelExample.java](/docs/src/test/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
 
 Read more details about the low level APIs in the section @ref[Core Server API](server-side/low-level-api.md).
 
@@ -203,10 +203,10 @@ handled more performantly by re-using TCP connections to the server.
 Example simple request:
 
 Scala
-:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientSingleRequest.scala)
+:   @@snip [HttpClientExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpClientSingleRequest.scala)
 
 Java
-:   @@snip [ClientSingleRequestExample.java]($test$/java/docs/http/javadsl/ClientSingleRequestExample.java) { #single-request-example }
+:   @@snip [ClientSingleRequestExample.java](/docs/src/test/java/docs/http/javadsl/ClientSingleRequestExample.java) { #single-request-example }
 
 Read more about the details of the client APIs in the section @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md).
 

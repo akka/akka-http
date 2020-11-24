@@ -20,4 +20,4 @@ This is a strict version of @ref[handle](handle.md).
 ## Example
 
 Scala
-:  @@snip [RouteDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #handleSync-examples-with-PF }
+:  @@snip [RouteDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #handleSync-examples-with-PF }

@@ -25,7 +25,7 @@ can cause performance issues or even an `OutOfMemoryError` s.
 ## Example
 
 Scala
-:  @@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldSeq }
+:  @@snip [FormFieldDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldSeq }
 
 Java
-:  @@snip [FormFieldDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formFieldList }
+:  @@snip [FormFieldDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formFieldList }

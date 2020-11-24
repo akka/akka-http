@@ -53,18 +53,18 @@ To simplify binding servers (and to make it more consistent between Java and Sca
 The most common change needed to bind a server to handle routes will be from:
 
 Scala
-:   @@snip [AkkaHttp1020MigrationSpec.scala]($test$/scala/docs/http/scaladsl/server/AkkaHttp1020MigrationSpec.scala) { #old-binding }
+:   @@snip [AkkaHttp1020MigrationSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/AkkaHttp1020MigrationSpec.scala) { #old-binding }
 
 Java
-:   @@snip [AkkaHttp1020MigrationExample.java]($test$/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #old-binding }
+:   @@snip [AkkaHttp1020MigrationExample.java](/docs/src/test/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #old-binding }
 
 to:
 
 Scala
-:   @@snip [AkkaHttp1020MigrationSpec.scala]($test$/scala/docs/http/scaladsl/server/AkkaHttp1020MigrationSpec.scala) { #new-binding }
+:   @@snip [AkkaHttp1020MigrationSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/AkkaHttp1020MigrationSpec.scala) { #new-binding }
 
 Java
-:   @@snip [AkkaHttp1020MigrationExample.java]($test$/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #new-binding }
+:   @@snip [AkkaHttp1020MigrationExample.java](/docs/src/test/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #new-binding }
 
 
 ### Scala 2.11 support dropped

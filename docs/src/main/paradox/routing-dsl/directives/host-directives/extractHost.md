@@ -14,7 +14,7 @@ to its inner route.
 ## Example
 
 Scala
-:  @@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #extractHost }
+:  @@snip [HostDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #extractHost }
 
 Java
-:  @@snip [HostDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #extractHostname }
+:  @@snip [HostDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java) { #extractHostname }

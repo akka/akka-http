@@ -38,10 +38,10 @@ On the most basic level an Akka HTTP server is bound by invoking the `bind` meth
 extension:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-example }
+:   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-example }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-example }
+:   @@snip [HttpServerExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-example }
 
 Arguments to the `Http().bind` method specify the interface and port to bind to and register interest in handling
 incoming HTTP connections. Additionally, the method also allows for the definition of socket options as well as a larger
@@ -75,10 +75,10 @@ Requests are handled by calling one of the `handleWithXXX` methods with a handle
 Here is a complete example:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #full-server-example }
+:   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #full-server-example }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #full-server-example }
+:   @@snip [HttpServerExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #full-server-example }
 
 In this example, a request is handled by transforming the request stream with a function @scala[`HttpRequest => HttpResponse`]@java[`Function<HttpRequest, HttpResponse>`]
 using `handleWithSyncHandler` (or equivalently, Akka Stream's `map` operator). Depending on the use case many
@@ -191,10 +191,10 @@ is already taken by another application, or if the port is privileged (i.e. only
 In this case the "binding future" will fail immediately, and we can react to it by listening on the @scala[Future's]@java[CompletionStage’s] completion:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-handling }
+:   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-handling }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-failure-handling }
+:   @@snip [HttpServerExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-failure-handling }
 
 Once the server has successfully bound to a port, the @apidoc[Source[IncomingConnection, \_]] starts running and emitting
 new incoming connections. This source technically can signal a failure as well, however this should only happen in very
@@ -209,10 +209,10 @@ stream's failure. See @extref[Custom stream processing](akka-docs:stream/stream-
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #incoming-connections-source-failure-handling }
+:   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #incoming-connections-source-failure-handling }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #incoming-connections-source-failure-handling }
+:   @@snip [HttpServerExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #incoming-connections-source-failure-handling }
 
 #### Connection failures
 
@@ -222,10 +222,10 @@ however afterwards is terminated abruptly – for example by the client aborting
 To handle this failure we can use the same pattern as in the previous snippet, however apply it to the connection's Flow:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #connection-stream-failure-handling }
+:   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #connection-stream-failure-handling }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #connection-stream-failure-handling }
+:   @@snip [HttpServerExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #connection-stream-failure-handling }
 
 
 Note that this is when the TCP connection is closed correctly, if the client just goes away, for example because of
