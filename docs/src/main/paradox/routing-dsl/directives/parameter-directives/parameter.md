@@ -1,13 +1,5 @@
 # parameter
 
-@@@ div { .group-scala }
-
-## Signature
-
-@@signature [ParameterDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameter }
-
-@@@
-
 ## Description
 
 Extracts a *query* parameter value from the @scala[request]@java[request and provides it to the inner route as a `String`].
