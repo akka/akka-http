@@ -96,7 +96,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   /** Called by Http2ServerDemux to let the state machine handle StreamFrameEvents */
   def handleStreamEvent(e: StreamFrameEvent): Unit =
-    updateState(e.streamId, _.handle(e))
+    updateState(e.streamId, _.handle(e), "handleStreamEvent", e.frameTypeName)
 
   /** Called by Http2ServerDemux when a stream comes in from the user-handler */
   def handleOutgoingCreated(stream: Http2SubStream): Unit = {
@@ -105,10 +105,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       multiplexer.pushControlFrame(stream.initialHeaders)
 
       if (stream.initialHeaders.endStream) {
-        updateState(stream.streamId, _.handleOutgoingCreatedAndFinished(stream.correlationAttributes))
+        updateState(stream.streamId, _.handleOutgoingCreatedAndFinished(stream.correlationAttributes), "handleOutgoingCreatedAndFinished")
       } else {
         val outStream = OutStream(stream)
-        updateState(stream.streamId, _.handleOutgoingCreated(outStream, stream.correlationAttributes))
+        updateState(stream.streamId, _.handleOutgoingCreated(outStream, stream.correlationAttributes), "handleOutgoingCreated")
       }
     } else
       // stream was cancelled by peer before our response was ready
@@ -118,33 +118,33 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   // Called by the outgoing stream multiplexer when that side of the stream is ended.
   def handleOutgoingEnded(streamId: Int): Unit =
-    updateState(streamId, _.handleOutgoingEnded())
+    updateState(streamId, _.handleOutgoingEnded(), "handleOutgoingEnded")
 
   def handleOutgoingFailed(streamId: Int, cause: Throwable): Unit =
-    updateState(streamId, _.handleOutgoingFailed(cause))
+    updateState(streamId, _.handleOutgoingFailed(cause), "handleOutgoingFailed")
 
   /** Called by multiplexer to distribute changes from INITIAL_WINDOW_SIZE to all streams */
   def distributeWindowDeltaToAllStreams(delta: Int): Unit =
-    updateAllStates {
+    updateAllStates({
       case s: Sending => s.increaseWindow(delta)
       case x          => x
-    }
+    }, "distributeWindowDeltaToAllStreams")
 
   /** Called by the multiplexer if ready to send a data frame */
   def pullNextFrame(streamId: Int, maxSize: Int): PullFrameResult =
-    updateStateAndReturn(streamId, _.pullNextFrame(maxSize))
+    updateStateAndReturn(streamId, _.pullNextFrame(maxSize), "pullNextFrame")
 
   /** Entry-point to handle IncomingStreamBuffer.onPull through the state machine */
   def incomingStreamPulled(streamId: Int): Unit =
-    updateState(streamId, _.incomingStreamPulled())
+    updateState(streamId, _.incomingStreamPulled(), "incomingStreamPulled")
 
-  private def updateAllStates(handle: StreamState => StreamState): Unit =
-    streamStates.keys.foreach(updateState(_, handle))
+  private def updateAllStates(handle: StreamState => StreamState, event: String, eventArg: AnyRef = null): Unit =
+    streamStates.keys.foreach(updateState(_, handle, event, eventArg))
 
-  private def updateState(streamId: Int, handle: StreamState => StreamState): Unit =
-    updateStateAndReturn(streamId, x => (handle(x), ()))
+  private def updateState(streamId: Int, handle: StreamState => StreamState, event: String, eventArg: AnyRef = null): Unit =
+    updateStateAndReturn(streamId, x => (handle(x), ()), event, eventArg)
 
-  private def updateStateAndReturn[R](streamId: Int, handle: StreamState => (StreamState, R)): R = {
+  private def updateStateAndReturn[R](streamId: Int, handle: StreamState => (StreamState, R), event: String, eventArg: AnyRef = null): R = {
     val oldState = streamFor(streamId)
 
     val (newState, ret) = handle(oldState)
@@ -155,13 +155,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       case newState => streamStates += streamId -> newState
     }
 
-    debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName} after running ${handle.getClass}")
+    debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName} after handling [$event${if (eventArg ne null) s"($eventArg)" else ""}]")
     ret
   }
   /** Called to cleanup any state when the connection is torn down */
-  def shutdownStreamHandling(): Unit = streamStates.keys.foreach(id => updateState(id, { x => x.shutdown(); Closed }))
+  def shutdownStreamHandling(): Unit = streamStates.keys.foreach(id => updateState(id, { x => x.shutdown(); Closed }, "shutdownStreamHandling"))
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
-    updateState(streamId, _ => Closed) // force stream to be closed
+    updateState(streamId, _ => Closed, "resetStream") // force stream to be closed
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }
 
