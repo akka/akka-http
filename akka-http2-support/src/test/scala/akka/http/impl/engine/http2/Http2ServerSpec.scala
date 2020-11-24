@@ -24,7 +24,6 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
 import akka.stream.OverflowStrategy
-import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
@@ -296,7 +295,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.sendRequestHEADERS(TheStreamId, request, endStream = false)
 
       def sendWindowFullOfData(): Int = {
-        val dataLength = network.remainingToServerWindowFor(TheStreamId)
+        val dataLength = network.remainingWindowForIncomingData(TheStreamId)
         network.sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
         dataLength
       }
@@ -388,7 +387,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           bytesSent should be > 0
           entityDataIn.expectBytes(bytesSent)
           network.pollForWindowUpdates(10.millis)
-          network.remainingToServerWindowFor(TheStreamId) should be > 0
+          network.remainingWindowForIncomingData(TheStreamId) should be > 0
         }
       }
       "backpressure until request entity stream is read (don't send out unlimited WINDOW_UPDATE before)" inAssertAllStagesStopped new WaitingForRequestData {
@@ -398,7 +397,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           totallySentBytes += sendWindowFullOfData()
           // the implementation may choose to send a few window update until internal buffers are filled
           network.pollForWindowUpdates(10.millis)
-          network.remainingToServerWindowFor(TheStreamId) shouldBe 0
+          network.remainingWindowForIncomingData(TheStreamId) shouldBe 0
         }
 
         // now drain entity source
@@ -406,7 +405,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         eventually(Timeout(1.second.dilated)) {
           network.pollForWindowUpdates(10.millis)
-          network.remainingToServerWindowFor(TheStreamId) should be > 0
+          network.remainingWindowForIncomingData(TheStreamId) should be > 0
         }
       }
       "send data frames to entity stream and ignore trailing headers" inAssertAllStagesStopped new WaitingForRequestData {

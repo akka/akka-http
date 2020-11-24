@@ -8,8 +8,8 @@ import scala.concurrent.duration.FiniteDuration
 
 trait WindowTracking extends Http2FrameProbeDelegator with Http2FrameSending {
   override def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = {
-    updateToServerWindowForConnection(_ - data.length)
-    updateToServerWindows(streamId, _ - data.length)
+    updateWindowForIncomingDataOnConnection(_ - data.length)
+    updateWindowForIncomingData(streamId, _ - data.length)
     super.sendDATA(streamId, endStream, data)
   }
 
@@ -25,8 +25,8 @@ trait WindowTracking extends Http2FrameProbeDelegator with Http2FrameSending {
         // TODO: DRY up with autoFrameHandler
         val windowSizeIncrement = new ByteReader(payload).readIntBE()
 
-        if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
-        else updateToServerWindows(streamId, _ + windowSizeIncrement)
+        if (streamId == 0) updateWindowForIncomingDataOnConnection(_ + windowSizeIncrement)
+        else updateWindowForIncomingData(streamId, _ + windowSizeIncrement)
     }
 
   final def pollForWindowUpdates(duration: FiniteDuration): Unit =
@@ -43,10 +43,10 @@ trait WindowTracking extends Http2FrameProbeDelegator with Http2FrameSending {
     }
 
   // keep counters that are updated on outgoing network.sendDATA and incoming WINDOW_UPDATE frames
-  private var toServerWindows: Map[Int, Int] = Map.empty.withDefaultValue(Http2Protocol.InitialWindowSize)
-  private var toServerWindowForConnection = Http2Protocol.InitialWindowSize
-  def remainingToServerWindowForConnection: Int = toServerWindowForConnection
-  def remainingToServerWindowFor(streamId: Int): Int = toServerWindows(streamId) min remainingToServerWindowForConnection
+  private var windowsForIncomingData: Map[Int, Int] = Map.empty.withDefaultValue(Http2Protocol.InitialWindowSize)
+  private var windowForIncomingDataOnConnection = Http2Protocol.InitialWindowSize
+  def remainingWindowForIncomingDataOnConnection: Int = windowForIncomingDataOnConnection
+  def remainingWindowForIncomingData(streamId: Int): Int = windowsForIncomingData(streamId) min remainingWindowForIncomingDataOnConnection
 
   def updateWindowMap(streamId: Int, update: Int => Int): Map[Int, Int] => Map[Int, Int] =
     map => map.updated(streamId, update(map(streamId)))
@@ -57,9 +57,9 @@ trait WindowTracking extends Http2FrameProbeDelegator with Http2FrameSending {
     newValue
   }
 
-  def updateToServerWindows(streamId: Int, update: Int => Int): Unit =
-    toServerWindows = updateWindowMap(streamId, safeUpdate(update))(toServerWindows)
-  def updateToServerWindowForConnection(update: Int => Int): Unit =
-    toServerWindowForConnection = safeUpdate(update)(toServerWindowForConnection)
+  def updateWindowForIncomingData(streamId: Int, update: Int => Int): Unit =
+    windowsForIncomingData = updateWindowMap(streamId, safeUpdate(update))(windowsForIncomingData)
+  def updateWindowForIncomingDataOnConnection(update: Int => Int): Unit =
+    windowForIncomingDataOnConnection = safeUpdate(update)(windowForIncomingDataOnConnection)
 
 }
