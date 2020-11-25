@@ -57,7 +57,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           response:         Seq[FrameEvent],
           expectedResponse: HttpResponse
         ): Unit = {
-          user.emitRequest(streamId, request)
+          user.emitRequest(request)
 
           network.expectDecodedResponseHEADERSPairs(streamId) should contain theSameElementsAs (expectedHeaders.filter(_._1 != "date"))
           response.foreach(network.sendFrame)
@@ -91,7 +91,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
       "GOAWAY when the response has an invalid headers frame" in new TestSetup with NetProbes {
         val streamId = 0x1
-        user.emitRequest(streamId, HttpRequest(uri = "http://www.example.com/"))
+        user.emitRequest(HttpRequest(uri = "http://www.example.com/"))
         network.expect[HeadersFrame]()
 
         val headerBlock = hex"00 00 01 01 05 00 00 00 01 40"
@@ -120,7 +120,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           expectedResponse = HPackSpecExamples.FirstResponse
         )
 
-        user.emitRequest(3, HttpRequest(uri = "https://www.example.com/"))
+        user.emitRequest(HttpRequest(uri = "https://www.example.com/"))
         network.expect[HeadersFrame]()
 
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
@@ -132,7 +132,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
       "GOAWAY when the response has headers mid stream" in new TestSetup with NetProbes {
         val streamId = 0x1
-        user.emitRequest(streamId, Get("/"))
+        user.emitRequest(Get("/"))
         network.expectDecodedHEADERS(streamId, endStream = true)
 
         network.sendHEADERS(streamId, endStream = false, Seq(
@@ -360,7 +360,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     "respect flow-control" should {
       "accept window updates when done sending the request" in new TestSetup {
-        user.emitRequest(0x1, Get("/"))
+        user.emitRequest(Get("/"))
         network.expectDecodedHEADERS(0x1, endStream = true)
 
         // Server randomly sends a window update even though we're already done sending the request,
@@ -391,10 +391,10 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val request = HttpRequest(uri = "https://www.example.com/")
         // server set a very small SETTINGS_MAX_CONCURRENT_STREAMS, so an attempt from the
         // client to open more streams should backpressure
-        user.emitRequest(1, request)
-        user.emitRequest(3, request)
-        user.emitRequest(5, request)
-        user.emitRequest(7, request) // this emit succeeds but is buffered
+        user.emitRequest(request)
+        user.emitRequest(request)
+        user.emitRequest(request)
+        user.emitRequest(request) // this emit succeeds but is buffered
 
         // expect frames for 1 3 and 5
         network.expect[HeadersFrame]().streamId shouldBe (1)
@@ -406,8 +406,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // close 1 and 3
         network.sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         network.sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
-        user.emitRequest(9, request)
-        user.emitRequest(11, request)
+        user.emitRequest(request)
+        user.emitRequest(request)
         // expect 7 and 9 on the line
         network.expect[HeadersFrame]().streamId shouldBe (7)
         network.expect[HeadersFrame]().streamId shouldBe (9)
@@ -417,7 +417,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendFrame(HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         network.sendFrame(HeadersFrame(streamId = 7, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         network.sendFrame(HeadersFrame(streamId = 9, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
-        user.emitRequest(13, request)
+        user.emitRequest(request)
         // expect 11 the line
         network.expect[HeadersFrame]().streamId shouldBe (11)
         network.expect[HeadersFrame]().streamId shouldBe (13)
@@ -426,9 +426,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
       ) with NetProbes {
         val request = HttpRequest(uri = "https://www.example.com/")
-        user.emitRequest(1, request)
-        user.emitRequest(3, request)
-        user.emitRequest(5, request) // this emit succeeds but is buffered
+        user.emitRequest(request)
+        user.emitRequest(request)
+        user.emitRequest(request) // this emit succeeds but is buffered
 
         // expect frames for 1 and 3
         network.expect[HeadersFrame]().streamId shouldBe (1)
@@ -447,10 +447,10 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
       ) with NetProbes {
         val request = HttpRequest(uri = "https://www.example.com/")
-        user.emitRequest(1, request)
-        user.emitRequest(3, request)
-        user.emitRequest(5, request)
-        user.emitRequest(7, request) // this emit succeeds but is buffered
+        user.emitRequest(request)
+        user.emitRequest(request)
+        user.emitRequest(request)
+        user.emitRequest(request) // this emit succeeds but is buffered
 
         // expect frames for 1 3 and 5
         network.expect[HeadersFrame]().streamId shouldBe (1)
@@ -471,7 +471,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         network.expect[HeadersFrame]().streamId shouldBe (7)
         // .. but not enough capacity for 9
-        user.emitRequest(9, request)
+        user.emitRequest(request)
         network.expectNoBytes(100.millis)
 
       }
@@ -480,7 +480,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     "support stream support for receiving response entity data" should {
       abstract class WaitingForResponseSetup extends TestSetup with NetProbes {
         val streamId = 0x1
-        user.emitRequest(streamId, Get("/"))
+        user.emitRequest(Get("/"))
         network.expectDecodedHEADERS(streamId, endStream = true)
       }
       "support trailing headers for responses" in new WaitingForResponseSetup {
@@ -532,10 +532,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   }
 
   class UserSide(val requestOut: TestPublisher.Probe[HttpRequest], val responseIn: TestSubscriber.Probe[HttpResponse]) {
-    def expectResponse(): HttpResponse = responseIn.requestNext().removeAttribute(Http2.streamId)
-    def expectResponseRaw(): HttpResponse = responseIn.requestNext() // TODO, make it so that internal headers are not listed in `headers` etc?
-    def emitRequest(streamId: Int, request: HttpRequest): Unit =
-      requestOut.sendNext(request.addAttribute(Http2.streamId, streamId))
+    def expectResponse(): HttpResponse = responseIn.requestNext()
+    def emitRequest(request: HttpRequest): Unit = requestOut.sendNext(request)
   }
 
   /** Basic TestSetup that has already passed the exchange of the connection preface */
