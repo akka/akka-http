@@ -1,11 +1,11 @@
 import akka._
 import akka.ValidatePullRequest._
 import AkkaDependency._
-import Dependencies.{ h2specName, h2specExe }
+import Dependencies.{h2specExe, h2specName}
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import java.nio.file.Files
-import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
+import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
 
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
@@ -46,6 +46,25 @@ inThisBuild(Def.settings(
   scalafixScalaBinaryVersion := scalaBinaryVersion.value,
 ))
 
+// When this is updated the set of modules in ActorSystem.allModules should also be updated
+lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
+  parsing,
+  httpCore,
+  http2Support,
+  http,
+  httpCaching,
+  httpTestkit,
+  httpMarshallersScala,
+  httpMarshallersJava,
+  httpScalafix,
+)
+lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
+  httpTests,
+  docs,
+  compatibilityTests,
+  httpJmhBench,
+  `maven-dependencies`
+)
 lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
@@ -74,22 +93,7 @@ lazy val root = Project(
         java -> gustavDir("japi").value)
     }
   )
-  .aggregate(
-    // When this is or other aggregates are updated the set of modules in HttpExt.allModules should also be updated
-    parsing,
-    httpCore,
-    http2Support,
-    http,
-    httpCaching,
-    httpTestkit,
-    httpTests,
-    httpMarshallersScala,
-    httpMarshallersJava,
-    httpScalafix,
-    docs,
-    compatibilityTests,
-    httpJmhBench
-  )
+  .aggregate(aggregatedProjects: _*)
 
 /**
  * Adds a `src/.../scala-2.13+` source directory for Scala 2.13 and newer
@@ -466,5 +470,58 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
       (fullClasspath in (httpTests, Test)).value
     }
   )
+
+
+lazy val `maven-dependencies` = Project(id="maven-dependencies",base= file("maven-dependencies"))
+  .enablePlugins(HeaderPlugin)
+  .settings(
+    name := "akka-http-maven-dependencies",
+    // no MiMa
+    mimaPreviousArtifacts := Set.empty,
+    // publish Maven Style
+    publishMavenStyle := true,
+    // Produce a single BOM with all the artifacts
+    crossVersion := CrossVersion.disabled, // this setting removes the scala bin version from the artifact name
+    crossScalaVersions := Seq(Dependencies.scala213Version),
+    scalaVersion := Dependencies.scala213Version,
+    crossPaths := false,
+    autoScalaLibrary := false,
+
+    pomExtra := pomExtra.value :+ {
+      val akkaDeps = Def.settingDyn {
+        (userProjects).map {
+          project =>
+            Def.setting {
+              val artifactName = (artifact in project).value.name
+
+              Dependencies.allScalaVersions.map {
+                supportedVersion =>
+                  // we are sure this won't be a None
+                  val crossFunc =
+                    CrossVersion(Binary(), supportedVersion, CrossVersion.binaryScalaVersion(supportedVersion)).get
+                  // convert artifactName to match the desired scala version
+                  val artifactId = crossFunc(artifactName)
+
+                  <dependency>
+                    <groupId>{(organization in project).value}</groupId>
+                    <artifactId>{artifactId}</artifactId>
+                    <version>{(version in project).value}</version>
+                  </dependency>
+              }
+            }
+        }.join
+      }.value
+
+      <dependencyManagement>
+        <dependencies>
+          {akkaDeps}
+        </dependencies>
+      </dependencyManagement>
+    },
+    // This disables creating jar, source jar and javadocs, and will cause the packaging type to be "pom" when the
+    // pom is created
+    Classpaths.defaultPackageKeys.map(key => publishArtifact in key := false),
+  )
+
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
