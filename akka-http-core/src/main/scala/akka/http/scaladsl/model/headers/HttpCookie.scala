@@ -90,7 +90,7 @@ final class HttpCookie private[http] (
     path:      Option[String],
     secure:    Boolean,
     httpOnly:  Boolean,
-    extension: Option[String]): HttpCookie = copy(name = name, value = value, expires = expires, maxAge = maxAge, domain = domain, path = path, secure = secure, httpOnly = httpOnly, extension = extension)
+    extension: Option[String]): HttpCookie = copy(name = name, value = value, expires = expires, maxAge = maxAge, domain = domain, path = path, secure = secure, httpOnly = httpOnly, extension = extension, sameSite = sameSite)
 
   private[headers] def copy(
     name:      String           = this.name,
