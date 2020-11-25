@@ -46,6 +46,7 @@ inThisBuild(Def.settings(
   scalafixScalaBinaryVersion := scalaBinaryVersion.value,
 ))
 
+// When this is updated the set of modules in Http.allModules should also be updated
 lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   parsing,
   httpCore,
@@ -55,8 +56,10 @@ lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   httpTestkit,
   httpMarshallersScala,
   httpMarshallersJava,
+  httpSprayJson,
+  httpXml,
+  httpJackson,
   httpScalafix,
-  httpJackson
 )
 lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
   httpTests,
