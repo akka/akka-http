@@ -375,7 +375,7 @@ object DirectoryListing {
       |$</pre>
       |<hr>$
       |<div style="width:100%;text-align:right;color:gray">
-      |<small>rendered by <a href="http://akka.io">Akka Http</a> on $</small>
+      |<small>rendered by <a href="https://akka.io">Akka Http</a> on $</small>
       |</div>$
       |</body>
       |</html>

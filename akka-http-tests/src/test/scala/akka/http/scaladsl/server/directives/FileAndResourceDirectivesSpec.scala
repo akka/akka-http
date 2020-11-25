@@ -400,7 +400,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
             |</pre>
             |<hr>
             |<div style="width:100%;text-align:right;color:gray">
-            |<small>rendered by <a href="http://akka.io">Akka Http</a> on xxxx-xx-xx xx:xx:xx</small>
+            |<small>rendered by <a href="https://akka.io">Akka Http</a> on xxxx-xx-xx xx:xx:xx</small>
             |</div>
             |</body>
             |</html>
