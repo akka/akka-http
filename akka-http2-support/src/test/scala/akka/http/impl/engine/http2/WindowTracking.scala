@@ -23,6 +23,11 @@ trait WindowTracking extends Http2FrameProbeDelegator with Http2FrameSending {
     else updateFromServerWindows(streamId, _ + windowSizeIncrement)
   }
 
+  def sendWindowFullOfData(streamId: Int): Int = {
+    val dataLength = remainingWindowForIncomingData(streamId)
+    sendDATA(streamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
+    dataLength
+  }
   def expectWindowUpdate(): Unit =
     expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE) match {
       case (flags, streamId, payload) =>
