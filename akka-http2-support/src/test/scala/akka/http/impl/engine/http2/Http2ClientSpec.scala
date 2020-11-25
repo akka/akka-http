@@ -193,7 +193,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
 
       "accept response with one HEADERS and one CONTINUATION frame" in new TestSetup with NetProbes {
-        user.emitRequest(0x1, Get("https://www.example.com/"))
+        user.emitRequest(Get("https://www.example.com/"))
         network.expect[HeadersFrame]()
 
         val headerBlock = HPackSpecExamples.C61FirstResponseWithHuffman
@@ -205,7 +205,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
 
       "accept response with one HEADERS and two CONTINUATION frames" in new TestSetup with NetProbes {
-        user.emitRequest(0x1, Get("https://www.example.com/"))
+        user.emitRequest(Get("https://www.example.com/"))
         network.expect[HeadersFrame]()
 
         val headerBlock = HPackSpecExamples.C61FirstResponseWithHuffman
@@ -219,12 +219,12 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
 
       "automatically add `date` header" in new TestSetup with NetProbes {
-        user.emitRequest(0x1, Get("https://www.example.com/"))
+        user.emitRequest(Get("https://www.example.com/"))
         network.expectDecodedHEADERS(0x1, endStream = true).headers.exists(_.is("date"))
       }
 
       "parse headers to modeled headers" in new TestSetup with NetProbes {
-        user.emitRequest(0x1, Get("https://www.example.com/"))
+        user.emitRequest(Get("https://www.example.com/"))
         network.expect[HeadersFrame]()
 
         network.sendHEADERS(0x1, true, Seq(
@@ -245,7 +245,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, 8192)
         network.expectSettingsAck()
 
-        user.emitRequest(0x1, Get("/"))
+        user.emitRequest(Get("/"))
         val headerPayload = network.expectHeaderBlock(1)
 
         // Dynamic Table Size Update (https://tools.ietf.org/html/rfc7541#section-6.3) is
@@ -268,9 +268,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     "support stream for response data" should {
       abstract class WaitingForResponse extends TestSetup with NetProbes {
-        val TheStreamId = 0x1
-        user.emitRequest(TheStreamId, Get("/"))
-        network.expect[HeadersFrame]()
+        user.emitRequest(Get("/"))
+        val TheStreamId = network.expect[HeadersFrame]().streamId
       }
       "send data frames to entity stream" in new WaitingForResponse {
         network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
@@ -507,7 +506,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         override def settings = super.settings.mapHttp2Settings(_.withPingInterval(500.millis))
         val streamId = 0x1
         val requestStream = TestPublisher.probe[ByteString]()
-        user.emitRequest(streamId, HttpRequest(
+        user.emitRequest(HttpRequest(
           protocol = HttpProtocols.`HTTP/2.0`,
           entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
         network.expectDecodedHEADERS(streamId, endStream = false)
@@ -521,7 +520,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           default.withHttp2Settings(default.http2Settings.withPingInterval(500.millis))
         }
         val streamId = 0x1
-        user.emitRequest(streamId, HttpRequest(
+        user.emitRequest(HttpRequest(
           protocol = HttpProtocols.`HTTP/2.0`,
         ))
         network.expectDecodedHEADERS(streamId)
@@ -542,7 +541,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         }
         val streamId = 0x1
         val requestStream = TestPublisher.probe[ByteString]()
-        user.emitRequest(streamId, HttpRequest(
+        user.emitRequest(HttpRequest(
           protocol = HttpProtocols.`HTTP/2.0`,
           entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
         network.expectDecodedHEADERS(streamId, endStream = false)
