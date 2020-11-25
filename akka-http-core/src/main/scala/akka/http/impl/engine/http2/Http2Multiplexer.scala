@@ -77,6 +77,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
   /** Called by the multiplexer after SETTINGS_INITIAL_WINDOW_SIZE has changed */
   def distributeWindowDeltaToAllStreams(delta: Int): Unit
 
+  /** Called by the multiplexer before canceling the stage on outlet cancellation */
+  def frameOutFinished(): Unit
+
   def pushFrameOut(event: FrameEvent): Unit
 
   def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
@@ -110,6 +113,11 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       /** Network pulls in new frames */
       def onPull(): Unit = updateState(_.onPull())
+
+      override def onDownstreamFinish(): Unit = {
+        frameOutFinished()
+        super.onDownstreamFinish()
+      }
 
       private var _state: MultiplexerState = Idle
 
