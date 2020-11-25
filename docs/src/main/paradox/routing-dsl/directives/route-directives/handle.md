@@ -25,4 +25,4 @@ There is also a strict version called @ref[handleSync](handleSync.md).
 ## Example
 
 Scala
-:  @@snip [RouteDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #handle-examples-with-PF }
+:  @@snip [RouteDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #handle-examples-with-PF }

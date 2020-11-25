@@ -19,12 +19,12 @@ Scala
 :   @@snip [RequestContextImpl.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/RequestContextImpl.scala) { #red-impl }
 
 Java
-:  @@snip [RouteDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #red-impl }
+:  @@snip [RouteDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #red-impl }
 
 ## Example
 
 Scala
-:  @@snip [RouteDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #redirect-examples }
+:  @@snip [RouteDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #redirect-examples }
 
 Java
-:  @@snip [RouteDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #redirect }
+:  @@snip [RouteDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #redirect }

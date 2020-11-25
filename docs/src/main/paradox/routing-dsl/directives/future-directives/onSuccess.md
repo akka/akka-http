@@ -28,7 +28,7 @@ To handle the `Failure` case manually as well, use @ref[onComplete](onComplete.m
 ## Example
 
 Scala
-:  @@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onSuccess }
+:  @@snip [FutureDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onSuccess }
 
 Java
-:  @@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onSuccess }
+:  @@snip [FutureDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #onSuccess }

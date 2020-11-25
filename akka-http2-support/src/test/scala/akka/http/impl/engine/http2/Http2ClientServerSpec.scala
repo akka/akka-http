@@ -11,6 +11,7 @@ import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.TestProbe
@@ -108,6 +109,8 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
     }
   }
   class TestSetup {
+    def serverSettings: ServerSettings = ServerSettings(system)
+    def clientSettings: ClientConnectionSettings = ClientConnectionSettings(system)
     private lazy val serverRequestProbe = TestProbe()
     private lazy val handler: HttpRequest => Future[HttpResponse] = { req =>
       val p = Promise[HttpResponse]()
@@ -115,15 +118,15 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       p.future
     }
     lazy val binding =
-      Http().newServerAt("localhost", 0).enableHttps(ExampleHttpContexts.exampleServerContext).bind(handler).futureValue
-
-    lazy val clientFlow = {
-      val clientSettings = ClientConnectionSettings(system).withTransport(ExampleHttpContexts.proxyTransport(binding.localAddress))
+      Http().newServerAt("localhost", 0)
+        .enableHttps(ExampleHttpContexts.exampleServerContext)
+        .withSettings(serverSettings)
+        .bind(handler).futureValue
+    lazy val clientFlow =
       Http().connectionTo("akka.example.org")
         .withCustomHttpsConnectionContext(ExampleHttpContexts.exampleClientContext)
-        .withClientConnectionSettings(clientSettings)
+        .withClientConnectionSettings(clientSettings.withTransport(ExampleHttpContexts.proxyTransport(binding.localAddress)))
         .http2()
-    }
     lazy val clientRequestsOut = TestPublisher.probe[HttpRequest]()
     lazy val clientResponsesIn = TestSubscriber.probe[HttpResponse]()
     Source.fromPublisher(clientRequestsOut)

@@ -41,9 +41,8 @@ object ParadoxSupport {
           }.mkString("\n")
 
         if (text.trim.isEmpty) {
-          ctx.logger.warn(
-            s"Did not find any signatures with one of those names [${labels.mkString(", ")}] in ${node.source} " +
-            s"(was referenced from [${page.path}])")
+          ctx.error(
+            s"Did not find any signatures with one of those names [${labels.mkString(", ")}]", page, node)
 
           new HtmlBlockNode(s"""<div style="color: red;">[Broken signature inclusion [${labels.mkString(", ")}] to [${node.source}]</div>""").accept(visitor)
         } else {

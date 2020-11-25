@@ -1,13 +1,5 @@
 # parameter
 
-@@@ div { .group-scala }
-
-## Signature
-
-@@signature [ParameterDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameter }
-
-@@@
-
 ## Description
 
 Extracts a *query* parameter value from the @scala[request]@java[request and provides it to the inner route as a `String`].
@@ -20,7 +12,7 @@ See @ref[When to use which parameter directive?](index.md#which-parameter-direct
 ## Example
 
 Scala
-:  @@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #example-1 }
+:  @@snip [ParameterDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #example-1 }
 
 Java
-:  @@snip [ParameterDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #parameter }
+:  @@snip [ParameterDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #parameter }

@@ -19,17 +19,17 @@ the matching continues and the extractMethod route will be applied which we can 
 print what type of request it was - independent of what actual HttpMethod it was:
 
 Scala
-:   @@snip [MethodDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #extractMethod-example }
+:   @@snip [MethodDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #extractMethod-example }
 
 Java
-:   @@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #extractMethod }
+:   @@snip [MethodDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #extractMethod }
 
 ## Custom Http Method
 
 When you define a custom HttpMethod, you can define a route using extractMethod.
 
 Scala
-:  @@snip [CustomHttpMethodSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+:  @@snip [CustomHttpMethodSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
 
 Java
-:  @@snip [CustomHttpMethodExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }
+:  @@snip [CustomHttpMethodExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }

@@ -31,7 +31,7 @@ Use `logRequest` for logging the request, or `logRequestResult` for logging both
 ## Example
 
 Scala
-:  @@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logResult }
+:  @@snip [DebuggingDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logResult }
 
 Java
-:  @@snip [DebuggingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logResult }
+:  @@snip [DebuggingDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java) { #logResult }

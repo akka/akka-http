@@ -24,7 +24,6 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
 import akka.stream.OverflowStrategy
-import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
@@ -296,7 +295,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.sendRequestHEADERS(TheStreamId, request, endStream = false)
 
       def sendWindowFullOfData(): Int = {
-        val dataLength = network.remainingToServerWindowFor(TheStreamId)
+        val dataLength = network.remainingWindowForIncomingData(TheStreamId)
         network.sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
         dataLength
       }
@@ -388,7 +387,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           bytesSent should be > 0
           entityDataIn.expectBytes(bytesSent)
           network.pollForWindowUpdates(10.millis)
-          network.remainingToServerWindowFor(TheStreamId) should be > 0
+          network.remainingWindowForIncomingData(TheStreamId) should be > 0
         }
       }
       "backpressure until request entity stream is read (don't send out unlimited WINDOW_UPDATE before)" inAssertAllStagesStopped new WaitingForRequestData {
@@ -398,7 +397,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           totallySentBytes += sendWindowFullOfData()
           // the implementation may choose to send a few window update until internal buffers are filled
           network.pollForWindowUpdates(10.millis)
-          network.remainingToServerWindowFor(TheStreamId) shouldBe 0
+          network.remainingWindowForIncomingData(TheStreamId) shouldBe 0
         }
 
         // now drain entity source
@@ -406,7 +405,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         eventually(Timeout(1.second.dilated)) {
           network.pollForWindowUpdates(10.millis)
-          network.remainingToServerWindowFor(TheStreamId) should be > 0
+          network.remainingWindowForIncomingData(TheStreamId) should be > 0
         }
       }
       "send data frames to entity stream and ignore trailing headers" inAssertAllStagesStopped new WaitingForRequestData {
@@ -1160,7 +1159,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       }
       "NOT respond to PING ACK frames (spec 6_7)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         val AckFlag = new ByteFlag(0x1)
-        network.sendFrame(FrameType.PING, AckFlag, 0, ByteString("data1234"))
+        network.sendFrame(FrameType.PING, AckFlag, 0, ConfigurablePing.Ping.data) // other ack payload than this causes GOAWAY
 
         network.expectNoBytes(100.millis)
       }
@@ -1275,6 +1274,64 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     }
 
     "must not swallow errors / warnings" in pending
+
+    "support for configurable pings" should {
+      "send pings when there is an active but slow stream to server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(500.millis))
+        }
+
+        network.sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
+        user.expectRequest()
+
+        network.expectNoBytes(250.millis) // no data for 500ms interval should trigger ping (but client counts from emitting last frame, so it's not really 500ms here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+
+        network.toNet.cancel()
+      })
+
+      "send pings when there is an active but slow stream from server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
+
+        override def settings: ServerSettings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(500.millis))
+        }
+
+        val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
+        network.sendRequest(1, theRequest)
+        user.expectRequest() shouldBe theRequest
+
+        val responseStream = TestPublisher.probe[ByteString]()
+        val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(responseStream)))
+        user.emitResponse(1, response1)
+        network.expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        network.expectNoBytes(250.millis) // no data for 500ms interval should trigger ping (but client counts from emitting last frame, so it's not really 500ms here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+
+        network.toNet.cancel()
+      })
+
+      "send GOAWAY when ping times out" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(800.millis).withPingTimeout(400.millis))
+        }
+
+        network.sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
+        user.expectRequest()
+
+        network.expectNoBytes(400.millis) // no data for 800ms interval should trigger ping (but client counts from emitting last frame, so it's not really 800ms here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        network.expectNoBytes(200.millis) // timeout is 400ms from client emitting ping, (so not really 400ms here)
+        val (_, errorCode) = network.expectGOAWAY(1)
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+
+        // FIXME should also verify close of connection, but it isn't implemented yet
+        network.toNet.cancel()
+      })
+
+    }
   }
 
   implicit class InWithStoppedStages(name: String) {
@@ -1318,65 +1375,10 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     val network = new NetworkSide(fromNet, toNet, framesOut) with Http2FrameHpackSupport
   }
 
-  class NetworkSide(val fromNet: Probe[ByteString], val toNet: ByteStringSinkProbe, val framesOut: Http2FrameProbe) extends Http2FrameProbeDelegator with Http2FrameSending {
+  class NetworkSide(val fromNet: Probe[ByteString], val toNet: ByteStringSinkProbe, val framesOut: Http2FrameProbe) extends WindowTracking {
     override def frameProbeDelegate = framesOut
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
-
-    override def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = {
-      updateToServerWindowForConnection(_ - data.length)
-      updateToServerWindows(streamId, _ - data.length)
-      super.sendDATA(streamId, endStream, data)
-    }
-
-    override def sendWINDOW_UPDATE(streamId: Int, windowSizeIncrement: Int): Unit = {
-      super.sendWINDOW_UPDATE(streamId, windowSizeIncrement)
-      if (streamId == 0) updateFromServerWindowForConnection(_ + windowSizeIncrement)
-      else updateFromServerWindows(streamId, _ + windowSizeIncrement)
-    }
-
-    def expectWindowUpdate(): Unit =
-      framesOut.expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE) match {
-        case (flags, streamId, payload) =>
-          // TODO: DRY up with autoFrameHandler
-          val windowSizeIncrement = new ByteReader(payload).readIntBE()
-
-          if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
-          else updateToServerWindows(streamId, _ + windowSizeIncrement)
-      }
-
-    final def pollForWindowUpdates(duration: FiniteDuration): Unit =
-      try {
-        toNet.within(duration)(expectWindowUpdate())
-
-        pollForWindowUpdates(duration)
-      } catch {
-        case e: AssertionError if e.getMessage contains "but only got [0] bytes" =>
-        // timeout, that's expected
-        case e: AssertionError if (e.getMessage contains "block took") && (e.getMessage contains "exceeding") =>
-          // pause like GC, poll again just to be sure
-          pollForWindowUpdates(duration)
-      }
-
-    // keep counters that are updated on outgoing network.sendDATA and incoming WINDOW_UPDATE frames
-    private var toServerWindows: Map[Int, Int] = Map.empty.withDefaultValue(Http2Protocol.InitialWindowSize)
-    private var toServerWindowForConnection = Http2Protocol.InitialWindowSize
-    def remainingToServerWindowForConnection: Int = toServerWindowForConnection
-    def remainingToServerWindowFor(streamId: Int): Int = toServerWindows(streamId) min remainingToServerWindowForConnection
-
-    def updateWindowMap(streamId: Int, update: Int => Int): Map[Int, Int] => Map[Int, Int] =
-      map => map.updated(streamId, update(map(streamId)))
-
-    def safeUpdate(update: Int => Int): Int => Int = { oldValue =>
-      val newValue = update(oldValue)
-      newValue should be >= 0
-      newValue
-    }
-
-    def updateToServerWindows(streamId: Int, update: Int => Int): Unit =
-      toServerWindows = updateWindowMap(streamId, safeUpdate(update))(toServerWindows)
-    def updateToServerWindowForConnection(update: Int => Int): Unit =
-      toServerWindowForConnection = safeUpdate(update)(toServerWindowForConnection)
 
   }
 

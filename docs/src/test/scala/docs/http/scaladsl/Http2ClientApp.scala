@@ -57,9 +57,11 @@ object Http2ClientApp extends App {
       println(s"[2] Got index.js: $res")
       res.get.entity.dataBytes.runWith(Sink.ignore).onComplete(res => println(s"Finished reading [2] $res"))
     }
+
   dispatch(HttpRequest(uri = "https://doc.akka.io/api/akka/current/lib/MaterialIcons-Regular.woff"))
     .flatMap(_.toStrict(1.second))
     .onComplete(res => println(s"[3] Got font: $res"))
+
   dispatch(HttpRequest(uri = "https://doc.akka.io/favicon.ico"))
     .flatMap(_.toStrict(1.second))
     .onComplete(res => println(s"[4] Got favicon: $res"))

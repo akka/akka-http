@@ -5,9 +5,9 @@
 package akka.http.impl.engine.ws
 
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ClassicActorSystemProvider }
 import akka.annotation.InternalApi
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.TestSubscriber
 import akka.util.{ ByteString, PrettyByteString }
 
@@ -108,4 +108,11 @@ private[http] object ByteStringSinkProbe {
 
       def within[T](max: FiniteDuration)(f: => T): T = probe.within(max)(f)
     }
+
+  def apply(source: Source[ByteString, _])(implicit system: ClassicActorSystemProvider): ByteStringSinkProbe = {
+    val probe = ByteStringSinkProbe()(system.classicSystem)
+    source.runWith(probe.sink)
+    probe.ensureSubscription()
+    probe
+  }
 }

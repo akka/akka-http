@@ -4,7 +4,7 @@
 
 ## Signature
 
-@@signature [AttributeDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalAttribute }
+@@signature [AttributeDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/AttributeDirectives.scala) { #optionalAttribute }
 
 @@@
 

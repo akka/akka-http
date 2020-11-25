@@ -84,7 +84,7 @@ with an empty response entity.
 Starting a graceful termination is as simple as invoking the terminate() method on the server binding:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #graceful-termination }
+:   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #graceful-termination }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #graceful-termination }
+:   @@snip [HttpServerExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #graceful-termination }

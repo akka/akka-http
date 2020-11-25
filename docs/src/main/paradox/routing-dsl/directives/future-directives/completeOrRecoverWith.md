@@ -20,7 +20,7 @@ To handle the successful case manually as well, use the @ref[onComplete](onCompl
 ## Example
 
 Scala
-:  @@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #completeOrRecoverWith }
+:  @@snip [FutureDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #completeOrRecoverWith }
 
 Java
-:  @@snip [FutureDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #completeOrRecoverWith }
+:  @@snip [FutureDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java) { #completeOrRecoverWith }

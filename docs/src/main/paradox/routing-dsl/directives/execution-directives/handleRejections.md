@@ -18,7 +18,7 @@ See @ref[Rejections](../../rejections.md) for general information about options 
 ## Example
 
 Scala
-:  @@snip [ExecutionDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala) { #handleRejections }
+:  @@snip [ExecutionDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala) { #handleRejections }
 
 Java
-:  @@snip [ExecutionDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleRejections }
+:  @@snip [ExecutionDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleRejections }

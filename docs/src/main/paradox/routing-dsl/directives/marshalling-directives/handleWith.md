@@ -34,22 +34,22 @@ on marshalling entities with akka-http.
 The following example uses an `updatePerson` function with a `Person` @scala[case ]class as an input and output. We plug this function into our route using `handleWith`.
 
 Scala
-:   @@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-case-class }
+:   @@snip [MarshallingDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-case-class }
 
 Java
-:   @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+:   @@snip [MarshallingDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
 
 
 Scala
-:   @@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-handleWith-with-json }
+:   @@snip [MarshallingDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #example-handleWith-with-json }
 
 Java
-:   @@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-handleWith-with-json }
+:   @@snip [MarshallingDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-handleWith-with-json }
 
 
 The @scala[PersonJsonSupport object handles]@java[previous example uses also @ref[Json Support via Jackson](../../../common/json-support.md#jackson-support) to handle] both marshalling and unmarshalling of the Person case class.
 
 @@@ div { .group-scala }
-@@snip [MarshallingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
+@@snip [MarshallingDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala) { #person-json-support }
 
 @@@

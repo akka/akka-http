@@ -32,10 +32,10 @@ structure itself.
 Here you can see an example of it:
 
 Scala
-:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #seal-handler-example }
+:   @@snip [ExceptionHandlerExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #seal-handler-example }
 
 Java
-:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/ExceptionHandlerInSealExample.java) { #seal-handler-example }
+:   @@snip [ExceptionHandlerExamplesTest.java](/docs/src/test/java/docs/http/javadsl/ExceptionHandlerInSealExample.java) { #seal-handler-example }
 
 
 The second case allows you to restrict the applicability of your handler to certain branches of your route structure.
@@ -43,15 +43,15 @@ The second case allows you to restrict the applicability of your handler to cert
 Here is an example for wiring up a custom handler via @ref[handleExceptions](directives/execution-directives/handleExceptions.md):
 
 Scala
-:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #explicit-handler-example }
+:   @@snip [ExceptionHandlerExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #explicit-handler-example }
 
 Java
-:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/ExceptionHandlerExample.java) { #explicit-handler-example }
+:   @@snip [ExceptionHandlerExamplesTest.java](/docs/src/test/java/docs/http/javadsl/ExceptionHandlerExample.java) { #explicit-handler-example }
 
 @@@ div { .group-scala }
 And this is how to do it implicitly:
 
-@@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #implicit-handler-example }
+@@snip [ExceptionHandlerExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #implicit-handler-example }
 @@@
 
 ## Default Exception Handler
@@ -101,10 +101,10 @@ However, sometimes it can be useful to include it in the exception and logging f
 In such cases, you can use exceptions that extend `ExceptionWithErrorInfo`, such as `IllegalHeaderException`:
 
 Scala
-:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #no-exception-details-in-response }
+:   @@snip [ExceptionHandlerExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #no-exception-details-in-response }
 
 Java
-:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/RespondWithHeaderHandlerExampleTest.java) { #no-exception-details-in-response  }
+:   @@snip [ExceptionHandlerExamplesTest.java](/docs/src/test/java/docs/http/javadsl/RespondWithHeaderHandlerExampleTest.java) { #no-exception-details-in-response  }
 
 
 ## Respond with headers and Exception Handler
@@ -113,7 +113,7 @@ If you wrap an ExceptionHandler inside a different directive, then that directiv
 that wrapping an ExceptionHandler inside a respondWithHeader directive will still add the header to the response.   
 
 Scala
-:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #respond-with-header-exceptionhandler-example }
+:   @@snip [ExceptionHandlerExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #respond-with-header-exceptionhandler-example }
 
 Java
-:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/RespondWithHeaderHandlerExampleTest.java) { #respond-with-header-exceptionhandler-example  }
+:   @@snip [ExceptionHandlerExamplesTest.java](/docs/src/test/java/docs/http/javadsl/RespondWithHeaderHandlerExampleTest.java) { #respond-with-header-exceptionhandler-example  }

@@ -218,19 +218,19 @@ As you have seen from the examples presented so far the "normal" way of composin
 Let's take a look at this concrete example:
 
 Scala
-:  @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-1 }
+:  @@snip [DirectiveExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-1 }
 
 Java
-:  @@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #example1 }
+:  @@snip [DirectiveExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #example1 }
 
 Here the `get` and `put` directives are chained together @scala[with the `concat` combinator]@java[using the `orElse` method] to form a higher-level route that
 serves as the inner route of the `path` directive. Let's rewrite it in the following way:
 
 Scala
-:  @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #getOrPut }
+:  @@snip [DirectiveExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #getOrPut }
 
 Java
-:  @@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPut }
+:  @@snip [DirectiveExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPut }
 
 @@@ div { .group-java }
 
@@ -249,27 +249,27 @@ also use the `|` operator (or the `or` method) on directives. Here is yet anothe
 @@@
 
 Scala
-:  @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #getOrPutUsingPipe }
+:  @@snip [DirectiveExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #getOrPutUsingPipe }
 
 Java
-:  @@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPutUsingAnyOf }
+:  @@snip [DirectiveExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPutUsingAnyOf }
 
 @@@ div { .group-scala }
 
 Or better (without dropping down to writing an explicit @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] function manually):
 
-@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #getOrPutUsingPipeAndExtractMethod }
+@@snip [DirectiveExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #getOrPutUsingPipeAndExtractMethod }
 
 If you have a larger route structure where the `(get | put)` snippet appears several times you could also factor it
 out like this:
 
-@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-5 }
+@@snip [DirectiveExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-5 }
 
 Note that, because `getOrPut` doesn't take any parameters, it can be a `val` here.
 
 As an alternative to nesting you can also use the `&` operator (or the `and` method):
 
-@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-6 }
+@@snip [DirectiveExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-6 }
 
 Here you can see that, when directives producing extractions are combined with `&`, the resulting "super-directive"
 simply extracts the concatenation of its sub-extractions.
@@ -277,7 +277,7 @@ simply extracts the concatenation of its sub-extractions.
 And once again, you can factor things out if you want, thereby pushing the "factoring out" of directive configurations
 to its extreme:
 
-@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-7 }
+@@snip [DirectiveExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-7 }
 
 This type of combining directives with the `|` and `&` operators as well as "saving" more complex directive
 configurations as a `val` works across the board, with all directives taking inner routes.
@@ -290,23 +290,23 @@ The previous example, tries to complete the route first with a `GET` or with a `
 
 In case you are constantly nesting the same directives several times in you code, you could factor them out in their own method and use it everywhere:
 
-@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNesting }
+@@snip [DirectiveExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNesting }
 
 Here we simple created our own combined directive that accepts `GET` requests, then extracts the method and completes it with an inner route that takes this HTTP method as a parameter.
 
 Again, instead of extracting own combined directives to its own method, we can make use of the `allOf` combinator. The following code is equivalent to the previous one:
 
-@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNestingAllOf }
+@@snip [DirectiveExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNestingAllOf }
 
 In this previous example, the the inner route function provided to `allOf` will be called when the request is a `GET` and with the extracted client IP obtained from the second directive.
 
 As you have already seen in the previous section, you can also use the `concat` method defined in @apidoc[RouteDirectives] as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `concat`:
 
-@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingConcat }
+@@snip [DirectiveExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingConcat }
 
 The `concat` combinator comes handy when you want to avoid nesting. Here you can see an illustrative example:
  
-@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingConcatBig }
+@@snip [DirectiveExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingConcatBig }
 
 Notice how you could adjust the indentation in these last two examples to have a more readable code.
 
@@ -334,7 +334,7 @@ Scala code that compiles but does not work as expected. What would be intended a
 
 Alternatively we can combine directives using the `~` operator where we chain them together instead of passing each directive as a separate argument. Let's take a look at the usage of this combinator:
 
-@@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-8 }
+@@snip [DirectiveExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-8 }
 
 @@@
 

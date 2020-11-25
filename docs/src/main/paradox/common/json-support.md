@@ -57,7 +57,7 @@ Finally, import the `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` impl
 
 Once you have done this (un)marshalling between JSON and your type `T` should work nicely and transparently.
 
-@@snip [SprayJsonExampleSpec.scala]($test$/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #minimal-spray-json-example }
+@@snip [SprayJsonExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #minimal-spray-json-example }
 
 @@@ 
 
@@ -75,7 +75,7 @@ Scala
 :   @@snip [EntityStreamingSpec.scala](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/EntityStreamingSpec.scala) { #json-streaming-client-example }
  
 Java
-:   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #json-streaming-client-example-raw }
+:   @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #json-streaming-client-example-raw }
 
 @@@ div { .group-scala }
 
@@ -108,7 +108,7 @@ By default, spray-json marshals your types to compact printed JSON by implicit c
 
 Alternatively to marshal your types to pretty printed JSON, bring a `PrettyPrinter` in scope to perform implicit conversion.
 
-@@snip [SprayJsonPrettyMarshalSpec.scala]($test$/scala/docs/http/scaladsl/SprayJsonPrettyMarshalSpec.scala) { #example }
+@@snip [SprayJsonPrettyMarshalSpec.scala](/docs/src/test/scala/docs/http/scaladsl/SprayJsonPrettyMarshalSpec.scala) { #example }
 
 To learn more about how spray-json works please refer to its [documentation][spray-json].
 

@@ -19,15 +19,15 @@ The basic technique is explained in the chapter about Composing Directives, wher
 `getOrPut` is defined like this:
 
 Scala
-:   @@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #labeling }
+:   @@snip [CustomDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #labeling }
 
 Java
-:   @@snip [CustomDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #labeling-1 #labeling-2 }
+:   @@snip [CustomDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #labeling-1 #labeling-2 }
 
 @@@ div { .group-java }
 Multiple directives can be nested to produce a single directive out of multiple like this:
 
-@@snip [CustomDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #composition-1 #composition-2 }
+@@snip [CustomDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #composition-1 #composition-2 }
 
 @@@
 
@@ -56,7 +56,7 @@ the following transformations are also defined on all `Directive` instances:
 If the Directive is a single-value `Directive`, the `map` method allows
 for simple transformations:
 
-@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #map-0 }
+@@snip [CustomDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #map-0 }
 
 One example of a predefined directive relying on `map` is the @github[optionalHeaderValue](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue } directive.
 
@@ -71,7 +71,7 @@ The number and/or types of the extractions can be changed arbitrarily. For examp
 if `R` is `Tuple2[A, B]` then the result will be a `Directive[(A, B)]`. Here is a
 somewhat contrived example:
 
-@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #tmap-1 }
+@@snip [CustomDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #tmap-1 }
 
 <a id="flatmap-tflatmap"></a>
 ### flatMap and tflatMap
@@ -95,7 +95,7 @@ variant called `flatMap`, which simplifies the operation for Directives only ext
 
 Here is the (contrived) example from above, which doubles positive Int values and rejects all others:
 
-@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #flatMap-0 }
+@@snip [CustomDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #flatMap-0 }
 
 A common pattern that relies on flatMap is to first extract a value
 from the RequestContext with the extract directive and then flatMap with
@@ -197,11 +197,11 @@ A `Directive[(String, Int)]` extracts a `String` value and an `Int` value
 (like a `parameters('a.as[String], 'b.as[Int])` directive). Such a directive can be defined to extract the
 hostname and port of a request:
 
-@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-1 }
+@@snip [CustomDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-1 }
 
 Beside using `Directive.apply`, you can also extending `Directive` directly(This is actually uncommon and the first is preferable for common use cases):
 
-@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-2 }
+@@snip [CustomDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-2 }
 
 Keeping extractions as `Tuples` has a lot of advantages, mainly great flexibility
 while upholding full type safety and “inferability”. However, the number of times

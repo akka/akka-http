@@ -10,10 +10,10 @@ Since akka-http-core provides the central HTTP data structures you will find the
 few places around the code base (and probably your own code as well):
 
 Scala
-:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #import-model }
+:   @@snip [ModelSpec.scala](/docs/src/test/scala/docs/http/scaladsl/ModelSpec.scala) { #import-model }
 
 Java
-:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #import-model }
+:   @@snip [ModelDocTest.java](/docs/src/test/java/docs/http/javadsl/ModelDocTest.java) { #import-model }
 
 This brings all of the most relevant types in scope, mainly:
 
@@ -49,10 +49,10 @@ An @apidoc[HttpRequest] consists of
 Here are some examples how to construct an @apidoc[HttpRequest]:
 
 Scala
-:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-request }
+:   @@snip [ModelSpec.scala](/docs/src/test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-request }
 
 Java
-:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #construct-request }
+:   @@snip [ModelDocTest.java](/docs/src/test/java/docs/http/javadsl/ModelDocTest.java) { #construct-request }
 
 @@@ div { .group-scala }
 All parameters of `HttpRequest.apply` have default values set, so `headers` for example don't need to be specified
@@ -76,10 +76,10 @@ To avoid accidentally leaking such information, these fields are omitted from @a
 If needed, it is possible to define a custom string representation including all fields as shown in the following example:
 
 Scala
-:   @@snip [HttpRequestDetailedStringExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpRequestDetailedStringExampleSpec.scala) 
+:   @@snip [HttpRequestDetailedStringExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpRequestDetailedStringExampleSpec.scala) 
 
 Java
-:   @@snip [HttpRequestDetailedStringExampleTest.java]($test$/java/docs/http/javadsl/HttpRequestDetailedStringExampleTest.java) 
+:   @@snip [HttpRequestDetailedStringExampleTest.java](/docs/src/test/java/docs/http/javadsl/HttpRequestDetailedStringExampleTest.java) 
 
 @@@
 
@@ -98,10 +98,10 @@ For instance, in order to provide a raw request uri, bypassing the default url n
 following:
 
 Scala
-:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #synthetic-header-s3 }
+:   @@snip [ModelSpec.scala](/docs/src/test/scala/docs/http/scaladsl/ModelSpec.scala) { #synthetic-header-s3 }
 
 Java
-:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #synthetic-header-s3 }
+:   @@snip [ModelDocTest.java](/docs/src/test/java/docs/http/javadsl/ModelDocTest.java) { #synthetic-header-s3 }
 
 ## HttpResponse
 
@@ -115,10 +115,10 @@ An @apidoc[HttpResponse] consists of
 Here are some examples how to construct an @apidoc[HttpResponse]:
 
 Scala
-:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-response }
+:   @@snip [ModelSpec.scala](/docs/src/test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-response }
 
 Java
-:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #construct-response }
+:   @@snip [ModelDocTest.java](/docs/src/test/java/docs/http/javadsl/ModelDocTest.java) { #construct-response }
 
 In addition to the simple @scala[@apidoc[HttpEntity] constructors]@java[`HttpEntities.create` methods] which create an entity from a fixed `String` or @apidoc[akka.util.ByteString]
 as shown here the Akka HTTP model defines a number of subclasses of @apidoc[HttpEntity] which allow body data to be specified as a
@@ -133,10 +133,10 @@ To avoid accidentally leaking such information, these fields are omitted from @a
 If needed, it is possible to define a custom string representation including all fields as shown in the following example:
 
 Scala
-:   @@snip [HttpResponseDetailedStringExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpResponseDetailedStringExampleSpec.scala) 
+:   @@snip [HttpResponseDetailedStringExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpResponseDetailedStringExampleSpec.scala) 
 
 Java
-:   @@snip [HttpResponseDetailedStringExampleTest.java]($test$/java/docs/http/javadsl/HttpResponseDetailedStringExampleTest.java) 
+:   @@snip [HttpResponseDetailedStringExampleTest.java](/docs/src/test/java/docs/http/javadsl/HttpResponseDetailedStringExampleTest.java) 
 
 @@@
 
@@ -282,10 +282,10 @@ as a @apidoc[RawHeader], which is essentially a String/String name/value pair.
 See these examples of how to deal with headers:
 
 Scala
-:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #headers }
+:   @@snip [ModelSpec.scala](/docs/src/test/scala/docs/http/scaladsl/ModelSpec.scala) { #headers }
 
 Java
-:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #headers }
+:   @@snip [ModelDocTest.java](/docs/src/test/java/docs/http/javadsl/ModelDocTest.java) { #headers }
 
 ## HTTP Headers
 
@@ -359,7 +359,7 @@ Scala
 :   @@snip [ModeledCustomHeaderSpec.scala](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #modeled-api-key-custom-header }
 
 Java
-:   @@snip [CustomHeaderExampleTest.java]($test$/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #modeled-api-key-custom-header }
+:   @@snip [CustomHeaderExampleTest.java](/docs/src/test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #modeled-api-key-custom-header }
 
 Which allows this @scala[CustomHeader]@java[modeled custom header] to be used in the following scenarios:
 
@@ -367,7 +367,7 @@ Scala
 :   @@snip [ModeledCustomHeaderSpec.scala](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-examples }
 
 Java
-:   @@snip [CustomHeaderExampleTest.java]($test$/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #conversion-creation-custom-header }
+:   @@snip [CustomHeaderExampleTest.java](/docs/src/test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #conversion-creation-custom-header }
 
 Including usage within the header directives like in the following @ref[headerValuePF](../routing-dsl/directives/header-directives/headerValuePF.md) example:
 
@@ -375,7 +375,7 @@ Scala
 :   @@snip [ModeledCustomHeaderSpec.scala](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-in-routes }
 
 Java
-:   @@snip [CustomHeaderExampleTest.java]($test$/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
+:   @@snip [CustomHeaderExampleTest.java](/docs/src/test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
 
 @@@ note { .group-scala }
 When defining custom headers, it is better to extend @apidoc[ModeledCustomHeader] instead of its parent @apidoc[CustomHeader].
@@ -395,10 +395,10 @@ explicitly closing over it. Such information can be attached to a request or res
 message attributes:
 
 Scala
-:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #attributes }
+:   @@snip [ModelSpec.scala](/docs/src/test/scala/docs/http/scaladsl/ModelSpec.scala) { #attributes }
 
 Java
-:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #attributes }
+:   @@snip [ModelDocTest.java](/docs/src/test/java/docs/http/javadsl/ModelDocTest.java) { #attributes }
 
 Message attributes are only to be used within in your application, they are not present on the wire.
 
@@ -435,7 +435,7 @@ Scala
 :   @@snip [CustomMediaTypesSpec.scala](/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomMediaTypesSpec.scala) { #application-custom }
 
 Java
-:   @@snip [CustomMediaTypesExampleTest.java]($test$/java/docs/http/javadsl/CustomMediaTypesExampleTest.java) { #application-custom-java }
+:   @@snip [CustomMediaTypesExampleTest.java](/docs/src/test/java/docs/http/javadsl/CustomMediaTypesExampleTest.java) { #application-custom-java }
 
 You may also want to read about MediaType [Registration trees](https://en.wikipedia.org/wiki/Media_type#Registration_trees), in order to register your vendor specific media types
 in the right style / place.
@@ -451,7 +451,7 @@ Scala
 :   @@snip [CustomStatusCodesSpec.scala](/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
 
 Java
-:   @@snip [CustomStatusCodesExampleTest.java]($test$/java/docs/http/javadsl/CustomStatusCodesExampleTest.java) { #application-custom-java }
+:   @@snip [CustomStatusCodesExampleTest.java](/docs/src/test/java/docs/http/javadsl/CustomStatusCodesExampleTest.java) { #application-custom-java }
 
 <a id="registeringcustommethod"></a>
 ## Registering Custom HTTP Method
@@ -460,7 +460,7 @@ Akka HTTP also allows you to define custom HTTP methods, other than the well-kno
 To use a custom HTTP method, you need to define it, and then add it to parser settings like below:
 
 Scala
-:   @@snip [CustomHttpMethodSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+:   @@snip [CustomHttpMethodSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
 
 Java
-:   @@snip [CustomHttpMethodsExampleTest.java]($test$/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }
+:   @@snip [CustomHttpMethodsExampleTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }

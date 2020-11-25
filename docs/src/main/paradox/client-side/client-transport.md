@@ -65,10 +65,10 @@ To make use of an HTTP proxy when using the `singleRequest` API you simply need 
 the appropriate settings object when calling the single request method.
 
 Scala
-:  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
+:  @@snip [HttpClientExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
 
 Java
-:  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #https-proxy-example-single-request }
+:  @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #https-proxy-example-single-request }
 
 ### Use HTTP(S) proxy that requires authentication
 
@@ -77,10 +77,10 @@ when making the CONNECT request to the proxy:
 
 
 Scala
-:  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #auth-https-proxy-example-single-request }
+:  @@snip [HttpClientExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #auth-https-proxy-example-single-request }
 
 Java
-:  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #auth-https-proxy-example-single-request }
+:  @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #auth-https-proxy-example-single-request }
 
 ### Use HTTP(S) proxy with @scala[Http().singleWebSocketRequest]@java[Http.get(...).singleWebSocketRequest]
 
@@ -88,20 +88,20 @@ Making use of an HTTP proxy when using the `singleWebSocketRequest` is done like
 instead of `ConnectionPoolSettings`:
 
 Scala
-:  @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #https-proxy-singleWebSocket-request-example }
+:  @@snip [WebSocketClientExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #https-proxy-singleWebSocket-request-example }
 
 Java
-:  @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #https-proxy-singleWebSocket-request-example }
+:  @@snip [WebSocketClientExampleTest.java](/docs/src/test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #https-proxy-singleWebSocket-request-example }
 
 ### Use HTTP(S) proxy that requires authentication for Web Sockets
 
 Here is an example for Web Socket:
 
 Scala
-:  @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #auth-https-proxy-singleWebSocket-request-example }
+:  @@snip [WebSocketClientExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #auth-https-proxy-singleWebSocket-request-example }
 
 Java
-:  @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #auth-https-proxy-singleWebSocket-request-example }
+:  @@snip [WebSocketClientExampleTest.java](/docs/src/test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #auth-https-proxy-singleWebSocket-request-example }
 
 
 ## Custom Host Name Resolution Transport

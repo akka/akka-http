@@ -79,12 +79,12 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
   /** Called by the multiplexer before canceling the stage on outlet cancellation */
   def frameOutFinished(): Unit
+  
+  def pushFrameOut(event: FrameEvent): Unit
 
-  def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer): Http2Multiplexer =
+  def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogHelper { self =>
       def log: LoggingAdapter = logic.log
-
-      outlet.setHandler(this)
 
       private var _currentInitialWindow: Int = Http2Protocol.InitialWindowSize
       override def currentInitialWindow: Int = _currentInitialWindow
@@ -142,7 +142,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           val maxBytesToSend = currentMaxFrameSize min connectionWindowLeft
           val result = pullNextFrame(streamId, maxBytesToSend)
           val frame = result.frame
-          outlet.push(frame)
+          pushFrameOut(frame)
           connectionWindowLeft -= frame.payload.size
 
           result match {
@@ -177,7 +177,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       case object WaitingForData extends MultiplexerState {
         def onPull(): MultiplexerState = throw new IllegalStateException(s"pull unexpected while waiting for data")
         def pushControlFrame(frame: FrameEvent): MultiplexerState = {
-          outlet.push(frame)
+          pushFrameOut(frame)
           Idle
         }
         def connectionWindowAvailable(): MultiplexerState = this // nothing to do, as there is no data to send
@@ -193,7 +193,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         allowReadingIncomingFrames(controlFrameBuffer.size < settings.outgoingControlFrameBufferSize)
         def onPull(): MultiplexerState = controlFrameBuffer match {
           case first +: remaining =>
-            outlet.push(first)
+            pushFrameOut(first)
             allowReadingIncomingFrames(remaining.size < settings.outgoingControlFrameBufferSize)
             if (remaining.isEmpty && sendableOutstreams.isEmpty) Idle
             else if (remaining.isEmpty) WaitingForNetworkToSendData(sendableOutstreams)
@@ -258,7 +258,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         require(sendableOutstreams.nonEmpty)
         def onPull(): MultiplexerState = throw new IllegalStateException(s"pull unexpected while waiting for connection window")
         def pushControlFrame(frame: FrameEvent): MultiplexerState = {
-          outlet.push(frame)
+          pushFrameOut(frame)
           WaitingForNetworkToSendData(sendableOutstreams)
         }
         def connectionWindowAvailable(): MultiplexerState = sendNext()

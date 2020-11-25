@@ -442,10 +442,6 @@ lazy val docs = project("docs")
       "google.analytics.account" -> "UA-21117439-1",
       "google.analytics.domain.name" -> "akka.io",
       "github.base_url" -> GitHub.url(version.value, isSnapshot.value),
-      "snip.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
-      "snip.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
-      "signature.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
-      "signature.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
     ),
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
