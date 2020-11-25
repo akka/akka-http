@@ -25,12 +25,19 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.StageLogging
+import akka.stream.stage.TimerGraphStageLogic
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser)
   extends Http2Demux(http2Settings, initialRemoteSettings = Nil, upgraded = false, isServer = false) {
@@ -44,12 +51,96 @@ private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, master
 
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
   extends Http2Demux(http2Settings, initialRemoteSettings, upgraded, isServer = true) {
   // We don't provide access to incoming trailing request headers on the server side
   @silent("not used")
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = None
 
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[http2] object ConfigurablePing {
+  case object Tick
+  // single instance used each time, only a single ping in flight ever so no need to use changing payloads
+  val Ping = PingFrame(false, ByteString("abcdefgh"))
+
+  object PingState {
+    def apply(settings: Http2CommonSettings): PingState = {
+      if (settings.pingInterval == 0.seconds) DisabledPingState
+      else {
+        // this means timeout is always one tick, but ping interval can be multiple ticks
+        val tickInterval =
+          if (settings.pingTimeout == Duration.Zero) settings.pingInterval
+          else settings.pingInterval.min(settings.pingTimeout)
+        new EnabledPingState(
+          tickInterval,
+          pingEveryNTickWithoutData = settings.pingInterval.toMillis / tickInterval.toMillis
+        )
+      }
+    }
+  }
+  trait PingState {
+    def tickInterval(): Option[FiniteDuration]
+    def onDataFrameSeen(): Unit
+    def onPingAck(): Unit
+    def onTick(): Unit
+    def clear(): Unit
+    def shouldEmitPing(): Boolean
+    def sendingPing(): Unit
+    def pingAckOverdue(): Boolean
+  }
+  object DisabledPingState extends PingState {
+    def tickInterval(): Option[FiniteDuration] = None
+    def onDataFrameSeen(): Unit = ()
+    def onPingAck(): Unit = ()
+    def onTick(): Unit = ()
+    def clear(): Unit = ()
+    def shouldEmitPing(): Boolean = false
+    def sendingPing(): Unit = ()
+    def pingAckOverdue(): Boolean = false
+  }
+  final class EnabledPingState(tickInterval: FiniteDuration, pingEveryNTickWithoutData: Long) extends PingState {
+    private var ticksWithoutData = 0L
+    private var ticksSincePing = 0L
+    private var pingInFlight = false
+
+    def tickInterval(): Option[FiniteDuration] = Some(tickInterval)
+
+    def onDataFrameSeen(): Unit = {
+      ticksWithoutData = 0L
+    }
+    def onPingAck(): Unit = {
+      ticksSincePing = 0L
+      pingInFlight = false
+    }
+    def onTick(): Unit = {
+      ticksWithoutData += 1L
+      if (pingInFlight) ticksSincePing += 1L
+    }
+    def clear(): Unit = {
+      ticksWithoutData = 0L
+      ticksSincePing = 0L
+    }
+    def shouldEmitPing(): Boolean =
+      ticksWithoutData > 0L && ticksWithoutData % pingEveryNTickWithoutData == 0
+
+    def sendingPing(): Unit = {
+      ticksSincePing = 0L
+      pingInFlight = true
+    }
+
+    def pingAckOverdue(): Boolean = {
+      pingInFlight && ticksSincePing > 1L
+    }
+  }
 }
 
 /**
@@ -118,7 +209,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
+    new TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
       logic =>
 
       def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart] = stage.wrapTrailingHeaders(headers)
@@ -129,7 +220,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
-      val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
+      override def pushFrameOut(event: FrameEvent): Unit = {
+        pingState.onDataFrameSeen()
+        frameOut.push(event)
+      }
+
+      val multiplexer = createMultiplexer(StreamPrioritizer.first())
+      frameOut.setHandler(multiplexer)
+
+      val pingState = ConfigurablePing.PingState(http2Settings)
 
       // Send initial settings based on the local application.conf. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
@@ -150,6 +249,11 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         // both client and server must send a settings frame as first frame
         multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))
+
+        pingState.tickInterval().foreach(interval =>
+          // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
+          schedulePeriodically(ConfigurablePing.Tick, interval)
+        )
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
@@ -180,7 +284,12 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       setHandler(frameIn, new InHandler {
 
         def onPush(): Unit = {
-          grab(frameIn) match {
+          val frame = grab(frameIn)
+          frame match {
+            case _: PingFrame => // handle later
+            case _            => pingState.onDataFrameSeen()
+          }
+          frame match {
             case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ => multiplexer.updateConnectionLevelWindow(increment)
             case p: PriorityFrame => multiplexer.updatePriority(p)
             case s: StreamFrameEvent => handleStreamEvent(s)
@@ -200,8 +309,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             // are enforced from the start of the connection so there's no need to invoke
             // `enforceSettings(initialLocalSettings)`
 
-            case PingFrame(true, _)  =>
-            // ignore for now (we don't send any pings)
+            case PingFrame(true, data) =>
+              if (data != ConfigurablePing.Ping.data) {
+                // We only ever push static data, responding with anything else is wrong
+                pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Ping ack contained unexpected data")
+              } else {
+                pingState.onPingAck()
+              }
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
@@ -284,6 +398,22 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }
         settingsAppliedOk
+      }
+
+      override protected def onTimer(timerKey: Any): Unit = timerKey match {
+        case ConfigurablePing.Tick =>
+          // don't do anything unless there are active streams
+          if (activeStreamCount() > 0) {
+            pingState.onTick()
+            if (pingState.pingAckOverdue()) {
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Ping ack timeout")
+            } else if (pingState.shouldEmitPing()) {
+              pingState.sendingPing()
+              multiplexer.pushControlFrame(ConfigurablePing.Ping)
+            }
+          } else {
+            pingState.clear()
+          }
       }
 
       override def postStop(): Unit = {

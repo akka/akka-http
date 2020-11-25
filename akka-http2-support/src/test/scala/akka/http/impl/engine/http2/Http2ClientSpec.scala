@@ -501,6 +501,58 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
 
     }
+
+    "support for configurable ping" should {
+      "send pings when there is an active but slow stream from client" in new TestSetup with NetProbes {
+        override def settings = super.settings.mapHttp2Settings(_.withPingInterval(500.millis))
+        val streamId = 0x1
+        val requestStream = TestPublisher.probe[ByteString]()
+        user.emitRequest(streamId, HttpRequest(
+          protocol = HttpProtocols.`HTTP/2.0`,
+          entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
+        network.expectDecodedHEADERS(streamId, endStream = false)
+        network.expectNoBytes(250.millis) // no data for 500ms interval should trigger ping (but server counts from emitting last frame, so it's not really 500ms here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        network.expectNoBytes(2.millis) // no data after ping
+      }
+      "send pings when there is an active but slow stream to client" in new TestSetup with NetProbes {
+        override def settings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(500.millis))
+        }
+        val streamId = 0x1
+        user.emitRequest(streamId, HttpRequest(
+          protocol = HttpProtocols.`HTTP/2.0`,
+        ))
+        network.expectDecodedHEADERS(streamId)
+
+        network.sendHEADERS(streamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          RawHeader("content-type", "application/octet-stream")
+        ))
+        user.expectResponse()
+        network.expectNoBytes(250.millis) // no data for 500ms interval should trigger ping (but server counts from emitting last frame, so it's not really 500ms here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+      }
+
+      "send GOAWAY when ping ack times out" in new TestSetup with NetProbes {
+        override def settings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(800.millis).withPingTimeout(400.millis))
+        }
+        val streamId = 0x1
+        val requestStream = TestPublisher.probe[ByteString]()
+        user.emitRequest(streamId, HttpRequest(
+          protocol = HttpProtocols.`HTTP/2.0`,
+          entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
+        network.expectDecodedHEADERS(streamId, endStream = false)
+        network.expectNoBytes(250.millis) // no data for 800ms interval should trigger ping (but server counts from emitting last frame, so it's not really 800ms here)
+        network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        network.expectNoBytes(200.millis) // timeout is 400ms second from server emitting ping, (so not really 400ms here)
+        val (_, errorCode) = network.expectGOAWAY(streamId)
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+      }
+    }
   }
 
   protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {
