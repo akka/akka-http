@@ -10,6 +10,7 @@ import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
+import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.client.RequestBuilding.Get
@@ -24,6 +25,7 @@ import akka.stream.Attributes.LogLevels
 import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
+import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 
 import scala.collection.immutable
@@ -39,7 +41,7 @@ import scala.concurrent.duration._
  * * validate the produced application-level responses
  */
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
-    akka.http.server.remote-address-header = on
+    akka.http.client.remote-address-header = on
     akka.http.client.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually {
@@ -499,6 +501,38 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         chunks(1) should be(LastChunk(extension = "", List(RawHeader("grpc-status", "0"))))
       }
 
+    }
+
+    "expose synthetic headers" should {
+      "expose Tls-Session-Info" in new TestSetup {
+        lazy val expectedSession = SSLContext.getDefault.createSSLEngine.getSession
+
+        override def settings: ClientConnectionSettings =
+          super.settings.withParserSettings(
+            super.settings.parserSettings
+              .withIncludeTlsSessionInfoHeader(true)
+              // let's sneak in test coverage of the attribute here as well as it requires the same setup
+              .withIncludeSslSessionAttribute(true))
+
+        override def modifyClient(client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed]) =
+          BidiFlow.fromGraph(client.withAttributes(
+            HttpAttributes.tlsSessionInfo(expectedSession)
+          ))
+
+        val streamId = 0x1
+        user.emitRequest(Get("/"))
+        network.expectDecodedHEADERS(streamId, endStream = true)
+
+        network.sendHEADERS(streamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          RawHeader("content-type", "application/octet-stream")
+        ))
+
+        val response = user.expectResponse()
+        val tlsSessionInfoHeader = response.header[headers.`Tls-Session-Info`].get
+        tlsSessionInfoHeader.session shouldBe expectedSession
+        response.attribute(AttributeKeys.sslSession).get.session shouldBe expectedSession
+      }
     }
 
     "support for configurable ping" should {
