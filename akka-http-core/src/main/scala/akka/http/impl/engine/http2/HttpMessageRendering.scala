@@ -18,7 +18,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 
-private[http2] class ResponseRendering(settings: ServerSettings, log: LoggingAdapter) extends RenderFactory[HttpResponse](log) {
+private[http2] class ResponseRendering(settings: ServerSettings, log: LoggingAdapter) extends MessageRendering[HttpResponse](log) {
 
   def failBecauseOfMissingAttribute: Nothing =
     // attribute is missing, shutting down because we will most likely otherwise miss a response and leak a substream
@@ -40,7 +40,7 @@ private[http2] class ResponseRendering(settings: ServerSettings, log: LoggingAda
 }
 
 @InternalApi
-private[http2] class RequestRendering(settings: ClientConnectionSettings, log: LoggingAdapter) extends RenderFactory[HttpRequest](log) {
+private[http2] class RequestRendering(settings: ClientConnectionSettings, log: LoggingAdapter) extends MessageRendering[HttpRequest](log) {
 
   val streamId = new AtomicInteger(1)
   override def nextStreamId(r: HttpRequest): Int = streamId.getAndAdd(2)
@@ -57,7 +57,7 @@ private[http2] class RequestRendering(settings: ClientConnectionSettings, log: L
   override lazy val peerIdHeader: Option[(String, String)] = settings.userAgentHeader.map(h => h.lowercaseName -> h.value)
 }
 
-abstract class RenderFactory[R <: HttpMessage](log: LoggingAdapter) {
+abstract class MessageRendering[R <: HttpMessage](log: LoggingAdapter) {
 
   def nextStreamId(r: R): Int
   def initialHeaderPairs(r: R): VectorBuilder[(String, String)]
@@ -67,8 +67,8 @@ abstract class RenderFactory[R <: HttpMessage](log: LoggingAdapter) {
 
     val headerPairs = initialHeaderPairs(r)
 
-    CommonRendering.addContentHeaders(headerPairs, r.entity)
-    CommonRendering.renderHeaders(r.headers, headerPairs, peerIdHeader, log, isServer = r.isResponse)
+    HttpMessageRendering.addContentHeaders(headerPairs, r.entity)
+    HttpMessageRendering.renderHeaders(r.headers, headerPairs, peerIdHeader, log, isServer = r.isResponse)
 
     val headersFrame = ParsedHeadersFrame(nextStreamId(r), endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
 
@@ -76,7 +76,7 @@ abstract class RenderFactory[R <: HttpMessage](log: LoggingAdapter) {
   }
 }
 
-private[http2] object CommonRendering {
+private[http2] object HttpMessageRendering {
 
   @volatile
   private var cachedDateHeader = (0L, ("", ""))
@@ -143,7 +143,7 @@ private[http2] object CommonRendering {
             addHeader(x)
             peerIdSeen = true
 
-          case x: Date =>
+          case x: Date if isServer =>
             addHeader(x)
             dateSeen = true
 
@@ -172,7 +172,7 @@ private[http2] object CommonRendering {
       }
     }
 
-    if (!dateSeen) {
+    if (!dateSeen && isServer) {
       headerPairs += dateHeader()
     }
 
