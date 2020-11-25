@@ -79,7 +79,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
   /** Called by the multiplexer before canceling the stage on outlet cancellation */
   def frameOutFinished(): Unit
-  
+
   def pushFrameOut(event: FrameEvent): Unit
 
   def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
