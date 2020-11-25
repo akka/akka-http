@@ -66,7 +66,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[Projec
   docs,
   compatibilityTests,
   httpJmhBench,
-  `maven-dependencies`
+  bom
 )
 lazy val root = Project(
     id = "akka-http-root",
@@ -475,10 +475,10 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
   )
 
 
-lazy val `maven-dependencies` = Project(id="maven-dependencies",base= file("maven-dependencies"))
+lazy val bom = Project(id="bom",base= file("bom"))
   .enablePlugins(HeaderPlugin)
   .settings(
-    name := "akka-http-maven-dependencies",
+    name := "akka-http-bom",
     // no MiMa
     mimaPreviousArtifacts := Set.empty,
     // publish Maven Style
