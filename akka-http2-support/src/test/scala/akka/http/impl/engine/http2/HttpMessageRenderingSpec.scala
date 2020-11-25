@@ -113,7 +113,6 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
       builder.result().exists(_._1 != "date") shouldBe false
     }
 
-
     // Client-specific tests
     "add user-agent header if default provided (in client mode)" in {
       val builder = new VectorBuilder[(String, String)]
@@ -139,8 +138,6 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
       val value1 = builder.result()
       value1.exists(_._1 == "date") shouldBe false
     }
-
-
 
   }
 

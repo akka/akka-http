@@ -114,7 +114,7 @@ private[http] object Http2Blueprint {
   def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] = {
     BidiFlow.fromFlows(
       Flow[HttpRequest].statefulMapConcat { () =>
-        val renderer = new RequestRendering(settings, log).renderer
+        val renderer = new RequestRendering(settings, log)
         request => renderer(request) :: Nil
       },
       StreamUtils.statefulAttrsMap[Http2SubStream, HttpResponse] { attrs =>
@@ -183,7 +183,7 @@ private[http] object Http2Blueprint {
     // the internal trie, however, has built-in protection and will do copy-on-write
     val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log)
     BidiFlow.fromFlows(
-      Flow[HttpResponse].map(new ResponseRendering(settings, log).renderer),
+      Flow[HttpResponse].map(new ResponseRendering(settings, log)),
       Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs =>
         val headerParser = masterHttpHeaderParser.createShallowCopy()
         RequestParsing.parseRequest(headerParser, settings, attrs)
