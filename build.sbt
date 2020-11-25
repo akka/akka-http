@@ -57,6 +57,7 @@ lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   httpMarshallersScala,
   httpMarshallersJava,
   httpScalafix,
+  httpJackson
 )
 lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
   httpTests,
