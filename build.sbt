@@ -46,7 +46,6 @@ inThisBuild(Def.settings(
   scalafixScalaBinaryVersion := scalaBinaryVersion.value,
 ))
 
-// When this is updated the set of modules in ActorSystem.allModules should also be updated
 lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   parsing,
   httpCore,
