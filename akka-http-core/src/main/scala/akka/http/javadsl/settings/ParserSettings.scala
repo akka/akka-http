@@ -40,6 +40,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def getIllegalHeaderWarnings: Boolean
   def getIgnoreIllegalHeaderFor: Set[String]
   def getErrorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
+  def getIllegalResponseHeaderNameProcessingMode: ParserSettings.IllegalResponseHeaderNameProcessingMode
   def getIllegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def getHeaderValueCacheLimits: ju.Map[String, Int]
   def getIncludeTlsSessionInfoHeader: Boolean
@@ -95,6 +96,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
 object ParserSettings extends SettingsCompanion[ParserSettings] {
   trait CookieParsingMode
   trait ErrorLoggingVerbosity
+  trait IllegalResponseHeaderNameProcessingMode
   trait IllegalResponseHeaderValueProcessingMode
 
   /**

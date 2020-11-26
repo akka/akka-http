@@ -416,6 +416,24 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Insid
         headerStr shouldEqual "Some-Header: value1,Other-Header: value2"
       }
 
+      val ignoreNameConfig =
+        """
+          akka.http.parsing.illegal-response-header-name-processing-mode = ignore
+        """
+      "ignore illegal response header name if setting the config to ignore" in new TestSetup(config = ignoreNameConfig) {
+        sendStandardRequest()
+        sendWireData(
+          s"""HTTP/1.1 200 OK
+              |Some Header: value1
+              |Other-Header: value2
+              |
+              |""")
+
+        val HttpResponse(_, headers, _, _) = expectResponse()
+        val headerStr = headers.map(h => s"${h.name}: ${h.value}").mkString(",")
+        headerStr shouldEqual "Some Header: value1,Other-Header: value2"
+      }
+
       val warnConfig =
         """
           akka.http.parsing.illegal-response-header-value-processing-mode = warn
@@ -433,6 +451,24 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Insid
         val headerStr = headers.map(h => s"${h.name}: ${h.value}").mkString(",")
         headerStr shouldEqual "Some-Header: value1,Other-Header: value2"
       }
+    }
+
+    val warnNameConfig =
+      """
+          akka.http.parsing.illegal-response-header-name-processing-mode = warn
+        """
+    "ignore illegal response header name and log a warning message if setting the config to warn" in new TestSetup(config = warnNameConfig) {
+      sendStandardRequest()
+      sendWireData(
+        s"""HTTP/1.1 200 OK
+              |Some Header: value1
+              |Other-Header: value2
+              |
+              |""")
+
+      val HttpResponse(_, headers, _, _) = expectResponse()
+      val headerStr = headers.map(h => s"${h.name}: ${h.value}").mkString(",")
+      headerStr shouldEqual "Some Header: value1,Other-Header: value2"
     }
 
     "produce proper errors" which {

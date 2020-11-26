@@ -5,7 +5,7 @@
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.scaladsl.settings.ParserSettings.{ CookieParsingMode, ErrorLoggingVerbosity, IllegalResponseHeaderValueProcessingMode }
+import akka.http.scaladsl.settings.ParserSettings.{ CookieParsingMode, ErrorLoggingVerbosity, IllegalResponseHeaderValueProcessingMode, IllegalResponseHeaderNameProcessingMode }
 import akka.util.ConstantFun
 import com.typesafe.config.Config
 
@@ -32,6 +32,7 @@ private[akka] final case class ParserSettingsImpl(
   illegalHeaderWarnings:                    Boolean,
   ignoreIllegalHeaderFor:                   Set[String],
   errorLoggingVerbosity:                    ErrorLoggingVerbosity,
+  illegalResponseHeaderNameProcessingMode:  IllegalResponseHeaderNameProcessingMode,
   illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode,
   headerValueCacheLimits:                   Map[String, Int],
   includeTlsSessionInfoHeader:              Boolean,
@@ -95,6 +96,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
       c.getBoolean("illegal-header-warnings"),
       c.getStringList("ignore-illegal-header-for").asScala.map(_.toLowerCase).toSet,
       ErrorLoggingVerbosity(c.getString("error-logging-verbosity")),
+      IllegalResponseHeaderNameProcessingMode(c.getString("illegal-response-header-name-processing-mode")),
       IllegalResponseHeaderValueProcessingMode(c.getString("illegal-response-header-value-processing-mode")),
       cacheConfig.entrySet.asScala.iterator.map(kvp => kvp.getKey -> cacheConfig.getInt(kvp.getKey)).toMap,
       c.getBoolean("tls-session-info-header"),

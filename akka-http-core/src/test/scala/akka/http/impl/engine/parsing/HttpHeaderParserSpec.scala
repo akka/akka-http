@@ -17,7 +17,7 @@ import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader }
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util._
-import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
+import akka.http.scaladsl.settings.ParserSettings.{ IllegalResponseHeaderNameProcessingMode, IllegalResponseHeaderValueProcessingMode }
 import akka.testkit.EventFilter
 
 abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaSpecWithMaterializer(
@@ -192,6 +192,26 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
       the[ParsingException] thrownBy parseLine(s"Connec/tion: close${newLine}x") should have message "Illegal character '/' in header name"
     }
 
+    "ignore illegal headers when configured to ignore them" in new TestSetup(
+      parserSettings = createParserSettings(
+        actorSystem = system,
+        illegalResponseHeaderNameProcessingMode = IllegalResponseHeaderNameProcessingMode.Ignore)
+    ) {
+      parseLine(s" Connection: close${newLine}x")
+      parseLine(s"Connection : close${newLine}x")
+      parseLine(s"Connec/tion: close${newLine}x")
+    }
+
+    "ignore illegal headers when configured to ignore and warn about them" in new TestSetup(
+      parserSettings = createParserSettings(
+        actorSystem = system,
+        illegalResponseHeaderNameProcessingMode = IllegalResponseHeaderNameProcessingMode.Warn)
+    ) {
+      parseLine(s" Connection: close${newLine}x")
+      parseLine(s"Connection : close${newLine}x")
+      parseLine(s"Connec/tion: close${newLine}x")
+    }
+
     "produce an error message for lines with a too-long header name" in new TestSetup() {
       noException should be thrownBy parseLine(s"123456789012345678901234567890123456789012345678901234567890: foo${newLine}x")
       the[ParsingException] thrownBy parseLine(s"1234567890123456789012345678901234567890123456789012345678901: foo${newLine}x") should have message
@@ -328,10 +348,11 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
   }
 
   def createParserSettings(
-    actorSystem:                              ActorSystem,
-    illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error): ParserSettings =
+    actorSystem:                             ActorSystem,
+    illegalResponseHeaderNameProcessingMode: IllegalResponseHeaderNameProcessingMode = IllegalResponseHeaderNameProcessingMode.Error, illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error): ParserSettings =
     ParserSettings(actorSystem)
       .withIllegalResponseHeaderValueProcessingMode(illegalResponseHeaderValueProcessingMode)
+      .withIllegalResponseHeaderNameProcessingMode(illegalResponseHeaderNameProcessingMode)
 
   abstract class TestSetup(testSetupMode: TestSetupMode = TestSetupMode.Primed, parserSettings: ParserSettings = createParserSettings(system)) {
 

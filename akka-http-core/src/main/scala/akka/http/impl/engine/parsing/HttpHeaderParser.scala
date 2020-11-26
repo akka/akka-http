@@ -10,7 +10,7 @@ import java.lang.{ StringBuilder => JStringBuilder }
 
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
+import akka.http.scaladsl.settings.ParserSettings.{ IllegalResponseHeaderValueProcessingMode, IllegalResponseHeaderNameProcessingMode }
 import akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity
 import akka.http.scaladsl.settings.ParserSettings
 
@@ -167,6 +167,20 @@ private[engine] final class HttpHeaderParser private (
         endIx
     }
   }
+
+  @tailrec private def scanHeaderNameAndReturnIndexOfColon(input: ByteString, start: Int, limit: Int)(ix: Int): Int =
+    if (ix < limit)
+      (byteChar(input, ix), settings.illegalResponseHeaderNameProcessingMode) match {
+        case (':', _) => ix
+        case (c, _) if tchar(c) => scanHeaderNameAndReturnIndexOfColon(input, start, limit)(ix + 1)
+        case (c, IllegalResponseHeaderNameProcessingMode.Error) => fail(s"Illegal character '${escape(c)}' in header name")
+        case (c, IllegalResponseHeaderNameProcessingMode.Warn) =>
+          log.warning(s"Header key contains illegal character '${escape(c)}'")
+          scanHeaderNameAndReturnIndexOfColon(input, start, limit)(ix + 1)
+        case (c, IllegalResponseHeaderNameProcessingMode.Ignore) =>
+          scanHeaderNameAndReturnIndexOfColon(input, start, limit)(ix + 1)
+      }
+    else fail(s"HTTP header name exceeds the configured limit of ${limit - start - 1} characters", StatusCodes.RequestHeaderFieldsTooLarge)
 
   @tailrec
   private def parseHeaderValue(input: ByteString, valueStart: Int, branch: ValueBranch)(cursor: Int = valueStart, nodeIx: Int = branch.branchRootNodeIx): Int = {
@@ -428,6 +442,7 @@ private[http] object HttpHeaderParser {
     def customMediaTypes: MediaTypes.FindCustom
     def illegalHeaderWarnings: Boolean
     def ignoreIllegalHeaderFor: Set[String]
+    def illegalResponseHeaderNameProcessingMode: IllegalResponseHeaderNameProcessingMode
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
     def errorLoggingVerbosity: ErrorLoggingVerbosity
     def modeledHeaderParsing: Boolean
@@ -547,15 +562,6 @@ private[http] object HttpHeaderParser {
       RawHeader(headerName, headerValue.trim) -> endIx
     }
   }
-
-  @tailrec private def scanHeaderNameAndReturnIndexOfColon(input: ByteString, start: Int, limit: Int)(ix: Int): Int =
-    if (ix < limit)
-      byteChar(input, ix) match {
-        case ':'           => ix
-        case c if tchar(c) => scanHeaderNameAndReturnIndexOfColon(input, start, limit)(ix + 1)
-        case c             => fail(s"Illegal character '${escape(c)}' in header name")
-      }
-    else fail(s"HTTP header name exceeds the configured limit of ${limit - start - 1} characters", StatusCodes.RequestHeaderFieldsTooLarge)
 
   @tailrec private def scanHeaderValue(hhp: HttpHeaderParser, input: ByteString, start: Int, limit: Int, log: LoggingAdapter,
                                        mode: IllegalResponseHeaderValueProcessingMode)(sb: JStringBuilder = null, ix: Int = start): (String, Int) = {
