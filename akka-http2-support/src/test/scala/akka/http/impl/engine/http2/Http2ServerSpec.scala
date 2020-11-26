@@ -293,12 +293,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       protected def sendRequest(): Unit =
         network.sendRequestHEADERS(TheStreamId, request, endStream = false)
-
-      def sendWindowFullOfData(): Int = {
-        val dataLength = network.remainingWindowForIncomingData(TheStreamId)
-        network.sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
-        dataLength
-      }
     }
 
     "support stream for request entity data" should {
@@ -383,7 +377,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       }
       "send out WINDOW_UPDATE frames when request data is read so that the stream doesn't stall" inAssertAllStagesStopped new WaitingForRequestData {
         (1 to 10).foreach { _ =>
-          val bytesSent = sendWindowFullOfData()
+          val bytesSent = network.sendWindowFullOfData(TheStreamId)
           bytesSent should be > 0
           entityDataIn.expectBytes(bytesSent)
           network.pollForWindowUpdates(10.millis)
@@ -394,7 +388,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         var totallySentBytes = 0
         // send data until we don't receive any window updates from the implementation any more
         eventually(Timeout(1.second.dilated)) {
-          totallySentBytes += sendWindowFullOfData()
+          totallySentBytes += network.sendWindowFullOfData(TheStreamId)
           // the implementation may choose to send a few window update until internal buffers are filled
           network.pollForWindowUpdates(10.millis)
           network.remainingWindowForIncomingData(TheStreamId) shouldBe 0
