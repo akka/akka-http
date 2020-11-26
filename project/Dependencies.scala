@@ -27,10 +27,9 @@ object Dependencies {
 
   val scala212Version = "2.12.12"
   val scala213Version = "2.13.3"
-   val allScalaVersions = Seq(scala213Version, scala212Version)
 
   val Versions = Seq(
-    crossScalaVersions := allScalaVersions,
+    crossScalaVersions := Seq(scala213Version, scala212Version),
     scalaVersion := crossScalaVersions.value.head,
   )
 

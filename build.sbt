@@ -66,7 +66,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[Projec
   docs,
   compatibilityTests,
   httpJmhBench,
-  bom
+  billOfMaterials
 )
 lazy val root = Project(
     id = "akka-http-root",
@@ -474,57 +474,14 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
     }
   )
 
-
-lazy val bom = Project(id="bom",base= file("bom"))
-  .enablePlugins(HeaderPlugin)
+lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-materials"))
+  .enablePlugins(BillOfMaterialsPlugin)
+  .disablePlugins(MimaPlugin)
   .settings(
     name := "akka-http-bom",
-    // no MiMa
-    mimaPreviousArtifacts := Set.empty,
-    // publish Maven Style
-    publishMavenStyle := true,
-    // Produce a single BOM with all the artifacts
-    crossVersion := CrossVersion.disabled, // this setting removes the scala bin version from the artifact name
-    crossScalaVersions := Seq(Dependencies.scala213Version),
-    scalaVersion := Dependencies.scala213Version,
-    crossPaths := false,
-    autoScalaLibrary := false,
-
-    pomExtra := pomExtra.value :+ {
-      val akkaDeps = Def.settingDyn {
-        (userProjects).map {
-          project =>
-            Def.setting {
-              val artifactName = (artifact in project).value.name
-
-              Dependencies.allScalaVersions.map {
-                supportedVersion =>
-                  // we are sure this won't be a None
-                  val crossFunc =
-                    CrossVersion(Binary(), supportedVersion, CrossVersion.binaryScalaVersion(supportedVersion)).get
-                  // convert artifactName to match the desired scala version
-                  val artifactId = crossFunc(artifactName)
-
-                  <dependency>
-                    <groupId>{(organization in project).value}</groupId>
-                    <artifactId>{artifactId}</artifactId>
-                    <version>{(version in project).value}</version>
-                  </dependency>
-              }
-            }
-        }.join
-      }.value
-
-      <dependencyManagement>
-        <dependencies>
-          {akkaDeps}
-        </dependencies>
-      </dependencyManagement>
-    },
-    // This disables creating jar, source jar and javadocs, and will cause the packaging type to be "pom" when the
-    // pom is created
-    Classpaths.defaultPackageKeys.map(key => publishArtifact in key := false),
+    bomIncludeProjects := userProjects,
+    // Remove the silencer dependency added by `Common`
+    libraryDependencies := Seq()
   )
-
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
