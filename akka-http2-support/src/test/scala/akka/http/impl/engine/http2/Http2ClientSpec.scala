@@ -452,6 +452,28 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         connectionShouldStillBeUsable()
       }
+      "handle RST_STREAM while waiting for a window update" in new WaitingForRequestData {
+        val entitySize = 70000
+        entityDataOut.sendNext(ByteString(Array.fill[Byte](entitySize)(0x23))) // 70000 > Http2Protocol.InitialWindowSize
+        network.sendWINDOW_UPDATE(TheStreamId, 10000) // enough window for the stream but not for the window
+
+        network.expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
+
+        // enough stream-level WINDOW, but too little connection-level WINDOW
+        network.expectNoBytes(100.millis)
+
+        // now the demuxer is in the WaitingForConnectionWindow state, cancel the connection
+        network.sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+
+        entityDataOut.expectCancellation()
+        network.expectNoBytes(100.millis)
+
+        // now increase connection-level window again and see if everything still works
+        network.sendWINDOW_UPDATE(0, 10000)
+        network.expectNoBytes(100.millis) // don't expect anything, stream has been cancelled in the meantime
+
+        connectionShouldStillBeUsable()
+      }
     }
 
     "respect flow-control" should {
