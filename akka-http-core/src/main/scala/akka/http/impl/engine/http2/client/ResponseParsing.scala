@@ -8,15 +8,34 @@ package client
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.RequestParsing._
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.engine.server.HttpAttributes
+import akka.http.scaladsl.model
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.`Tls-Session-Info`
+import akka.http.scaladsl.settings.ParserSettings
+import akka.stream.Attributes
 import akka.util.OptionVal
+import javax.net.ssl.SSLSession
 
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 
 @InternalApi
 private[http2] object ResponseParsing {
-  def parseResponse(httpHeaderParser: HttpHeaderParser): Http2SubStream => HttpResponse = { subStream =>
+  def parseResponse(httpHeaderParser: HttpHeaderParser, settings: ParserSettings, attributes: Attributes): Http2SubStream => HttpResponse = { subStream =>
+
+    val tlsSessionInfoHeader: Option[`Tls-Session-Info`] =
+      if (settings.includeTlsSessionInfoHeader) {
+        attributes.get[HttpAttributes.TLSSessionInfo].map(sslSessionInfo =>
+          model.headers.`Tls-Session-Info`(sslSessionInfo.session))
+      } else None
+
+    val sslSessionAttribute: Option[SSLSession] =
+      if (settings.includeSslSessionAttribute)
+        attributes.get[HttpAttributes.TLSSessionInfo].map(_.session)
+      else
+        None
+
     @tailrec
     def rec(
       remainingHeaders:  Seq[(String, String)],
@@ -32,12 +51,20 @@ private[http2] object ResponseParsing {
 
         val entity = subStream.createEntity(contentLength, contentType)
 
-        HttpResponse(
+        // user access to tls session info
+        if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
+
+        val response = HttpResponse(
           status = status,
           headers = headers.result(),
           entity = entity,
           HttpProtocols.`HTTP/2.0`
         ).withAttributes(subStream.correlationAttributes)
+        sslSessionAttribute match {
+          case Some(sslSession) => response.addAttribute(AttributeKeys.sslSession, SslSessionInfo(sslSession))
+          case None             => response
+        }
+
       } else remainingHeaders.head match {
         case (":status", statusCodeValue) =>
           checkUniquePseudoHeader(":status", status)
