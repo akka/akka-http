@@ -6,10 +6,12 @@ package akka.http.impl.engine.http2
 
 import java.util.concurrent.CompletionStage
 
+import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
+import akka.http.impl.engine.http2.client.PersistentConnection
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -76,6 +78,9 @@ private[akka] object OutgoingConnectionBuilderImpl {
       val port = this.port.getOrElse(443)
       Http2(system).outgoingConnection(host, port, connectionContext.getOrElse(Http(system).defaultClientHttpsContext), clientConnectionSettings, log)
     }
+
+    override def managedPersistentHttp2(): Flow[HttpRequest, HttpResponse, NotUsed] =
+      PersistentConnection.managedConnection(http2())
 
     override def http2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/2 prior knowledge plaintext
