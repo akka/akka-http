@@ -409,7 +409,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       "fail entity stream if advertised content-length doesn't match" in pending
     }
 
-    "support stream support for sending request entity data" should {
+    "support streaming for sending request entity data" should {
       abstract class WaitingForRequestData extends TestSetup {
         val entityDataOut = TestPublisher.probe[ByteString]()
         user.emitRequest(Post("/", HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut))))
@@ -571,7 +571,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
-    "support stream support for receiving response entity data" should {
+    "support streaming for receiving response entity data" should {
       abstract class WaitingForResponseSetup extends TestSetup with NetProbes {
         val streamId = 0x1
         user.emitRequest(Get("/"))
