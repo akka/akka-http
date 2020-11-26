@@ -329,16 +329,16 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // https://http2.github.io/http2-spec/#StreamStates
         // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
         network.sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
-        // especially no GOAWAY frame should be sent in response
-        network.expectNoBytes(100.millis)
+
+        connectionShouldStillBeUsable()
       }
       "not fail the whole connection when data frames are received after stream was cancelled" in new WaitingForResponseData {
         entityDataIn.cancel()
         network.expectRST_STREAM(TheStreamId)
 
         network.sendDATA(TheStreamId, endStream = false, ByteString("test"))
-        // should just be ignored, especially no GOAWAY frame should be sent in response
-        network.expectNoBytes(100.millis)
+
+        connectionShouldStillBeUsable()
       }
       "send RST_STREAM if entity stream is canceled" in new WaitingForResponseData {
         val data1 = ByteString("abcdef")
@@ -447,6 +447,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         network.sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
         entityDataOut.expectCancellation()
+
+        connectionShouldStillBeUsable()
       }
     }
 
@@ -687,6 +689,13 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     network.sendFrame(SettingsFrame(immutable.Seq.empty ++ initialServerSettings))
     network.expectSettingsAck()
+
+    def connectionShouldStillBeUsable(): Unit = {
+      user.emitRequest(Get("/"))
+      val streamId = network.expect[HeadersFrame]().streamId
+      network.sendHEADERS(streamId, endStream = true, Seq(RawHeader(":status", "418")))
+      user.expectResponse().status should be(StatusCodes.ImATeapot)
+    }
   }
 
   /** Provides the net flow as `toNet` and `fromNet` probes for manual stream interaction */
