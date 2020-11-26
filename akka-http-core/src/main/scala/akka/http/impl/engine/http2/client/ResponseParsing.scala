@@ -15,6 +15,7 @@ import akka.http.scaladsl.model.headers.`Tls-Session-Info`
 import akka.http.scaladsl.settings.ParserSettings
 import akka.stream.Attributes
 import akka.util.OptionVal
+import javax.net.ssl.SSLSession
 
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
@@ -29,10 +30,11 @@ private[http2] object ResponseParsing {
           model.headers.`Tls-Session-Info`(sslSessionInfo.session))
       } else None
 
-    val tlsSessionAttribute: Option[(AttributeKey[SslSessionInfo], SslSessionInfo)] =
-      if (settings.includeSslSessionAttribute) {
-        attributes.get[HttpAttributes.TLSSessionInfo].map(sslAttr => AttributeKeys.sslSession -> SslSessionInfo(sslAttr.session))
-      } else None
+    val sslSessionAttribute: Option[SSLSession] =
+      if (settings.includeSslSessionAttribute)
+        attributes.get[HttpAttributes.TLSSessionInfo].map(_.session)
+      else
+        None
 
     @tailrec
     def rec(
@@ -51,15 +53,18 @@ private[http2] object ResponseParsing {
 
         // user access to tls session info
         if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
-        var attributes = subStream.correlationAttributes
-        if (tlsSessionAttribute.isDefined) attributes += tlsSessionAttribute.get
 
-        HttpResponse(
+        val response = HttpResponse(
           status = status,
           headers = headers.result(),
           entity = entity,
           HttpProtocols.`HTTP/2.0`
-        ).withAttributes(attributes)
+        ).withAttributes(subStream.correlationAttributes)
+        sslSessionAttribute match {
+          case Some(sslSession) => response.addAttribute(AttributeKeys.sslSession, SslSessionInfo(sslSession))
+          case None             => response
+        }
+
       } else remainingHeaders.head match {
         case (":status", statusCodeValue) =>
           checkUniquePseudoHeader(":status", status)
