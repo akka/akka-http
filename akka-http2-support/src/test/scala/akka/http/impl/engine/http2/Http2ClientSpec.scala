@@ -12,7 +12,7 @@ import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
-import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.client.RequestBuilding.{ Get, Post }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
 import akka.http.scaladsl.model.HttpMethods.GET
@@ -407,6 +407,47 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         chunksIn.expectComplete()
       }
       "fail entity stream if advertised content-length doesn't match" in pending
+    }
+
+    "support stream support for sending request entity data" should {
+      abstract class WaitingForRequestData extends TestSetup {
+        val entityDataOut = TestPublisher.probe[ByteString]()
+        user.emitRequest(Post("/", HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut))))
+        val TheStreamId = network.expect[HeadersFrame]().streamId
+      }
+      "encode Content-Length and Content-Type headers" in new TestSetup {
+        val request = Post("/", HttpEntity(ContentTypes.`application/octet-stream`, ByteString("abcde")))
+        user.emitRequest(request)
+        val pairs = network.expectDecodedResponseHEADERSPairs(streamId = 0x1, endStream = false).toMap
+        pairs should contain(":method" -> "POST")
+        pairs should contain("content-length" -> "5")
+        pairs should contain("content-type" -> "application/octet-stream")
+      }
+      "send entity data as data frames" in new WaitingForRequestData {
+        val data1 = ByteString("abcd")
+        entityDataOut.sendNext(data1)
+        network.expectDATA(TheStreamId, endStream = false, data1)
+
+        val data2 = ByteString("efghij")
+        entityDataOut.sendNext(data2)
+        network.expectDATA(TheStreamId, endStream = false, data2)
+
+        entityDataOut.sendComplete()
+        network.expectDATA(TheStreamId, endStream = true, ByteString.empty)
+      }
+      "parse priority frames" in new WaitingForRequestData {
+        network.sendPRIORITY(TheStreamId, exclusiveFlag = true, 0, 5)
+        entityDataOut.sendComplete()
+        network.expectDATA(TheStreamId, endStream = true, ByteString.empty)
+      }
+      "cancel entity data source when peer sends RST_STREAM" in new WaitingForRequestData {
+        val data1 = ByteString("abcd")
+        entityDataOut.sendNext(data1)
+        network.expectDATA(TheStreamId, endStream = false, data1)
+
+        network.sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+        entityDataOut.expectCancellation()
+      }
     }
 
     "respect flow-control" should {
