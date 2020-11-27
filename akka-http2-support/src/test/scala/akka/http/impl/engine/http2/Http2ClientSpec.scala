@@ -498,9 +498,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendWINDOW_UPDATE(0, 10000)
         network.expectNoBytes(100.millis) // don't expect anything, stream has been cancelled in the meantime
 
-        // TODO the client stack should not accept new connections anymore
-        // TODO what to do with requests that are already in the queue at this point?
-        // user.requestOut.expectCancellation()
+        // the client stack should not accept new connections anymore
+        user.requestOut.expectCancellation()
 
         // Check finishing old requests is still allowed
         network.sendHEADERS(otherRequestStreamId, true, Seq(RawHeader(":status", "200")))
