@@ -474,6 +474,38 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         connectionShouldStillBeUsable()
       }
+      "handle unknown frames while waiting for a window update" in new WaitingForRequestData {
+        user.emitRequest(Get("/secondRequest"))
+        val otherRequestStreamId = network.expect[HeadersFrame]().streamId
+
+        val entitySize = 70000
+        entityDataOut.sendNext(ByteString(Array.fill[Byte](entitySize)(0x23))) // 70000 > Http2Protocol.InitialWindowSize
+        network.sendWINDOW_UPDATE(TheStreamId, 10000) // enough window for the stream but not for the window
+
+        network.expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
+
+        // enough stream-level WINDOW, but too little connection-level WINDOW
+        network.expectNoBytes(100.millis)
+
+        // now the stream handler is in the OpenSendingData state, and waiting for the
+        // response headers, unexpectedly send response data:
+        network.sendDATA(TheStreamId, endStream = false, ByteString("surprise!"))
+
+        entityDataOut.expectCancellation()
+        network.expectGOAWAY(otherRequestStreamId)
+
+        // make sure the demuxer also moved back from WaitingForConnectionWindow to Idle
+        network.sendWINDOW_UPDATE(0, 10000)
+        network.expectNoBytes(100.millis) // don't expect anything, stream has been cancelled in the meantime
+
+        // TODO the client stack should not accept new connections anymore
+        // TODO what to do with requests that are already in the queue at this point?
+        // user.requestOut.expectCancellation()
+
+        // Check finishing old requests is still allowed
+        network.sendHEADERS(otherRequestStreamId, true, Seq(RawHeader(":status", "200")))
+        user.expectResponse()
+      }
     }
 
     "respect flow-control" should {
