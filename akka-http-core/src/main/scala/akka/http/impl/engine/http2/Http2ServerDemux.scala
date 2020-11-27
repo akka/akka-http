@@ -265,7 +265,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
         val frame = GoAwayFrame(lastStreamId(), errorCode, ByteString(debug))
         multiplexer.pushControlFrame(frame)
-        // FIXME: handle the connection closing according to the specification
+
+        if (isServer) {
+          // When we send the client away, we still want to consume and respond to outstanding requests.
+          // TODO: but not accept new requests
+        } else {
+          // When we send the server away, we still want to finish sending request bodies and consume
+          // outstanding responses,but not accept new requests
+          cancel(substreamIn)
+        }
       }
       private[this] var allowReadingIncomingFrames: Boolean = true
       override def allowReadingIncomingFrames(allow: Boolean): Unit = {
