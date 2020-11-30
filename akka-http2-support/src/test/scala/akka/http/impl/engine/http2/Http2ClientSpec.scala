@@ -735,6 +735,25 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
     }
+
+    // https://tools.ietf.org/html/rfc7540#section-6.8
+    "support gracefully shutting down the connection" should {
+      "when the connection is idle" in new TestSetup {
+        // A server that is attempting to gracefully shut down a connection SHOULD
+        // send an initial GOAWAY frame with the last stream identifier set to 2^31-1
+        // and a NO_ERROR code.
+        network.sendGOAWAY(Int.MaxValue, ErrorCode.NO_ERROR)
+        // This signals to the client that a shutdown is imminent
+        // and that initiating further requests is prohibited
+        user.requestOut.expectCancellation()
+        network.toNet.expectComplete()
+
+        // After allowing time for any in-flight stream
+        // creation (at least one round-trip time), the server can send another
+        // GOAWAY frame with an updated last stream identifier.
+        network.sendGOAWAY(0x0, ErrorCode.NO_ERROR)
+      }
+    }
   }
 
   implicit class InWithStoppedStages(name: String) {

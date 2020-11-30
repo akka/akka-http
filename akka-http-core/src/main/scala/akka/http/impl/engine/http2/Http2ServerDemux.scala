@@ -263,18 +263,46 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
-        val frame = GoAwayFrame(lastStreamId(), errorCode, ByteString(debug))
-        multiplexer.pushControlFrame(frame)
+        // We do not guarantee that we will process the streams until and including last stream id
+        // (though we might try).
+        // We do guarantee we will not process any streams with higher ID's.
+        val lastPotentiallyProcessedStreamId = lastStreamId()
 
+        val frame = GoAwayFrame(lastPotentiallyProcessedStreamId, errorCode, ByteString(debug))
+        multiplexer.pushControlFrame(frame)
+        initiateShutdown(lastPotentiallyProcessedStreamId)
+      }
+
+      def initiateShutdown(lastPotentiallyProcessedStreamId: Int): Unit = {
         if (isServer) {
           // When we send the client away, we still want to consume and respond to outstanding requests.
           // TODO: but not accept new requests
         } else {
           // When we send the server away, we still want to finish sending request bodies and consume
-          // outstanding responses,but not accept new requests
+          // outstanding responses, but not accept new requests
           cancel(substreamIn)
+
+          // We close connections when there are none in-flight.
+          // TODO: If there are in-flight streams, we still need to add the logic to
+          // close after completing them.
+          if (allClosed(lastPotentiallyProcessedStreamId)) {
+            allowReadingIncomingFrames = false
+            cancel(frameIn)
+            complete(frameOut)
+            complete(substreamOut)
+          } else {
+            // We could also cancel and even retry any requests with higher stream ID's than `lastStreamId`,
+            // since the server has indicated it guarantees that it will not process those.
+          }
         }
       }
+
+      private def allClosed(last: Int): Boolean = {
+        if (activeStreamCount() == 0) true
+        // TODO check the status of streams up to and including `last`
+        else false
+      }
+
       private[this] var allowReadingIncomingFrames: Boolean = true
       override def allowReadingIncomingFrames(allow: Boolean): Unit = {
         if (allow != allowReadingIncomingFrames)
@@ -332,7 +360,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
               }
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
-
+            case GoAwayFrame(lastStreamId, _, _) =>
+              // TODO do we log the error code and debug message on some level?
+              initiateShutdown(lastStreamId)
             case e =>
               debug(s"Got unhandled event $e")
             // ignore unknown frames
