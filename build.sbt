@@ -23,7 +23,7 @@ inThisBuild(Def.settings(
   scmInfo := Some(
     ScmInfo(url("https://github.com/akka/akka-http"), "git@github.com:akka/akka-http.git")),
   developers := List(
-    Developer("contributors", "Contributors", "akka-user@googlegroups.com",
+    Developer("contributors", "Contributors", "info@lightbend.com",
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
@@ -481,7 +481,7 @@ lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-
     name := "akka-http-bom",
     bomIncludeProjects := userProjects,
     // Remove the silencer dependency added by `Common`
-    libraryDependencies := Seq()
+    libraryDependencies := Seq(),
   )
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
