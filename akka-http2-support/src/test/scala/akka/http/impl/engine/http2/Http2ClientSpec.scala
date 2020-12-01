@@ -512,9 +512,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       abstract class StreamingRequestSent extends TestSetup {
         val streamId = 0x1
         val requestStream = TestPublisher.probe[ByteString]()
-        user.emitRequest(HttpRequest(
-          protocol = HttpProtocols.`HTTP/2.0`,
-          entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
+        user.emitRequest(HttpRequest(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
         network.expectDecodedHEADERS(streamId, endStream = false)
         requestStream.expectRequest()
       }
