@@ -17,7 +17,7 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1") // for 
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.6.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
-addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.0")
+addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.1")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.35")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.0")
