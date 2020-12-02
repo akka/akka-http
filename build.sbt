@@ -1,11 +1,11 @@
 import akka._
 import akka.ValidatePullRequest._
 import AkkaDependency._
-import Dependencies.{ h2specName, h2specExe }
+import Dependencies.{h2specExe, h2specName}
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import java.nio.file.Files
-import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
+import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
 
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
@@ -23,7 +23,7 @@ inThisBuild(Def.settings(
   scmInfo := Some(
     ScmInfo(url("https://github.com/akka/akka-http"), "git@github.com:akka/akka-http.git")),
   developers := List(
-    Developer("contributors", "Contributors", "akka-user@googlegroups.com",
+    Developer("contributors", "Contributors", "info@lightbend.com",
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
@@ -46,6 +46,28 @@ inThisBuild(Def.settings(
   scalafixScalaBinaryVersion := scalaBinaryVersion.value,
 ))
 
+// When this is updated the set of modules in Http.allModules should also be updated
+lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
+  parsing,
+  httpCore,
+  http2Support,
+  http,
+  httpCaching,
+  httpTestkit,
+  httpMarshallersScala,
+  httpMarshallersJava,
+  httpSprayJson,
+  httpXml,
+  httpJackson,
+  httpScalafix,
+)
+lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
+  httpTests,
+  docs,
+  compatibilityTests,
+  httpJmhBench,
+  billOfMaterials
+)
 lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
@@ -74,22 +96,7 @@ lazy val root = Project(
         java -> gustavDir("japi").value)
     }
   )
-  .aggregate(
-    // When this is or other aggregates are updated the set of modules in HttpExt.allModules should also be updated
-    parsing,
-    httpCore,
-    http2Support,
-    http,
-    httpCaching,
-    httpTestkit,
-    httpTests,
-    httpMarshallersScala,
-    httpMarshallersJava,
-    httpScalafix,
-    docs,
-    compatibilityTests,
-    httpJmhBench
-  )
+  .aggregate(aggregatedProjects: _*)
 
 /**
  * Adds a `src/.../scala-2.13+` source directory for Scala 2.13 and newer
@@ -465,6 +472,16 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
       (dependencyClasspath in Test).value.filterNot(_.data.getName contains "akka") ++
       (fullClasspath in (httpTests, Test)).value
     }
+  )
+
+lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-materials"))
+  .enablePlugins(BillOfMaterialsPlugin)
+  .disablePlugins(MimaPlugin)
+  .settings(
+    name := "akka-http-bom",
+    bomIncludeProjects := userProjects,
+    // Remove the silencer dependency added by `Common`
+    libraryDependencies := Seq(),
   )
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
