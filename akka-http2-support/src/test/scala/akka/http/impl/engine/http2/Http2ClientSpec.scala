@@ -273,14 +273,6 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     }
 
     "support stream for response data" should {
-      abstract class WaitingForResponse extends TestSetup with NetProbes {
-        user.emitRequest(Get("/"))
-        val TheStreamId = network.expect[HeadersFrame]().streamId
-      }
-      abstract class WaitingForResponseData extends WaitingForResponse {
-        network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
-        val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
-      }
       "send data frames to entity stream" inAssertAllStagesStopped new WaitingForResponseData {
         val data1 = ByteString("abcdef")
         network.sendDATA(TheStreamId, endStream = false, data1)
@@ -753,6 +745,25 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // GOAWAY frame with an updated last stream identifier.
         network.sendGOAWAY(0x0, ErrorCode.NO_ERROR)
       }
+
+      "while a request is still in flight" in new WaitingForResponseData {
+        // This signals to the client that a shutdown is imminent
+        // and that initiating further requests is prohibited
+        network.sendGOAWAY(Int.MaxValue, ErrorCode.NO_ERROR)
+        user.requestOut.expectCancellation()
+
+        network.sendDATA(TheStreamId, endStream = false, ByteString("asdf"))
+        entityDataIn.expectBytes(ByteString("asdf"))
+        network.sendDATA(TheStreamId, endStream = true, ByteString("asdf"))
+        entityDataIn.expectBytes(ByteString("asdf"))
+        entityDataIn.expectComplete()
+
+        // not really relevant, could be there or not...
+        network.expectWindowUpdate()
+        network.toNet.expectComplete()
+
+        network.sendGOAWAY(0x0, ErrorCode.NO_ERROR)
+      }
     }
   }
 
@@ -767,6 +778,14 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         // and then assert that all stages, substreams in particular, are stopped
       }
+  }
+  abstract class WaitingForResponse extends TestSetup with NetProbes {
+    user.emitRequest(Get("/"))
+    val TheStreamId = network.expect[HeadersFrame]().streamId
+  }
+  abstract class WaitingForResponseData extends WaitingForResponse {
+    network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
+    val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
   }
 
   protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {

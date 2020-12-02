@@ -273,36 +273,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         initiateShutdown(lastPotentiallyProcessedStreamId)
       }
 
-      def initiateShutdown(lastPotentiallyProcessedStreamId: Int): Unit = {
-        if (isServer) {
-          // When we send the client away, we still want to consume and respond to outstanding requests.
-          // TODO: but not accept new requests
-        } else {
-          // When we send the server away, we still want to finish sending request bodies and consume
-          // outstanding responses, but not accept new requests
-          cancel(substreamIn)
-
-          // We close connections when there are none in-flight.
-          // TODO: If there are in-flight streams, we still need to add the logic to
-          // close after completing them.
-          if (allClosed(lastPotentiallyProcessedStreamId)) {
-            allowReadingIncomingFrames = false
-            cancel(frameIn)
-            complete(frameOut)
-            complete(substreamOut)
-          } else {
-            // We could also cancel and even retry any requests with higher stream ID's than `lastStreamId`,
-            // since the server has indicated it guarantees that it will not process those.
-          }
-        }
-      }
-
-      private def allClosed(last: Int): Boolean = {
-        if (activeStreamCount() == 0) true
-        // TODO check the status of streams up to and including `last`
-        else false
-      }
-
       private[this] var allowReadingIncomingFrames: Boolean = true
       override def allowReadingIncomingFrames(allow: Boolean): Unit = {
         if (allow != allowReadingIncomingFrames)
@@ -313,7 +283,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         allowReadingIncomingFrames = allow
       }
-      def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
+      def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn) && !isClosed(frameIn)) pull(frameIn)
 
       def tryPullSubStreams(): Unit = {
         if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn)) {
@@ -458,6 +428,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           } else {
             pingState.clear()
           }
+      }
+
+      override def stopAcceptingStreams(): Unit =
+        cancel(substreamIn)
+
+      override def completeInOut(): Unit = {
+        bufferedSubStreamOutput.complete()
+        cancel(frameIn)
+        complete(frameOut)
       }
 
       override def postStop(): Unit = {
