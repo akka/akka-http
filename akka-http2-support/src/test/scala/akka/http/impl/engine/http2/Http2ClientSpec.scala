@@ -23,10 +23,11 @@ import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
 import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
-import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.{ StreamTestKit, TestSink }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.TestDuration
 import akka.util.ByteString
+
 import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -75,7 +76,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         }
       }
 
-      "GET request in one HEADERS frame" in new SimpleRequestResponseRoundtripSetup {
+      "GET request in one HEADERS frame" inAssertAllStagesStopped new SimpleRequestResponseRoundtripSetup {
         requestResponseRoundtrip(
           streamId = 1,
           request = HttpRequest(uri = "https://www.example.com/"),
@@ -94,7 +95,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         )
       }
 
-      "GOAWAY when the response has an invalid headers frame" in new TestSetup with NetProbes {
+      "GOAWAY when the response has an invalid headers frame" inAssertAllStagesStopped new TestSetup with NetProbes {
         val streamId = 0x1
         user.emitRequest(HttpRequest(uri = "http://www.example.com/"))
         network.expect[HeadersFrame]()
@@ -108,7 +109,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // TODO we'd expect an error response here I think? We don't get any reply though...
       }
 
-      "GOAWAY when the response to a second request on different stream has an invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
+      "GOAWAY when the response to a second request on different stream has an invalid headers frame" inAssertAllStagesStopped new SimpleRequestResponseRoundtripSetup {
         requestResponseRoundtrip(
           streamId = 1,
           request = HttpRequest(uri = "https://www.example.com/"),
@@ -135,7 +136,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
 
-      "GOAWAY when the response has headers mid stream" in new TestSetup with NetProbes {
+      "GOAWAY when the response has headers mid stream" inAssertAllStagesStopped new TestSetup with NetProbes {
         val streamId = 0x1
         user.emitRequest(Get("/"))
         network.expectDecodedHEADERS(streamId, endStream = true)
@@ -158,7 +159,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         goAwayFrame.debug.utf8String should ===("Got unexpected mid-stream HEADERS frame")
       }
 
-      "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
+      "Three consecutive GET requests" inAssertAllStagesStopped new SimpleRequestResponseRoundtripSetup {
         import akka.http.scaladsl.model.headers.CacheDirectives._
         import headers.`Cache-Control`
         val requestHeaders = Seq(
@@ -197,7 +198,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         )
       }
 
-      "accept response with one HEADERS and one CONTINUATION frame" in new TestSetup with NetProbes {
+      "accept response with one HEADERS and one CONTINUATION frame" inAssertAllStagesStopped new TestSetup with NetProbes {
         user.emitRequest(Get("https://www.example.com/"))
         network.expect[HeadersFrame]()
 
@@ -209,7 +210,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
       }
 
-      "accept response with one HEADERS and two CONTINUATION frames" in new TestSetup with NetProbes {
+      "accept response with one HEADERS and two CONTINUATION frames" inAssertAllStagesStopped new TestSetup with NetProbes {
         user.emitRequest(Get("https://www.example.com/"))
         network.expect[HeadersFrame]()
 
@@ -223,12 +224,12 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
       }
 
-      "automatically add `date` header" in new TestSetup with NetProbes {
+      "automatically add `date` header" inAssertAllStagesStopped new TestSetup with NetProbes {
         user.emitRequest(Get("https://www.example.com/"))
         network.expectDecodedHEADERS(0x1, endStream = true).headers.exists(_.is("date"))
       }
 
-      "parse headers to modeled headers" in new TestSetup with NetProbes {
+      "parse headers to modeled headers" inAssertAllStagesStopped new TestSetup with NetProbes {
         user.emitRequest(Get("https://www.example.com/"))
         network.expect[HeadersFrame]()
 
@@ -246,7 +247,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         response.headers should contain(`Access-Control-Allow-Origin`.`*`)
       }
 
-      "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" in new TestSetup with NetProbes {
+      "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" inAssertAllStagesStopped new TestSetup with NetProbes {
         network.sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, 8192)
         network.expectSettingsAck()
 
@@ -280,7 +281,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
         val entityDataIn = ByteStringSinkProbe(user.expectResponse().entity.dataBytes)
       }
-      "send data frames to entity stream" in new WaitingForResponseData {
+      "send data frames to entity stream" inAssertAllStagesStopped new WaitingForResponseData {
         val data1 = ByteString("abcdef")
         network.sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
@@ -294,7 +295,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.expectBytes(data3)
         entityDataIn.expectComplete()
       }
-      "handle content-length and content-type of incoming response" in new WaitingForResponse {
+      "handle content-length and content-type of incoming response" inAssertAllStagesStopped new WaitingForResponse {
         network.sendHEADERS(TheStreamId, endStream = false, Seq(
           RawHeader(":status", "200"),
           `Content-Type`(ContentTypes.`application/json`),
@@ -313,7 +314,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.expectBytes(2000)
         entityDataIn.expectComplete()
       }
-      "fail entity stream if peer sends RST_STREAM frame" in new WaitingForResponseData {
+      "fail entity stream if peer sends RST_STREAM frame" inAssertAllStagesStopped new WaitingForResponseData {
         val data1 = ByteString("abcdef")
         network.sendDATA(TheStreamId, endStream = false, data1)
 
@@ -323,7 +324,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val error = entityDataIn.expectError()
         error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
       }
-      "not fail the whole connection when one stream is RST twice" in new WaitingForResponseData {
+      "not fail the whole connection when one stream is RST twice" inAssertAllStagesStopped new WaitingForResponseData {
         network.sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
         val error = entityDataIn.expectError()
         error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
@@ -334,7 +335,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         connectionShouldStillBeUsable()
       }
-      "not fail the whole connection when data frames are received after stream was cancelled" in new WaitingForResponseData {
+      "not fail the whole connection when data frames are received after stream was cancelled" inAssertAllStagesStopped new WaitingForResponseData {
         entityDataIn.cancel()
         network.expectRST_STREAM(TheStreamId)
 
@@ -342,7 +343,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         connectionShouldStillBeUsable()
       }
-      "send RST_STREAM if entity stream is canceled" in new WaitingForResponseData {
+      "send RST_STREAM if entity stream is canceled" inAssertAllStagesStopped new WaitingForResponseData {
         val data1 = ByteString("abcdef")
         network.sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
@@ -352,7 +353,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.cancel()
         network.expectRST_STREAM(TheStreamId, ErrorCode.CANCEL)
       }
-      "send out WINDOW_UPDATE frames when request data is read so that the stream doesn't stall" in new WaitingForResponseData {
+      "send out WINDOW_UPDATE frames when request data is read so that the stream doesn't stall" inAssertAllStagesStopped new WaitingForResponseData {
         (1 to 10).foreach { _ =>
           val bytesSent = network.sendWindowFullOfData(TheStreamId)
           bytesSent should be > 0
@@ -361,7 +362,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           network.remainingWindowForIncomingData(TheStreamId) should be > 0
         }
       }
-      "backpressure until response entity stream is read (don't send out unlimited WINDOW_UPDATE before)" in new WaitingForResponseData {
+      "backpressure until response entity stream is read (don't send out unlimited WINDOW_UPDATE before)" inAssertAllStagesStopped new WaitingForResponseData {
         var totallySentBytes = 0
         // send data until we don't receive any window updates from the implementation any more
         eventually(Timeout(1.second.dilated)) {
@@ -379,7 +380,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           network.remainingWindowForIncomingData(TheStreamId) should be > 0
         }
       }
-      "send data frames to entity stream and ignore trailing headers" in new WaitingForResponseData {
+      "send data frames to entity stream and ignore trailing headers" inAssertAllStagesStopped new WaitingForResponseData {
         val data1 = ByteString("abcdef")
         network.sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
@@ -390,7 +391,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.request(1)
         entityDataIn.expectComplete()
       }
-      "send data frames to entity stream and consume trailing headers" in new WaitingForResponse {
+      "send data frames to entity stream and consume trailing headers" inAssertAllStagesStopped new WaitingForResponse {
         network.sendHEADERS(TheStreamId, endStream = false, Seq(RawHeader(":status", "200")))
         val chunksIn =
           user.expectResponse()
@@ -417,7 +418,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         user.emitRequest(Post("/", HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut))))
         val TheStreamId = network.expect[HeadersFrame]().streamId
       }
-      "encode Content-Length and Content-Type headers" in new TestSetup {
+      "encode Content-Length and Content-Type headers" inAssertAllStagesStopped new TestSetup {
         val request = Post("/", HttpEntity(ContentTypes.`application/octet-stream`, ByteString("abcde")))
         user.emitRequest(request)
         val pairs = network.expectDecodedResponseHEADERSPairs(streamId = 0x1, endStream = false).toMap
@@ -425,7 +426,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         pairs should contain("content-length" -> "5")
         pairs should contain("content-type" -> "application/octet-stream")
       }
-      "send entity data as data frames" in new WaitingForRequestData {
+      "send entity data as data frames" inAssertAllStagesStopped new WaitingForRequestData {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
         network.expectDATA(TheStreamId, endStream = false, data1)
@@ -437,12 +438,12 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         entityDataOut.sendComplete()
         network.expectDATA(TheStreamId, endStream = true, ByteString.empty)
       }
-      "parse priority frames" in new WaitingForRequestData {
+      "parse priority frames" inAssertAllStagesStopped new WaitingForRequestData {
         network.sendPRIORITY(TheStreamId, exclusiveFlag = true, 0, 5)
         entityDataOut.sendComplete()
         network.expectDATA(TheStreamId, endStream = true, ByteString.empty)
       }
-      "cancel entity data source when peer sends RST_STREAM" in new WaitingForRequestData {
+      "cancel entity data source when peer sends RST_STREAM" inAssertAllStagesStopped new WaitingForRequestData {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
         network.expectDATA(TheStreamId, endStream = false, data1)
@@ -452,7 +453,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         connectionShouldStillBeUsable()
       }
-      "handle RST_STREAM while waiting for a window update" in new WaitingForRequestData {
+      "handle RST_STREAM while waiting for a window update" inAssertAllStagesStopped new WaitingForRequestData {
         val entitySize = 70000
         entityDataOut.sendNext(ByteString(Array.fill[Byte](entitySize)(0x23))) // 70000 > Http2Protocol.InitialWindowSize
         network.sendWINDOW_UPDATE(TheStreamId, 10000) // enough window for the stream but not for the window
@@ -474,7 +475,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         connectionShouldStillBeUsable()
       }
-      "handle unknown frames while waiting for a window update" in new WaitingForRequestData {
+      "handle unknown frames while waiting for a window update" inAssertAllStagesStopped new WaitingForRequestData {
         user.emitRequest(Get("/secondRequest"))
         val otherRequestStreamId = network.expect[HeadersFrame]().streamId
 
@@ -509,7 +510,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     }
 
     "respect flow-control" should {
-      "accept window updates when done sending the request" in new TestSetup {
+      "accept window updates when done sending the request" inAssertAllStagesStopped new TestSetup {
         user.emitRequest(Get("/"))
         network.expectDecodedHEADERS(0x1, endStream = true)
 
@@ -535,7 +536,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     }
 
     "respect settings" should {
-      "received SETTINGS_MAX_CONCURRENT_STREAMS should limit the number of outgoing streams" in new TestSetup(
+      "received SETTINGS_MAX_CONCURRENT_STREAMS should limit the number of outgoing streams" inAssertAllStagesStopped new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
       ) with NetProbes {
         val request = HttpRequest(uri = "https://www.example.com/")
@@ -572,7 +573,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.expect[HeadersFrame]().streamId shouldBe (11)
         network.expect[HeadersFrame]().streamId shouldBe (13)
       }
-      "increasing SETTINGS_MAX_CONCURRENT_STREAMS should flush backpressured outgoing streams" in new TestSetup(
+      "increasing SETTINGS_MAX_CONCURRENT_STREAMS should flush backpressured outgoing streams" inAssertAllStagesStopped new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
       ) with NetProbes {
         val request = HttpRequest(uri = "https://www.example.com/")
@@ -593,7 +594,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // ... should let frame 5 pass
         network.expect[HeadersFrame]().streamId shouldBe (5)
       }
-      "decreasing SETTINGS_MAX_CONCURRENT_STREAMS should keep backpressure outgoing streams until limit is respected" in new TestSetup(
+      "decreasing SETTINGS_MAX_CONCURRENT_STREAMS should keep backpressure outgoing streams until limit is respected" inAssertAllStagesStopped new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
       ) with NetProbes {
         val request = HttpRequest(uri = "https://www.example.com/")
@@ -633,7 +634,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         user.emitRequest(Get("/"))
         network.expectDecodedHEADERS(streamId, endStream = true)
       }
-      "support trailing headers for responses" in new WaitingForResponseSetup {
+      "support trailing headers for responses" inAssertAllStagesStopped new WaitingForResponseSetup {
         network.sendHEADERS(streamId, endStream = false, Seq(
           RawHeader(":status", "200"),
           RawHeader("content-type", "application/octet-stream")
@@ -653,7 +654,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     }
 
     "expose synthetic headers" should {
-      "expose Tls-Session-Info" in new TestSetup {
+      "expose Tls-Session-Info" inAssertAllStagesStopped new TestSetup {
         lazy val expectedSession = SSLContext.getDefault.createSSLEngine.getSession
 
         override def settings: ClientConnectionSettings =
@@ -685,7 +686,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     }
 
     "support for configurable ping" should {
-      "send pings when there is an active but slow stream from client" in new TestSetup with NetProbes {
+      "send pings when there is an active but slow stream from client" inAssertAllStagesStopped new TestSetup with NetProbes {
         override def settings = super.settings.mapHttp2Settings(_.withPingInterval(500.millis))
         val streamId = 0x1
         val requestStream = TestPublisher.probe[ByteString]()
@@ -697,7 +698,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
         network.expectNoBytes(2.millis) // no data after ping
       }
-      "send pings when there is an active but slow stream to client" in new TestSetup with NetProbes {
+      "send pings when there is an active but slow stream to client" inAssertAllStagesStopped new TestSetup with NetProbes {
         override def settings = {
           val default = super.settings
           default.withHttp2Settings(default.http2Settings.withPingInterval(500.millis))
@@ -717,7 +718,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
       }
 
-      "send GOAWAY when ping ack times out" in new TestSetup with NetProbes {
+      "send GOAWAY when ping ack times out" inAssertAllStagesStopped new TestSetup with NetProbes {
         override def settings = {
           val default = super.settings
           default.withHttp2Settings(default.http2Settings.withPingInterval(800.millis).withPingTimeout(400.millis))
@@ -735,6 +736,19 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
     }
+  }
+
+  implicit class InWithStoppedStages(name: String) {
+    def inAssertAllStagesStopped(runTest: => TestSetup) =
+      name in StreamTestKit.assertAllStagesStopped {
+        val setup = runTest
+
+        // force connection to shutdown (in case it is an invalid state)
+        setup.network.fromNet.sendError(new RuntimeException)
+        setup.network.toNet.cancel()
+
+        // and then assert that all stages, substreams in particular, are stopped
+      }
   }
 
   protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {
