@@ -13,7 +13,7 @@ import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
-import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.client.RequestBuilding.{ Get, Post }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
 import akka.http.scaladsl.model.HttpMethods.GET
@@ -331,16 +331,16 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // https://http2.github.io/http2-spec/#StreamStates
         // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
         network.sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
-        // especially no GOAWAY frame should be sent in response
-        network.expectNoBytes(100.millis)
+
+        connectionShouldStillBeUsable()
       }
       "not fail the whole connection when data frames are received after stream was cancelled" in new WaitingForResponseData {
         entityDataIn.cancel()
         network.expectRST_STREAM(TheStreamId)
 
         network.sendDATA(TheStreamId, endStream = false, ByteString("test"))
-        // should just be ignored, especially no GOAWAY frame should be sent in response
-        network.expectNoBytes(100.millis)
+
+        connectionShouldStillBeUsable()
       }
       "send RST_STREAM if entity stream is canceled" in new WaitingForResponseData {
         val data1 = ByteString("abcdef")
@@ -409,6 +409,49 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         chunksIn.expectComplete()
       }
       "fail entity stream if advertised content-length doesn't match" in pending
+    }
+
+    "support streaming for sending request entity data" should {
+      abstract class WaitingForRequestData extends TestSetup {
+        val entityDataOut = TestPublisher.probe[ByteString]()
+        user.emitRequest(Post("/", HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut))))
+        val TheStreamId = network.expect[HeadersFrame]().streamId
+      }
+      "encode Content-Length and Content-Type headers" in new TestSetup {
+        val request = Post("/", HttpEntity(ContentTypes.`application/octet-stream`, ByteString("abcde")))
+        user.emitRequest(request)
+        val pairs = network.expectDecodedResponseHEADERSPairs(streamId = 0x1, endStream = false).toMap
+        pairs should contain(":method" -> "POST")
+        pairs should contain("content-length" -> "5")
+        pairs should contain("content-type" -> "application/octet-stream")
+      }
+      "send entity data as data frames" in new WaitingForRequestData {
+        val data1 = ByteString("abcd")
+        entityDataOut.sendNext(data1)
+        network.expectDATA(TheStreamId, endStream = false, data1)
+
+        val data2 = ByteString("efghij")
+        entityDataOut.sendNext(data2)
+        network.expectDATA(TheStreamId, endStream = false, data2)
+
+        entityDataOut.sendComplete()
+        network.expectDATA(TheStreamId, endStream = true, ByteString.empty)
+      }
+      "parse priority frames" in new WaitingForRequestData {
+        network.sendPRIORITY(TheStreamId, exclusiveFlag = true, 0, 5)
+        entityDataOut.sendComplete()
+        network.expectDATA(TheStreamId, endStream = true, ByteString.empty)
+      }
+      "cancel entity data source when peer sends RST_STREAM" in new WaitingForRequestData {
+        val data1 = ByteString("abcd")
+        entityDataOut.sendNext(data1)
+        network.expectDATA(TheStreamId, endStream = false, data1)
+
+        network.sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+        entityDataOut.expectCancellation()
+
+        connectionShouldStillBeUsable()
+      }
     }
 
     "respect flow-control" should {
@@ -530,7 +573,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
-    "support stream support for receiving response entity data" should {
+    "support streaming for receiving response entity data" should {
       abstract class WaitingForResponseSetup extends TestSetup with NetProbes {
         val streamId = 0x1
         user.emitRequest(Get("/"))
@@ -680,6 +723,13 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     network.sendFrame(SettingsFrame(immutable.Seq.empty ++ initialServerSettings))
     network.expectSettingsAck()
+
+    def connectionShouldStillBeUsable(): Unit = {
+      user.emitRequest(Get("/"))
+      val streamId = network.expect[HeadersFrame]().streamId
+      network.sendHEADERS(streamId, endStream = true, Seq(RawHeader(":status", "418")))
+      user.expectResponse().status should be(StatusCodes.ImATeapot)
+    }
   }
 
   /** Provides the net flow as `toNet` and `fromNet` probes for manual stream interaction */

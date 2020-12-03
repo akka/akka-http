@@ -461,7 +461,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       "fail entity stream if advertised content-length doesn't match" in pending
     }
 
-    "support stream support for sending response entity data" should {
+    "support streaming for sending response entity data" should {
       abstract class WaitingForResponseSetup extends TestSetup with RequestResponseProbes {
         val TheStreamId = 1
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)

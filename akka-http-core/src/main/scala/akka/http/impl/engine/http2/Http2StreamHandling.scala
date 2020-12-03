@@ -329,9 +329,15 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   case class OpenSendingData(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]) extends StreamState with Sending {
     override def handle(event: StreamFrameEvent): StreamState = event match {
-      case _: ParsedHeadersFrame => expectIncomingStream(event, HalfClosedRemoteSendingData(outStream), Open(_, outStream), correlationAttributes)
-      case w: WindowUpdateFrame  => handleWindowUpdate(w)
-      case _                     => receivedUnexpectedFrame(event)
+      case _: ParsedHeadersFrame =>
+        expectIncomingStream(event, HalfClosedRemoteSendingData(outStream), Open(_, outStream), correlationAttributes)
+      case w: WindowUpdateFrame =>
+        handleWindowUpdate(w)
+      case r: RstStreamFrame =>
+        multiplexer.closeStream(r.streamId)
+        outStream.cancelStream()
+        Closed
+      case _ => receivedUnexpectedFrame(event)
     }
 
     override def handleOutgoingEnded(): StreamState = HalfClosedLocalWaitingForPeerStream(correlationAttributes)
@@ -378,7 +384,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       case w: WindowUpdateFrame =>
         incrementWindow(w.windowSizeIncrement)
 
-      case _ => receivedUnexpectedFrame(event)
+      case other => receivedUnexpectedFrame(event)
     }
     protected def onReset(streamId: Int): Unit
 
