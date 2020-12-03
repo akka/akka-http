@@ -228,10 +228,13 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           if (sendableOutstreams.contains(streamId)) {
             val sendableExceptClosed = sendableOutstreams - streamId
 
-            if (sendableExceptClosed.isEmpty) Idle
+            if (sendableExceptClosed.isEmpty)
+              if (pulled) WaitingForData else Idle
             else withSendableOutstreams(sendableExceptClosed)
           } else
             this
+
+        def pulled: Boolean
       }
 
       private[http2] case class WaitingForNetworkToSendData(sendableOutstreams: immutable.Set[Int]) extends WithSendableOutStreams {
@@ -251,6 +254,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
         def withSendableOutstreams(sendableOutStreams: Set[Int]) =
           WaitingForNetworkToSendData(sendableOutStreams)
+
+        override def pulled = false
       }
 
       /** Pulled and data is pending but no connection-level window available */
@@ -270,6 +275,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
         def withSendableOutstreams(sendableOutStreams: Set[Int]) =
           WaitingForConnectionWindow(sendableOutStreams)
+
+        override def pulled = true
       }
 
       def maxBytesToBufferPerSubstream = 2 * currentMaxFrameSize // for now, let's buffer two frames per substream

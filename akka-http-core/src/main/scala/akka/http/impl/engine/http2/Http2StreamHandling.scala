@@ -233,6 +233,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def receivedUnexpectedFrame(e: StreamFrameEvent): StreamState = {
       debug(s"Received unexpected frame of type ${e.frameTypeName} for stream ${e.streamId} in state $stateName")
       pushGOAWAY(ErrorCode.PROTOCOL_ERROR, s"Received unexpected frame of type ${e.frameTypeName} for stream ${e.streamId} in state $stateName")
+      multiplexer.closeStream(e.streamId)
       Closed
     }
 
@@ -337,7 +338,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         multiplexer.closeStream(r.streamId)
         outStream.cancelStream()
         Closed
-      case _ => receivedUnexpectedFrame(event)
+      case _ =>
+        outStream.cancelStream()
+        receivedUnexpectedFrame(event)
     }
 
     override def handleOutgoingEnded(): StreamState = HalfClosedLocalWaitingForPeerStream(correlationAttributes)
