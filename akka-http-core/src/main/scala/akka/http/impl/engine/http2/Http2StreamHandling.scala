@@ -188,8 +188,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private def shutdownIfReady(): Unit = {
     lastPossiblePeerProcessedStreamId match {
       case None =>
-        // We have not determined a final stream id yet,
-        // which means we are not yet shutting down.
+      // We have not determined a final stream id yet,
+      // which means we are not yet shutting down.
       case Some(lastStreamId) =>
         if (!activeStreamsUpTo(lastStreamId)) {
           multiplexer.complete(lastStreamId)
