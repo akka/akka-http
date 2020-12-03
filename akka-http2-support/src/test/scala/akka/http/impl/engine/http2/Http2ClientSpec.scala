@@ -730,7 +730,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     // https://tools.ietf.org/html/rfc7540#section-6.8
     "support gracefully shutting down the connection" should {
-      "when the connection is idle" in new TestSetup {
+      "when the connection is idle" inAssertAllStagesStopped new TestSetup {
         // A server that is attempting to gracefully shut down a connection SHOULD
         // send an initial GOAWAY frame with the last stream identifier set to 2^31-1
         // and a NO_ERROR code.
@@ -746,7 +746,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendGOAWAY(0x0, ErrorCode.NO_ERROR)
       }
 
-      "while a request is still in flight" in new WaitingForResponseData {
+      "while a request is still in flight" inAssertAllStagesStopped new WaitingForResponseData {
         // This signals to the client that a shutdown is imminent
         // and that initiating further requests is prohibited
         network.sendGOAWAY(Int.MaxValue, ErrorCode.NO_ERROR)

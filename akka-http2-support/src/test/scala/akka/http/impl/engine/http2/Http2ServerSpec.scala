@@ -1185,7 +1185,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" inAssertAllStagesStopped new SimpleRequestResponseRoundtripSetup {
         network.sendDATA(9, endStream = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        network.expectGOAWAY()
+        val (lastStreamId, error) = network.expectGOAWAY()
+        lastStreamId should be(0x0)
+        error should be(ErrorCode.PROTOCOL_ERROR)
       }
       "reject incoming frames on already half-closed substream" in pending
 

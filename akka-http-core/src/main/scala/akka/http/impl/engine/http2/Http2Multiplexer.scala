@@ -137,6 +137,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def connectionWindowAvailable(): MultiplexerState
         def enqueueOutStream(streamId: Int): MultiplexerState
         def closeStream(streamId: Int): MultiplexerState
+        //def complete(maxStreamId: Int): MultiplexerState
 
         protected def sendDataFrame(streamId: Int, sendableOutstreams: immutable.Set[Int]): MultiplexerState = {
           val maxBytesToSend = currentMaxFrameSize min connectionWindowLeft
