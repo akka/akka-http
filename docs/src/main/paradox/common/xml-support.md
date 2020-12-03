@@ -36,6 +36,7 @@ In order to enable support for (un)marshalling from and to XML with [Scala XML][
 the following dependency:
 
 @@dependency [sbt,Gradle,Maven] {
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol="AkkaHttpVersion"
   value="$project.version$"
   group="com.typesafe.akka"

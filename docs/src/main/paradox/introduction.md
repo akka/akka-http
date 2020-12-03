@@ -35,6 +35,7 @@ choose an Akka version to run against and add a manual dependency to `akka-strea
 @@dependency [sbt,Gradle,Maven] {
   symbol1=AkkaVersion
   value1=$akka.version$
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol2="AkkaHttpVersion"
   value2="$project.version$"
   group1="com.typesafe.akka" artifact1="akka-actor-typed_$scala.binary.version$" version1=AkkaVersion
@@ -103,6 +104,7 @@ for JSON. An additional module provides JSON serialization using the spray-json 
 for details):
 
 @@dependency [sbt,Gradle,Maven] {
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol="AkkaHttpVersion"
   value="$project.version$"
   group="com.typesafe.akka"
@@ -116,6 +118,7 @@ JSON support is possible in `akka-http` by the use of Jackson, an external artif
 for details):
 
 @@dependency [sbt,Gradle,Maven] {
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol="AkkaHttpVersion"
   value="$project.version$"
   group="com.typesafe.akka"

@@ -12,6 +12,7 @@ This means it is ready to be evaluated, but the APIs and behavior are likely to 
 To use Akka HTTP2 Support, add the module to your project:
 
 @@dependency [sbt,Gradle,Maven] {
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol="AkkaHttpVersion"
   value="$project.version$"
   group="com.typesafe.akka"
