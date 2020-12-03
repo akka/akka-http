@@ -220,10 +220,21 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
-      def frameOutFinished(): Unit = {
+      override def frameOutFinished(): Unit = {
         // make sure we clean up/fail substreams with a custom failure before stage is canceled
         // and substream autoclean kicks in
         shutdownStreamHandling()
+      }
+
+      override def frameOutClosed(): Unit = {
+        complete(frameOut)
+        if (isServer) {
+          // TODO #3687 just cancelling the substream input should be sufficient
+          //  (since the other inputs/outputs are cancelled/completed elsewhere),
+          //  but tests show the stage is leaked unless we complete the stage here:
+          // cancel(substreamIn)
+          completeStage()
+        }
       }
 
       override def pushFrameOut(event: FrameEvent): Unit = {
@@ -380,6 +391,12 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           // Once the incoming stream is handled, we decide if we need to pull more.
           tryPullSubStreams()
         }
+
+        override def onUpstreamFinish(): Unit = {
+          // Don't shut down the stage immediately, but give use a chance to
+          // finish handing all streams up until the last one:
+          initiateShutdown(lastStreamId())
+        }
       })
 
       /**
@@ -433,14 +450,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       override def stopAcceptingStreams(): Unit =
         cancel(substreamIn)
 
-      override def completeInOut(): Unit = {
-        bufferedSubStreamOutput.complete()
+      override def completeNetworkToUserFlow(): Unit = {
+        if (!bufferedSubStreamOutput.completed)
+          bufferedSubStreamOutput.complete()
         cancel(frameIn)
-        complete(frameOut)
       }
 
-      override def postStop(): Unit = {
+      override def postStop(): Unit =
         shutdownStreamHandling()
-      }
     }
 }

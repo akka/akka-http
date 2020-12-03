@@ -29,6 +29,14 @@ private[http2] trait Http2Multiplexer {
   def enqueueOutStream(streamId: Int): Unit
   def closeStream(streamId: Int): Unit
 
+  /* Signals to the multiplexer that all relevant outgoing connections
+   * have completed, so the frame output can be closed as soon
+   * as any pending control frames have been sent.
+   *
+   * @param lastStreamId the last stream ID that for which data should not be discarded
+   */
+  def complete(lastStreamId: Int): Unit
+
   def currentInitialWindow: Int
 
   def reportTimings(): Unit
@@ -80,6 +88,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
   /** Called by the multiplexer before canceling the stage on outlet cancellation */
   def frameOutFinished(): Unit
 
+  /** Called by the multiplexer when we are ready to close the outgoing frame stream */
+  def frameOutClosed(): Unit
+
   def pushFrameOut(event: FrameEvent): Unit
 
   def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
@@ -92,7 +103,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       private var currentMaxFrameSize: Int = Http2Protocol.InitialMaxFrameSize
       private var connectionWindowLeft: Int = Http2Protocol.InitialWindowSize
 
-      override def pushControlFrame(frame: FrameEvent): Unit = updateState(_.pushControlFrame(frame))
+      override def pushControlFrame(frame: FrameEvent): Unit =
+        updateState(_.pushControlFrame(frame))
 
       def updateConnectionLevelWindow(increment: Int): Unit = {
         connectionWindowLeft += increment
@@ -111,6 +123,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       def enqueueOutStream(streamId: Int): Unit = updateState(_.enqueueOutStream(streamId))
       def closeStream(streamId: Int): Unit = updateState(_.closeStream(streamId))
 
+      def complete(lastStreamId: Int): Unit = updateState(_.complete(lastStreamId))
+
       /** Network pulls in new frames */
       def onPull(): Unit = updateState(_.onPull())
 
@@ -127,6 +141,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         _state = newState
 
         if (newState.name != oldState.name) recordStateChange(oldState.name, newState.name)
+        if (newState == Closed)
+          frameOutClosed()
       }
 
       private[http2] sealed trait MultiplexerState extends Product {
@@ -137,7 +153,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def connectionWindowAvailable(): MultiplexerState
         def enqueueOutStream(streamId: Int): MultiplexerState
         def closeStream(streamId: Int): MultiplexerState
-        //def complete(maxStreamId: Int): MultiplexerState
+        def complete(lastStreamId: Int): MultiplexerState
 
         protected def sendDataFrame(streamId: Int, sendableOutstreams: immutable.Set[Int]): MultiplexerState = {
           val maxBytesToSend = currentMaxFrameSize min connectionWindowLeft
@@ -166,6 +182,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       // WaitingForNetworkToSendControlFrames: Control frames (and maybe data frames) are queued but there is no network demand
       // WaitingForNetworkToSendData: Data frames queued but no network demand
       // WaitingForConnectionWindow: Data frames queued, demand from the network, but no connection-level window available
+      // Closed
 
       private[http2] case object Idle extends MultiplexerState {
         def onPull(): MultiplexerState = WaitingForData
@@ -173,6 +190,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def connectionWindowAvailable(): MultiplexerState = this
         def enqueueOutStream(streamId: Int): MultiplexerState = WaitingForNetworkToSendData(immutable.TreeSet(streamId))
         def closeStream(streamId: Int): MultiplexerState = this
+        def complete(lastStreamId: Int): MultiplexerState = Closed
       }
 
       case object WaitingForData extends MultiplexerState {
@@ -186,19 +204,23 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           if (connectionWindowLeft == 0) WaitingForConnectionWindow(immutable.TreeSet(streamId))
           else sendDataFrame(streamId, Set.empty)
         def closeStream(streamId: Int): MultiplexerState = this
+        def complete(lastStreamId: Int): MultiplexerState = Closed
       }
 
       /** Not yet pulled but data waiting to be sent */
-      private[http2] case class WaitingForNetworkToSendControlFrames(controlFrameBuffer: immutable.Vector[FrameEvent], sendableOutstreams: immutable.Set[Int]) extends MultiplexerState {
+      private[http2] case class WaitingForNetworkToSendControlFrames(controlFrameBuffer: immutable.Vector[FrameEvent], sendableOutstreams: immutable.Set[Int], closing: Boolean = false) extends MultiplexerState {
         require(controlFrameBuffer.nonEmpty)
         allowReadingIncomingFrames(controlFrameBuffer.size < settings.outgoingControlFrameBufferSize)
         def onPull(): MultiplexerState = controlFrameBuffer match {
           case first +: remaining =>
             pushFrameOut(first)
             allowReadingIncomingFrames(remaining.size < settings.outgoingControlFrameBufferSize)
-            if (remaining.isEmpty && sendableOutstreams.isEmpty) Idle
-            else if (remaining.isEmpty) WaitingForNetworkToSendData(sendableOutstreams)
-            else copy(remaining, sendableOutstreams)
+            if (remaining.isEmpty) {
+              if (sendableOutstreams.isEmpty)
+                if (closing) Closed
+                else Idle
+              else WaitingForNetworkToSendData(sendableOutstreams)
+            } else copy(remaining, sendableOutstreams)
         }
         def pushControlFrame(frame: FrameEvent): MultiplexerState = copy(controlFrameBuffer = controlFrameBuffer :+ frame)
         def connectionWindowAvailable(): MultiplexerState = this
@@ -214,6 +236,12 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             copy(sendableOutstreams = sendableExceptClosed)
           } else
             this
+
+        def complete(lastStreamId: Int): MultiplexerState = {
+          if (sendableOutstreams.exists(_ <= lastStreamId))
+            throw new IllegalStateException(s"not ready to complete, sendable output streams still open")
+          copy(sendableOutstreams = Set.empty, closing = true)
+        }
       }
 
       private[http2] abstract class WithSendableOutStreams extends MultiplexerState {
@@ -256,6 +284,12 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def withSendableOutstreams(sendableOutStreams: Set[Int]) =
           WaitingForNetworkToSendData(sendableOutStreams)
 
+        def complete(lastStreamId: Int): MultiplexerState = {
+          if (sendableOutstreams.exists(_ <= lastStreamId))
+            throw new IllegalStateException(s"not ready to complete, sendable output streams still open")
+          Closed
+        }
+
         override def pulled = false
       }
 
@@ -277,9 +311,25 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def withSendableOutstreams(sendableOutStreams: Set[Int]) =
           WaitingForConnectionWindow(sendableOutStreams)
 
+        def complete(lastStreamId: Int): MultiplexerState = {
+          if (sendableOutstreams.exists(_ <= lastStreamId))
+            throw new IllegalStateException(s"not ready to complete, sendable output streams still open")
+          Closed
+        }
+
         override def pulled = true
       }
 
+      private[http2] case object Closed extends MultiplexerState {
+        override def onPull(): MultiplexerState = Closed
+        override def pushControlFrame(frame: FrameEvent): MultiplexerState = Closed
+        override def connectionWindowAvailable(): MultiplexerState = Closed
+        override def enqueueOutStream(streamId: Int): MultiplexerState =
+          throw new IllegalStateException(s"new outgoing stream unexpected while already closed")
+        override def closeStream(streamId: Int): MultiplexerState = Closed
+        override def complete(lastStreamId: Int): MultiplexerState =
+          throw new IllegalStateException(s"already closed")
+      }
       def maxBytesToBufferPerSubstream = 2 * currentMaxFrameSize // for now, let's buffer two frames per substream
     }
 

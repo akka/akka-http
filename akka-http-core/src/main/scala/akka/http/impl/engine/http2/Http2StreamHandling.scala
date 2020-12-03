@@ -36,7 +36,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
   def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit
   def stopAcceptingStreams(): Unit
-  def completeInOut(): Unit
+  def completeNetworkToUserFlow(): Unit
   def isUpgraded: Boolean
 
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
@@ -168,29 +168,32 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     ret
   }
   def initiateShutdown(lastPotentiallyProcessedStreamId: Int): Unit = {
+    assert(lastPossiblePeerProcessedStreamId.forall(_ >= lastPotentiallyProcessedStreamId))
     lastPossiblePeerProcessedStreamId = Some(lastPotentiallyProcessedStreamId)
-    if (isServer) {
-      // When we send the client away, we still want to consume and respond to outstanding requests.
-      // TODO: but not accept new requests
-    } else {
+    if (!isServer) {
       // When we send the server away, we still want to finish sending request bodies and consume
       // outstanding responses, but not accept new requests
       stopAcceptingStreams()
+
+      // TODO #3686 on the server, we should keep accepting frames for in-flight requests, but
+      //  no longer allow opening new streams.
     }
     // We close connections when there are no viable ones in-flight.
     shutdownIfReady()
   }
 
+  /**
+   * idempotent
+   */
   private def shutdownIfReady(): Unit = {
     lastPossiblePeerProcessedStreamId match {
       case None =>
-      // not ready to close yet
+        // We have not determined a final stream id yet,
+        // which means we are not yet shutting down.
       case Some(lastStreamId) =>
         if (!activeStreamsUpTo(lastStreamId)) {
-          // this might be too early... but then when?
-          // shutdownStreamHandling()
-          completeInOut()
-          //completeStage()
+          multiplexer.complete(lastStreamId)
+          completeNetworkToUserFlow()
         }
     }
   }

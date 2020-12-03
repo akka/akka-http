@@ -758,8 +758,10 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.expectBytes(ByteString("asdf"))
         entityDataIn.expectComplete()
 
-        // not really relevant, could be there or not...
+        // window updates are not really relevant for this test, could be there or not...
         network.expectWindowUpdate()
+        network.expectWindowUpdate()
+
         network.toNet.expectComplete()
 
         network.sendGOAWAY(0x0, ErrorCode.NO_ERROR)
