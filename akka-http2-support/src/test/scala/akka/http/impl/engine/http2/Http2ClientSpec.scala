@@ -783,7 +783,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     def settings = ClientConnectionSettings(system)
 
     final def theClient: BidiFlow[ByteString, HttpResponse, HttpRequest, ByteString, NotUsed] =
-      modifyClient(Http2Blueprint.clientStack(settings, system.log))
+      modifyClient(Http2Blueprint.clientStack(settings, system.log, NoOpTelemetry))
         .atop(LogByteStringTools.logByteStringBidi("network-plain-text").addAttributes(Attributes(LogLevels(Logging.DebugLevel, Logging.DebugLevel, Logging.DebugLevel))))
         .reversed
 

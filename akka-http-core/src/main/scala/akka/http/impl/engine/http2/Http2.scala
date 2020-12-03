@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
@@ -26,8 +27,8 @@ import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.typesafe.config.Config
-import javax.net.ssl.SSLEngine
 
+import javax.net.ssl.SSLEngine
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -49,6 +50,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
   val http = Http(system)
+  val telemetry = TelemetrySpi.create(system)
 
   // TODO: split up similarly to what `Http` does into `serverLayer`, `bindAndHandle`, etc.
   def bindAndHandleAsync(
@@ -68,7 +70,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       else settings.defaultHttpPort
 
     val http1 = Flow[HttpRequest].mapAsync(settings.pipeliningLimit)(handleUpgradeRequests(handler, settings, log)).join(http.serverLayer(settings, log = log))
-    val http2 = Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log))
+    val http2 = Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log, telemetry))
 
     val masterTerminator = new MasterServerTerminator(log)
 
@@ -129,7 +131,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
                 .prepend(injectedRequest)
                 .via(Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher))
                 // the settings from the header are injected into the blueprint as initial demuxer settings
-                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true))(Keep.left))
+                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true, telemetry))(Keep.left))
 
             Future.successful(
               HttpResponse(
@@ -204,7 +206,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       engine
     }
 
-    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
+    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log, telemetry) atop
       Http2Blueprint.unwrapTls atop
       LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
       TLS(createEngine _, closing = TLSClosing.eagerClose)
@@ -213,7 +215,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
   }
 
   def outgoingConnectionPriorKnowledge(host: String, port: Int, clientConnectionSettings: ClientConnectionSettings, log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
-    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
+    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log, telemetry) atop
       Http2Blueprint.unwrapTls atop
       LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
       TLSPlacebo()
@@ -226,6 +228,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
 /** INTERNAL API */
 @InternalApi
 private[http] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
+  @InternalStableApi
   val streamId = AttributeKey[Int]("x-http2-stream-id")
 
   override def get(system: ActorSystem): Http2Ext = super.get(system)

@@ -5,12 +5,15 @@
 package akka.http.scaladsl.model
 
 import akka.annotation.ApiMayChange
+import akka.annotation.InternalStableApi
+
 import scala.concurrent.Promise
 
 /**
  * A marker trait for attribute values that should be (automatically) carried over from request to response.
  */
 @ApiMayChange
+@InternalStableApi
 trait RequestResponseAssociation extends akka.http.javadsl.model.RequestResponseAssociation
 
 /**

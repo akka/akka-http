@@ -78,8 +78,8 @@ private[http2] object Http2SubStream {
 @InternalApi
 private[http] object Http2Blueprint {
 
-  def serverStackTls(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    serverStack(settings, log) atop
+  def serverStackTls(settings: ServerSettings, log: LoggingAdapter, telemetry: TelemetrySpi): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    serverStack(settings, log, telemetry = telemetry) atop
       unwrapTls atop
       logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
 
@@ -88,22 +88,27 @@ private[http] object Http2Blueprint {
       settings: ServerSettings,
       log: LoggingAdapter,
       initialDemuxerSettings: immutable.Seq[Setting] = Nil,
-      upgraded: Boolean = false): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
-    httpLayer(settings, log) atop
+      upgraded: Boolean = false,
+      telemetry: TelemetrySpi): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+    telemetry.server atop
+      httpLayer(settings, log) atop
       serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       framing(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
+  }
+
   // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
   // format: ON
 
-  def clientStack(settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] = {
+  def clientStack(settings: ClientConnectionSettings, log: LoggingAdapter, telemetry: TelemetrySpi): BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] = {
     // This is master header parser, every other usage should do .createShallowCopy()
     // HttpHeaderParser is not thread safe and should not be called concurrently,
     // the internal trie, however, has built-in protection and will do copy-on-write
     val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log)
-    httpLayerClient(masterHttpHeaderParser, settings, log) atop
+    telemetry.client atop
+      httpLayerClient(masterHttpHeaderParser, settings, log) atop
       clientDemux(settings.http2Settings, masterHttpHeaderParser) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
