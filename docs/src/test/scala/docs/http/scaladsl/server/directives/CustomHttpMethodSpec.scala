@@ -20,8 +20,8 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
   "Http" should {
     "allow registering custom method" in {
       import system.dispatcher
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-
+      val host = "localhost"
+      var port = 0
       //#application-custom
       import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 
@@ -38,11 +38,12 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
       }
       val binding = Http().newServerAt(host, port).withSettings(serverSettings).bind(routes)
 
+      //#application-custom
+      // Make sure we're bound
+      port = binding.futureValue.localAddress.getPort
+      //#application-custom
       val request = HttpRequest(BOLT, s"http://$host:$port/", protocol = `HTTP/1.1`)
       //#application-custom
-
-      // Make sure we're bound
-      binding.futureValue
 
       // Check response
       val response = Http().singleRequest(request).futureValue
