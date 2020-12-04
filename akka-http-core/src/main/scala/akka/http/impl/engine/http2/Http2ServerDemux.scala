@@ -220,10 +220,21 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
-      def frameOutFinished(): Unit = {
+      override def frameOutFinished(): Unit = {
         // make sure we clean up/fail substreams with a custom failure before stage is canceled
         // and substream autoclean kicks in
         shutdownStreamHandling()
+      }
+
+      override def frameOutClosed(): Unit = {
+        complete(frameOut)
+        if (isServer) {
+          // TODO #3687 just cancelling the substream input should be sufficient
+          //  (since the other inputs/outputs are cancelled/completed elsewhere),
+          //  but tests show the stage is leaked unless we complete the stage here:
+          // cancel(substreamIn)
+          completeStage()
+        }
       }
 
       override def pushFrameOut(event: FrameEvent): Unit = {
@@ -263,10 +274,16 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
-        val frame = GoAwayFrame(lastStreamId(), errorCode, ByteString(debug))
+        // We do not guarantee that we will process the streams until and including last stream id
+        // (though we might try).
+        // We do guarantee we will not process any streams with higher ID's.
+        val lastPotentiallyProcessedStreamId = lastStreamId()
+
+        val frame = GoAwayFrame(lastPotentiallyProcessedStreamId, errorCode, ByteString(debug))
         multiplexer.pushControlFrame(frame)
-        // FIXME: handle the connection closing according to the specification
+        initiateShutdown(lastPotentiallyProcessedStreamId)
       }
+
       private[this] var allowReadingIncomingFrames: Boolean = true
       override def allowReadingIncomingFrames(allow: Boolean): Unit = {
         if (allow != allowReadingIncomingFrames)
@@ -277,7 +294,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         allowReadingIncomingFrames = allow
       }
-      def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
+      def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn) && !isClosed(frameIn)) pull(frameIn)
 
       def tryPullSubStreams(): Unit = {
         if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn)) {
@@ -324,7 +341,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
               }
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
-
+            case GoAwayFrame(lastStreamId, _, _) =>
+              // TODO do we log the error code and debug message on some level?
+              initiateShutdown(lastStreamId)
             case e =>
               debug(s"Got unhandled event $e")
             // ignore unknown frames
@@ -371,6 +390,12 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           handleOutgoingCreated(sub)
           // Once the incoming stream is handled, we decide if we need to pull more.
           tryPullSubStreams()
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          // Don't shut down the stage immediately, but give use a chance to
+          // finish handing all streams up until the last one:
+          initiateShutdown(lastStreamId())
         }
       })
 
@@ -422,8 +447,16 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           }
       }
 
-      override def postStop(): Unit = {
-        shutdownStreamHandling()
+      override def stopAcceptingStreams(): Unit =
+        cancel(substreamIn)
+
+      override def completeNetworkToUserFlow(): Unit = {
+        if (!bufferedSubStreamOutput.completed)
+          bufferedSubStreamOutput.complete()
+        cancel(frameIn)
       }
+
+      override def postStop(): Unit =
+        shutdownStreamHandling()
     }
 }

@@ -35,6 +35,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def settings: Http2CommonSettings
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
   def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit
+  def stopAcceptingStreams(): Unit
+  def completeNetworkToUserFlow(): Unit
   def isUpgraded: Boolean
 
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
@@ -51,8 +53,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
    */
   def tryPullSubStreams(): Unit
 
+  /** Tracks the active (non-Closed) streams. Closed streams are removed from the map. */
   private var streamStates = new immutable.TreeMap[Int, StreamState]
   private var largestIncomingStreamId = 0
+  private var lastPossiblePeerProcessedStreamId: Option[Int] = None
   private var outstandingConnectionLevelWindow = Http2Protocol.InitialWindowSize
   private var totalBufferedData = 0
 
@@ -95,6 +99,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
 
   def activeStreamCount(): Int = streamStates.size
+  /** Are there active streams with stream id's up to and including `last`? */
+  def activeStreamsUpTo(last: Int): Boolean = streamStates.keySet.exists(_ <= last)
 
   /** Called by Http2ServerDemux to let the state machine handle StreamFrameEvents */
   def handleStreamEvent(e: StreamFrameEvent): Unit =
@@ -154,12 +160,44 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       case Closed =>
         streamStates -= streamId
         tryPullSubStreams()
+        shutdownIfReady()
       case newState => streamStates += streamId -> newState
     }
 
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName} after handling [$event${if (eventArg ne null) s"($eventArg)" else ""}]")
     ret
   }
+  def initiateShutdown(lastPotentiallyProcessedStreamId: Int): Unit = {
+    assert(lastPossiblePeerProcessedStreamId.forall(_ >= lastPotentiallyProcessedStreamId))
+    lastPossiblePeerProcessedStreamId = Some(lastPotentiallyProcessedStreamId)
+    if (!isServer) {
+      // When we send the server away, we still want to finish sending request bodies and consume
+      // outstanding responses, but not accept new requests
+      stopAcceptingStreams()
+
+      // TODO #3686 on the server, we should keep accepting frames for in-flight requests, but
+      //  no longer allow opening new streams.
+    }
+    // We close connections when there are no viable ones in-flight.
+    shutdownIfReady()
+  }
+
+  /**
+   * idempotent
+   */
+  private def shutdownIfReady(): Unit = {
+    lastPossiblePeerProcessedStreamId match {
+      case None =>
+      // We have not determined a final stream id yet,
+      // which means we are not yet shutting down.
+      case Some(lastStreamId) =>
+        if (!activeStreamsUpTo(lastStreamId)) {
+          multiplexer.complete(lastStreamId)
+          completeNetworkToUserFlow()
+        }
+    }
+  }
+
   /** Called to cleanup any state when the connection is torn down */
   def shutdownStreamHandling(): Unit = streamStates.keys.foreach(id => updateState(id, { x => x.shutdown(); Closed }, "shutdownStreamHandling"))
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {

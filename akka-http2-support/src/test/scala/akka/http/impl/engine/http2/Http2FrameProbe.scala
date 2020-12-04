@@ -179,7 +179,7 @@ private[http] object Http2FrameProbe extends Matchers {
         val reader = new ByteReader(payload)
         val incomingLastStreamId = reader.readIntBE()
         if (lastStreamId > 0) incomingLastStreamId should ===(lastStreamId)
-        (lastStreamId, ErrorCode.byId(reader.readIntBE()))
+        (incomingLastStreamId, ErrorCode.byId(reader.readIntBE()))
       }
 
       override def expectSETTINGS(): SettingsFrame = {
