@@ -25,8 +25,10 @@ import akka.stream.Attributes.LogLevels
 import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.testkit.EventFilter
 import akka.testkit.TestDuration
 import akka.util.ByteString
+
 import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -505,6 +507,30 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // Check finishing old requests is still allowed
         network.sendHEADERS(otherRequestStreamId, true, Seq(RawHeader(":status", "200")))
         user.expectResponse()
+      }
+
+      abstract class StreamingRequestSent extends TestSetup {
+        val streamId = 0x1
+        val requestStream = TestPublisher.probe[ByteString]()
+        user.emitRequest(HttpRequest(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
+        network.expectDecodedHEADERS(streamId, endStream = false)
+        requestStream.expectRequest()
+      }
+      "send RST_STREAM when request entity data stream fails immediately" in new StreamingRequestSent {
+        EventFilter[RuntimeException](pattern = "Substream 1 failed with .*", occurrences = 1).intercept {
+          requestStream.sendError(new RuntimeException("boom"))
+          network.expectRST_STREAM(streamId, ErrorCode.INTERNAL_ERROR)
+        }
+      }
+
+      "send RST_STREAM when request entity data stream fails" in new StreamingRequestSent {
+        requestStream.sendNext(ByteString("abc"))
+        network.expectDATA(streamId, false, ByteString("abc"))
+
+        EventFilter[RuntimeException](pattern = "Substream 1 failed with .*", occurrences = 1).intercept {
+          requestStream.sendError(new RuntimeException("boom"))
+          network.expectRST_STREAM(streamId, ErrorCode.INTERNAL_ERROR)
+        }
       }
     }
 
