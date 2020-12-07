@@ -91,10 +91,17 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     Thread.sleep(resetTimeout.toMillis + 200)
 
+    //#onCompleteWithBreaker
+    // retry to make test more stable, since breaker reset is timer based, hidden from docs
+    // format: OFF
+    awaitAssert({
+    //#onCompleteWithBreaker
     Get("/divide/10/2") ~> route ~> check {
       responseAs[String] shouldEqual "The result was 5"
     }
     //#onCompleteWithBreaker
+    }, 500.millis)
+    // format: ON
   }
 
   "onSuccess" in {
