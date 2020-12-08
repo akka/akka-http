@@ -18,7 +18,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.headers.CacheDirectives._
-import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control`, `Content-Length`, `Content-Type` }
+import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control`, `Content-Length`, `Content-Type`, `User-Agent` }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
@@ -57,6 +57,16 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   "The Http/2 client implementation" should {
     "support simple round-trips" should {
       abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with NetProbes {
+
+        val defaultExpectedHeaders = Seq(
+          ":method" -> "GET",
+          ":scheme" -> "https",
+          ":authority" -> "www.example.com",
+          ":path" -> "/",
+          "content-length" -> "0",
+          "user-agent" -> ClientConnectionSettings(system).userAgentHeader.get.value
+        )
+
         def requestResponseRoundtrip(
           streamId:         Int,
           request:          HttpRequest,
@@ -81,13 +91,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         requestResponseRoundtrip(
           streamId = 1,
           request = HttpRequest(uri = "https://www.example.com/"),
-          expectedHeaders = Seq(
-            ":method" -> "GET",
-            ":scheme" -> "https",
-            ":authority" -> "www.example.com",
-            ":path" -> "/",
-            "content-length" -> "0"
-          ),
+          expectedHeaders = defaultExpectedHeaders,
           response = Seq(
             // TODO shouldn't this produce an error since stream '1' is already the outgoing stream?
             HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
@@ -114,13 +118,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         requestResponseRoundtrip(
           streamId = 1,
           request = HttpRequest(uri = "https://www.example.com/"),
-          expectedHeaders = Seq(
-            ":method" -> "GET",
-            ":scheme" -> "https",
-            ":authority" -> "www.example.com",
-            ":path" -> "/",
-            "content-length" -> "0"
-          ),
+          expectedHeaders = defaultExpectedHeaders,
           response = Seq(
             HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
           ),
@@ -163,13 +161,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       "Three consecutive GET requests" inAssertAllStagesStopped new SimpleRequestResponseRoundtripSetup {
         import akka.http.scaladsl.model.headers.CacheDirectives._
         import headers.`Cache-Control`
-        val requestHeaders = Seq(
-          ":method" -> "GET",
-          ":scheme" -> "https",
-          ":authority" -> "www.example.com",
-          ":path" -> "/",
-          "content-length" -> "0"
-        )
+        val requestHeaders = defaultExpectedHeaders
         requestResponseRoundtrip(
           streamId = 1,
           request = HttpRequest(GET, "https://www.example.com/"),

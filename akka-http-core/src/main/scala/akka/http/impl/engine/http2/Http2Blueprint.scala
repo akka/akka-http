@@ -9,7 +9,7 @@ import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.http2.FrameEvent._
-import akka.http.impl.engine.http2.client.{ RequestRendering, ResponseParsing }
+import akka.http.impl.engine.http2.client.ResponseParsing
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
@@ -103,7 +103,7 @@ private[http] object Http2Blueprint {
     // HttpHeaderParser is not thread safe and should not be called concurrently,
     // the internal trie, however, has built-in protection and will do copy-on-write
     val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log)
-    httpLayerClient(masterHttpHeaderParser, settings.parserSettings, log) atop
+    httpLayerClient(masterHttpHeaderParser, settings, log) atop
       clientDemux(settings.http2Settings, masterHttpHeaderParser) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
@@ -111,15 +111,15 @@ private[http] object Http2Blueprint {
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
 
-  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, settings: ParserSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] = {
+  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] = {
     BidiFlow.fromFlows(
       Flow[HttpRequest].statefulMapConcat { () =>
-        val renderer = RequestRendering.createRenderer(log)
+        val renderer = new RequestRendering(settings, log)
         request => renderer(request) :: Nil
       },
       StreamUtils.statefulAttrsMap[Http2SubStream, HttpResponse] { attrs =>
         val headerParser = masterHttpHeaderParser.createShallowCopy()
-        stream => ResponseParsing.parseResponse(headerParser, settings, attrs)(stream)
+        stream => ResponseParsing.parseResponse(headerParser, settings.parserSettings, attrs)(stream)
       }
     )
   }
@@ -183,7 +183,7 @@ private[http] object Http2Blueprint {
     // the internal trie, however, has built-in protection and will do copy-on-write
     val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log)
     BidiFlow.fromFlows(
-      Flow[HttpResponse].map(ResponseRendering.renderResponse(settings, log)),
+      Flow[HttpResponse].map(new ResponseRendering(settings, log)),
       Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs =>
         val headerParser = masterHttpHeaderParser.createShallowCopy()
         RequestParsing.parseRequest(headerParser, settings, attrs)

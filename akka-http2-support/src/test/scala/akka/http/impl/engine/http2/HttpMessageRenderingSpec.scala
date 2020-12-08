@@ -25,9 +25,9 @@ class MyCustomHeader(val value: String, val renderInResponses: Boolean) extends 
   override def renderInRequests(): Boolean = false
 }
 
-class ResponseRenderingSpec extends AnyWordSpec with Matchers {
+class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
 
-  "The response header logic" should {
+  "The request/response common header logic" should {
 
     "output headers" in {
       val builder = new VectorBuilder[(String, String)]
@@ -36,7 +36,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
         RawHeader("raw", "whatever"),
         new MyCustomHeader("whatever", renderInResponses = true)
       )
-      ResponseRendering.renderHeaders(headers, builder, None, NoLogging, isServer = true)
+      HttpMessageRendering.renderHeaders(headers, builder, None, NoLogging, isServer = true)
       val out = builder.result()
       out.exists(_._1 == "etag") shouldBe true
       out.exists(_._1 == "raw") shouldBe true
@@ -45,7 +45,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
 
     "add a date header when none is present" in {
       val builder = new VectorBuilder[(String, String)]
-      ResponseRendering.renderHeaders(Seq.empty, builder, None, NoLogging, isServer = true)
+      HttpMessageRendering.renderHeaders(Seq.empty, builder, None, NoLogging, isServer = true)
       val date = builder.result().collectFirst {
         case ("date", str) => str
       }
@@ -59,7 +59,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
     "keep the date header if it already is present" in {
       val builder = new VectorBuilder[(String, String)]
       val originalDateTime = DateTime(1981, 3, 6, 20, 30, 24)
-      ResponseRendering.renderHeaders(Seq(Date(originalDateTime)), builder, None, NoLogging, isServer = true)
+      HttpMessageRendering.renderHeaders(Seq(Date(originalDateTime)), builder, None, NoLogging, isServer = true)
       val date = builder.result().collectFirst {
         case ("date", str) => str
       }
@@ -67,16 +67,16 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
       date shouldEqual Some(originalDateTime.toRfc1123DateTimeString)
     }
 
-    "add server header if default provided" in {
+    "add server header if default provided (in server mode)" in {
       val builder = new VectorBuilder[(String, String)]
-      ResponseRendering.renderHeaders(Seq.empty, builder, Some(("server", "default server")), NoLogging, isServer = true)
+      HttpMessageRendering.renderHeaders(Seq.empty, builder, Some(("server", "default server")), NoLogging, isServer = true)
       val result = builder.result().find(_._1 == "server").map(_._2)
       result shouldEqual Some("default server")
     }
 
-    "keep server header if explicitly provided" in {
+    "keep server header if explicitly provided (in server mode)" in {
       val builder = new VectorBuilder[(String, String)]
-      ResponseRendering.renderHeaders(Seq(Server("explicit server")), builder, Some(("server", "default server")), NoLogging, isServer = true)
+      HttpMessageRendering.renderHeaders(Seq(Server("explicit server")), builder, Some(("server", "default server")), NoLogging, isServer = true)
       val result = builder.result().find(_._1 == "server").map(_._2)
       result shouldEqual Some("explicit server")
     }
@@ -89,7 +89,7 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
         `Content-Type`(ContentTypes.`application/json`),
         `Transfer-Encoding`(TransferEncodings.gzip)
       )
-      ResponseRendering.renderHeaders(invalidExplicitHeaders, builder, None, NoLogging, isServer = true)
+      HttpMessageRendering.renderHeaders(invalidExplicitHeaders, builder, None, NoLogging, isServer = true)
       builder.result().exists(_._1 != "date") shouldBe false
     }
 
@@ -99,9 +99,9 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
         Host("example.com", 80),
         new MyCustomHeader("whatever", renderInResponses = false)
       )
-      ResponseRendering.renderHeaders(shouldNotBeRendered, builder, None, NoLogging, isServer = true)
-      builder.result().exists(_._1 != "date") shouldBe false
-
+      HttpMessageRendering.renderHeaders(shouldNotBeRendered, builder, None, NoLogging, isServer = true)
+      val value1 = builder.result()
+      value1.exists(_._1 != "date") shouldBe false
     }
 
     "exclude explicit raw headers that is not valid for HTTP/2 or should not be provided as raw headers" in {
@@ -109,8 +109,34 @@ class ResponseRenderingSpec extends AnyWordSpec with Matchers {
       val invalidRawHeaders = Seq(
         "connection", "content-length", "content-type", "transfer-encoding", "date", "server"
       ).map(name => RawHeader(name, "whatever"))
-      ResponseRendering.renderHeaders(invalidRawHeaders, builder, None, NoLogging, isServer = true)
+      HttpMessageRendering.renderHeaders(invalidRawHeaders, builder, None, NoLogging, isServer = true)
       builder.result().exists(_._1 != "date") shouldBe false
+    }
+
+    // Client-specific tests
+    "add user-agent header if default provided (in client mode)" in {
+      val builder = new VectorBuilder[(String, String)]
+      HttpMessageRendering.renderHeaders(Seq.empty, builder, Some(("user-agent", "fancy browser")), NoLogging, isServer = false)
+      val result = builder.result().find(_._1 == "user-agent").map(_._2)
+      result shouldEqual Some("fancy browser")
+    }
+
+    "keep user-agent header if explicitly provided (in client mode)" in {
+      val builder = new VectorBuilder[(String, String)]
+      HttpMessageRendering.renderHeaders(Seq(`User-Agent`("fancier client")), builder, Some(("user-agent", "fancy browser")), NoLogging, isServer = false)
+      val result = builder.result().find(_._1 == "user-agent").map(_._2)
+      result shouldEqual Some("fancier client")
+    }
+
+    "exclude headers that should not be rendered in requests" in {
+      val builder = new VectorBuilder[(String, String)]
+      val shouldNotBeRendered = Seq(
+        Host("example.com", 80),
+        new MyCustomHeader("whatever", renderInResponses = false)
+      )
+      HttpMessageRendering.renderHeaders(shouldNotBeRendered, builder, None, NoLogging, isServer = false)
+      val value1 = builder.result()
+      value1.exists(_._1 == "date") shouldBe false
     }
 
   }
