@@ -1,0 +1,6 @@
+ProblemFilters.exclude[Problem]("akka.http.impl.settings.ParserSettingsImpl*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.HeaderParser.Settings")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpHeaderParser#Settings.illegalResponseHeaderNameProcessingMode")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.HeaderParser#Settings.illegalResponseHeaderNameProcessingMode")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIllegalResponseHeaderNameProcessingMode")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.illegalResponseHeaderNameProcessingMode")

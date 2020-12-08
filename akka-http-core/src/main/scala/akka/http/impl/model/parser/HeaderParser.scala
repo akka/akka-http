@@ -7,7 +7,7 @@ package akka.http.impl.model.parser
 import akka.annotation.InternalApi
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
-import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
+import akka.http.scaladsl.settings.ParserSettings.{ IllegalResponseHeaderValueProcessingMode, IllegalResponseHeaderNameProcessingMode }
 import akka.http.scaladsl.model.headers.HttpCookiePair
 import akka.util.ConstantFun
 
@@ -191,18 +191,21 @@ private[http] object HeaderParser {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
     def customMediaTypes: MediaTypes.FindCustom
+    def illegalResponseHeaderNameProcessingMode: IllegalResponseHeaderNameProcessingMode
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
   }
   def Settings(
     uriParsingMode:    Uri.ParsingMode                          = Uri.ParsingMode.Relaxed,
     cookieParsingMode: ParserSettings.CookieParsingMode         = ParserSettings.CookieParsingMode.RFC6265,
     customMediaTypes:  MediaTypes.FindCustom                    = ConstantFun.scalaAnyTwoToNone,
-    mode:              IllegalResponseHeaderValueProcessingMode = ParserSettings.IllegalResponseHeaderValueProcessingMode.Error): Settings = {
+    modeValue:         IllegalResponseHeaderValueProcessingMode = ParserSettings.IllegalResponseHeaderValueProcessingMode.Error,
+    modeName:          IllegalResponseHeaderNameProcessingMode  = ParserSettings.IllegalResponseHeaderNameProcessingMode.Error): Settings = {
 
     val _uriParsingMode = uriParsingMode
     val _cookieParsingMode = cookieParsingMode
     val _customMediaTypes = customMediaTypes
-    val _illegalResponseHeaderValueProcessingMode = mode
+    val _illegalResponseHeaderValueProcessingMode = modeValue
+    val _illegalResponseHeaderNameProcessingMode = modeName
 
     new Settings {
       def uriParsingMode: Uri.ParsingMode = _uriParsingMode
@@ -211,6 +214,9 @@ private[http] object HeaderParser {
 
       def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode =
         _illegalResponseHeaderValueProcessingMode
+
+      def illegalResponseHeaderNameProcessingMode: IllegalResponseHeaderNameProcessingMode =
+        _illegalResponseHeaderNameProcessingMode
     }
   }
   val DefaultSettings: Settings = Settings()
