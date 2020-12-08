@@ -124,11 +124,10 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "run with bindSync" in {
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = Http().newServerAt(hostname, port).bindSync(_ => HttpResponse())
+      val binding = Http().newServerAt("localhost", 0).bindSync(_ => HttpResponse())
       val b1 = Await.result(binding, 3.seconds.dilated)
 
-      val (_, f) = Http().connectionTo(hostname).toPort(port).http()
+      val (_, f) = Http().connectionTo("localhost").toPort(b1.localAddress.getPort).http()
         .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.head)
 
       Await.result(f, 1.second.dilated)
@@ -136,7 +135,6 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "prevent more than the configured number of max-connections with bind" in {
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val settings = ServerSettings(system).withMaxConnections(1)
 
       val receivedSlow = Promise[Long]()
@@ -153,11 +151,11 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
         }
       }
 
-      val binding = Http().newServerAt(hostname, port).withSettings(settings).bind(handle)
+      val binding = Http().newServerAt("localhost", 0).withSettings(settings).bind(handle)
       val b1 = Await.result(binding, 3.seconds.dilated)
 
       def runRequest(uri: Uri): Unit =
-        Http().connectionTo(hostname).toPort(port).http()
+        Http().connectionTo("localhost").toPort(b1.localAddress.getPort).http()
           .runWith(Source.single(HttpRequest(uri = uri)), Sink.head)
 
       runRequest("/slow")
@@ -186,7 +184,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
       "be added when using bind API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
-          Http().newServerAt(hostname, port).withSettings(settings).connectionSource()
+          Http().newServerAt("localhost", 0).withSettings(settings).connectionSource()
             .map(_.flow.join(Flow[HttpRequest].map(handler)).run())
             .to(Sink.ignore)
             .run()
@@ -194,17 +192,15 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
       "be added when using bindFlow API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
-          Http().newServerAt(hostname, port).withSettings(settings).bindFlow(Flow[HttpRequest].map(handler))
+          Http().newServerAt("localhost", 0).withSettings(settings).bindFlow(Flow[HttpRequest].map(handler))
       }
 
       "be added when using bindSync API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
-          Http().newServerAt(hostname, port).withSettings(settings).bindSync(handler)
+          Http().newServerAt("localhost", 0).withSettings(settings).bindSync(handler)
       }
 
       abstract class RemoteAddressTestScenario {
-        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-
         val settings = ServerSettings(system).withRemoteAddressHeader(true)
         def createBinding(): Future[ServerBinding]
 
@@ -213,7 +209,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
         val (conn, response) =
           Source.single(HttpRequest(uri = "/abc"))
-            .viaMat(Http().outgoingConnection(hostname, port))(Keep.right)
+            .viaMat(Http().outgoingConnection("localhost", b1.localAddress.getPort))(Keep.right)
             .toMat(Sink.head)(Keep.both)
             .run()
 
@@ -245,13 +241,12 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       "support server timeouts" should {
         "close connection with idle client after idleTimeout" in {
           val serverIdleTimeout = 300.millis
-          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverIdleTimeout)
+          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer("localhost", 0, serverIdleTimeout)
 
           try {
             def runIdleRequest(uri: Uri): Future[HttpResponse] = {
               val itNeverEnds = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
-              Http().outgoingConnection(hostname, port)
+              Http().outgoingConnection("localhost", b1.localAddress.getPort)
                 .runWith(Source.single(HttpRequest(PUT, uri, entity = itNeverEnds)), Sink.head)
                 ._2
             }
@@ -311,11 +306,10 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
+          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer("localhost", 0, serverTimeout)
 
           try {
-            val pool = Http().cachedHostConnectionPool[Int](hostname, port, clientPoolSettings)
+            val pool = Http().cachedHostConnectionPool[Int]("localhost", b1.localAddress.getPort, clientPoolSettings)
 
             def runRequest(uri: Uri): Future[(Try[HttpResponse], Int)] = {
               val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
@@ -346,8 +340,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
+          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer("localhost", 0, serverTimeout)
 
           try {
             def runRequest(uri: Uri): Future[HttpResponse] = {
@@ -355,7 +348,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
               Http().singleRequest(HttpRequest(POST, uri, entity = itNeverSends), settings = clientPoolSettings)
             }
 
-            val clientsResponseFuture = runRequest(s"http://$hostname:$port/")
+            val clientsResponseFuture = runRequest(s"http://localhost:${b1.localAddress.getPort}/")
 
             // await for the server to get the request
             val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds.dilated)
@@ -376,14 +369,13 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
         // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
         pending
-        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].map(_ => HttpResponse()).mapMaterializedValue(_ => sys.error("BOOM"))
-        val binding = Http(system2).newServerAt(hostname, port).bindFlow(flow)
+        val binding = Http(system2).newServerAt("localhost", 0).bindFlow(flow)
         val b1 = Await.result(binding, 1.seconds.dilated)
 
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
           val (_, responseFuture) =
-            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
+            Http(system2).outgoingConnection("localhost", b1.localAddress.getPort).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
           try Await.result(responseFuture, 5.seconds.dilated).status should ===(StatusCodes.InternalServerError)
           catch {
             case _: StreamTcpException =>
@@ -608,15 +600,16 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       val serverToClientNetworkBufferSize = 1000
       val responseSize = 200000
 
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      def request(i: Int) = HttpRequest(uri = s"http://$hostname:$port/$i", headers = headers.Connection("close") :: Nil)
-      def response(req: HttpRequest) = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString(req.uri.path.toString.takeRight(1) * responseSize)))
-
       // settings adapting network buffer sizes
       val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
       val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
 
-      val server = Http().newServerAt(hostname, port).withSettings(serverSettings).bindSync(response)
+      def response(req: HttpRequest) = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString(req.uri.path.toString.takeRight(1) * responseSize)))
+
+      val server = Http().newServerAt("localhost", 0).withSettings(serverSettings).bindSync(response)
+
+      def request(i: Int) = HttpRequest(uri = s"http://localhost:${server.futureValue.localAddress.getPort}/$i", headers = headers.Connection("close") :: Nil)
+
       def runOnce(i: Int) =
         Http().singleRequest(request(i), settings = clientSettings).futureValue
           .entity.dataBytes.runFold(ByteString.empty) { (prev, cur) =>
@@ -701,7 +694,6 @@ Host: example.com
     "complete a request/response over https when request has `Connection: close` set" in Utils.assertAllStagesStopped {
       // akka/akka-http#1219
       val serverToClientNetworkBufferSize = 1000
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val request = HttpRequest(uri = s"https://akka.example.org", headers = headers.Connection("close") :: Nil)
 
       // settings adapting network buffer sizes
@@ -714,7 +706,7 @@ Host: example.com
       val entity = Array.fill[Char](999999)('0').mkString + "x"
       val handlerFlow: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = entity) }
       val serverBinding =
-        Http().newServerAt(hostname, port).enableHttps(serverConnectionContext).withSettings(serverSettings).bindFlow(handlerFlow)
+        Http().newServerAt("localhost", 0).enableHttps(serverConnectionContext).withSettings(serverSettings).bindFlow(handlerFlow)
           .futureValue
 
       // settings adapting network buffer sizes, and connecting to the spun-up server regardless of the URI address
@@ -910,17 +902,19 @@ Host: example.com
   }
 
   class TestSetup {
-    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+    val hostname = "localhost"
+    //val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
     def configOverrides = ""
 
     // automatically bind a server
     val (connSource, binding: Future[ServerBinding]) = {
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
-      val connections = Http().newServerAt(hostname, port).withSettings(settings).connectionSource()
+      val connections = Http().newServerAt(hostname, 0).withSettings(settings).connectionSource()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = connections.to(Sink.fromSubscriber(probe)).run()
       (probe, binding)
     }
+    val port = binding.futureValue.localAddress.getPort
     val connSourceSub = connSource.expectSubscription()
 
     def openNewClientConnection(settings: ClientConnectionSettings = ClientConnectionSettings(system)) = {

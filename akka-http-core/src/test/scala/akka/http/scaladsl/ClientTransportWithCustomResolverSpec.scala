@@ -4,7 +4,6 @@
 
 package akka.http.scaladsl
 
-import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 
 import akka.Done
@@ -26,14 +25,13 @@ class ClientTransportWithCustomResolverSpec extends AkkaSpecWithMaterializer("ak
     "change to the desired destination" in {
       val hostnameToFind = "some-name-out-there"
       val portToFind = 21345
-      val (hostnameToUse, portToUse) = SocketUtil.temporaryServerHostnameAndPort()
-      val bindingFuture = Http().newServerAt(hostnameToUse, portToUse).bindSync(_ => HttpResponse())
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync(_ => HttpResponse())
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
       val otherHostAndPortTransport: ClientTransport = ClientTransport.withCustomResolver((host, port) => {
         host shouldBe hostnameToFind
         port shouldBe portToFind
-        Future.successful(new InetSocketAddress(hostnameToUse, portToUse))
+        Future.successful(binding.localAddress)
       })
 
       val customResolverPool =
@@ -50,8 +48,7 @@ class ClientTransportWithCustomResolverSpec extends AkkaSpecWithMaterializer("ak
     "resolve not before a connection is needed" in {
       val hostnameToFind = "some-name-out-there"
       val portToFind = 21345
-      val (hostnameToUse, portToUse) = SocketUtil.temporaryServerHostnameAndPort()
-      val bindingFuture = Http().newServerAt(hostnameToUse, portToUse).bindSync(_ => HttpResponse())
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync(_ => HttpResponse())
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
       val resolverCalled = Promise[Done]()
@@ -60,7 +57,7 @@ class ClientTransportWithCustomResolverSpec extends AkkaSpecWithMaterializer("ak
         host shouldBe hostnameToFind
         port shouldBe portToFind
         resolverCalled.success(Done)
-        Future.successful(new InetSocketAddress(hostnameToUse, portToUse))
+        Future.successful(binding.localAddress)
       })
 
       val customResolverPool =

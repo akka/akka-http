@@ -37,8 +37,6 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
 
     "allow registering custom media type" in {
       import system.dispatcher
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-
       //#application-custom
 
       // similarly in Java: `akka.http.javadsl.settings.[...]`
@@ -57,10 +55,10 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
       val routes = extractRequest { r =>
         complete(r.entity.contentType.toString + " = " + r.entity.contentType.getClass)
       }
-      Http().newServerAt(host, port).withSettings(serverSettings).bind(routes)
+      val binding = Http().newServerAt("localhost", 0).withSettings(serverSettings).bind(routes)
       //#application-custom
 
-      val request = Get(s"http://$host:$port/").withEntity(HttpEntity(`application/custom`, "~~example~=~value~~"))
+      val request = Get(s"http://localhost:${binding.futureValue.localAddress.getPort}/").withEntity(HttpEntity(`application/custom`, "~~example~=~value~~"))
       val response = Http().singleRequest(request).futureValue
 
       response.status should ===(StatusCodes.OK)

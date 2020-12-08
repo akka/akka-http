@@ -536,8 +536,9 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
   "The superPool client infrastructure" should {
 
     "route incoming requests to the right cached host connection pool" in new TestSetup(autoAccept = true) {
-      val (serverHostName2, serverPort2) = SocketUtil.temporaryServerHostnameAndPort()
-      Http().newServerAt(serverHostName2, serverPort2).bindSync(testServerHandler(0))
+      val serverHostName2 = "localhost"
+      val binding = Http().newServerAt(serverHostName2, 0).bindSync(testServerHandler(0))
+      val serverPort2 = binding.futureValue.localAddress.getPort
 
       val (requestIn, responseOut, responseOutSub, _) = superPool[Int]()
 
