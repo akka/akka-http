@@ -17,7 +17,7 @@ The custom XML (un)marshalling code shown above requires that you depend on the 
 @@dependency [sbt,Gradle,Maven] {
   group="com.fasterxml.jackson.dataformat"
   artifact="jackson-dataformat-xml"
-  version="$jackson.version$"
+  version="$jackson.xml.version$"
 }
 
 @@@
