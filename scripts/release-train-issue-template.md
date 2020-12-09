@@ -58,7 +58,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 ### When everything is on maven central
 
   - [ ] `ssh akkarepo@gustav.akka.io`
-    - [ ] update the `10.1` and `current` links on `repo.akka.io` to point to the latest version with (**replace the minor appropriately**)
+    - [ ] update the `10.2` and `current` links on `repo.akka.io` to point to the latest version with (**replace the minor appropriately**)
          ```
          ln -nsf $VERSION$ www/docs/akka-http/10.2
          ln -nsf $VERSION$ www/api/akka-http/10.2
@@ -73,7 +73,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
          git add docs/akka-http/ api/akka-http/ japi/akka-http/
          git commit -m "Akka HTTP $VERSION$"
          ```
-  - [ ] Merge draft news item at https://github.com/akka/akka.io
+  - [ ] Merge draft news item at https://github.com/akka/akka.io/pulls
   - [ ] Wait until the release page is published
   - [ ] Create the GitHub [release](https://github.com/akka/akka-http/releases/tag/v$VERSION$) with the tag, title and release description linking to announcement, release notes and milestone.
 
