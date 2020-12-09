@@ -11,6 +11,7 @@ caching support works.
 To use Akka HTTP Caching, add the module to your project:
 
 @@dependency[sbt,Gradle,Maven] {
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol="AkkaHttpVersion"
   value="$project.version$"
   group="com.typesafe.akka"

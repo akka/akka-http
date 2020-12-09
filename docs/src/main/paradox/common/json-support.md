@@ -12,6 +12,7 @@ See [the list of current community extensions for Akka HTTP](https://akka.io/com
 To make use of the support module for (un)marshalling from and to JSON with [Jackson], add a library dependency onto:
 
 @@dependency [sbt,Gradle,Maven] {
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol="AkkaHttpVersion"
   value="$project.version$"
   group="com.typesafe.akka"
@@ -44,6 +45,7 @@ that an implicit `spray.json.RootJsonReader` and/or `spray.json.RootJsonWriter` 
 To enable automatic support for (un)marshalling from and to JSON with [spray-json], add a library dependency onto:
 
 @@dependency [sbt,Gradle,Maven] {
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol="AkkaHttpVersion"
   value="$project.version$"
   group="com.typesafe.akka"

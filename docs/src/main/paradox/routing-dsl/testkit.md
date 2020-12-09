@@ -11,6 +11,7 @@ To use Akka HTTP TestKit, add the module to your project:
 @@dependency [sbt,Gradle,Maven] {
   symbol1=AkkaVersion
   value1=$akka.version$
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol2="AkkaHttpVersion"
   value2="$project.version$"
   group1="com.typesafe.akka" artifact1="akka-stream-testkit_$scala.binary.version$" version1=AkkaVersion
