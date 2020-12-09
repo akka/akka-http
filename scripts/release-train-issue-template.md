@@ -31,9 +31,8 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 ### Preparing release notes in the documentation / announcement
 
 - [ ] If this is a new minor (not patch) release, rename the 'akka-http-x.x-stable' reporting project in [WhiteSource](https://saas.whitesourcesoftware.com/) accordingly
-- [ ] Create a PR to add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone.
-- [ ] Create a PR on https://github.com/akka/akka.io with a news item draft, using the milestones and `scripts/authors.scala previousVersion master`
-- [ ] Create a PR on https://github.com/akka/akka.io updating Akka HTTP dependency for akka.io website: https://github.com/akka/akka.io/blob/master/_config.yml
+- [ ] Create a PR to add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone
+- [ ] Create a draft PR on https://github.com/akka/akka.io with a news item (using the milestones, release notes and `scripts/authors.scala previousVersion master`) and updating `_config.yml`
 - [ ] Release notes PR has been merged
 - [ ] Create a new milestone for the next version at https://github.com/akka/akka-http/milestones
 - [ ] Move all unclosed issues to the newly created milestone (or remove milestone) and close the version you're releasing
@@ -58,7 +57,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 ### When everything is on maven central
 
   - [ ] `ssh akkarepo@gustav.akka.io`
-    - [ ] update the `10.1` and `current` links on `repo.akka.io` to point to the latest version with (**replace the minor appropriately**)
+    - [ ] update the `10.2` and `current` links on `repo.akka.io` to point to the latest version with (**replace the minor appropriately**)
          ```
          ln -nsf $VERSION$ www/docs/akka-http/10.2
          ln -nsf $VERSION$ www/api/akka-http/10.2
@@ -73,7 +72,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
          git add docs/akka-http/ api/akka-http/ japi/akka-http/
          git commit -m "Akka HTTP $VERSION$"
          ```
-  - [ ] Merge draft news item at https://github.com/akka/akka.io
+  - [ ] Merge draft news item at https://github.com/akka/akka.io/pulls
   - [ ] Wait until the release page is published
   - [ ] Create the GitHub [release](https://github.com/akka/akka-http/releases/tag/v$VERSION$) with the tag, title and release description linking to announcement, release notes and milestone.
 
