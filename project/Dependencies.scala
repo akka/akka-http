@@ -20,9 +20,9 @@ object Dependencies {
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
   val silencerVersion = "1.7.1"
 
-  val scalaTestVersion = "3.1.4"
+  val scalaTestVersion = "3.2.3"
   val specs2Version = "4.10.5"
-  val scalaCheckVersion = "1.14.3"
+  val scalaCheckVersion = "1.15.1"
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
@@ -73,7 +73,7 @@ object Dependencies {
       val junitIntf    = "com.novocode"    % "junit-interface" % "0.11"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
-      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
+      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-15" % (scalaTestVersion + ".0") % "test"
       val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
       // HTTP/2
