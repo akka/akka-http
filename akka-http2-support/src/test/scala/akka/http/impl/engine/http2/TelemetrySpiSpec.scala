@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.ExampleHttpContexts
+import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.AttributeKey
 import akka.http.scaladsl.model.HttpRequest
@@ -127,10 +128,14 @@ class TelemetrySpiSpec extends AkkaSpecWithMaterializer(
           }.watchTermination() { (_, done) =>
             done.foreach(_ => probe.ref ! "close-seen")(system.dispatcher)
           },
-          Flow[HttpRequest].map { req =>
-            probe.ref ! "req-seen"
-            req
-          }.mapMaterializedValue { _ =>
+          StreamUtils.statefulAttrsMap[HttpRequest, HttpRequest](attrs =>
+
+            { req =>
+              probe.ref ! "req-seen"
+              attrs.get[TelemetryAttributes.ConnectionMeta].foreach(probe.ref ! _)
+              req
+            }
+          ).mapMaterializedValue { _ =>
             // FIXME how to find remote address here and pass context to request calls
             probe.ref ! "seen-connection"
             NotUsed
@@ -157,6 +162,7 @@ class TelemetrySpiSpec extends AkkaSpecWithMaterializer(
 
       probe.expectMsg("seen-connection")
       probe.expectMsg("req-seen")
+      probe.expectMsgType[TelemetryAttributes.ConnectionMeta]
 
       probe.expectMsg("res-seen")
       val res = resProbe.expectMsgType[HttpResponse]

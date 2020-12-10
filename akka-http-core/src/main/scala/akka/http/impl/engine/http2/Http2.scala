@@ -78,7 +78,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       .mapAsyncUnordered(settings.maxConnections) {
         incoming: Tcp.IncomingConnection =>
           try {
-            httpPlusSwitching(http1, http2).addAttributes(Http.prepareAttributes(settings, incoming))
+            httpPlusSwitching(http1, http2).addAttributes(prepareAttributes(settings, incoming))
               .watchTermination()(Keep.right)
               .join(incoming.flow)
               .run().recover {
@@ -100,6 +100,14 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
           timeout => masterTerminator.terminate(timeout)(fm.executionContext)
         ))(fm.executionContext)
       }.to(Sink.ignore).run()
+  }
+
+  def prepareAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) = {
+    val attrs = Http.prepareAttributes(settings, incoming)
+    if (telemetry == NoOpTelemetry) attrs
+    else {
+      attrs.and(TelemetryAttributes.prepareConnectionAttributes(incoming))
+    }
   }
 
   private def handleUpgradeRequests(
