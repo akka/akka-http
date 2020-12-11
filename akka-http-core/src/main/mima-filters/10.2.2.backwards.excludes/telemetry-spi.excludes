@@ -1,0 +1,4 @@
+# HTTP/2 telemetry SPI #3702
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2Blueprint.serverStackTls")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2Blueprint.serverStack")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2Blueprint.clientStack")
