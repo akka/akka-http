@@ -31,11 +31,16 @@ private[http] object TelemetrySpi {
   }
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 object TelemetryAttributes {
-  final case class ConnectionMeta(local: InetSocketAddress, remote: InetSocketAddress) extends Attribute
-  def prepareConnectionAttributes(incomingConnection: Tcp.IncomingConnection): Attributes = {
-    Attributes(ConnectionMeta(incomingConnection.localAddress, incomingConnection.remoteAddress))
-  }
+  final case class ConnectionMeta(local: Option[InetSocketAddress], val remote: InetSocketAddress) extends Attribute
+  def prepareServerFlowAttributes(incomingConnection: Tcp.IncomingConnection): Attributes =
+    Attributes(ConnectionMeta(Some(incomingConnection.localAddress), incomingConnection.remoteAddress))
+  def prepareClientFlowAttributes(serverHost: String, serverPort: Int): Attributes =
+    Attributes(ConnectionMeta(None, InetSocketAddress.createUnresolved(serverHost, serverPort)))
 }
 
 /**
@@ -43,6 +48,9 @@ object TelemetryAttributes {
  */
 @InternalStableApi
 trait TelemetrySpi {
+  /**
+   * Flow to intercept server connections. When run the flow will have the ConnectionMeta attribute set.
+   */
   def client: BidiFlow[HttpRequest, HttpRequest, HttpResponse, HttpResponse, NotUsed]
   /**
    * Flow to intercept server connections. When run the flow will have the ConnectionMeta attribute set.

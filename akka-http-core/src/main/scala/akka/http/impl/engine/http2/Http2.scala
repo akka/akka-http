@@ -19,6 +19,7 @@ import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, Upgrad
 import akka.http.scaladsl.model.http2.Http2SettingsHeader
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ServerSettings
+import akka.stream.Attributes
 import akka.stream.TLSClosing
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.impl.io.TlsUtils
@@ -78,7 +79,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       .mapAsyncUnordered(settings.maxConnections) {
         incoming: Tcp.IncomingConnection =>
           try {
-            httpPlusSwitching(http1, http2).addAttributes(prepareAttributes(settings, incoming))
+            httpPlusSwitching(http1, http2).addAttributes(prepareServerAttributes(settings, incoming))
               .watchTermination()(Keep.right)
               .join(incoming.flow)
               .run().recover {
@@ -102,11 +103,11 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       }.to(Sink.ignore).run()
   }
 
-  def prepareAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) = {
+  private def prepareServerAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) = {
     val attrs = Http.prepareAttributes(settings, incoming)
     if (telemetry == NoOpTelemetry) attrs
     else {
-      attrs.and(TelemetryAttributes.prepareConnectionAttributes(incoming))
+      attrs.and(TelemetryAttributes.prepareServerFlowAttributes(incoming))
     }
   }
 
@@ -214,7 +215,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       engine
     }
 
-    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log, telemetry) atop
+    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log, telemetry).addAttributes(prepareClientAttributes(host, port)) atop
       Http2Blueprint.unwrapTls atop
       LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
       TLS(createEngine _, closing = TLSClosing.eagerClose)
@@ -223,12 +224,19 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
   }
 
   def outgoingConnectionPriorKnowledge(host: String, port: Int, clientConnectionSettings: ClientConnectionSettings, log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
-    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log, telemetry) atop
+    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log, telemetry).addAttributes(prepareClientAttributes(host, port)) atop
       Http2Blueprint.unwrapTls atop
       LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
       TLSPlacebo()
 
     stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
+  }
+
+  private def prepareClientAttributes(serverHost: String, port: Int): Attributes = {
+    if (telemetry == NoOpTelemetry) Attributes.none
+    else {
+      TelemetryAttributes.prepareClientFlowAttributes(serverHost, port)
+    }
   }
 
 }

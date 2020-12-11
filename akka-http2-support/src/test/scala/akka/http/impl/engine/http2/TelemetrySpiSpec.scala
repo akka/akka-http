@@ -2,7 +2,6 @@ package akka.http.impl.engine.http2
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.ExampleHttpContexts
 import akka.http.impl.util.StreamUtils
@@ -53,9 +52,10 @@ class TelemetrySpiSpec extends AkkaSpecWithMaterializer(
       TestTelemetryImpl.delegate = Some(new TelemetrySpi {
         override def client: BidiFlow[HttpRequest, HttpRequest, HttpResponse, HttpResponse, NotUsed] =
           BidiFlow.fromFlows(
-            Flow[HttpRequest].map { req =>
+            StreamUtils.statefulAttrsMap[HttpRequest, HttpRequest] { attrs => req =>
               val reqId = RequestId(UUID.randomUUID().toString)
               probe.ref ! "req-seen"
+              attrs.get[TelemetryAttributes.ConnectionMeta].foreach(probe.ref ! _)
               probe.ref ! reqId
               req.addAttribute(requestIdAttr, reqId).addHeader(headers.RawHeader("req-id", reqId.id))
             }.watchTermination() { (_, done) =>
@@ -97,6 +97,7 @@ class TelemetrySpiSpec extends AkkaSpecWithMaterializer(
 
       probe.expectMsg("seen-connection")
       probe.expectMsg("req-seen")
+      probe.expectMsgType[TelemetryAttributes.ConnectionMeta]
       val reqId = probe.expectMsgType[RequestId]
       val reqIdOnServer = probe.expectMsgType[String]
       reqIdOnServer should ===(reqId.id)
@@ -166,6 +167,7 @@ class TelemetrySpiSpec extends AkkaSpecWithMaterializer(
 
       probe.expectMsg("res-seen")
       val res = resProbe.expectMsgType[HttpResponse]
+      res.discardEntityBytes()
       reqQueue.complete()
 
       probe.expectMsg("close-seen")
