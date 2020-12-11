@@ -87,7 +87,7 @@ class H2ServerProcessingBenchmark extends CommonBenchmark {
       Http2Blueprint.handleWithStreamIdHeader(1)(req => {
         req.discardEntityBytes().future.map(_ => response)
       })(system.dispatcher)
-        .join(Http2Blueprint.serverStackTls(settings, log))
+        .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry))
     httpFlow = Http2.priorKnowledge(http1, http2)
   }
 
