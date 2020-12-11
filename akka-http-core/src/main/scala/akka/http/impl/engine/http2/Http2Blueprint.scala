@@ -90,7 +90,7 @@ private[http] object Http2Blueprint {
       initialDemuxerSettings: immutable.Seq[Setting] = Nil,
       upgraded: Boolean = false,
       telemetry: TelemetrySpi): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
-    telemetry.server atop
+    telemetry.serverConnection atop
       httpLayer(settings, log) atop
       serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging

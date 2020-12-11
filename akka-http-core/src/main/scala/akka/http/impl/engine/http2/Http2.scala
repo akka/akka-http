@@ -76,6 +76,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
     val masterTerminator = new MasterServerTerminator(log)
 
     Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, Duration.Inf) // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
+      .via(if (telemetry == NoOpTelemetry) Flow[Tcp.IncomingConnection] else telemetry.serverBinding)
       .mapAsyncUnordered(settings.maxConnections) {
         incoming: Tcp.IncomingConnection =>
           try {
@@ -107,7 +108,8 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
     val attrs = Http.prepareAttributes(settings, incoming)
     if (telemetry == NoOpTelemetry) attrs
     else {
-      attrs.and(TelemetryAttributes.prepareServerFlowAttributes(incoming))
+      // transfer attributes allowing context propagation from serverBinding interceptor to request-response interceptor
+      attrs.and(incoming.flow.traversalBuilder.attributes)
     }
   }
 

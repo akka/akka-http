@@ -14,6 +14,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.stream.Attributes
 import akka.stream.Attributes.Attribute
 import akka.stream.scaladsl.BidiFlow
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Tcp
 
 import java.net.InetSocketAddress
@@ -40,11 +41,9 @@ private[http] object TelemetrySpi {
  */
 @InternalApi
 object TelemetryAttributes {
-  final case class ConnectionMeta(local: Option[InetSocketAddress], val remote: InetSocketAddress) extends Attribute
-  def prepareServerFlowAttributes(incomingConnection: Tcp.IncomingConnection): Attributes =
-    Attributes(ConnectionMeta(Some(incomingConnection.localAddress), incomingConnection.remoteAddress))
+  final case class ClientMeta(remote: InetSocketAddress) extends Attribute
   def prepareClientFlowAttributes(serverHost: String, serverPort: Int): Attributes =
-    Attributes(ConnectionMeta(None, InetSocketAddress.createUnresolved(serverHost, serverPort)))
+    Attributes(ClientMeta(InetSocketAddress.createUnresolved(serverHost, serverPort)))
 }
 
 /**
@@ -53,13 +52,19 @@ object TelemetryAttributes {
 @InternalStableApi
 trait TelemetrySpi {
   /**
-   * Flow to intercept server connections. When run the flow will have the ConnectionMeta attribute set.
+   * Flow to intercept server connections. When run the flow will have the ClientMeta attribute set.
    */
   def client: BidiFlow[HttpRequest, HttpRequest, HttpResponse, HttpResponse, NotUsed]
+
   /**
-   * Flow to intercept server connections. When run the flow will have the ConnectionMeta attribute set.
+   * Flow to intercept server binding.
    */
-  def server: BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed]
+  def serverBinding: Flow[Tcp.IncomingConnection, Tcp.IncomingConnection, NotUsed]
+
+  /**
+   * Flow to intercept server connections.
+   */
+  def serverConnection: BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed]
 }
 
 /**
@@ -68,6 +73,7 @@ trait TelemetrySpi {
 @InternalApi
 private[http] object NoOpTelemetry extends TelemetrySpi {
   override def client: BidiFlow[HttpRequest, HttpRequest, HttpResponse, HttpResponse, NotUsed] = BidiFlow.identity
-  override def server: BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] = BidiFlow.identity
+  override def serverBinding: Flow[Tcp.IncomingConnection, Tcp.IncomingConnection, NotUsed] = Flow[Tcp.IncomingConnection]
+  override def serverConnection: BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] = BidiFlow.identity
 }
 
