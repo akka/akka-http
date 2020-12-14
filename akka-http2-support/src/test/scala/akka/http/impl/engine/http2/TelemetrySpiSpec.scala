@@ -61,8 +61,8 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
   case class ConnectionId(is: String) extends Attribute
 
   def bindAndConnect(probe: TestProbe): (Http.ServerBinding, Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]) = {
-    val handler: HttpRequest => Future[HttpResponse] = { req =>
-      req.headers.find(_.lowercaseName == "request-id").foreach(found => probe.ref ! found.value)
+    val handler: HttpRequest => Future[HttpResponse] = { request =>
+      request.headers.find(_.lowercaseName == "request-id").foreach(found => probe.ref ! found.value)
       Future.successful(HttpResponse())
     }
 
@@ -98,19 +98,19 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
       TestTelemetryImpl.delegate = Some(new TelemetrySpi {
         override def client: BidiFlow[HttpRequest, HttpRequest, HttpResponse, HttpResponse, NotUsed] =
           BidiFlow.fromFlows(
-            StreamUtils.statefulAttrsMap[HttpRequest, HttpRequest] { attrs => req =>
-              val reqId = RequestId(UUID.randomUUID().toString)
+            StreamUtils.statefulAttrsMap[HttpRequest, HttpRequest] { attrs => request =>
+              val requestId = RequestId(UUID.randomUUID().toString)
               probe.ref ! "request-seen"
               attrs.get[TelemetryAttributes.ClientMeta].foreach(probe.ref ! _)
-              probe.ref ! reqId
-              req.addAttribute(requestIdAttr, reqId).addHeader(headers.RawHeader("request-id", reqId.id))
+              probe.ref ! requestId
+              request.addAttribute(requestIdAttr, requestId).addHeader(headers.RawHeader("request-id", requestId.id))
             }.watchTermination() { (_, done) =>
               done.foreach(_ => probe.ref ! "close-seen")(system.dispatcher)
             },
-            Flow[HttpResponse].map { res =>
+            Flow[HttpResponse].map { response =>
               probe.ref ! "response-seen"
-              probe.ref ! res.getAttribute(requestIdAttr).get
-              res.removeAttribute(requestIdAttr)
+              probe.ref ! response.getAttribute(requestIdAttr).get
+              response.removeAttribute(requestIdAttr)
             }
           ).mapMaterializedValue { _ =>
               probe.ref ! "seen-connection"
@@ -123,26 +123,26 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
 
       val (serverBinding, http2ClientFow) = bindAndConnect(probe)
 
-      val (reqQueue, resQueue) =
+      val (requestQueue, _) =
         Source.queue(10, OverflowStrategy.fail)
           .viaMat(http2ClientFow)(Keep.left)
           .toMat(Sink.actorRef(probe.ref, "done"))(Keep.both)
           .run()
-      reqQueue.offer(HttpRequest())
+      requestQueue.offer(HttpRequest())
 
       probe.expectMsg("seen-connection")
       probe.expectMsg("request-seen")
       probe.expectMsgType[TelemetryAttributes.ClientMeta]
-      val reqId = probe.expectMsgType[RequestId]
-      val reqIdOnServer = probe.expectMsgType[String]
-      reqIdOnServer should ===(reqId.id)
+      val requestId = probe.expectMsgType[RequestId]
+      val requestIdOnServer = probe.expectMsgType[String]
+      requestIdOnServer should ===(requestId.id)
 
       probe.expectMsg("response-seen")
-      val resId = probe.expectMsgType[RequestId]
-      reqId should ===(resId)
-      val res = probe.expectMsgType[HttpResponse]
-      res.attribute(requestIdAttr) should be(None)
-      reqQueue.complete()
+      val responseId = probe.expectMsgType[RequestId]
+      requestId should ===(responseId)
+      val response = probe.expectMsgType[HttpResponse]
+      response.attribute(requestIdAttr) should be(None)
+      requestQueue.complete()
 
       probe.expectMsg("close-seen")
       serverBinding.terminate(3.seconds).futureValue
@@ -154,41 +154,47 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
         override def client: BidiFlow[HttpRequest, HttpRequest, HttpResponse, HttpResponse, NotUsed] =
           BidiFlow.identity
 
-        override def serverBinding: Flow[Tcp.IncomingConnection, Tcp.IncomingConnection, NotUsed] = Flow[Tcp.IncomingConnection].map { conn =>
-          val connId = ConnectionId(UUID.randomUUID().toString)
-          probe.ref ! "connection-seen"
-          probe.ref ! connId
-          conn.copy(flow = conn.flow.addAttributes(Attributes(connId)))
-        }.watchTermination() { (notUsed, done) =>
-          done.onComplete(_ => probe.ref ! "unbind-seen")(system.dispatcher)
-          notUsed
-        }
+        override def serverBinding: Flow[Tcp.IncomingConnection, Tcp.IncomingConnection, NotUsed] = Flow[Tcp.IncomingConnection]
+          .mapMaterializedValue { _ =>
+            probe.ref ! "bind-seen"
+            NotUsed
+          }
+          .map { conn =>
+            val connId = ConnectionId(UUID.randomUUID().toString)
+            probe.ref ! "connection-seen"
+            probe.ref ! connId
+            conn.copy(flow = conn.flow.addAttributes(Attributes(connId)))
+          }.watchTermination() { (notUsed, done) =>
+            done.onComplete(_ => probe.ref ! "unbind-seen")(system.dispatcher)
+            notUsed
+          }
 
         override def serverConnection: BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] = BidiFlow.fromFlows(
-          Flow[HttpResponse].map { res =>
+          Flow[HttpResponse].map { response =>
             probe.ref ! "response-seen"
-            res
+            response
           }.watchTermination() { (_, done) =>
             done.foreach(_ => probe.ref ! "close-seen")(system.dispatcher)
           },
-          StreamUtils.statefulAttrsMap[HttpRequest, HttpRequest](attrs =>
-            { req =>
+          StreamUtils.statefulAttrsMap[HttpRequest, HttpRequest](attributes =>
+            { request =>
               probe.ref ! "request-seen"
-              attrs.get[ConnectionId].foreach(probe.ref ! _)
-              req
+              attributes.get[ConnectionId].foreach(probe.ref ! _)
+              request
             }
           ))
       })
 
       val (serverBinding, http2ClientFlow) = bindAndConnect(probe)
+      probe.expectMsg("bind-seen")
 
-      val resProbe = TestProbe()
-      val (reqQueue, _) =
+      val responseProbe = TestProbe()
+      val (requestQueue, _) =
         Source.queue(10, OverflowStrategy.fail)
           .viaMat(http2ClientFlow)(Keep.left)
-          .toMat(Sink.actorRef(resProbe.ref, "done"))(Keep.both)
+          .toMat(Sink.actorRef(responseProbe.ref, "done"))(Keep.both)
           .run()
-      reqQueue.offer(HttpRequest())
+      requestQueue.offer(HttpRequest())
 
       probe.expectMsg("connection-seen")
       val connId = probe.expectMsgType[ConnectionId]
@@ -197,12 +203,12 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
       probe.expectMsgType[ConnectionId] should ===(connId)
 
       probe.expectMsg("response-seen")
-      val res = resProbe.expectMsgType[HttpResponse]
-      res.discardEntityBytes()
-      reqQueue.complete()
+      val response = responseProbe.expectMsgType[HttpResponse]
+      response.discardEntityBytes()
+      requestQueue.complete()
 
       probe.expectMsg("close-seen")
-      resProbe.expectMsg("done")
+      responseProbe.expectMsg("done")
 
       serverBinding.terminate(3.seconds).futureValue
       probe.expectMsg("unbind-seen")
