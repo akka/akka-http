@@ -21,6 +21,7 @@ import akka.parboiled2.util.Base64
 import akka.event.Logging
 import akka.http.ccompat.{ pre213, since213 }
 import akka.http.impl.util._
+import akka.http.impl.model.parser.CharacterClasses.`attr-char`
 import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model._
 
@@ -455,13 +456,29 @@ final case class `Content-Location`(uri: Uri) extends jm.headers.ContentLocation
  * two there is slight but important difference regarding how parameter values are formatted. In RFC6266 parameters values are without quotes and
  * in RFC2616 they are quoted. Since common practice among http servers is to understand quoted values, we use older document
  * as reference here.
+ * Extended (i.e. encoded) parameter values are not quoted, see ext-parameter - https://tools.ietf.org/html/rfc5987#section-3.2.1
  */
 object `Content-Disposition` extends ModeledCompanion[`Content-Disposition`]
 final case class `Content-Disposition`(dispositionType: ContentDispositionType, params: Map[String, String] = Map.empty)
   extends jm.headers.ContentDisposition with RequestResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = {
+    import Rendering.{ contentDispositionFilenameSafeChars => safeChars }
     r ~~ dispositionType
-    params foreach { case (k, v) => r ~~ "; " ~~ k ~~ '=' ~~#! v }
+    val renderExtFilename =
+      params.get("filename").map(safeChars.indexOfFirstMismatch(_) >= 0) getOrElse false
+    val withExtParams =
+      if (renderExtFilename && !params.contains("filename*"))
+        params + ("filename*" -> params("filename"))
+      else params
+    withExtParams foreach {
+      case (k, v) if k == "filename" =>
+        r ~~ "; " ~~ k ~~ '=' ~~ '"'
+        r.putReplaced(v, keep = safeChars, placeholder = '?') ~~ '"'
+      case (k, v) if k endsWith "*" =>
+        r ~~ "; " ~~ k ~~ '=' ~~ "UTF-8''"
+        UriRendering.encode(r, v, UTF8, keep = `attr-char`, replaceSpaces = false)
+      case (k, v) => r ~~ "; " ~~ k ~~ '=' ~~#! v
+    }
     r
   }
   protected def companion = `Content-Disposition`

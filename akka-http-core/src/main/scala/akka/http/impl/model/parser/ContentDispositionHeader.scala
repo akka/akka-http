@@ -8,6 +8,13 @@ import scala.collection.immutable.TreeMap
 
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
+import akka.http.impl.util.ISO88591
+import akka.http.impl.util.UTF8
+import akka.http.impl.model.parser.CharacterClasses.`attr-char`
+import akka.http.impl.model.parser.CharacterClasses.HEXDIG
+import akka.http.scaladsl.model.Uri
+
+import java.nio.charset.Charset
 
 private[parser] trait ContentDispositionHeader { this: Parser with CommonRules with CommonActions =>
 
@@ -38,5 +45,25 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
     token ~> (s => test(s endsWith "*") ~ push(s))
   }
 
-  def `ext-value` = rule { word } // support full `ext-value` notation from http://tools.ietf.org/html/rfc5987#section-3.2.1
+  // https://tools.ietf.org/html/rfc5987#section-3.2.1
+  def `ext-value` = rule {
+    (charset ~ '\'' ~ optional(language) ~ '\'' ~ capture(`value-chars`)) ~> (decodeExtValue(_, _, _))
+  }
+
+  def charset = rule {
+    ignoreCase("utf-8") ~ push(UTF8) |
+      ignoreCase("iso-8859-1") ~ push(ISO88591)
+    // | `mime-charset` // reserved for future use
+  }
+
+  def `value-chars` = rule {
+    zeroOrMore(`pct-encoded` | `attr-char`)
+  }
+
+  def `pct-encoded` = rule {
+    '%' ~ HEXDIG ~ HEXDIG
+  }
+
+  def decodeExtValue(cs: Charset, language: Option[Language], extValue: String): String =
+    Uri.decode(extValue, cs)
 }
