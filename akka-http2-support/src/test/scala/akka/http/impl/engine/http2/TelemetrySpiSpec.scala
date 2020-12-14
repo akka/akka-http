@@ -60,9 +60,9 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
 
   case class ConnectionId(is: String) extends Attribute
 
-  def foo(probe: TestProbe): (Http.ServerBinding, Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]) = {
+  def bindAndConnect(probe: TestProbe): (Http.ServerBinding, Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]) = {
     val handler: HttpRequest => Future[HttpResponse] = { req =>
-      req.headers.find(_.lowercaseName == "req-id").foreach(found => probe.ref ! found.value)
+      req.headers.find(_.lowercaseName == "request-id").foreach(found => probe.ref ! found.value)
       Future.successful(HttpResponse())
     }
 
@@ -103,7 +103,7 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
               probe.ref ! "request-seen"
               attrs.get[TelemetryAttributes.ClientMeta].foreach(probe.ref ! _)
               probe.ref ! reqId
-              req.addAttribute(requestIdAttr, reqId).addHeader(headers.RawHeader("req-id", reqId.id))
+              req.addAttribute(requestIdAttr, reqId).addHeader(headers.RawHeader("request-id", reqId.id))
             }.watchTermination() { (_, done) =>
               done.foreach(_ => probe.ref ! "close-seen")(system.dispatcher)
             },
@@ -121,7 +121,7 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
         override def serverConnection: BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] = BidiFlow.identity
       })
 
-      val (serverBinding, http2ClientFow) = foo(probe)
+      val (serverBinding, http2ClientFow) = bindAndConnect(probe)
 
       val (reqQueue, resQueue) =
         Source.queue(10, OverflowStrategy.fail)
@@ -180,7 +180,7 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
           ))
       })
 
-      val (serverBinding, http2ClientFlow) = foo(probe)
+      val (serverBinding, http2ClientFlow) = bindAndConnect(probe)
 
       val resProbe = TestProbe()
       val (reqQueue, _) =
