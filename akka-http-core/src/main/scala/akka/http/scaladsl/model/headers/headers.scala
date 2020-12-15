@@ -465,7 +465,7 @@ final case class `Content-Disposition`(dispositionType: ContentDispositionType, 
     import Rendering.{ contentDispositionFilenameSafeChars => safeChars }
     r ~~ dispositionType
     val renderExtFilename =
-      params.get("filename").map(safeChars.indexOfFirstMismatch(_) >= 0) getOrElse false
+      params.get("filename").exists(!safeChars.matchesAll(_))
     val withExtParams =
       if (renderExtFilename && !params.contains("filename*"))
         params + ("filename*" -> params("filename"))
