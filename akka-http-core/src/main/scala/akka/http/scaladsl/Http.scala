@@ -181,7 +181,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
            settings:          ServerSettings    = ServerSettings(system),
            log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     if (settings.previewServerSettings.enableHttp2)
-      throw new IllegalStateException("Binding with a connection source not supported with HTTP/2")
+      log.warning("Binding with a connection source not supported with HTTP/2. Falling back to HTTP/1.1.")
 
     val fullLayer: ServerLayerBidiFlow = fuseServerBidiFlow(settings, connectionContext, log)
 
@@ -230,7 +230,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:          ServerSettings    = ServerSettings(system),
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] = {
     if (settings.previewServerSettings.enableHttp2)
-      throw new IllegalStateException("Binding with a Flow based handler not supported with HTTP/2")
+      log.warning("Binding with a connection source not supported with HTTP/2. Falling back to HTTP/1.1.")
 
     val fullLayer: Flow[ByteString, ByteString, (Future[Done], ServerTerminator)] =
 
