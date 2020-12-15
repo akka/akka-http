@@ -91,7 +91,7 @@ private[http2] object PersistentConnection {
             val tag = response.attribute(associationTagKey).get
             require(ongoingRequests.contains(tag))
             ongoingRequests -= tag
-            push(responseOut, response)
+            push(responseOut, response.removeAttribute(associationTagKey))
           }
 
           override def onUpstreamFinish(): Unit = onDisconnected()
@@ -118,9 +118,21 @@ private[http2] object PersistentConnection {
         override def onPush(): Unit = dispatchRequest(grab(requestIn))
         override def onPull(): Unit = responseIn.pull()
 
-        override def onUpstreamFinish(): Unit = super.onUpstreamFinish() // FIXME: we're done, cleanup substreams
-        override def onUpstreamFailure(ex: Throwable): Unit = super.onUpstreamFailure(ex) // FIXME: we're done, cleanup substreams
-        override def onDownstreamFinish(): Unit = super.onDownstreamFinish() // FIXME: we're done, cleanup substreams
+        override def onUpstreamFinish(): Unit = {
+          requestOut.complete()
+          responseIn.cancel()
+          completeStage()
+        }
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          requestOut.fail(ex)
+          responseIn.cancel()
+          failStage(ex)
+        }
+        override def onDownstreamFinish(): Unit = {
+          requestOut.complete()
+          responseIn.cancel()
+          super.onDownstreamFinish()
+        }
       }
     }
   }
