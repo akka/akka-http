@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2
 import akka.actor.ActorSystem
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
-import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
+import akka.http.scaladsl.model.{ AttributeKey, AttributeKeys, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -26,9 +26,9 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 
 class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
+  // FIXME: would rather use remote-address-attribute, but that doesn't work with HTTP/2
+  // see https://github.com/akka/akka-http/issues/3707
   """akka.http.server.remote-address-header = on
-     #akka.http.server.http2.log-frames = on
-     #akka.http.server.log-unencrypted-network-bytes = 100
      akka.http.server.preview.enable-http2 = on
      akka.http.client.http2.log-frames = on
      akka.http.client.log-unencrypted-network-bytes = 100
@@ -49,14 +49,17 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
         )
           .addAttribute(requestIdAttr, RequestId("request-1"))
       )
+      // need some demand on response side, otherwise, no requests will be pulled in
       client.responsesIn.request(1)
 
       val serverRequest = server.expectRequest()
-      serverRequest.request.attribute(Http2.streamId) shouldBe Symbol("nonEmpty")
+      serverRequest.request.attribute(Http2.streamId) should not be empty
       serverRequest.request.method shouldBe HttpMethods.POST
       serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
       serverRequest.entityAsString shouldBe "ping"
-      serverRequest.sendResponse(HttpResponse(entity = "pong"))
+
+      // now respond
+      server.sendResponseFor(serverRequest, HttpResponse(entity = "pong"))
 
       val response = client.expectResponse()
       Unmarshal(response.entity).to[String].futureValue shouldBe "pong"
@@ -74,21 +77,30 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           )
             .addAttribute(requestIdAttr, RequestId("request-1"))
         )
+        // need some demand on response side, otherwise, no requests will be pulled in
         client.responsesIn.request(1)
 
         val serverRequest = server.expectRequest()
-        serverRequest.request.attribute(Http2.streamId) shouldBe Symbol("nonEmpty")
+        serverRequest.request.attribute(Http2.streamId) should not be empty
         serverRequest.request.method shouldBe HttpMethods.POST
         serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
         serverRequest.entityAsString shouldBe "ping"
-        serverRequest.sendResponse(HttpResponse(entity = "pong"))
+        val clientPort = serverRequest.clientPort
+
+        // now respond
+        server.sendResponseFor(serverRequest, HttpResponse(entity = "pong"))
 
         val response = client.expectResponse()
         Unmarshal(response.entity).to[String].futureValue shouldBe "pong"
         response.attribute(requestIdAttr).get.id shouldBe "request-1"
 
+        // now kill connection from outside
         killConnection()
+
+        // wait a bit to avoid race condition
         Thread.sleep(100)
+
+        // requests should now be handled on new connection
         client.sendRequest(
           HttpRequest(
             method = HttpMethods.POST,
@@ -102,6 +114,8 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
 
         val serverRequest2 = server.expectRequest()
         serverRequest2.entityAsString shouldBe "ping2"
+        // request should have come in through another connection
+        serverRequest2.clientPort should not be (clientPort)
       }
       "when some requests are waiting for a response" inAssertAllStagesStopped new TestSetup {
         client.sendRequest(
@@ -115,7 +129,8 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
         )
         client.responsesIn.request(1)
 
-        server.expectRequest()
+        val serverRequest = server.expectRequest()
+        val clientPort = serverRequest.clientPort
 
         client.sendRequest(
           HttpRequest(
@@ -130,7 +145,10 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
 
         server.expectRequest()
 
+        // now kill connection from outside
         killConnection()
+
+        // check that ongoing requests are properly dealt with
         val response = client.expectResponse()
         response.status shouldBe StatusCodes.BadGateway
         response.attribute(requestIdAttr).get.id shouldBe "request-1"
@@ -155,6 +173,8 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
 
         val serverRequest2 = server.expectRequest()
         serverRequest2.entityAsString shouldBe "ping2"
+        // request should have come in through another connection
+        serverRequest2.clientPort should not be (clientPort)
       }
     }
     "not leak any stages if completed" should {
@@ -194,7 +214,11 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
       request.entity.dataBytes.runWith(probe.sink)
       probe
     }
+
+    /** Port of tcp connection as determined by remote-address attribute */
+    def clientPort: Int = request.header[headers.`Remote-Address`].get.address.getPort
   }
+
   class TestSetup {
     def serverSettings: ServerSettings = ServerSettings(system)
     def clientSettings: ClientConnectionSettings = ClientConnectionSettings(system)
@@ -216,6 +240,8 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           .bind(handler).futureValue
 
       def expectRequest(): ServerRequest = requestProbe.expectMsgType[ServerRequest]
+      def sendResponseFor(request: ServerRequest, response: HttpResponse): Unit =
+        request.sendResponse(response)
     }
     object client {
       val transport = new ClientTransport {
