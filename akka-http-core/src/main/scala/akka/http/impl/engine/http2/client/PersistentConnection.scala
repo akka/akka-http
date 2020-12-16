@@ -109,9 +109,11 @@ private[http2] object PersistentConnection {
 
         def dispatchRequest(req: HttpRequest): Unit = {
           val tag = new AssociationTag
-          ongoingRequests += (tag -> req.attributes.collect {
+          // Some cross-compilation woes here:
+          // Explicit type ascription is needed to make both 2.12 and 2.13 compile.
+          ongoingRequests = ongoingRequests.updated(tag, req.attributes.collect({
             case (key, value: RequestResponseAssociation) => key -> value
-          })
+          }: PartialFunction[(AttributeKey[_], Any), (AttributeKey[_], RequestResponseAssociation)]))
           requestOut.push(req.addAttribute(associationTagKey, tag))
         }
 
