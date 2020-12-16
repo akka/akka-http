@@ -20,7 +20,13 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
 
   // http://tools.ietf.org/html/rfc6266#section-4.1
   def `content-disposition` = rule {
-    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> (p => TreeMap(p: _*)) ~> (`Content-Disposition`(_, _))
+    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> { p =>
+      val all = TreeMap(p: _*)
+      // https://tools.ietf.org/html/rfc6266#section-4.3
+      // when both "filename" and "filename*" are present in a single header field value,
+      //   recipients SHOULD pick "filename*" and ignore "filename"
+      all.get("filename*").map(fExt => all - "filename*" + ("filename" -> fExt)) getOrElse all
+    } ~> (`Content-Disposition`(_, _))
   }
 
   def `disposition-type` = rule(
@@ -35,7 +41,7 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
 
   def `filename-parm` = rule(
     ignoreCase("filename") ~ OWS ~ ws('=') ~ push("filename") ~ word
-      | ignoreCase("filename*") ~ OWS ~ ws('=') ~ push("filename") ~ `ext-value`)
+      | ignoreCase("filename*") ~ OWS ~ ws('=') ~ push("filename*") ~ `ext-value`)
 
   def `disp-ext-parm` = rule(
     token ~ ws('=') ~ word
