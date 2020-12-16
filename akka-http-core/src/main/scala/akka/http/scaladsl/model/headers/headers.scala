@@ -458,6 +458,9 @@ final case class `Content-Location`(uri: Uri) extends jm.headers.ContentLocation
  * in RFC2616 they are quoted. Since common practice among http servers is to understand quoted values, we use older document
  * as reference here.
  * Extended (i.e. encoded) parameter values are not quoted, see ext-parameter - https://tools.ietf.org/html/rfc5987#section-3.2.1
+ *
+ * Note: Akka HTTP uses "filename" key to store filename and handles encoding/decoding automatically.
+ * To output customized ASCII fallback version of filename provide "filename*" for unicode and "filename" for ASCII.
  */
 object `Content-Disposition` extends ModeledCompanion[`Content-Disposition`]
 final case class `Content-Disposition`(dispositionType: ContentDispositionType, params: Map[String, String] = Map.empty)
