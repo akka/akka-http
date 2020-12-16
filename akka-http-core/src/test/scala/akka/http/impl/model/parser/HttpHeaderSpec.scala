@@ -203,6 +203,8 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
           "attachment; filename=\"x'=2*2+1(?)\"; filename*=UTF-8''x%27%3D2%2A2+1%28%E2%82%AC%29")
       "Content-Disposition: attachment; filename=\"naive\"; filename*=UTF-8''na%C3%AFve" <=!=
         `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "naive", "filename*" -> "naïve"))
+      "Content-Disposition: attachment; filename=\"naive\"; filename*=UTF-8''na%C3%AFve" <=!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename*" -> "naïve", "filename" -> "naive"))
       "Content-Disposition: attachment; filename*=UTF-8''US-$%20rates" =!=
         `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "US-$ rates")).renderedTo(
           "attachment; filename=\"US-$ rates\"")

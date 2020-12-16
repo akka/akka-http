@@ -13,6 +13,7 @@ import javax.net.ssl.SSLSession
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.scaladsl.ScalaSessionAPI
 
+import scala.collection.immutable.TreeMap
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
 import scala.annotation.tailrec
@@ -470,7 +471,12 @@ final case class `Content-Disposition`(dispositionType: ContentDispositionType, 
       if (renderExtFilename && !params.contains("filename*"))
         params + ("filename*" -> params("filename"))
       else params
-    withExtParams foreach {
+    // it is advised that "filename" should occur first - https://tools.ietf.org/html/rfc6266#appendix-D
+    val withExtParamsSorted =
+      if (withExtParams.contains("filename") && withExtParams.contains("filename*"))
+        TreeMap[String, String]() ++ withExtParams
+      else withExtParams
+    withExtParamsSorted foreach {
       case (k, v) if k == "filename" =>
         r ~~ "; " ~~ k ~~ '=' ~~ '"'
         r.putReplaced(v, keep = safeChars, placeholder = '?') ~~ '"'
