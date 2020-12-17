@@ -60,7 +60,7 @@ trait OutgoingConnectionBuilder {
    *
    * The connection will be re-established as needed.
    *
-   * Note that the responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 connection)
+   * Note that the responses are not guaranteed to arrive in the same order as the requests go out
    * so therefore requests needs to have a [[akka.http.scaladsl.model.RequestResponseAssociation]]
    * which Akka HTTP will carry over to the corresponding response for a request.
    */
