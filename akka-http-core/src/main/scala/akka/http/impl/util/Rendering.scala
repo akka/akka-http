@@ -215,11 +215,26 @@ private[http] trait Rendering {
       } else this
     rec()
   }
+
+  def putReplaced(s: String, keep: CharPredicate, placeholder: Char): this.type = {
+    @tailrec def rec(ix: Int = 0): this.type =
+      if (ix < s.length) {
+        val c = s.charAt(ix)
+        if (keep(c)) this ~~ c
+        else this ~~ placeholder
+        rec(ix + 1)
+      } else this
+    rec()
+  }
 }
 
 private[http] object Rendering {
   val floatFormat = new DecimalFormat("0.0##", DecimalFormatSymbols.getInstance(Locale.ROOT))
   val `\"` = CharPredicate('\\', '"')
+
+  // US-ASCII printable chars except for '"' and escape chars '\' and (for faulty clients) '%'
+  // https://tools.ietf.org/html/rfc6266#appendix-D
+  val contentDispositionFilenameSafeChars = CharPredicate.Printable -- "%\"\\"
 
   case object `, ` extends SingletonValueRenderable // default separator
   case object Empty extends Renderable {

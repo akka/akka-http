@@ -196,6 +196,33 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "file/txt", "name" -> "field1"))
       "Content-Disposition: attachment; name=\"field1\"; other=\"\"" =!=
         `Content-Disposition`(ContentDispositionTypes.attachment, Map("name" -> "field1", "other" -> ""))
+      "Content-Disposition: attachment; filename=\"x=2*2+1(?)\"; filename*=UTF-8''x%3D2%2A2+1%28%E2%82%AC%29" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "x=2*2+1(€)"))
+      "Content-Disposition: attachment; filename*=UTF-8''x%27%3D2%2A2+1%28%E2%82%AC%29; filename=\"x'=2*2+1(?)\"" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "x'=2*2+1(€)")).renderedTo(
+          "attachment; filename=\"x'=2*2+1(?)\"; filename*=UTF-8''x%27%3D2%2A2+1%28%E2%82%AC%29")
+      "Content-Disposition: attachment; filename=\"naive\"; filename*=UTF-8''na%C3%AFve" <=!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "naive", "filename*" -> "naïve"))
+      "Content-Disposition: attachment; filename=\"naive\"; filename*=UTF-8''na%C3%AFve" <=!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename*" -> "naïve", "filename" -> "naive"))
+      "Content-Disposition: attachment; filename*=UTF-8''US-$%20rates" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "US-$ rates")).renderedTo(
+          "attachment; filename=\"US-$ rates\"")
+      "Content-Disposition: attachment; filename=\"euro sign.txt\"; filename*=UTF-8''%E2%82%AC%20sign.txt" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "€ sign.txt")).renderedTo(
+          "attachment; filename=\"? sign.txt\"; filename*=UTF-8''%E2%82%AC%20sign.txt")
+      "Content-Disposition: attachment; filename*=UTF-8''%E2%82%AC%20sign.txt" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "€ sign.txt")).renderedTo(
+          "attachment; filename=\"? sign.txt\"; filename*=UTF-8''%E2%82%AC%20sign.txt")
+      "Content-Disposition: attachment; filename*=ISO-8859-1''t%e9l%e9phone" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "téléphone")).renderedTo(
+          "attachment; filename=\"t?l?phone\"; filename*=UTF-8''t%C3%A9l%C3%A9phone")
+      "Content-Disposition: attachment; filename=\"téléphone\"" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "téléphone")).renderedTo(
+          "attachment; filename=\"t?l?phone\"; filename*=UTF-8''t%C3%A9l%C3%A9phone")
+      "Content-Disposition: attachment; filename*=UTF-8'en-US'esc-%22%5C%25.x" =!=
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "esc-\"\\%.x")).renderedTo(
+          "attachment; filename=\"esc-???.x\"; filename*=UTF-8''esc-%22%5C%25.x")
     }
 
     "Content-Encoding" in {

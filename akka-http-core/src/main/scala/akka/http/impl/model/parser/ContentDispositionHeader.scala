@@ -8,12 +8,25 @@ import scala.collection.immutable.TreeMap
 
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
+import akka.http.impl.util.ISO88591
+import akka.http.impl.util.UTF8
+import akka.http.impl.model.parser.CharacterClasses.`attr-char`
+import akka.http.impl.model.parser.CharacterClasses.HEXDIG
+import akka.http.scaladsl.model.Uri
+
+import java.nio.charset.Charset
 
 private[parser] trait ContentDispositionHeader { this: Parser with CommonRules with CommonActions =>
 
   // http://tools.ietf.org/html/rfc6266#section-4.1
   def `content-disposition` = rule {
-    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> (p => TreeMap(p: _*)) ~> (`Content-Disposition`(_, _))
+    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> { p =>
+      val all = TreeMap(p: _*)
+      // https://tools.ietf.org/html/rfc6266#section-4.3
+      // when both "filename" and "filename*" are present in a single header field value,
+      //   recipients SHOULD pick "filename*" and ignore "filename"
+      all.get("filename*").map(fExt => all - "filename*" + ("filename" -> fExt)) getOrElse all
+    } ~> (`Content-Disposition`(_, _))
   }
 
   def `disposition-type` = rule(
@@ -28,7 +41,7 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
 
   def `filename-parm` = rule(
     ignoreCase("filename") ~ OWS ~ ws('=') ~ push("filename") ~ word
-      | ignoreCase("filename*") ~ OWS ~ ws('=') ~ push("filename") ~ `ext-value`)
+      | ignoreCase("filename*") ~ OWS ~ ws('=') ~ push("filename*") ~ `ext-value`)
 
   def `disp-ext-parm` = rule(
     token ~ ws('=') ~ word
@@ -38,5 +51,25 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
     token ~> (s => test(s endsWith "*") ~ push(s))
   }
 
-  def `ext-value` = rule { word } // support full `ext-value` notation from http://tools.ietf.org/html/rfc5987#section-3.2.1
+  // https://tools.ietf.org/html/rfc5987#section-3.2.1
+  def `ext-value` = rule {
+    (charset ~ '\'' ~ optional(language) ~ '\'' ~ capture(`value-chars`)) ~> (decodeExtValue(_, _, _))
+  }
+
+  def charset = rule {
+    ignoreCase("utf-8") ~ push(UTF8) |
+      ignoreCase("iso-8859-1") ~ push(ISO88591)
+    // | `mime-charset` // reserved for future use
+  }
+
+  def `value-chars` = rule {
+    zeroOrMore(`pct-encoded` | `attr-char`)
+  }
+
+  def `pct-encoded` = rule {
+    '%' ~ HEXDIG ~ HEXDIG
+  }
+
+  def decodeExtValue(cs: Charset, language: Option[Language], extValue: String): String =
+    Uri.decode(extValue, cs)
 }

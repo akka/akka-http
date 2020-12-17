@@ -37,6 +37,9 @@ private[http] object CharacterClasses {
   val `sub-delims` = CharPredicate("!$&'()*+,;=")
   val reserved = `gen-delims` ++ `sub-delims`
 
+  // https://tools.ietf.org/html/rfc8187#section-3.2.1
+  val `attr-char` = ALPHA ++ DIGIT ++ "!#$&+-.^_`|~" // ; token except ( "*" / "'" / "%" )"
+
   // URI FRAGMENT/QUERY and PATH characters have two classes of acceptable characters: one that strictly
   // follows rfc3986, which should be used for rendering urls, and one relaxed, which accepts all visible
   // 7-bit ASCII characters, even if they're not percent-encoded.
