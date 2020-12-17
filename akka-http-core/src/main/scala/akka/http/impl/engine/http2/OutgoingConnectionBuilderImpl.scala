@@ -87,6 +87,9 @@ private[akka] object OutgoingConnectionBuilderImpl {
       Http2(system).outgoingConnectionPriorKnowledge(host, port.getOrElse(80), clientConnectionSettings, log)
     }
 
+    override def managedPersistentHttp2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, NotUsed] =
+      PersistentConnection.managedConnection(http2WithPriorKnowledge())
+
     override private[akka] def toJava: JOutgoingConnectionBuilder = new JavaAdapter(this)
   }
 
