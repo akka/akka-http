@@ -5,8 +5,7 @@
 package akka.http.scaladsl
 
 import akka.NotUsed
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.HttpRequest
@@ -64,6 +63,7 @@ trait OutgoingConnectionBuilder {
    * so therefore requests needs to have a [[akka.http.scaladsl.model.RequestResponseAssociation]]
    * which Akka HTTP will carry over to the corresponding response for a request.
    */
+  @ApiMayChange
   def managedPersistentHttp2(): Flow[HttpRequest, HttpResponse, NotUsed]
 
   /**
@@ -84,6 +84,7 @@ trait OutgoingConnectionBuilder {
    * so therefore requests needs to have a [[akka.http.scaladsl.model.RequestResponseAssociation]]
    * which Akka HTTP will carry over to the corresponding response for a request.
    */
+  @ApiMayChange
   def managedPersistentHttp2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, NotUsed]
 
   /**
