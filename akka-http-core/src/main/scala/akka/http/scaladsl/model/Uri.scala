@@ -556,6 +556,15 @@ object Uri {
     def reverse: Path = reverseAndPrependTo(Path.Empty)
     def reverseAndPrependTo(prefix: Path): Path
     def /(segment: String): Path = this ++ Path.Slash(segment :: Path.Empty)
+
+    /**
+     * Appends two path segments while avoiding a double slash between them
+     * Example:
+     * - Path("abc") ?/ "def" returns Path("abc/def")
+     * - Path("abc/") ?/ "def" returns Path("abc/def")
+     * @param segment The path segment to be appended
+     * @return The final concatenated path segment
+     */
     def ?/(segment: String): Path = if (this.endsWithSlash) this + segment else this / segment
 
     def startsWith(that: Path): Boolean
