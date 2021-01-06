@@ -6,7 +6,6 @@ package docs.http.scaladsl
 
 //#import-model
 import akka.http.scaladsl.model._
-
 //#import-model
 
 import akka.testkit.AkkaSpec
