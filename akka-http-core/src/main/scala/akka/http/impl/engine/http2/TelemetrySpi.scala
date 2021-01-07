@@ -29,9 +29,15 @@ private[http] object TelemetrySpi {
     if (!system.settings.config.hasPath(ConfigKey)) NoOpTelemetry
     else {
       val fqcn = system.settings.config.getString(ConfigKey)
-      system.asInstanceOf[ExtendedActorSystem].dynamicAccess
-        .createInstanceFor[TelemetrySpi](fqcn, (classOf[ActorSystem], system) :: Nil)
-        .get
+      try {
+        system.asInstanceOf[ExtendedActorSystem].dynamicAccess
+          .createInstanceFor[TelemetrySpi](fqcn, (classOf[ActorSystem], system) :: Nil)
+          .get
+      } catch {
+        case ex: Throwable =>
+          system.log.debug("{} references a class that could not be instantiated ({}) falling back to no-op implementation", fqcn, ex.toString)
+          NoOpTelemetry
+      }
     }
   }
 }
