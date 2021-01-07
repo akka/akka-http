@@ -234,12 +234,11 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
     stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
   }
 
-  private def prepareClientAttributes(serverHost: String, port: Int): Attributes = {
+  private def prepareClientAttributes(serverHost: String, port: Int): Attributes =
     if (telemetry == NoOpTelemetry) Attributes.none
     else {
       TelemetryAttributes.prepareClientFlowAttributes(serverHost, port)
     }
-  }
 
 }
 
