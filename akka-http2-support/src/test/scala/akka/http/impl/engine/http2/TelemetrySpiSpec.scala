@@ -25,7 +25,9 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Tcp
+import akka.testkit.TestKit
 import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 
@@ -212,6 +214,18 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
 
       serverBinding.terminate(3.seconds).futureValue
       probe.expectMsg("unbind-seen")
+    }
+
+    "fallback if impl class cannot be found" in {
+      val system = ActorSystem(s"${getClass.getSimpleName}-noImplFound", ConfigFactory.parseString(
+        s"""
+            akka.http.http2-telemetry-class = no.such.Clazz
+          """))
+      try {
+        TelemetrySpi.create(system) should ===(NoOpTelemetry)
+      } finally {
+        TestKit.shutdownActorSystem(system)
+      }
     }
 
   }
