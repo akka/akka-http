@@ -55,7 +55,7 @@ trait RouteTestResultComponent {
 
     def ~>[T](f: RouteTestResult => T): T = f(this)
 
-    private def rawResponse: HttpResponse = synchronized {
+    private[testkit] def rawResponse: HttpResponse = synchronized {
       result match {
         case Some(Right(response))        => response
         case Some(Left(Nil))              => failTest("Request was rejected")

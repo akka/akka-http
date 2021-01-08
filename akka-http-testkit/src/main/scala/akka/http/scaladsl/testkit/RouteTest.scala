@@ -65,6 +65,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   def handled: Boolean = result.handled
   def response: HttpResponse = result.response
   def responseEntity: HttpEntity = result.entity
+  private def rawResponse: HttpResponse = result.rawResponse
   def chunks: immutable.Seq[HttpEntity.ChunkStreamPart] = result.chunks
   def chunksStream: Source[ChunkStreamPart, Any] = result.chunksStream
   def entityAs[T: FromEntityUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
@@ -75,14 +76,14 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     def msg(e: Throwable) = s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $e\n\nResponse was: $responseSafe"
     Await.result(Unmarshal(response).to[T].fast.recover[T] { case error => failTest(msg(error)) }, timeout)
   }
-  def contentType: ContentType = responseEntity.contentType
+  def contentType: ContentType = rawResponse.entity.contentType
   def mediaType: MediaType = contentType.mediaType
   def charsetOption: Option[HttpCharset] = contentType.charsetOption
   def charset: HttpCharset = charsetOption getOrElse sys.error("Binary entity does not have charset")
-  def headers: immutable.Seq[HttpHeader] = response.headers
-  def header[T >: Null <: HttpHeader: ClassTag]: Option[T] = response.header[T](implicitly[ClassTag[T]])
-  def header(name: String): Option[HttpHeader] = response.headers.find(_.is(name.toLowerCase))
-  def status: StatusCode = response.status
+  def headers: immutable.Seq[HttpHeader] = rawResponse.headers
+  def header[T >: Null <: HttpHeader: ClassTag]: Option[T] = rawResponse.header[T](implicitly[ClassTag[T]])
+  def header(name: String): Option[HttpHeader] = rawResponse.headers.find(_.is(name.toLowerCase))
+  def status: StatusCode = rawResponse.status
 
   def closingExtension: String = chunks.lastOption match {
     case Some(HttpEntity.LastChunk(extension, _)) => extension

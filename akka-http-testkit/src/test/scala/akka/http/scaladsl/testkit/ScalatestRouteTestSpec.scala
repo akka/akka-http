@@ -68,8 +68,11 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
             .map(i => ByteString(i.toString))
         complete(HttpEntity(ContentTypes.`application/octet-stream`, infiniteSource))
       } ~> check {
+        status shouldEqual OK
+        contentType shouldEqual ContentTypes.`application/octet-stream`
         val future = chunksStream.take(5).runFold(Vector.empty[Int])(_ :+ _.data.utf8String.toInt)
         future.futureValue shouldEqual (0 until 5).toVector
+
       }
     }
 
