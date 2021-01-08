@@ -1,2 +1,5 @@
 # New API in @DoNotInherit class
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.OutgoingConnectionBuilder.managedPersistentHttp2")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.OutgoingConnectionBuilder.managedPersistentHttp2")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.OutgoingConnectionBuilder.managedPersistentHttp2WithPriorKnowledge")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.OutgoingConnectionBuilder.managedPersistentHttp2WithPriorKnowledge")
