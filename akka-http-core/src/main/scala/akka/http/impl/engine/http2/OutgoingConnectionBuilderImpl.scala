@@ -105,13 +105,20 @@ private[akka] object OutgoingConnectionBuilderImpl {
     override def https(): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, CompletionStage[javadsl.OutgoingConnection]] =
       javaFlow(actual.https())
 
+    override def managedPersistentHttp2(): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, NotUsed] =
+      javaFlowKeepMatVal(actual.managedPersistentHttp2())
+
     override def http2WithPriorKnowledge(): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, CompletionStage[javadsl.OutgoingConnection]] =
       javaFlow(actual.http2WithPriorKnowledge())
+
+    override def managedPersistentHttp2WithPriorKnowledge(): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, NotUsed] =
+      javaFlowKeepMatVal(actual.managedPersistentHttp2WithPriorKnowledge())
 
     override def http2(): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, CompletionStage[javadsl.OutgoingConnection]] =
       javaFlow(actual.http2())
 
-    override def withCustomHttpsConnectionContext(httpsConnectionContext: javadsl.HttpsConnectionContext): JOutgoingConnectionBuilder = ???
+    override def withCustomHttpsConnectionContext(httpsConnectionContext: javadsl.HttpsConnectionContext): JOutgoingConnectionBuilder =
+      new JavaAdapter(actual.withCustomHttpsConnectionContext(httpsConnectionContext.asInstanceOf[HttpsConnectionContext]).asInstanceOf[Impl])
 
     override def withClientConnectionSettings(settings: akka.http.javadsl.settings.ClientConnectionSettings): JOutgoingConnectionBuilder =
       new JavaAdapter(actual.withClientConnectionSettings(settings.asInstanceOf[ClientConnectionSettings]).asInstanceOf[Impl])
@@ -121,9 +128,10 @@ private[akka] object OutgoingConnectionBuilderImpl {
 
     private def javaFlow(flow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]]): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, CompletionStage[javadsl.OutgoingConnection]] = {
       import scala.compat.java8.FutureConverters.toJava
-      flow.asInstanceOf[Flow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, Future[OutgoingConnection]]]
-        .mapMaterializedValue(f => toJava(f.map(oc => new javadsl.OutgoingConnection(oc))(ExecutionContexts.parasitic))).asJava[javadsl.model.HttpRequest]
+      javaFlowKeepMatVal(flow.mapMaterializedValue(f => toJava(f.map(oc => new javadsl.OutgoingConnection(oc))(ExecutionContexts.parasitic))))
     }
 
+    private def javaFlowKeepMatVal[M](flow: Flow[HttpRequest, HttpResponse, M]): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, M] =
+      flow.asInstanceOf[Flow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, M]].asJava
   }
 }
