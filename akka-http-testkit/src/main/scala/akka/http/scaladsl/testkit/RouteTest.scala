@@ -7,6 +7,7 @@ package akka.http.scaladsl.testkit
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Host, Upgrade, `Sec-WebSocket-Protocol` }
 import akka.http.scaladsl.server._
@@ -16,6 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.util.FastFuture._
 import akka.stream.SystemMaterializer
+import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ConstantFun
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -64,6 +66,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   def response: HttpResponse = result.response
   def responseEntity: HttpEntity = result.entity
   def chunks: immutable.Seq[HttpEntity.ChunkStreamPart] = result.chunks
+  def chunksStream: Source[ChunkStreamPart, Any] = result.chunksStream
   def entityAs[T: FromEntityUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
     def msg(e: Throwable) = s"Could not unmarshal entity to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $e\n\nResponse was: $responseSafe"
     Await.result(Unmarshal(responseEntity).to[T].fast.recover[T] { case error => failTest(msg(error)) }, timeout)

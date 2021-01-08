@@ -6,7 +6,7 @@ package akka.http.scaladsl.testkit
 
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.util.Timeout
+import akka.util.{ ByteString, Timeout }
 import akka.pattern.ask
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server._
@@ -14,15 +14,17 @@ import akka.http.scaladsl.model._
 import StatusCodes._
 import HttpMethods._
 import Directives._
+import akka.stream.scaladsl.Source
 import org.scalatest.exceptions.TestFailedException
 import headers.`X-Forwarded-Proto`
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.Future
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRouteTest {
+class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRouteTest with ScalaFutures {
   override def testConfigSource: String = "akka.http.server.transparent-head-requests = on" // see test below
 
   "The ScalatestRouteTest should support" - {
@@ -55,6 +57,19 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
         status shouldEqual OK
         responseEntity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
         header[`X-Forwarded-Proto`].get shouldEqual `X-Forwarded-Proto`("abc")
+      }
+    }
+
+    "a test checking a route that returns infinite chunks" in {
+      Get() ~> {
+        val infiniteSource =
+          Source.cycle(() => (0 to Int.MaxValue).iterator)
+            .throttle(1, 20.millis)
+            .map(i => ByteString(i.toString))
+        complete(HttpEntity(ContentTypes.`application/octet-stream`, infiniteSource))
+      } ~> check {
+        val future = chunksStream.take(5).runFold(Vector.empty[Int])(_ :+ _.data.utf8String.toInt)
+        future.futureValue shouldEqual (0 until 5).toVector
       }
     }
 
