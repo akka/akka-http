@@ -47,9 +47,15 @@ trait RouteTestResultComponent {
         case _                             => Nil
       }
 
+    def chunksStream: Source[ChunkStreamPart, Any] =
+      rawResponse.entity match {
+        case HttpEntity.Chunked(_, data) => data
+        case _                           => Source.empty
+      }
+
     def ~>[T](f: RouteTestResult => T): T = f(this)
 
-    private def rawResponse: HttpResponse = synchronized {
+    private[testkit] def rawResponse: HttpResponse = synchronized {
       result match {
         case Some(Right(response))        => response
         case Some(Left(Nil))              => failTest("Request was rejected")
