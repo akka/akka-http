@@ -28,28 +28,28 @@ import scala.collection.immutable.VectorBuilder
 private[http2] object RequestParsing {
 
   @silent("use remote-address-attribute instead")
-  def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, attributes: Attributes): Http2SubStream => HttpRequest = {
+  def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, streamAttributes: Attributes): Http2SubStream => HttpRequest = {
 
     val remoteAddressHeader: Option[`Remote-Address`] =
       if (serverSettings.remoteAddressHeader) {
-        attributes.get[HttpAttributes.RemoteAddress].map(remote => model.headers.`Remote-Address`(RemoteAddress(remote.address)))
+        streamAttributes.get[HttpAttributes.RemoteAddress].map(remote => model.headers.`Remote-Address`(RemoteAddress(remote.address)))
         // in order to avoid searching all the time for the attribute, we need to guard it with the setting condition
       } else None // no need to emit the remote address header
 
     val remoteAddressAttribute: Option[RemoteAddress] =
       if (serverSettings.remoteAddressAttribute) {
-        attributes.get[HttpAttributes.RemoteAddress].map(remote => RemoteAddress(remote.address))
+        streamAttributes.get[HttpAttributes.RemoteAddress].map(remote => RemoteAddress(remote.address))
       } else None
 
     val tlsSessionInfoHeader: Option[`Tls-Session-Info`] =
       if (serverSettings.parserSettings.includeTlsSessionInfoHeader) {
-        attributes.get[HttpAttributes.TLSSessionInfo].map(sslSessionInfo =>
+        streamAttributes.get[HttpAttributes.TLSSessionInfo].map(sslSessionInfo =>
           model.headers.`Tls-Session-Info`(sslSessionInfo.session))
       } else None
 
     val sslSessionAttribute: Option[SSLSession] =
       if (serverSettings.parserSettings.includeSslSessionAttribute)
-        attributes.get[HttpAttributes.TLSSessionInfo].map(_.session)
+        streamAttributes.get[HttpAttributes.TLSSessionInfo].map(_.session)
       else
         None
 
