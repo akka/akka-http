@@ -17,6 +17,7 @@ import akka.util.ByteString
 import akka.util.OptionVal
 import com.github.ghik.silencer.silent
 
+import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 
@@ -28,11 +29,17 @@ private[http2] object RequestParsing {
 
   @silent("use remote-address-attribute instead")
   def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, attributes: Attributes): Http2SubStream => HttpRequest = {
+
     val remoteAddressHeader: Option[`Remote-Address`] =
       if (serverSettings.remoteAddressHeader) {
         attributes.get[HttpAttributes.RemoteAddress].map(remote => model.headers.`Remote-Address`(RemoteAddress(remote.address)))
         // in order to avoid searching all the time for the attribute, we need to guard it with the setting condition
       } else None // no need to emit the remote address header
+
+    val remoteAddressAttribute: Option[RemoteAddress] =
+      if (serverSettings.remoteAddressAttribute) {
+        attributes.get[HttpAttributes.RemoteAddress].map(remote => RemoteAddress(remote.address))
+      } else None
 
     val tlsSessionInfoHeader: Option[`Tls-Session-Info`] =
       if (serverSettings.parserSettings.includeTlsSessionInfoHeader) {
@@ -82,9 +89,13 @@ private[http2] object RequestParsing {
           val request = HttpRequest(
             method, uri, headers.result(), entity, HttpProtocols.`HTTP/2.0`
           ).addAttribute(Http2.streamId, subStream.streamId)
-          sslSessionAttribute match {
+          val requestWithSession = sslSessionAttribute match {
             case Some(sslSession) => request.addAttribute(AttributeKeys.sslSession, SslSessionInfo(sslSession))
             case None             => request
+          }
+          remoteAddressAttribute match {
+            case Some(remoteAddress) => requestWithSession.addAttribute(AttributeKeys.remoteAddress, remoteAddress)
+            case None                => requestWithSession
           }
         } else remainingHeaders.head match {
           case (":scheme", value) =>
