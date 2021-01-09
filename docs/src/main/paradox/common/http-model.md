@@ -49,10 +49,10 @@ An @apidoc[HttpRequest] consists of
 Here are some examples how to construct an @apidoc[HttpRequest]:
 
 Scala
-:   @@snip [ModelSpec.scala](/docs/src/test/scala/docs/http/scaladsl/ModelSpec.scala) { #construct-request }
+:   @@snip [ModelSpec.scala](/docs/src/test/scala/docs/http/scaladsl/ModelSpec.scala) { #import-model #construct-request }
 
 Java
-:   @@snip [ModelDocTest.java](/docs/src/test/java/docs/http/javadsl/ModelDocTest.java) { #construct-request }
+:   @@snip [ModelDocTest.java](/docs/src/test/java/docs/http/javadsl/ModelDocTest.java) { #import-model #construct-request }
 
 @@@ div { .group-scala }
 All parameters of `HttpRequest.apply` have default values set, so `headers` for example don't need to be specified
