@@ -29,6 +29,7 @@ import StatusCodes._
 import HttpEntity._
 import ParserOutput._
 import akka.http.scaladsl.model.MediaType.WithOpenCharset
+import akka.http.scaladsl.settings.ParserSettings.ConflictingResponseContentTypeHeaderProcessingMode
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.testkit._
 import org.scalatest.freespec.AnyFreeSpec
@@ -138,6 +139,40 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
           |
           |Foobs""" should parseTo(HttpResponse(NotFound, List(Host("api.example.com"), Host("akka.io")), "Foobs".getBytes, `HTTP/1.0`))
         closeAfterResponseCompletion shouldEqual Seq(true)
+      }
+
+      "a response with several identical Content-Type headers" in new Test {
+        """HTTP/1.1 200 OK
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpResponse(entity = HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = first" in new Test {
+        override def parserSettings: ParserSettings =
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.First)
+        """HTTP/1.1 200 OK
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Type: application/json; charset=utf-8
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpResponse(headers = List(`Content-Type`(ContentTypes.`application/json`)), entity = HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = last" in new Test {
+        override def parserSettings: ParserSettings =
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.Last)
+        """HTTP/1.1 200 OK
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Type: application/json; charset=utf-8
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpResponse(headers = List(`Content-Type`(ContentTypes.`text/plain(UTF-8)`)), entity = HttpEntity.empty(ContentTypes.`application/json`)))
+        closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
       "a response with one header, no body, and no Content-Length header" in new Test {
@@ -289,6 +324,15 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
       "a too-long response status reason" in new Test {
         Seq("HTTP/1.1 204 12345678", s"90123456789012${newLine}") should generalMultiParseTo(Left(
           MessageStartError(400: StatusCode, ErrorInfo("Response reason phrase exceeds the configured limit of 21 characters"))))
+      }
+
+      "conflicting Content-Type headers" in new Test {
+        """HTTP/1.1 200 OK
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Type: application/json; charset=utf-8
+          |Content-Length: 0
+          |
+          |""" should parseToError(MessageStartError(400: StatusCode, ErrorInfo("HTTP message must not contain more than one Content-Type header")))
       }
     }
   }

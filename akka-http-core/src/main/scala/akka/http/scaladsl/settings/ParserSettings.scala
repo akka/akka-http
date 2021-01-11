@@ -42,6 +42,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
   def illegalResponseHeaderNameProcessingMode: ParserSettings.IllegalResponseHeaderNameProcessingMode
   def illegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
+  def conflictingResponseContentTypeHeaderProcessingMode: ParserSettings.ConflictingResponseContentTypeHeaderProcessingMode
   def headerValueCacheLimits: Map[String, Int]
   def includeTlsSessionInfoHeader: Boolean
   def includeSslSessionAttribute: Boolean
@@ -71,6 +72,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def getErrorLoggingVerbosity: js.ParserSettings.ErrorLoggingVerbosity = errorLoggingVerbosity
   override def getIllegalResponseHeaderNameProcessingMode = illegalResponseHeaderNameProcessingMode
   override def getIllegalResponseHeaderValueProcessingMode = illegalResponseHeaderValueProcessingMode
+  override def getConflictingResponseContentTypeHeaderProcessingMode = conflictingResponseContentTypeHeaderProcessingMode
 
   override def getCustomMethods = new Function[String, Optional[akka.http.javadsl.model.HttpMethod]] {
     override def apply(t: String) = OptionConverters.toJava(customMethods(t))
@@ -123,6 +125,8 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
     self.copy(illegalResponseHeaderNameProcessingMode = newValue)
   def withIllegalResponseHeaderValueProcessingMode(newValue: ParserSettings.IllegalResponseHeaderValueProcessingMode): ParserSettings =
     self.copy(illegalResponseHeaderValueProcessingMode = newValue)
+  def withConflictingResponseContentTypeHeaderProcessingMode(newValue: ParserSettings.ConflictingResponseContentTypeHeaderProcessingMode): ParserSettings =
+    self.copy(conflictingResponseContentTypeHeaderProcessingMode = newValue)
 }
 
 object ParserSettings extends SettingsCompanion[ParserSettings] {
@@ -179,6 +183,21 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
         case "warn"   => Warn
         case "ignore" => Ignore
         case x        => throw new IllegalArgumentException(s"[$x] is not a legal `illegal-response-header-name-processing-mode` setting")
+      }
+  }
+
+  sealed trait ConflictingResponseContentTypeHeaderProcessingMode extends akka.http.javadsl.settings.ParserSettings.ConflictingResponseContentTypeHeaderProcessingMode
+  object ConflictingResponseContentTypeHeaderProcessingMode {
+    case object Error extends ConflictingResponseContentTypeHeaderProcessingMode
+    case object First extends ConflictingResponseContentTypeHeaderProcessingMode
+    case object Last extends ConflictingResponseContentTypeHeaderProcessingMode
+
+    def apply(string: String): ConflictingResponseContentTypeHeaderProcessingMode =
+      string.toRootLowerCase match {
+        case "error" => Error
+        case "first" => First
+        case "last"  => Last
+        case x       => throw new IllegalArgumentException(s"[$x] is not a legal `conflicting-response-content-type-header-processing-mode` setting")
       }
   }
 
