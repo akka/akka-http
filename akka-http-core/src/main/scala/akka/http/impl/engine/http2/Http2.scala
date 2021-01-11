@@ -236,9 +236,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
 
   private def prepareClientAttributes(serverHost: String, port: Int): Attributes =
     if (telemetry == NoOpTelemetry) Attributes.none
-    else {
-      TelemetryAttributes.prepareClientFlowAttributes(serverHost, port)
-    }
+    else TelemetryAttributes.prepareClientFlowAttributes(serverHost, port)
 
 }
 

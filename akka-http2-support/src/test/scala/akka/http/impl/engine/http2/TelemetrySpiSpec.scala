@@ -60,7 +60,7 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
   case class RequestId(id: String) extends RequestResponseAssociation
   val requestIdAttr = AttributeKey[RequestId]("requestId")
 
-  case class ConnectionId(is: String) extends Attribute
+  case class ConnectionId(id: String) extends Attribute
 
   def bindAndConnect(probe: TestProbe): (Http.ServerBinding, Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]) = {
     val handler: HttpRequest => Future[HttpResponse] = { request =>
