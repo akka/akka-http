@@ -6,7 +6,6 @@ package akka.http.impl.engine.http2
 
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.InternalApi
-import akka.annotation.InternalStableApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
@@ -243,7 +242,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
 /** INTERNAL API */
 @InternalApi
 private[http] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
-  @InternalStableApi
+
   val streamId = AttributeKey[Int]("x-http2-stream-id")
 
   override def get(system: ActorSystem): Http2Ext = super.get(system)
