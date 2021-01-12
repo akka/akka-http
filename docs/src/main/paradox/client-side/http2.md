@@ -12,18 +12,16 @@ concepts, tuning the client settings and HTTPS context and how to handle the Req
 unexpected when coming from a background with non-"streaming first" HTTP Clients.
 @@@
 
-## Enable HTTP/2 support
-
-HTTP/2 can then be enabled through configuration:
-
-```
-akka.http.server.preview.enable-http2 = on
-```
-
 ## Create the client 
 
-The Akka HTTP client supports HTTP/2 over TLS, and h2c with prior knowledge (plaintext), but not 
-the HTTP Upgrade mechanism.
+There are three mechanisms for a client to establish an HTTP/2 connection. The Akka HTTP supports:
+
+ - HTTP/2 over TLS 
+ - h2c with prior knowledge (which is plaintext)
+
+The Akka HTTP doesn't support:
+
+ - HTTP Upgrade mechanism (which is plaintext)
 
 ### HTTP/2 over TLS
 
@@ -37,7 +35,7 @@ Java
 
 HTTP/2 over TLS needs [Application-Layer Protocol Negotiation (ALPN)](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation)
 to negotiate whether both client and server support HTTP/2. The JVM provides ALPN support starting from JDK 8u252.
-Make sure you run a JVM version greater than that.
+Make sure to use at least that version.
 
 ### h2c with prior knowledge
 
@@ -53,6 +51,10 @@ Scala
 Java
 :   @@snip[Http2Test.java](/docs/src/test/java/docs/http/javadsl/Http2Test.java) { #http2ClientWithPriorKnowledge }
 
+### HTTP Upgrade mechanism
+
+The Akka HTTP client doesn't support HTTP/1 to HTTP/2 negotiation over plaintext using the `Upgrade` mechanism.
+
 ## Request-response ordering
 
 For HTTP/2 connections the responses are not guaranteed to arrive in the same order that the requests were emitted to
@@ -61,7 +63,7 @@ slower to respond to. For HTTP/2 it is therefore often important to have a way t
 it was made for. This can be achieved through a @apidoc[RequestResponseAssociation] set on the request, Akka HTTP will pass
 such association objects on to the response.
 
-In this sample the built in @scala[`akka.http.scaladsl.model.ResponsePromise`]@java[`akka.http.javadsl.model.ResponseFuture`] `RequestResponseAssociation`  is used to return
+In this sample the built-in @scala[`akka.http.scaladsl.model.ResponsePromise`]@java[`akka.http.javadsl.model.ResponseFuture`] `RequestResponseAssociation`  is used to return
 a @scala[`Future`]@java[`CompletionStage`] for the response:
 
 Scala

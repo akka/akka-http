@@ -55,7 +55,7 @@ object Http2Spec {
 
   {
     //#http2Client
-    Http().connectionTo("localhost").toPort(8080).http2()
+    Http().connectionTo("localhost").toPort(8443).http2()
     //#http2Client
     //#http2ClientWithPriorKnowledge
     Http().connectionTo("localhost").toPort(8080).http2WithPriorKnowledge()

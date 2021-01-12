@@ -49,7 +49,7 @@ class Http2Test {
     //#http2Client
     Http.get(system)
             .connectionTo("127.0.0.1")
-            .toPort(8080)
+            .toPort(8443)
             .http2();
     //#http2Client
 
