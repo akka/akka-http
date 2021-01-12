@@ -14,6 +14,10 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import org.scalatest.{ Inside, Inspectors }
 import FrameEvent._
+import akka.http.impl.engine.server.HttpAttributes
+
+import java.net.InetAddress
+import java.net.InetSocketAddress
 
 class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
@@ -24,7 +28,8 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       keyValuePairs:  Seq[(String, String)],
       data:           Source[ByteString, Any] = Source.empty,
       attributes:     Attributes              = Attributes(),
-      uriParsingMode: Uri.ParsingMode         = Uri.ParsingMode.Relaxed
+      uriParsingMode: Uri.ParsingMode         = Uri.ParsingMode.Relaxed,
+      settings:       ServerSettings          = ServerSettings(system)
     ): HttpRequest = {
       // Stream containing the request
       val subStream = Http2SubStream(
@@ -40,9 +45,8 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       // Create the parsing function
       val parseRequest: Http2SubStream => HttpRequest = {
         val (serverSettings, parserSettings) = {
-          val ss = ServerSettings(system)
-          val ps = ss.parserSettings.withUriParsingMode(uriParsingMode)
-          (ss.withParserSettings(ps), ps)
+          val ps = settings.parserSettings.withUriParsingMode(uriParsingMode)
+          (settings.withParserSettings(ps), ps)
         }
         val headerParser = HttpHeaderParser(parserSettings, log)
         RequestParsing.parseRequest(headerParser, serverSettings, attributes)
@@ -599,6 +603,20 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       val maxHeaderCount = ServerSettings(system).parserSettings.maxHeaderCount
       val thrown = shouldThrowMalformedRequest(parse((0 to (maxHeaderCount + 1)).map(n => s"x-my-header-$n" -> n.toString).toVector))
       thrown.getMessage should ===(s"Malformed request: HTTP message contains more than the configured limit of $maxHeaderCount headers")
+    }
+
+    "add remote address request attribute if enabled" in {
+      val theAddress = InetAddress.getByName("127.5.2.1")
+      val request: HttpRequest = parse(
+        keyValuePairs = Vector(
+          ":method" -> "GET",
+          ":scheme" -> "https",
+          ":authority" -> "localhost:8000",
+          ":path" -> "/"
+        ), settings = ServerSettings(system).withRemoteAddressAttribute(true),
+        attributes = HttpAttributes.remoteAddress(new InetSocketAddress(theAddress, 8080))
+      )
+      request.attributes(AttributeKeys.remoteAddress) should equal(RemoteAddress(theAddress, Some(8080)))
     }
   }
 }
