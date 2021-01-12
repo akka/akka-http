@@ -63,7 +63,7 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
     "a test checking a route that returns infinite chunks" in {
       Get() ~> {
         val infiniteSource =
-          Source.cycle(() => (0 to Int.MaxValue).iterator)
+          Source.unfold(0L)((acc) => Some((acc + 1, acc)))
             .throttle(1, 20.millis)
             .map(i => ByteString(i.toString))
         complete(HttpEntity(ContentTypes.`application/octet-stream`, infiniteSource))
