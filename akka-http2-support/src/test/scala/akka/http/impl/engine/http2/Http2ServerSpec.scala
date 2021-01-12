@@ -1357,7 +1357,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     def settings: ServerSettings = ServerSettings(system).withServerHeader(None)
 
     final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
-      modifyServer(Http2Blueprint.serverStack(settings, system.log))
+      modifyServer(Http2Blueprint.serverStack(settings, system.log, telemetry = NoOpTelemetry))
         .atop(LogByteStringTools.logByteStringBidi("network-plain-text").addAttributes(Attributes(LogLevels(Logging.DebugLevel, Logging.DebugLevel, Logging.DebugLevel))))
 
     handlerFlow
