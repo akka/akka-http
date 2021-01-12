@@ -24,7 +24,8 @@ Java
 
 In addition to the host name and port the builder @apidoc[OutgoingConnectionBuilder] returned by @scala[`Http().connectionTo(...)`]@java[`Http.get(system).connectionTo(...)`]
 method also allows you to specify additional properties and as the final step deciding which protocol to use 
-(HTTP/1, HTTP/1 over TLS, HTTP/2 over TLS or HTTP/2 with prior knowledge over a plaintext connection).
+(HTTP/1, HTTP/1 over TLS, HTTP/2 over TLS or HTTP/2 with prior knowledge over a plaintext connection). For details on 
+using HTTP/2 see @ref[Client-Side HTTP/2](./http2.md).
 
 No connection is attempted until the returned flow is actually materialized! If the flow is materialized
 several times then several independent connections will be opened (one per materialization).
@@ -41,25 +42,6 @@ eventually be slowed down in sending requests.
 
 Any errors occurring on the underlying connection are surfaced as exceptions terminating the response stream (and
 canceling the request source).
-
-## Request-response ordering for HTTP/2
-
-For HTTP/2 connections the responses are not guaranteed to arrive in the same order that the requests were emitted to
-the server, for example a request with a quickly available response may outrun a previous request that the server is 
-slower to respond to. For HTTP/2 it is therefore often important to have a way to correlate the response with what request
-it was made for. This can be achieved through a @apidoc[RequestResponseAssociation] set on the request, Akka HTTP will pass
-such association objects on to the response.
-
-In this sample the built in @scala[`akka.http.scaladsl.model.ResponsePromise`]@java[`akka.http.javadsl.model.ResponseFuture`] `RequestResponseAssociation`  is used to return 
-a @scala[`Future`]@java[`CompletionStage`] for the response:
-
-Scala
-:  @@snip [HttpClientOutgoingConnection.scala](/docs/src/test/scala/docs/http/scaladsl/Http2ClientApp.scala) { #response-future-association }
-
-Java
-
-:  @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/Http2ClientApp.java) { #response-future-association }
-
 
 ## Closing Connections
 

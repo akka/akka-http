@@ -16,15 +16,15 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
 //#bindAndHandleSecure
+//#bindAndHandlePlain
+//#http2Client
+//#http2ClientWithPriorKnowledge
 import akka.http.javadsl.Http;
-import static akka.http.javadsl.ConnectHttp.toHostHttps;
 
+//#http2ClientWithPriorKnowledge
+//#http2Client
+//#bindAndHandlePlain
 //#bindAndHandleSecure
-
-//#bindAndHandlePlain
-import static akka.http.javadsl.ConnectHttp.toHost;
-
-//#bindAndHandlePlain
 
 class Http2Test {
   void testBindAndHandleAsync() {
@@ -45,5 +45,21 @@ class Http2Test {
       .newServerAt("127.0.0.1", 8443)
       .bind(asyncHandler);
     //#bindAndHandlePlain
+
+    //#http2Client
+    Http.get(system)
+            .connectionTo("127.0.0.1")
+            .toPort(8080)
+            .http2();
+    //#http2Client
+
+    //#http2ClientWithPriorKnowledge
+    Http.get(system)
+            .connectionTo("127.0.0.1")
+            .toPort(8080)
+            .http2WithPriorKnowledge();
+    //#http2ClientWithPriorKnowledge
+
+
   }
 }
