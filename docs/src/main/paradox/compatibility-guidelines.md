@@ -27,6 +27,8 @@ Scala
     akka.http.scaladsl.server.HttpApp
     akka.http.scaladsl.unmarshalling.sse.EventStreamParser
     akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
+    akka.http.scaladsl.OutgoingConnectionBuilder#managedPersistentHttp2
+    akka.http.scaladsl.OutgoingConnectionBuilder#managedPersistentHttp2WithPriorKnowledge
     ```
 
 Java
@@ -39,6 +41,8 @@ Java
     akka.http.javadsl.server.directives.FileUploadDirectives#fileUploadAll
     akka.http.javadsl.server.HttpApp
     akka.http.javadsl.model.RequestResponseAssociation
+    akka.http.javadsl.OutgoingConnectionBuilder#managedPersistentHttp2WithPriorKnowledge
+    akka.http.javadsl.OutgoingConnectionBuilder#managedPersistentHttp2
     ```    
 
 #### akka-http-caching
