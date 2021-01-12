@@ -28,7 +28,6 @@ import akka.http.scaladsl.HttpConnectionContext
 
 //#bindAndHandlePlain
 
-
 import akka.actor.ActorSystem
 
 object Http2Spec {
