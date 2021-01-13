@@ -151,69 +151,74 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
     }
 
     "hook into HTTP2 server requests" in {
-      val probe = TestProbe()
+      val telemetryProbe = TestProbe()
       TestTelemetryImpl.delegate = Some(new TelemetrySpi {
         override def client: BidiFlow[HttpRequest, HttpRequest, HttpResponse, HttpResponse, NotUsed] =
           BidiFlow.identity
 
         override def serverBinding: Flow[Tcp.IncomingConnection, Tcp.IncomingConnection, NotUsed] = Flow[Tcp.IncomingConnection]
           .mapMaterializedValue { _ =>
-            probe.ref ! "bind-seen"
+            telemetryProbe.ref ! "bind-seen"
             NotUsed
           }
           .map { conn =>
             val connId = ConnectionId(UUID.randomUUID().toString)
-            probe.ref ! "connection-seen"
-            probe.ref ! connId
+            telemetryProbe.ref ! "connection-seen"
+            telemetryProbe.ref ! connId
             conn.copy(flow = conn.flow.addAttributes(Attributes(connId)))
           }.watchTermination() { (notUsed, done) =>
-            done.onComplete(_ => probe.ref ! "unbind-seen")(system.dispatcher)
+            done.onComplete(_ => telemetryProbe.ref ! "unbind-seen")(system.dispatcher)
             notUsed
           }
 
         override def serverConnection: BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] = BidiFlow.fromFlows(
           Flow[HttpResponse].map { response =>
-            probe.ref ! "response-seen"
+            telemetryProbe.ref ! "response-seen"
             response
           }.watchTermination() { (_, done) =>
-            done.foreach(_ => probe.ref ! "close-seen")(system.dispatcher)
+            done.foreach(_ => telemetryProbe.ref ! "close-seen")(system.dispatcher)
           },
           StreamUtils.statefulAttrsMap[HttpRequest, HttpRequest](attributes =>
             { request =>
-              probe.ref ! "request-seen"
-              attributes.get[ConnectionId].foreach(probe.ref ! _)
+              telemetryProbe.ref ! "request-seen"
+              attributes.get[ConnectionId].foreach(telemetryProbe.ref ! _)
               request
             }
           ))
       })
 
-      val (serverBinding, http2ClientFlow) = bindAndConnect(probe)
-      probe.expectMsg("bind-seen")
+      val (serverBinding, http2ClientFlow) = bindAndConnect(telemetryProbe)
+      telemetryProbe.expectMsg("bind-seen")
 
       val responseProbe = TestProbe()
       val (requestQueue, _) =
         Source.queue(10, OverflowStrategy.fail)
           .viaMat(http2ClientFlow)(Keep.left)
-          .toMat(Sink.actorRef(responseProbe.ref, "done"))(Keep.both)
+          .toMat(Sink.actorRef(responseProbe.ref, "onCompleteMessage"))(Keep.both)
           .run()
       requestQueue.offer(HttpRequest())
 
-      probe.expectMsg("connection-seen")
-      val connId = probe.expectMsgType[ConnectionId]
+      // A new connection happens...
+      telemetryProbe.expectMsg("connection-seen")
+      val connId = telemetryProbe.expectMsgType[ConnectionId]
+      // ... and a request flies in via _that_ connection.
+      telemetryProbe.expectMsg("request-seen")
+      telemetryProbe.expectMsgType[ConnectionId] should ===(connId)
 
-      probe.expectMsg("request-seen")
-      probe.expectMsgType[ConnectionId] should ===(connId)
-
-      probe.expectMsg("response-seen")
+      // The server sends the response...
+      telemetryProbe.expectMsg("response-seen")
+      // .. which the client consumes...
       val response = responseProbe.expectMsgType[HttpResponse]
       response.discardEntityBytes()
+      // ... and then the client completes.
       requestQueue.complete()
 
-      probe.expectMsg("close-seen")
-      responseProbe.expectMsg("done")
+      // As a consequence the whole stream completes.
+      telemetryProbe.expectMsg("close-seen")
+      responseProbe.expectMsg("onCompleteMessage")
 
       serverBinding.terminate(3.seconds).futureValue
-      probe.expectMsg("unbind-seen")
+      telemetryProbe.expectMsg("unbind-seen")
     }
 
     "fallback if impl class cannot be found" in {

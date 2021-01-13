@@ -12,27 +12,40 @@ import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
-import akka.http.scaladsl.client.RequestBuilding.{ Get, Post }
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
+import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.http.impl.util.LogByteStringTools
+import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.client.RequestBuilding.Post
+import akka.http.scaladsl.model.HttpEntity.Chunk
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.http.scaladsl.model.HttpEntity.Chunked
+import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.model.HttpMethods.GET
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives._
-import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control`, `Content-Length`, `Content-Type`, `User-Agent` }
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.`Access-Control-Allow-Origin`
+import akka.http.scaladsl.model.headers.`Cache-Control`
+import akka.http.scaladsl.model.headers.`Content-Length`
+import akka.http.scaladsl.model.headers.`Content-Type`
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
-import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
-import akka.stream.testkit.scaladsl.{ StreamTestKit, TestSink }
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.scaladsl.BidiFlow
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.testkit.scaladsl.StreamTestKit
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.EventFilter
 import akka.testkit.TestDuration
 import akka.util.ByteString
-
-import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import javax.net.ssl.SSLContext
 import scala.collection.immutable
 import scala.concurrent.duration._
 
@@ -47,7 +60,7 @@ import scala.concurrent.duration._
  */
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.client.remote-address-header = on
-    akka.http.client.http2.log-frames = on
+    akka.http.client.http2.log-frames = off
   """)
   with WithInPendingUntilFixed with Eventually {
 
@@ -753,6 +766,82 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
     }
+
+    "delay stage completion" should {
+
+      "until in-flight responses are received" inAssertAllStagesStopped new TestSetup with NetProbes {
+        // Given an in-flight request...
+        user.emitRequest(HttpRequest(uri = "https://www.example.com/"))
+        network.expectDecodedResponseHEADERSPairs(1)
+        // ... and a completed user handler
+        user.requestOut.sendComplete()
+
+        network.sendFrame(
+          HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
+        )
+        // Then the user can still consume the response
+        user.expectResponse()
+      }
+
+      "until in-flight streams deliver the request and responses are received" inAssertAllStagesStopped new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
+      ) with NetProbes {
+        // Given several in-flight requests...
+        val request = HttpRequest(uri = "https://www.example.com/")
+        user.emitRequest(request)
+        user.emitRequest(request)
+        user.emitRequest(request)
+        // ... and backpressured requests...
+        user.emitRequest(request) // this emit succeeds but is buffered
+
+        network.expect[HeadersFrame]().streamId shouldBe (1)
+        network.expect[HeadersFrame]().streamId shouldBe (3)
+        network.expect[HeadersFrame]().streamId shouldBe (5)
+        network.expectNoBytes(100.millis)
+
+        // ... and some request already got their response (canary round-trip)
+        network.sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        val receivedResponse1: HttpResponse = user.expectResponse()
+
+        // ... and a completed user handler.
+        user.requestOut.sendComplete()
+
+        // When the first few response-frames arrive...
+        network.sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        // Then the backpressured in-flight streams proceed (sending pending requests)...
+        network.expect[HeadersFrame]().streamId shouldBe (7)
+        network.sendFrame(HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        network.sendFrame(HeadersFrame(streamId = 7, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        //... and it is possible to consume all responses (from stream 1 to stream 7)
+        val receivedResponse3: HttpResponse = user.expectResponse()
+        val receivedResponse5: HttpResponse = user.expectResponse()
+        val receivedResponse7: HttpResponse = user.expectResponse()
+      }
+
+      "until a timeout occurs" ignore {
+
+        // test timed completion
+      }
+
+      "actually complete as soon as required if there are no open (in-flight) streams" inAssertAllStagesStopped new TestSetup with NetProbes {
+        // Given a request...
+        user.emitRequest(HttpRequest(uri = "https://www.example.com/"))
+        network.expectDecodedResponseHEADERSPairs(1)
+        // ... and a demanded response for that request (so there's nothing in-flight)
+        network.sendFrame(
+          HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
+        )
+        user.expectResponse()
+
+        // When the user completes the stream
+        user.requestOut.sendComplete()
+
+        // Then all stages are stopped
+        // (implicitly asserted via `inAssertAllStagesStopped`
+      }
+
+    }
+
   }
 
   implicit class InWithStoppedStages(name: String) {
