@@ -11,8 +11,10 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.scaladsl.model.{ AttributeKey, HttpEntity }
-import akka.http.scaladsl.model.HttpEntity.{ ChunkStreamPart, LastChunk }
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.http.scaladsl.model.HttpEntity.LastChunk
+import akka.http.scaladsl.model.AttributeKey
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
 import akka.stream.Attributes
@@ -277,7 +279,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         allowReadingIncomingFrames = allow
       }
-      def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
+      def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn) && !isClosed(frameIn)) pull(frameIn)
 
       def tryPullSubStreams(): Unit = {
         if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn)) {
@@ -287,6 +289,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         }
       }
 
+      // -----------------------------------------------------------------
       setHandler(frameIn, new InHandler {
 
         def onPush(): Unit = {
@@ -357,20 +360,38 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         }
       })
 
+      // -----------------------------------------------------------------
       // FIXME: What if user handler doesn't pull in new substreams? Should we reject them
-      //        after a while or buffer only a limited amount? We should also be able to
-      //        keep the buffer limited to the number of concurrent streams as negotiated
-      //        with the other side.
+      //        after a while or buffer only a limited amount?
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
       override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
         bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
 
+      // -----------------------------------------------------------------
+      // This is a manually crafted sequence of shutdowns replacing the one on `completeStage`
+      // so we use the custom bufferedSubStreamOutput.complete() to ensure the buffer is empty
+      // before completing the outlet
+      override def onComplete(): Unit = {
+        cancel(substreamIn)
+        cancel(frameIn)
+        complete(frameOut)
+        bufferedSubStreamOutput.complete()
+      }
+
+      // -----------------------------------------------------------------
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
           val sub = grab(substreamIn)
           handleOutgoingCreated(sub)
           // Once the incoming stream is handled, we decide if we need to pull more.
           tryPullSubStreams()
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          // marks StreamHandling as ready for completion
+          tryComplete()
+          // start a timer
+          //  - on timer, log the timer event and proceed with the finish logic
         }
       })
 

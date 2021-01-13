@@ -7,12 +7,16 @@ package akka.http.impl.engine.http2
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.scaladsl.model.{ AttributeKey, HttpEntity }
+import akka.http.scaladsl.model.AttributeKey
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.http2.PeerClosedStreamException
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -55,7 +59,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private var largestIncomingStreamId = 0
   private var outstandingConnectionLevelWindow = Http2Protocol.InitialWindowSize
   private var totalBufferedData = 0
-
   /**
    * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
    *
@@ -74,6 +77,22 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     // of Open, HalfClosed) so using the `size` works fine to compute the capacity
     activeStreamCount() < maxConcurrentStreams
   }
+
+  private var completing = false
+
+  /**
+   * Marks this object to be shutting down. If the buffer is empty, it also invokes [[onComplete()]].
+   */
+  def tryComplete(): Unit = {
+    completing = true
+    if (streamStates.isEmpty) onComplete()
+  }
+
+  /**
+   * Subclasses must override this with the code to run when all streams in StreamHandling
+   * buffers are closed
+   */
+  def onComplete()
 
   private def streamFor(streamId: Int): StreamState =
     streamStates.get(streamId) match {
@@ -153,6 +172,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     newState match {
       case Closed =>
         streamStates -= streamId
+        if (streamStates.isEmpty && completing) onComplete()
         tryPullSubStreams()
       case newState => streamStates += streamId -> newState
     }
