@@ -5,9 +5,10 @@
 package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
-import akka.http.scaladsl.model.{ AttributeKey, AttributeKeys, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
+import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -35,6 +36,10 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
      akka.actor.serialize-messages = false
   """) with ScalaFutures {
   override def failOnSevereMessages: Boolean = true
+  override protected def isSevere(event: Logging.LogEvent): Boolean =
+    event.level <= Logging.WarningLevel &&
+      // fix for https://github.com/akka/akka-http/issues/3732 / https://github.com/akka/akka/issues/29330
+      !event.message.toString.contains("ChannelReadable")
 
   case class RequestId(id: String) extends RequestResponseAssociation
   val requestIdAttr = AttributeKey[RequestId]("requestId")

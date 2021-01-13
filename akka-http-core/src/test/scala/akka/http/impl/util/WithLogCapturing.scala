@@ -18,7 +18,18 @@ import org.scalatest.{ Failed, Outcome, SuiteMixin, TestSuite }
 trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
   implicit def system: ActorSystem
 
-  def failOnSevereMessages: Boolean = false
+  /**
+   * Can be overridden to return true to check that no warning or error messages are logged during
+   * the execution of the test
+   */
+  protected def failOnSevereMessages: Boolean = false
+
+  /**
+   * Can be overridden to adapt which events should be considered as severe if `failOnSevereMessages` is
+   * enabled.
+   */
+  protected def isSevere(event: LogEvent): Boolean =
+    event.level <= Logging.WarningLevel // yeah, lower levels are more severe
 
   abstract override def withFixture(test: NoArgTest): Outcome = {
     // When filtering just collects events into this var (yeah, it's a hack to do that in a filter).
@@ -47,6 +58,7 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
         events.reverse.foreach { ev =>
           if (ev.level == WarningLevel) print(Console.YELLOW)
           else if (ev.level == ErrorLevel) print(Console.RED)
+          else if (isSevere(ev)) print(Console.YELLOW) // also mark other severe messages with YELLOW
           logger.print(ev)
           if (ev.level <= WarningLevel) print(Console.RESET)
         }
@@ -57,7 +69,7 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
     if (!(res.isSucceeded || res.isPending)) {
       flushLog()
       res
-    } else if (failOnSevereMessages && events.exists(_.level <= Logging.WarningLevel)) {
+    } else if (failOnSevereMessages && events.exists(isSevere)) {
       val stats = events.groupBy(_.level).mapValues(_.size).toMap.withDefaultValue(0)
       flushLog()
 
