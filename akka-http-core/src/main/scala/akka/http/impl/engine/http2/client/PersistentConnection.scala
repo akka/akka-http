@@ -6,10 +6,14 @@ package akka.http.impl.engine.http2.client
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes }
-import akka.stream.scaladsl.{ Flow, Source }
+import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+
+import scala.concurrent.Future
+import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 @InternalApi
@@ -31,7 +35,7 @@ private[http2] object PersistentConnection {
    *  * generate error responses with 502 status code
    *  * custom attribute contains internal error information
    */
-  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Any]): Flow[HttpRequest, HttpResponse, NotUsed] =
+  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]]): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow.fromGraph(new Stage(connectionFlow))
 
   private class AssociationTag extends RequestResponseAssociation
@@ -41,7 +45,7 @@ private[http2] object PersistentConnection {
       StatusCodes.BadGateway,
       entity = "The server closed the connection before delivering a response.")
 
-  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Any]) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
+  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]]) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
     val requestIn = Inlet[HttpRequest]("PersistentConnection.requestIn")
     val responseOut = Outlet[HttpResponse]("PersistentConnection.responseOut")
 
@@ -57,18 +61,73 @@ private[http2] object PersistentConnection {
         override def onPull(): Unit =
           if (!hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
             pull(requestIn)
-
       }
 
       def connect(): Unit = {
         val requestOut = new SubSourceOutlet[HttpRequest]("PersistentConnection.requestOut")
         val responseIn = new SubSinkInlet[HttpResponse]("PersistentConnection.responseIn")
+        val connected = Source.fromGraph(requestOut.source)
+          .viaMat(connectionFlow)(Keep.right)
+          .toMat(responseIn.sink)(Keep.left)
+          .run()(subFusingMaterializer)
 
-        Source.fromGraph(requestOut.source)
-          .via(connectionFlow)
-          .runWith(responseIn.sink)(subFusingMaterializer)
+        become(new Connecting(connected, requestOut, responseIn))
+      }
 
-        become(new Connected(requestOut, responseIn))
+      class Connecting(
+        connected:  Future[OutgoingConnection],
+        requestOut: SubSourceOutlet[HttpRequest],
+        responseIn: SubSinkInlet[HttpResponse]
+      ) extends State {
+        implicit val ec = materializer.executionContext
+        connected.onComplete {
+          case Success(_) =>
+            onConnected.invoke(())
+          case Failure(_) =>
+            onFailed.invoke(())
+        }
+
+        var requestOutPulled = false
+        requestOut.setHandler(new OutHandler {
+          override def onPull(): Unit =
+            requestOutPulled = true
+          override def onDownstreamFinish(): Unit = ()
+        })
+        responseIn.setHandler(new InHandler {
+          override def onPush(): Unit = ()
+          override def onUpstreamFinish(): Unit = ()
+          override def onUpstreamFailure(ex: Throwable): Unit = ()
+        })
+
+        override def onPush(): Unit = ()
+
+        override def onPull(): Unit = {
+          if (!hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
+            pull(requestIn)
+        }
+
+        val onConnected = getAsyncCallback[Unit] { (_) =>
+          val newState = new Connected(requestOut, responseIn)
+          become(newState)
+          log.warning("connected")
+          if (requestOutPulled) {
+            if (!isAvailable(requestIn)) {
+              log.warning("no request available, pulling")
+              pull(requestIn)
+            } else {
+              log.warning("request available, dispatching")
+              newState.dispatchRequest(grab(requestIn))
+            }
+          }
+        }
+        val onFailed = getAsyncCallback[Unit] { (_) =>
+          responseIn.cancel()
+          requestOut.fail(new RuntimeException("connection broken"))
+          setHandler(requestIn, Unconnected)
+          if (isAvailable(responseOut) && !hasBeenPulled(requestIn)) pull(requestIn)
+          log.info("failed, trying to connect again")
+          connect()
+        }
       }
 
       class Connected(
@@ -98,6 +157,7 @@ private[http2] object PersistentConnection {
           override def onUpstreamFailure(ex: Throwable): Unit = onDisconnected() // FIXME: log error
         })
         def onDisconnected(): Unit = {
+          log.warning("disconnected")
           emitMultiple[HttpResponse](responseOut, ongoingRequests.values.map(errorResponse.withAttributes(_)).toVector, () => setHandler(responseOut, Unconnected))
           responseIn.cancel()
           requestOut.fail(new RuntimeException("connection broken"))
@@ -117,20 +177,26 @@ private[http2] object PersistentConnection {
           requestOut.push(req.addAttribute(associationTagKey, tag))
         }
 
-        override def onPush(): Unit = dispatchRequest(grab(requestIn))
+        override def onPush(): Unit = {
+          log.warning("requestIn got pushed, dispatching")
+          dispatchRequest(grab(requestIn))
+        }
         override def onPull(): Unit = responseIn.pull()
 
         override def onUpstreamFinish(): Unit = {
+          log.warning("upstream finished")
           requestOut.complete()
           responseIn.cancel()
           completeStage()
         }
         override def onUpstreamFailure(ex: Throwable): Unit = {
+          log.warning("upstream failed")
           requestOut.fail(ex)
           responseIn.cancel()
           failStage(ex)
         }
         override def onDownstreamFinish(): Unit = {
+          log.warning("downstream finished")
           requestOut.complete()
           responseIn.cancel()
           super.onDownstreamFinish()

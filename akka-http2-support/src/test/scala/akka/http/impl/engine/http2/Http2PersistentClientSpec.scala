@@ -187,14 +187,19 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           var first = true
           override def clientSettings = super.clientSettings.withTransport(ClientTransport.withCustomResolver((host, port) => {
             if (first) {
+              log.warning("first resolve (to invalid host)")
+
               first = false
               // First request returns an address where we are not listening::
-              Future.successful(new InetSocketAddress("localhost", 1337))
+              Future.successful(new InetSocketAddress("example.invalid", 80))
             } else {
+              log.warning("second resolve (to valid host)")
+
               Future.successful(server.binding.localAddress)
             }
           }))
 
+          log.warning("sending request")
           client.sendRequest(
             HttpRequest(
               method = HttpMethods.POST,
@@ -205,6 +210,8 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           )
           // need some demand on response side, otherwise, no requests will be pulled in
           client.responsesIn.request(1)
+          client.requestsOut.ensureSubscription()
+          log.warning("subscription ensured")
 
           val serverRequest = server.expectRequest()
           serverRequest.request.attribute(Http2.streamId) should not be empty
@@ -267,12 +274,13 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
     def serverSettings: ServerSettings = ServerSettings(system)
     def clientSettings: ClientConnectionSettings =
       ClientConnectionSettings(system).withTransport(new ClientTransport {
-        override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] =
+        override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
           Flow.fromGraph(KillSwitches.single[ByteString])
             .mapMaterializedValue { killer =>
               killProbe.ref ! killer
             }
             .viaMat(ClientTransport.TCP.connectTo(server.binding.localAddress.getHostString, server.binding.localAddress.getPort, settings)(system))(Keep.right)
+        }
       })
 
     val killProbe = TestProbe()
