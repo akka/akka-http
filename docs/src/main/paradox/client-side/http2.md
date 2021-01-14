@@ -21,7 +21,7 @@ There are three mechanisms for a client to establish an HTTP/2 connection. Akka 
 
 The Akka HTTP doesn't support:
 
- - HTTP Upgrade mechanism (which is plaintext)
+ - HTTP `Upgrade` mechanism
 
 ### HTTP/2 over TLS
 
