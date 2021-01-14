@@ -41,7 +41,7 @@ Akka HTTP does not currently support protocol negotiation to fall back to HTTP/1
 ### h2c with prior knowledge
 
 The other option is to connect and start communicating in HTTP/2 immediately. You must know beforehand the target server
-supports HTTP/2 over plaintext. For this reason this approach is known as h2c with
+supports HTTP/2 over a plain TCP connection. For this reason this approach is known as h2c with
 [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2 support.
 
 To create a client, use the `Http()` fluent API to connect and use the `http2WithPriorKnowledge()` creator:
