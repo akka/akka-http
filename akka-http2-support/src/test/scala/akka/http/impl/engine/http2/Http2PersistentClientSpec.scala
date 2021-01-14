@@ -187,19 +187,13 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           var first = true
           override def clientSettings = super.clientSettings.withTransport(ClientTransport.withCustomResolver((host, port) => {
             if (first) {
-              log.warning("first resolve (to invalid host)")
-
               first = false
               // First request returns an address where we are not listening::
               Future.successful(new InetSocketAddress("example.invalid", 80))
-            } else {
-              log.warning("second resolve (to valid host)")
-
+            } else
               Future.successful(server.binding.localAddress)
-            }
           }))
 
-          log.warning("sending request")
           client.sendRequest(
             HttpRequest(
               method = HttpMethods.POST,
@@ -211,7 +205,6 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           // need some demand on response side, otherwise, no requests will be pulled in
           client.responsesIn.request(1)
           client.requestsOut.ensureSubscription()
-          log.warning("subscription ensured")
 
           val serverRequest = server.expectRequest()
           serverRequest.request.attribute(Http2.streamId) should not be empty

@@ -59,7 +59,7 @@ private[http2] object PersistentConnection {
       object Unconnected extends State {
         override def onPush(): Unit = connect()
         override def onPull(): Unit =
-          if (!hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
+          if (!isAvailable(requestIn) && !hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
             pull(requestIn)
       }
 
@@ -102,29 +102,26 @@ private[http2] object PersistentConnection {
         override def onPush(): Unit = ()
 
         override def onPull(): Unit = {
-          if (!hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
+          if (!isAvailable(requestIn) && !hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
             pull(requestIn)
         }
 
         val onConnected = getAsyncCallback[Unit] { (_) =>
           val newState = new Connected(requestOut, responseIn)
           become(newState)
-          log.warning("connected")
           if (requestOutPulled) {
-            if (!isAvailable(requestIn)) {
-              log.warning("no request available, pulling")
-              pull(requestIn)
-            } else {
-              log.warning("request available, dispatching")
-              newState.dispatchRequest(grab(requestIn))
-            }
+            if (isAvailable(requestIn)) newState.dispatchRequest(grab(requestIn))
+            else if (!hasBeenPulled(requestIn)) pull(requestIn)
           }
         }
         val onFailed = getAsyncCallback[Unit] { (_) =>
           responseIn.cancel()
           requestOut.fail(new RuntimeException("connection broken"))
           setHandler(requestIn, Unconnected)
-          if (isAvailable(responseOut) && !hasBeenPulled(requestIn)) pull(requestIn)
+          // No need to pull: the only reason we can be here is because
+          // we are connecting, and the only reason we can be connecting
+          // is in response to a 'push' that we have had no opportunity
+          // to grab yet.
           log.info("failed, trying to connect again")
           connect()
         }
@@ -157,7 +154,6 @@ private[http2] object PersistentConnection {
           override def onUpstreamFailure(ex: Throwable): Unit = onDisconnected() // FIXME: log error
         })
         def onDisconnected(): Unit = {
-          log.warning("disconnected")
           emitMultiple[HttpResponse](responseOut, ongoingRequests.values.map(errorResponse.withAttributes(_)).toVector, () => setHandler(responseOut, Unconnected))
           responseIn.cancel()
           requestOut.fail(new RuntimeException("connection broken"))
@@ -178,25 +174,21 @@ private[http2] object PersistentConnection {
         }
 
         override def onPush(): Unit = {
-          log.warning("requestIn got pushed, dispatching")
           dispatchRequest(grab(requestIn))
         }
         override def onPull(): Unit = responseIn.pull()
 
         override def onUpstreamFinish(): Unit = {
-          log.warning("upstream finished")
           requestOut.complete()
           responseIn.cancel()
           completeStage()
         }
         override def onUpstreamFailure(ex: Throwable): Unit = {
-          log.warning("upstream failed")
           requestOut.fail(ex)
           responseIn.cancel()
           failStage(ex)
         }
         override def onDownstreamFinish(): Unit = {
-          log.warning("downstream finished")
           requestOut.complete()
           responseIn.cancel()
           super.onDownstreamFinish()
