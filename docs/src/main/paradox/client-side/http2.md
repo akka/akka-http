@@ -60,7 +60,7 @@ The Akka HTTP client doesn't support HTTP/1 to HTTP/2 negotiation over plaintext
 
 For HTTP/2 connections the responses are not guaranteed to arrive in the same order that the requests were emitted to
 the server, for example a request with a quickly available response may outrun a previous request that the server is
-slower to respond to. For HTTP/2 it is therefore often important to have a way to correlate the response with what request
+slower to respond to. For HTTP/2 it is therefore important to have a way to correlate the response with the request
 it was made for. This can be achieved through a @apidoc[RequestResponseAssociation] set on the request, Akka HTTP will pass
 such association objects on to the response.
 
