@@ -19,7 +19,7 @@ There are three mechanisms for a client to establish an HTTP/2 connection. Akka 
  - HTTP/2 over TLS 
  - HTTP/2 over a plain TCP connection ("h2c with prior knowledge")
 
-The Akka HTTP doesn't support:
+Akka HTTP doesn't support:
 
  - HTTP `Upgrade` mechanism
 
