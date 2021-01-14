@@ -17,7 +17,7 @@ unexpected when coming from a background with non-"streaming first" HTTP Clients
 There are three mechanisms for a client to establish an HTTP/2 connection. Akka HTTP supports:
 
  - HTTP/2 over TLS 
- - h2c with prior knowledge (which is plaintext)
+ - HTTP/2 over a plain TCP connection ("h2c with prior knowledge")
 
 The Akka HTTP doesn't support:
 
@@ -72,4 +72,3 @@ Scala
 Java
 
 :  @@snip [HttpClientExampleDocTest.java](/docs/src/test/java/docs/http/javadsl/Http2ClientApp.java) { #response-future-association }
-
