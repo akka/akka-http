@@ -37,6 +37,7 @@ HTTP/2 over TLS needs [Application-Layer Protocol Negotiation (ALPN)](https://en
 to negotiate whether both client and server support HTTP/2. The JVM provides ALPN support starting from JDK 8u252.
 Make sure to use at least that version.
 
+Akka HTTP does not currently support protocol negotiation to fall back to HTTP/1.1 for this API. When the server does not support HTTP/2, the stream will fail.
 ### h2c with prior knowledge
 
 The other option is to connect and start communicating in HTTP/2 immediately. You must know beforehand the target server
