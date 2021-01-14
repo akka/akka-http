@@ -97,6 +97,7 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
 
     "hook into HTTP2 client requests" in {
       val probe = TestProbe()
+      val responseProbe = TestProbe()
       TestTelemetryImpl.delegate = Some(new TelemetrySpi {
         override def client: BidiFlow[HttpRequest, HttpRequest, HttpResponse, HttpResponse, NotUsed] =
           BidiFlow.fromFlows(
@@ -128,7 +129,7 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
       val (requestQueue, _) =
         Source.queue(10, OverflowStrategy.fail)
           .viaMat(http2ClientFow)(Keep.left)
-          .toMat(Sink.actorRef(probe.ref, "done"))(Keep.both)
+          .toMat(Sink.actorRef(responseProbe.ref, "done"))(Keep.both)
           .run()
       requestQueue.offer(HttpRequest())
 
@@ -142,11 +143,12 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
       probe.expectMsg("response-seen")
       val responseId = probe.expectMsgType[RequestId]
       requestId should ===(responseId)
-      val response = probe.expectMsgType[HttpResponse]
+      val response = responseProbe.expectMsgType[HttpResponse]
       response.attribute(requestIdAttr) should be(None)
       requestQueue.complete()
 
       probe.expectMsg("close-seen")
+      responseProbe.expectMsg("done")
       serverBinding.terminate(3.seconds).futureValue
     }
 
