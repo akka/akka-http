@@ -13,12 +13,15 @@ import scala.concurrent.Future
 import akka.http.scaladsl.HttpsConnectionContext
 //#bindAndHandleSecure
 
+//#http2ClientWithPriorKnowledge
+//#http2Client
 //#bindAndHandleSecure
 //#bindAndHandlePlain
 import akka.http.scaladsl.Http
 //#bindAndHandlePlain
-
 //#bindAndHandleSecure
+//#http2Client
+//#http2ClientWithPriorKnowledge
 
 //#bindAndHandlePlain
 import akka.http.scaladsl.HttpConnectionContext
@@ -26,7 +29,6 @@ import akka.http.scaladsl.HttpConnectionContext
 //#bindAndHandlePlain
 
 import akka.actor.ActorSystem
-import akka.stream.Materializer
 
 object Http2Spec {
   implicit val system: ActorSystem = ActorSystem()
@@ -49,5 +51,14 @@ object Http2Spec {
     //#bindAndHandlePlain
     Http().newServerAt("localhost", 8080).bind(handler)
     //#bindAndHandlePlain
+  }
+
+  {
+    //#http2Client
+    Http().connectionTo("localhost").toPort(8443).http2()
+    //#http2Client
+    //#http2ClientWithPriorKnowledge
+    Http().connectionTo("localhost").toPort(8080).http2WithPriorKnowledge()
+    //#http2ClientWithPriorKnowledge
   }
 }
