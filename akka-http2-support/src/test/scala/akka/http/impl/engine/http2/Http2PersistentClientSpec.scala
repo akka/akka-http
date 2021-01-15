@@ -22,6 +22,7 @@ import akka.testkit.TestProbe
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
+import java.net.InetSocketAddress
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
@@ -32,6 +33,7 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
   """akka.http.server.remote-address-header = on
      akka.http.server.preview.enable-http2 = on
      akka.http.client.http2.log-frames = on
+     akka.http.client.http2.max-persistent-attempts = 5
      akka.http.client.log-unencrypted-network-bytes = 100
      akka.actor.serialize-messages = false
   """) with ScalaFutures {
@@ -182,6 +184,62 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           // request should have come in through another connection
           serverRequest2.clientPort should not be (clientPort)
         }
+        "when the first connection fails to materialize" inAssertAllStagesStopped new TestSetup(tls) {
+          var first = true
+          override def clientSettings = super.clientSettings.withTransport(ClientTransport.withCustomResolver((host, port) => {
+            if (first) {
+              first = false
+              // First request returns an address where we are not listening::
+              Future.successful(new InetSocketAddress("example.invalid", 80))
+            } else
+              Future.successful(server.binding.localAddress)
+          }))
+
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              entity = "ping",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-1"))
+          )
+          // need some demand on response side, otherwise, no requests will be pulled in
+          client.responsesIn.request(1)
+          client.requestsOut.ensureSubscription()
+
+          val serverRequest = server.expectRequest()
+          serverRequest.request.attribute(Http2.streamId) should not be empty
+          serverRequest.request.method shouldBe HttpMethods.POST
+          serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
+          serverRequest.entityAsString shouldBe "ping"
+
+          // now respond
+          server.sendResponseFor(serverRequest, HttpResponse(entity = "pong"))
+
+          val response = client.expectResponse()
+          Unmarshal(response.entity).to[String].futureValue shouldBe "pong"
+          response.attribute(requestIdAttr).get.id shouldBe "request-1"
+        }
+      }
+      "eventually fail" should {
+        "when connecting keeps failing" inAssertAllStagesStopped new TestSetup(tls) {
+          override def clientSettings = super.clientSettings
+            .withTransport(ClientTransport.withCustomResolver((_, _) => {
+              Future.successful(new InetSocketAddress("example.invalid", 80))
+            }))
+
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              entity = "ping",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-1"))
+          )
+          // need some demand on response side, otherwise, no requests will be pulled in
+          client.responsesIn.request(1)
+          client.requestsOut.expectCancellation()
+        }
       }
       "not leak any stages if completed" should {
         "when waiting for a response" inAssertAllStagesStopped new TestSetup(tls) {
@@ -228,7 +286,16 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
 
   class TestSetup(tls: Boolean) {
     def serverSettings: ServerSettings = ServerSettings(system)
-    def clientSettings: ClientConnectionSettings = ClientConnectionSettings(system)
+    def clientSettings: ClientConnectionSettings =
+      ClientConnectionSettings(system).withTransport(new ClientTransport {
+        override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
+          Flow.fromGraph(KillSwitches.single[ByteString])
+            .mapMaterializedValue { killer =>
+              killProbe.ref ! killer
+            }
+            .viaMat(ClientTransport.TCP.connectTo(server.binding.localAddress.getHostString, server.binding.localAddress.getPort, settings)(system))(Keep.right)
+        }
+      })
 
     val killProbe = TestProbe()
     def killConnection(): Unit = killProbe.expectMsgType[UniqueKillSwitch].abort(new RuntimeException("connection was killed"))
@@ -254,19 +321,11 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
         request.sendResponse(response)
     }
     object client {
-      val transport = new ClientTransport {
-        override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] =
-          Flow.fromGraph(KillSwitches.single[ByteString])
-            .mapMaterializedValue { killer =>
-              killProbe.ref ! killer
-            }
-            .viaMat(ClientTransport.TCP.connectTo(server.binding.localAddress.getHostString, server.binding.localAddress.getPort, settings)(system))(Keep.right)
-      }
 
       lazy val clientFlow = {
         val builder = Http().connectionTo("akka.example.org")
           .withCustomHttpsConnectionContext(ExampleHttpContexts.exampleClientContext)
-          .withClientConnectionSettings(clientSettings.withTransport(transport))
+          .withClientConnectionSettings(clientSettings)
 
         if (tls) builder.managedPersistentHttp2()
         else builder.managedPersistentHttp2WithPriorKnowledge()

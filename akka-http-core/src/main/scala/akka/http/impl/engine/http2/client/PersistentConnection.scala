@@ -6,10 +6,15 @@ package akka.http.impl.engine.http2.client
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes }
-import akka.stream.scaladsl.{ Flow, Source }
+import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 @InternalApi
@@ -31,8 +36,11 @@ private[http2] object PersistentConnection {
    *  * generate error responses with 502 status code
    *  * custom attribute contains internal error information
    */
-  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Any]): Flow[HttpRequest, HttpResponse, NotUsed] =
-    Flow.fromGraph(new Stage(connectionFlow))
+  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Int): Flow[HttpRequest, HttpResponse, NotUsed] =
+    Flow.fromGraph(new Stage(connectionFlow, maxAttempts match {
+      case 0 => None
+      case n => Some(n)
+    }))
 
   private class AssociationTag extends RequestResponseAssociation
   private val associationTagKey = AttributeKey[AssociationTag]("PersistentConnection.associationTagKey")
@@ -41,7 +49,7 @@ private[http2] object PersistentConnection {
       StatusCodes.BadGateway,
       entity = "The server closed the connection before delivering a response.")
 
-  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Any]) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
+  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Option[Int]) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
     val requestIn = Inlet[HttpRequest]("PersistentConnection.requestIn")
     val responseOut = Outlet[HttpResponse]("PersistentConnection.responseOut")
 
@@ -53,22 +61,77 @@ private[http2] object PersistentConnection {
 
       trait State extends InHandler with OutHandler
       object Unconnected extends State {
-        override def onPush(): Unit = connect()
+        override def onPush(): Unit = connect(maxAttempts)
         override def onPull(): Unit =
-          if (!hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
+          if (!isAvailable(requestIn) && !hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
             pull(requestIn)
-
       }
 
-      def connect(): Unit = {
+      def connect(connectsLeft: Option[Int]): Unit = {
         val requestOut = new SubSourceOutlet[HttpRequest]("PersistentConnection.requestOut")
         val responseIn = new SubSinkInlet[HttpResponse]("PersistentConnection.responseIn")
+        val connection = Promise[OutgoingConnection]()
 
-        Source.fromGraph(requestOut.source)
-          .via(connectionFlow)
-          .runWith(responseIn.sink)(subFusingMaterializer)
+        become(new Connecting(connection.future, requestOut, responseIn, connectsLeft.map(_ - 1)))
 
-        become(new Connected(requestOut, responseIn))
+        connection.completeWith(Source.fromGraph(requestOut.source)
+          .viaMat(connectionFlow)(Keep.right)
+          .toMat(responseIn.sink)(Keep.left)
+          .run()(subFusingMaterializer))
+      }
+
+      class Connecting(
+        connected:    Future[OutgoingConnection],
+        requestOut:   SubSourceOutlet[HttpRequest],
+        responseIn:   SubSinkInlet[HttpResponse],
+        connectsLeft: Option[Int]
+      ) extends State {
+        connected.onComplete({
+          case Success(_) =>
+            onConnected.invoke(())
+          case Failure(cause) =>
+            onFailed.invoke(cause)
+        })(ExecutionContexts.parasitic)
+
+        var requestOutPulled = false
+        requestOut.setHandler(new OutHandler {
+          override def onPull(): Unit =
+            requestOutPulled = true
+          override def onDownstreamFinish(): Unit = ()
+        })
+        responseIn.setHandler(new InHandler {
+          override def onPush(): Unit = ()
+          override def onUpstreamFinish(): Unit = ()
+          override def onUpstreamFailure(ex: Throwable): Unit = ()
+        })
+
+        override def onPush(): Unit = ()
+
+        override def onPull(): Unit = {
+          if (!isAvailable(requestIn) && !hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
+            pull(requestIn)
+        }
+
+        val onConnected = getAsyncCallback[Unit] { (_) =>
+          val newState = new Connected(requestOut, responseIn)
+          become(newState)
+          if (requestOutPulled) {
+            if (isAvailable(requestIn)) newState.dispatchRequest(grab(requestIn))
+            else if (!hasBeenPulled(requestIn)) pull(requestIn)
+          }
+        }
+        val onFailed = getAsyncCallback[Throwable] { cause =>
+          responseIn.cancel()
+          requestOut.fail(new RuntimeException("connection broken"))
+
+          if (connectsLeft.contains(0)) {
+            failStage(cause)
+          } else {
+            setHandler(requestIn, Unconnected)
+            log.info(s"failed, trying to connect again: ${cause.getMessage}${connectsLeft.map(n => s" ($n left)").getOrElse("")}")
+            connect(connectsLeft)
+          }
+        }
       }
 
       class Connected(
@@ -117,7 +180,9 @@ private[http2] object PersistentConnection {
           requestOut.push(req.addAttribute(associationTagKey, tag))
         }
 
-        override def onPush(): Unit = dispatchRequest(grab(requestIn))
+        override def onPush(): Unit = {
+          dispatchRequest(grab(requestIn))
+        }
         override def onPull(): Unit = responseIn.pull()
 
         override def onUpstreamFinish(): Unit = {

@@ -1,0 +1,4 @@
+# Added method to method that is not to be extended:
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.maxPersistentAttempts")
+ProblemFilters.exclude[Problem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.*")
+ProblemFilters.exclude[Problem]("akka.http.impl.engine.http2.OutgoingConnectionBuilderImpl*")
