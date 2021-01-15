@@ -12,7 +12,7 @@ import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
-import scala.concurrent.Future
+import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
@@ -66,12 +66,14 @@ private[http2] object PersistentConnection {
       def connect(): Unit = {
         val requestOut = new SubSourceOutlet[HttpRequest]("PersistentConnection.requestOut")
         val responseIn = new SubSinkInlet[HttpResponse]("PersistentConnection.responseIn")
-        val connected = Source.fromGraph(requestOut.source)
+        val connection = Promise[OutgoingConnection]
+
+        become(new Connecting(connection.future, requestOut, responseIn))
+
+        connection.completeWith(Source.fromGraph(requestOut.source)
           .viaMat(connectionFlow)(Keep.right)
           .toMat(responseIn.sink)(Keep.left)
-          .run()(subFusingMaterializer)
-
-        become(new Connecting(connected, requestOut, responseIn))
+          .run()(subFusingMaterializer))
       }
 
       class Connecting(
