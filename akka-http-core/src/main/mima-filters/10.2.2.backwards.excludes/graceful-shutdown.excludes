@@ -1,7 +1,0 @@
-ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.http2.BufferedOutlet")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.http2.Http2StreamHandling.akka$http$impl$engine$http2$Http2StreamHandling$userUpstreamFinishing")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.http2.Http2StreamHandling.akka$http$impl$engine$http2$Http2StreamHandling$userUpstreamFinishing_=")
-ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.http2.BufferedOutletExtended$ElementAndTrigger$")
-ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.http2.BufferedOutletExtended$ElementAndTrigger")
-ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.http2.BufferedOutletExtended")
-
