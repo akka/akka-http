@@ -163,6 +163,9 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
   def pingTimeout: FiniteDuration
   def withPingTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(pingTimeout = timeout)
 
+  def maxPersistentAttempts: Int
+  override def withMaxPersistentAttempts(max: Int): Http2ClientSettings = copy(maxPersistentAttempts = max)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalClientSettings]
   @InternalApi
@@ -184,6 +187,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
+    maxPersistentAttempts:             Int,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings with javadsl.settings.Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -191,6 +195,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
+    require(maxPersistentAttempts >= 0, "max-persistent-attempts must be >= 0")
     Http2CommonSettings.validate(this)
   }
 
@@ -204,6 +209,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
+      maxPersistentAttempts = c.getInt("max-persistent-attempts"),
       internalSettings = None // no possibility to configure internal settings with config
     )
   }

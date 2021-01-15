@@ -5,7 +5,6 @@
 package akka.http.impl.engine.http2
 
 import java.util.concurrent.CompletionStage
-
 import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
@@ -15,7 +14,7 @@ import akka.http.impl.engine.http2.client.PersistentConnection
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.settings.ClientConnectionSettings
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2ClientSettings }
 import akka.stream.scaladsl.Flow
 import akka.http.javadsl
 import akka.http.javadsl.{ OutgoingConnectionBuilder => JOutgoingConnectionBuilder }
@@ -38,6 +37,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
       host,
       None,
       clientConnectionSettings = ClientConnectionSettings(system),
+      http2Settings = Http2ClientSettings(system),
       connectionContext = None,
       log = system.classicSystem.log,
       system = system,
@@ -48,6 +48,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
     host:                     String,
     port:                     Option[Int],
     clientConnectionSettings: ClientConnectionSettings,
+    http2Settings:            Http2ClientSettings,
     connectionContext:        Option[HttpsConnectionContext],
     log:                      LoggingAdapter,
     system:                   ClassicActorSystemProvider,
@@ -80,7 +81,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
     }
 
     override def managedPersistentHttp2(): Flow[HttpRequest, HttpResponse, NotUsed] =
-      PersistentConnection.managedConnection(http2())
+      PersistentConnection.managedConnection(http2(), http2Settings.maxPersistentAttempts)
 
     override def http2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/2 prior knowledge plaintext
@@ -88,7 +89,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
     }
 
     override def managedPersistentHttp2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, NotUsed] =
-      PersistentConnection.managedConnection(http2WithPriorKnowledge())
+      PersistentConnection.managedConnection(http2WithPriorKnowledge(), http2Settings.maxPersistentAttempts)
 
     override private[akka] def toJava: JOutgoingConnectionBuilder = new JavaAdapter(this)
   }

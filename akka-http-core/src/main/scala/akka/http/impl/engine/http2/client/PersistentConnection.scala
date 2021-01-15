@@ -36,8 +36,11 @@ private[http2] object PersistentConnection {
    *  * generate error responses with 502 status code
    *  * custom attribute contains internal error information
    */
-  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]]): Flow[HttpRequest, HttpResponse, NotUsed] =
-    Flow.fromGraph(new Stage(connectionFlow))
+  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Int): Flow[HttpRequest, HttpResponse, NotUsed] =
+    Flow.fromGraph(new Stage(connectionFlow, maxAttempts match {
+      case 0 => None
+      case n => Some(n)
+    }))
 
   private class AssociationTag extends RequestResponseAssociation
   private val associationTagKey = AttributeKey[AssociationTag]("PersistentConnection.associationTagKey")
@@ -46,7 +49,7 @@ private[http2] object PersistentConnection {
       StatusCodes.BadGateway,
       entity = "The server closed the connection before delivering a response.")
 
-  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]]) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
+  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Option[Int]) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
     val requestIn = Inlet[HttpRequest]("PersistentConnection.requestIn")
     val responseOut = Outlet[HttpResponse]("PersistentConnection.responseOut")
 
@@ -58,18 +61,18 @@ private[http2] object PersistentConnection {
 
       trait State extends InHandler with OutHandler
       object Unconnected extends State {
-        override def onPush(): Unit = connect()
+        override def onPush(): Unit = connect(maxAttempts)
         override def onPull(): Unit =
           if (!isAvailable(requestIn) && !hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
             pull(requestIn)
       }
 
-      def connect(): Unit = {
+      def connect(connectsLeft: Option[Int]): Unit = {
         val requestOut = new SubSourceOutlet[HttpRequest]("PersistentConnection.requestOut")
         val responseIn = new SubSinkInlet[HttpResponse]("PersistentConnection.responseIn")
         val connection = Promise[OutgoingConnection]()
 
-        become(new Connecting(connection.future, requestOut, responseIn))
+        become(new Connecting(connection.future, requestOut, responseIn, connectsLeft.map(_ - 1)))
 
         connection.completeWith(Source.fromGraph(requestOut.source)
           .viaMat(connectionFlow)(Keep.right)
@@ -78,15 +81,16 @@ private[http2] object PersistentConnection {
       }
 
       class Connecting(
-        connected:  Future[OutgoingConnection],
-        requestOut: SubSourceOutlet[HttpRequest],
-        responseIn: SubSinkInlet[HttpResponse]
+        connected:    Future[OutgoingConnection],
+        requestOut:   SubSourceOutlet[HttpRequest],
+        responseIn:   SubSinkInlet[HttpResponse],
+        connectsLeft: Option[Int]
       ) extends State {
         connected.onComplete({
           case Success(_) =>
             onConnected.invoke(())
-          case Failure(_) =>
-            onFailed.invoke(())
+          case Failure(cause) =>
+            onFailed.invoke(cause)
         })(ExecutionContexts.parasitic)
 
         var requestOutPulled = false
@@ -116,16 +120,17 @@ private[http2] object PersistentConnection {
             else if (!hasBeenPulled(requestIn)) pull(requestIn)
           }
         }
-        val onFailed = getAsyncCallback[Unit] { (_) =>
+        val onFailed = getAsyncCallback[Throwable] { cause =>
           responseIn.cancel()
           requestOut.fail(new RuntimeException("connection broken"))
-          setHandler(requestIn, Unconnected)
-          // No need to pull: the only reason we can be here is because
-          // we are connecting, and the only reason we can be connecting
-          // is in response to a 'push' that we have had no opportunity
-          // to grab yet.
-          log.info("failed, trying to connect again")
-          connect()
+
+          if (connectsLeft.contains(0)) {
+            failStage(cause)
+          } else {
+            setHandler(requestIn, Unconnected)
+            log.info(s"failed, trying to connect again: ${cause.getMessage}${connectsLeft.map(n => s" ($n left)").getOrElse("")}")
+            connect(connectsLeft)
+          }
         }
       }
 

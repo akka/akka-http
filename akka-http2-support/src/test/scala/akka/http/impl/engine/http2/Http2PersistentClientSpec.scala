@@ -33,6 +33,7 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
   """akka.http.server.remote-address-header = on
      akka.http.server.preview.enable-http2 = on
      akka.http.client.http2.log-frames = on
+     akka.http.client.http2.max-persistent-attempts = 5
      akka.http.client.log-unencrypted-network-bytes = 100
      akka.actor.serialize-messages = false
   """) with ScalaFutures {
@@ -218,6 +219,26 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           val response = client.expectResponse()
           Unmarshal(response.entity).to[String].futureValue shouldBe "pong"
           response.attribute(requestIdAttr).get.id shouldBe "request-1"
+        }
+      }
+      "eventually fail" should {
+        "when connecting keeps failing" inAssertAllStagesStopped new TestSetup(tls) {
+          override def clientSettings = super.clientSettings
+            .withTransport(ClientTransport.withCustomResolver((_, _) => {
+              Future.successful(new InetSocketAddress("example.invalid", 80))
+            }))
+
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              entity = "ping",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-1"))
+          )
+          // need some demand on response side, otherwise, no requests will be pulled in
+          client.responsesIn.request(1)
+          client.requestsOut.expectCancellation()
         }
       }
       "not leak any stages if completed" should {
