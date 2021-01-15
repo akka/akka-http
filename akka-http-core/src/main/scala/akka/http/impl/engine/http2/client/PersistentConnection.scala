@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2.client
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes }
 import akka.stream.scaladsl.{ Flow, Keep, Source }
@@ -66,7 +67,7 @@ private[http2] object PersistentConnection {
       def connect(): Unit = {
         val requestOut = new SubSourceOutlet[HttpRequest]("PersistentConnection.requestOut")
         val responseIn = new SubSinkInlet[HttpResponse]("PersistentConnection.responseIn")
-        val connection = Promise[OutgoingConnection]
+        val connection = Promise[OutgoingConnection]()
 
         become(new Connecting(connection.future, requestOut, responseIn))
 
@@ -81,13 +82,12 @@ private[http2] object PersistentConnection {
         requestOut: SubSourceOutlet[HttpRequest],
         responseIn: SubSinkInlet[HttpResponse]
       ) extends State {
-        implicit val ec = materializer.executionContext
-        connected.onComplete {
+        connected.onComplete({
           case Success(_) =>
             onConnected.invoke(())
           case Failure(_) =>
             onFailed.invoke(())
-        }
+        })(ExecutionContexts.parasitic)
 
         var requestOutPulled = false
         requestOut.setHandler(new OutHandler {
