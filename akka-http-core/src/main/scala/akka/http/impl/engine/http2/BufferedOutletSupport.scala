@@ -29,17 +29,29 @@ private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHand
   val buffer: java.util.ArrayDeque[T] = new java.util.ArrayDeque[T]
   var completed = false
 
-  outlet.setHandler(this)
-
   /**
    * override to hook into actually pushing, e.g. to keep track how much
    * has been pushed already (in contract, to being still cached)
    */
   protected def doPush(elem: T): Unit = outlet.push(elem)
 
+  outlet.setHandler(this)
+
+  def onPull(): Unit = tryFlush()
   def push(elem: T): Unit = {
     if (outlet.canBePushed && buffer.isEmpty) doPush(elem)
     else buffer.addLast(elem)
+  }
+
+  def complete(): Unit = {
+    require(!completed, "Can only complete once.")
+    completed = true
+    if (buffer.isEmpty) outlet.complete()
+  }
+
+  def fail(cause: Throwable): Unit = {
+    buffer.clear()
+    outlet.fail(cause)
   }
 
   def tryFlush(): Unit = {
@@ -48,21 +60,6 @@ private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHand
 
     if (buffer.isEmpty && completed)
       outlet.complete()
-  }
-
-  def onPull(): Unit = tryFlush()
-
-  def complete(): Unit = {
-    require(!completed, "Can only complete once.")
-    completed = true
-    if (buffer.isEmpty) {
-      outlet.complete()
-    }
-  }
-
-  def fail(cause: Throwable): Unit = {
-    buffer.clear()
-    outlet.fail(cause)
   }
 
 }
