@@ -60,7 +60,7 @@ import scala.concurrent.duration._
  */
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.client.remote-address-header = on
-    akka.http.client.http2.log-frames = off
+    akka.http.client.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually {
 
@@ -781,6 +781,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         )
         // Then the user can still consume the response
         user.expectResponse()
+        user.responseIn.expectComplete()
       }
 
       "until in-flight streams deliver the request and responses are received" inAssertAllStagesStopped new TestSetup(
@@ -818,9 +819,12 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val receivedResponse7: HttpResponse = user.expectResponse()
       }
 
-      "until a timeout occurs" ignore {
+      "until in-flight responses with chunked payload are fully received and consumed" ignore {
+        // Assert that not only the response but the full entity is available
+      }
 
-        // test timed completion
+      "until a timeout occurs" ignore {
+        // FIXME: test timed completion
       }
 
       "actually complete as soon as required if there are no open (in-flight) streams" inAssertAllStagesStopped new TestSetup with NetProbes {
@@ -837,7 +841,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         user.requestOut.sendComplete()
 
         // Then all stages are stopped
-        // (implicitly asserted via `inAssertAllStagesStopped`
+        user.responseIn.expectComplete()
       }
 
     }
