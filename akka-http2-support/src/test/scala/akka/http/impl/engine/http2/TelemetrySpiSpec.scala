@@ -34,6 +34,8 @@ import org.scalatest.concurrent.ScalaFutures
 import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
 
 object TestTelemetryImpl {
   @volatile var delegate: Option[TelemetrySpi] = None
@@ -108,7 +110,11 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
               probe.ref ! requestId
               request.addAttribute(requestIdAttr, requestId).addHeader(headers.RawHeader("request-id", requestId.id))
             }.watchTermination() { (_, done) =>
-              done.foreach(_ => probe.ref ! "close-seen")(system.dispatcher)
+              done.onComplete {
+                case Success(_) => probe.ref ! "close-seen" // this is the expected case
+                case Failure(t) => probe.ref ! t.getMessage // useful to diagnose cases where there's a failure
+              }(system.dispatcher)
+
             },
             Flow[HttpResponse].map { response =>
               probe.ref ! "response-seen"

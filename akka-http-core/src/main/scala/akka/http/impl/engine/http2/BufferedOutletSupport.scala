@@ -38,10 +38,9 @@ private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHand
   outlet.setHandler(this)
 
   def onPull(): Unit = tryFlush()
-  def push(elem: T): Unit = {
+  def push(elem: T): Unit =
     if (outlet.canBePushed && buffer.isEmpty) doPush(elem)
     else buffer.addLast(elem)
-  }
 
   def complete(): Unit = {
     require(!completed, "Can only complete once.")
@@ -58,8 +57,7 @@ private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHand
     if (outlet.canBePushed && !buffer.isEmpty)
       doPush(buffer.pop())
 
-    if (buffer.isEmpty && completed)
-      outlet.complete()
+    if (buffer.isEmpty && completed) outlet.complete()
   }
 
 }

@@ -368,13 +368,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
 
       // -----------------------------------------------------------------
-      // This is a manually crafted sequence of shutdowns replacing the one on `completeStage`
-      // so we use the custom bufferedSubStreamOutput.complete() to ensure the buffer is empty
-      // before completing the outlet
-      override def onComplete(): Unit = {
+      // Customized replacement for completeStage()
+      override def complete(): Unit = {
         cancel(substreamIn)
         cancel(frameIn)
         complete(frameOut)
+        // Unlike the default `completeStage`, we need to delegate to
+        // bufferedSubStreamOutput#complete(substreamOut) instead of complete(substreamOut)
         bufferedSubStreamOutput.complete()
       }
 
@@ -390,13 +390,14 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         override def onUpstreamFinish(): Unit = {
           // marks StreamHandling as ready for completion
           tryComplete()
-          // start a timer
+          // FIXME: start a timer
           //  - on timer, log the timer event and proceed with the finish logic
         }
       })
 
       /**
        * Tune this peer to the remote Settings.
+       *
        * @param settings settings sent from the other peer (or injected via the
        *                 "HTTP2-Settings" in "h2c").
        * @return true if settings were applied successfully, false if some ERROR
