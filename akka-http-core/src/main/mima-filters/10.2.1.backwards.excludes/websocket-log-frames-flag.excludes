@@ -1,0 +1,10 @@
+# Extension of @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.WebSocketSettings.logFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.WebSocketSettings.withLogFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.WebSocketSettings.logFrames")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.WebSocketSettingsImpl.unapply")
+
+# Internal class changes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.WebSocketSettingsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.WebSocketSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.WebSocketSettingsImpl.this")
