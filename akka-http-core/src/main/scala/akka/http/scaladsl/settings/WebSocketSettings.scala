@@ -38,4 +38,7 @@ abstract class WebSocketSettings extends akka.http.javadsl.settings.WebSocketSet
     copy(periodicKeepAliveMaxIdle = newValue)
   def withPeriodicKeepAliveData(newValue: () => ByteString): WebSocketSettings =
     copy(periodicKeepAliveData = newValue)
+
+  def logFrames: Boolean
+  override def withLogFrames(shouldLog: Boolean): WebSocketSettings = copy(logFrames = shouldLog)
 }

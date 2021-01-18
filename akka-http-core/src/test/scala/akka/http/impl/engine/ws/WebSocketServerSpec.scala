@@ -14,7 +14,7 @@ import akka.http.impl.util.AkkaSpecWithMaterializer
 
 import scala.concurrent.duration._
 
-class WebSocketServerSpec extends AkkaSpecWithMaterializer { spec =>
+class WebSocketServerSpec extends AkkaSpecWithMaterializer("akka.http.server.websocket.log-frames = on") { spec =>
 
   "The server-side WebSocket integration should" should {
     "establish a websocket connection when the user requests it" should {

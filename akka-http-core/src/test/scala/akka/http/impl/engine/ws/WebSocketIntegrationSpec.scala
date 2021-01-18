@@ -26,8 +26,13 @@ import akka.testkit._
 
 import scala.util.{ Failure, Success }
 
-class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
-  with Eventually {
+class WebSocketIntegrationSpec extends AkkaSpec(
+  """
+     akka {
+       stream.materializer.debug.fuzzing-mode=off
+       http.server.websocket.log-frames = on
+     }
+  """) with Eventually {
 
   implicit val materializer = ActorMaterializer()
 

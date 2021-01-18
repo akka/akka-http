@@ -38,6 +38,9 @@ trait WebSocketSettings { self: WebSocketSettingsImpl =>
     copy(periodicKeepAliveMaxIdle = newValue)
   def withPeriodicKeepAliveData(newValue: Supplier[ByteString]): WebSocketSettings =
     copy(periodicKeepAliveData = () => newValue.get())
+
+  def logFrames: Boolean
+  def withLogFrames(shouldLog: Boolean): WebSocketSettings
 }
 
 object WebSocketSettings {
