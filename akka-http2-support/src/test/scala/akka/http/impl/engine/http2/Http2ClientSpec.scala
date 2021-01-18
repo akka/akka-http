@@ -62,6 +62,7 @@ import scala.concurrent.duration._
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.client.remote-address-header = on
     akka.http.client.http2.log-frames = on
+    akka.http.client.http2.completion-timeout = 500ms
   """)
   with WithInPendingUntilFixed with Eventually {
 
@@ -842,8 +843,30 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // Assert that not only the response but the full entity is available
       }
 
-      "until a timeout occurs" ignore {
-        // FIXME: test timed completion
+      "until a timeout occurs" inAssertAllStagesStopped new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
+      ) with NetProbes {
+        implicit val ctx = system.dispatcher
+        // Given several in-flight requests...
+        val request = HttpRequest(uri = "https://www.example.com/")
+        user.emitRequest(request)
+        user.emitRequest(request)
+        network.expect[HeadersFrame]().streamId shouldBe (1)
+        network.expect[HeadersFrame]().streamId shouldBe (3)
+        // got a complete response for 1 but but not for 3
+        network.sendFrame(HeadersFrame(streamId = 1, endStream = false, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        network.sendFrame(DataFrame(streamId = 1, endStream = true, ByteString("Hello World 1!")))
+        user.expectResponse()
+
+        // Then the user handler completes
+        user.requestOut.sendComplete()
+
+        // The streams is on hold until stream '3' finishes...
+        // 400 millis is slightly less than the value of "akka.http.client.http2.completion-timeout"
+        user.responseIn.expectNoMessage(400.millis)
+
+        // Eventually, completion happens after a timeout
+        user.responseIn.expectComplete()
       }
 
       "actually complete as soon as required if there are no open (in-flight) streams" inAssertAllStagesStopped new TestSetup with NetProbes {
