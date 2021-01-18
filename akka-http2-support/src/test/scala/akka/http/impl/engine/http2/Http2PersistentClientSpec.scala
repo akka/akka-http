@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
-import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
+import akka.http.scaladsl.model.{ AttributeKey, AttributeKeys, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -28,9 +28,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 
 class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
-  // FIXME: would rather use remote-address-attribute, but that doesn't work with HTTP/2
-  // see https://github.com/akka/akka-http/issues/3707
-  """akka.http.server.remote-address-header = on
+  """akka.http.server.remote-address-attribute = on
      akka.http.server.preview.enable-http2 = on
      akka.http.client.http2.log-frames = on
      akka.http.client.http2.max-persistent-attempts = 5
@@ -281,7 +279,7 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
     }
 
     /** Port of tcp connection as determined by remote-address attribute */
-    def clientPort: Int = request.header[headers.`Remote-Address`].get.address.getPort
+    def clientPort: Int = request.attribute(AttributeKeys.remoteAddress).get.getPort
   }
 
   class TestSetup(tls: Boolean) {
