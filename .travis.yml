@@ -3,7 +3,7 @@ version: ~> 1.0
 language: scala
 
 scala:
-  - "2.12.11" # not used for anything but still needed to have sbt available
+  - "2.12.13" # not used for anything but still needed to have sbt available
 
 git:
   depth: 500 # to make sure we have enough depth to power git describe for sbt-dynver (used for snapshot version numbers)
