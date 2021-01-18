@@ -151,9 +151,9 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = first" in new Test {
+      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = arbitrary" in new Test {
         override def parserSettings: ParserSettings =
-          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.First)
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.Arbitrary)
         """HTTP/1.1 200 OK
           |Content-Type: text/plain; charset=UTF-8
           |Content-Type: application/json; charset=utf-8
@@ -163,15 +163,23 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = last" in new Test {
+      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = no-content-type" in new Test {
         override def parserSettings: ParserSettings =
-          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.Last)
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.NoContentType)
         """HTTP/1.1 200 OK
           |Content-Type: text/plain; charset=UTF-8
           |Content-Type: application/json; charset=utf-8
-          |Content-Length: 0
+          |Content-Type: text/xml; charset=UTF-8
+          |Content-Length: 6
           |
-          |""" should parseTo(HttpResponse(headers = List(`Content-Type`(ContentTypes.`text/plain(UTF-8)`)), entity = HttpEntity.empty(ContentTypes.`application/json`)))
+          |foobar""" should parseTo(
+          HttpResponse(
+            headers = List(
+              `Content-Type`(ContentTypes.`text/plain(UTF-8)`),
+              `Content-Type`(ContentTypes.`application/json`),
+              `Content-Type`(ContentTypes.`text/xml(UTF-8)`)
+            ), entity = HttpEntity.Strict(ContentTypes.NoContentType, ByteString("foobar"))
+          ))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
