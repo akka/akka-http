@@ -36,4 +36,8 @@ trait Http2ClientSettings { self: scaladsl.settings.Http2ClientSettings.Http2Cli
 
   def getMaxPersistentAttempts: Int = maxPersistentAttempts
   def withMaxPersistentAttempts(max: Int): Http2ClientSettings = copy(maxPersistentAttempts = max)
+
+  def getCompletionTimeout: Duration = Duration.ofMillis(completionTimeout.toMillis)
+  def withCompletionTimeout(timeout: Duration): Http2ClientSettings = copy(completionTimeout = timeout.toMillis.millis)
+
 }

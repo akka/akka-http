@@ -222,6 +222,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
+      case object CompletionTimeout
+
       def frameOutFinished(): Unit = {
         // make sure we clean up/fail substreams with a custom failure before stage is canceled
         // and substream autoclean kicks in
@@ -405,8 +407,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         override def onUpstreamFinish(): Unit = {
           // marks StreamHandling as ready for completion
           onTryComplete()
-          // FIXME: start a timer
-          //  - on timer, log the timer event and proceed with the finish logic
+          scheduleOnce(CompletionTimeout, settings.completionTimeout)
         }
       })
 
@@ -457,6 +458,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           } else {
             pingState.clear()
           }
+        case CompletionTimeout =>
+          info("Timeout: Peer didn't finish in-flight requests. Closing pending HTTP/2 streams. Increase this timeout via the 'completion-timeout' setting.")
+          completeStage()
       }
 
       override def postStop(): Unit = {

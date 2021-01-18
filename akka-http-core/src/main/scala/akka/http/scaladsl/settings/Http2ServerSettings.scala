@@ -32,6 +32,8 @@ private[http] trait Http2CommonSettings {
 
   def pingInterval: FiniteDuration
   def pingTimeout: FiniteDuration
+
+  def completionTimeout: FiniteDuration
 }
 
 /**
@@ -83,6 +85,9 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def pingTimeout: FiniteDuration
   def withPingTimeout(timeout: FiniteDuration): Http2ServerSettings = copy(pingTimeout = timeout)
 
+  def completionTimeout: FiniteDuration
+  def withCompletionTimeout(timeout: FiniteDuration): Http2ServerSettings = copy(completionTimeout = timeout)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalServerSettings]
   @InternalApi
@@ -104,6 +109,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
+    completionTimeout:                 FiniteDuration,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -124,6 +130,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
+      completionTimeout = c.getFiniteDuration("completion-timeout"),
       None // no possibility to configure internal settings with config
     )
   }
@@ -166,6 +173,9 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
   def maxPersistentAttempts: Int
   override def withMaxPersistentAttempts(max: Int): Http2ClientSettings = copy(maxPersistentAttempts = max)
 
+  def completionTimeout: FiniteDuration
+  def withCompletionTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(completionTimeout = timeout)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalClientSettings]
   @InternalApi
@@ -188,6 +198,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
     maxPersistentAttempts:             Int,
+    completionTimeout:                 FiniteDuration,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings with javadsl.settings.Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -210,6 +221,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
       maxPersistentAttempts = c.getInt("max-persistent-attempts"),
+      completionTimeout = c.getFiniteDuration("completion-timeout"),
       internalSettings = None // no possibility to configure internal settings with config
     )
   }
