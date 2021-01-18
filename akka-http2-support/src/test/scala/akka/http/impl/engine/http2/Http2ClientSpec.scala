@@ -35,10 +35,10 @@ import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.stream.testkit.scaladsl.StreamTestKit
-import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.StreamTestKit
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.EventFilter
 import akka.testkit.TestDuration
 import akka.util.ByteString
@@ -47,6 +47,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import javax.net.ssl.SSLContext
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
@@ -787,6 +788,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       "until in-flight streams deliver the request and responses are received" inAssertAllStagesStopped new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
       ) with NetProbes {
+        implicit val ctx = system.dispatcher
         // Given several in-flight requests...
         val request = HttpRequest(uri = "https://www.example.com/")
         user.emitRequest(request)
@@ -802,7 +804,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         // ... and some request already got their response (canary round-trip)
         network.sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
-        val receivedResponse1: HttpResponse = user.expectResponse()
+        val resp1: HttpResponse = user.expectResponse()
 
         // ... and a completed user handler.
         user.requestOut.sendComplete()
@@ -811,12 +813,29 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         network.sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         // Then the backpressured in-flight streams proceed (sending pending requests)...
         network.expect[HeadersFrame]().streamId shouldBe (7)
-        network.sendFrame(HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
-        network.sendFrame(HeadersFrame(streamId = 7, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        network.sendFrame(HeadersFrame(streamId = 5, endStream = false, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        network.sendFrame(DataFrame(streamId = 5, endStream = true, ByteString("Hello World 5!")))
+        network.sendFrame(HeadersFrame(streamId = 7, endStream = false, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        network.sendFrame(DataFrame(streamId = 7, endStream = true, ByteString("Hello World 7!")))
         //... and it is possible to consume all responses (from stream 1 to stream 7)
-        val receivedResponse3: HttpResponse = user.expectResponse()
-        val receivedResponse5: HttpResponse = user.expectResponse()
-        val receivedResponse7: HttpResponse = user.expectResponse()
+        val resp3: HttpResponse = user.expectResponse()
+        val resp5: HttpResponse = user.expectResponse()
+        val resp7: HttpResponse = user.expectResponse()
+
+        private val eventualEntities: Seq[Future[HttpEntity.Strict]] =
+          Seq(resp1, resp3, resp5, resp7).map(_.entity.toStrict(100.millis))
+        private val entities: Seq[HttpEntity.Strict] = Future.sequence(eventualEntities).futureValue
+        // The complete entity of the responses si available
+        entities shouldBe Seq(
+          HttpEntity.Empty, // 1 has no data
+          HttpEntity.Empty, // 3 has no data
+          HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("Hello World 5!")),
+          HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("Hello World 7!"))
+        )
+
+        // Completion doesn't happen until entities are consumed
+        user.responseIn.expectComplete()
+
       }
 
       "until in-flight responses with chunked payload are fully received and consumed" ignore {
