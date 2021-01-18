@@ -850,7 +850,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // Given a request...
         user.emitRequest(HttpRequest(uri = "https://www.example.com/"))
         network.expectDecodedResponseHEADERSPairs(1)
-        // ... and a demanded response for that request (so there's nothing in-flight)
+        // ... and return response for that request (so there's nothing in-flight)
         network.sendFrame(
           HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
         )
