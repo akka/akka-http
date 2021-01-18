@@ -79,17 +79,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   }
 
   /**
-   * Marks this object to be [[completing]] and, if all streams are closed, it also [[complete()]]'s it.
-   */
-  def tryComplete(): Unit = {
-    completing = true
-    if (streamStates.isEmpty) complete()
-  }
-  private var completing = false
-  /**
    * Called when all streams in StreamHandling buffers are closed and the stage is [[completing]]
    */
-  def complete(): Unit
+  def onAllStreamsClosed(): Unit
 
   private def streamFor(streamId: Int): StreamState =
     streamStates.get(streamId) match {
@@ -169,7 +161,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     newState match {
       case Closed =>
         streamStates -= streamId
-        if (streamStates.isEmpty && completing) complete()
+        if (streamStates.isEmpty) onAllStreamsClosed()
         tryPullSubStreams()
       case newState => streamStates += streamId -> newState
     }

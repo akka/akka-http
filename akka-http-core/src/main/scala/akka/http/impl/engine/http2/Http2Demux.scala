@@ -11,10 +11,10 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
-import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.model.AttributeKey
 import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
 import akka.stream.Attributes
@@ -368,8 +368,14 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
 
       // -----------------------------------------------------------------
+      private var completing = false
+      private def tryComplete(): Unit = {
+        completing = true
+        if (activeStreamCount() == 0) complete()
+      }
+      override def onAllStreamsClosed(): Unit = if (completing) complete()
       // Customized replacement for completeStage()
-      override def complete(): Unit = {
+      private def complete(): Unit = {
         cancel(substreamIn)
         cancel(frameIn)
         complete(frameOut)
