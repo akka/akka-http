@@ -189,7 +189,7 @@ class Http2PersistentClientSpec extends AkkaSpecWithMaterializer(
           override def clientSettings = super.clientSettings.withTransport(ClientTransport.withCustomResolver((host, port) => {
             if (first) {
               first = false
-              // First request returns an address where we are not listening::
+              // First request returns an address where we are not listening
               Future.successful(new InetSocketAddress("example.invalid", 80))
             } else
               Future.successful(server.binding.localAddress)
