@@ -25,7 +25,7 @@ addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.25")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.23")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
-libraryDependencies += "org.kohsuke" % "github-api" % "1.119"
+libraryDependencies += "org.kohsuke" % "github-api" % "1.122"
 
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "3.1.15"
