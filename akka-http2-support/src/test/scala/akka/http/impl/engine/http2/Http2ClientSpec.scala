@@ -825,7 +825,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         private val eventualEntities: Seq[Future[HttpEntity.Strict]] =
           Seq(resp1, resp3, resp5, resp7).map(_.entity.toStrict(100.millis))
         private val entities: Seq[HttpEntity.Strict] = Future.sequence(eventualEntities).futureValue
-        // The complete entity of the responses si available
+        // The complete entity of the responses is available
         entities shouldBe Seq(
           HttpEntity.Empty, // 1 has no data
           HttpEntity.Empty, // 3 has no data
