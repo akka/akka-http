@@ -997,9 +997,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       "received non-zero length payload Settings with ACK flag (invalid 6.5)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         /*
-         Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
-         MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
-         */
+             Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
+             MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
+             */
         // we ACK the settings with an incorrect ACK (it must not have a payload)
         val ackFlag = new ByteFlag(0x1)
         val illegalPayload = hex"cafe babe"
@@ -1326,6 +1326,42 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       })
 
     }
+
+    "delay stage completion" should {
+
+      "until in-flight responses are pushed to the network" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+
+        network.sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        user.expectRequest() shouldBe HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`)
+
+        network.fromNet.sendComplete()
+
+        user.emitResponse(1, HPackSpecExamples.FirstResponse)
+        val headerPayload = network.expectHeaderBlock(1)
+        headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
+        network.expectComplete()
+
+      }
+
+      //      "actually complete as soon as required if there are no open (in-flight) streams" inAssertAllStagesStopped new TestSetup with NetProbes {
+      //        // Given a request...
+      //        user.emitRequest(HttpRequest(uri = "https://www.example.com/"))
+      //        network.expectDecodedResponseHEADERSPairs(1)
+      //        // ... and return response for that request (so there's nothing in-flight)
+      //        network.sendFrame(
+      //          HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
+      //        )
+      //        user.expectResponse()
+      //
+      //        // When the user completes the stream
+      //        user.requestOut.sendComplete()
+      //
+      //        // Then all stages are stopped
+      //        user.responseIn.expectComplete()
+      //      }
+
+    }
+
   }
 
   implicit class InWithStoppedStages(name: String) {

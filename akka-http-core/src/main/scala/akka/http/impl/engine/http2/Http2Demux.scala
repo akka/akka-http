@@ -335,6 +335,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           pullFrameIn()
         }
 
+        override def onUpstreamFinish(): Unit = onTryComplete()
+
         override def onUpstreamFailure(ex: Throwable): Unit = {
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
@@ -369,11 +371,18 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       // -----------------------------------------------------------------
       private var completing = false
-      private def tryComplete(): Unit = {
+      private def onTryComplete(): Unit = {
         completing = true
-        if (activeStreamCount() == 0) complete()
+        if (safeToComplete) complete()
       }
-      override def onAllStreamsClosed(): Unit = if (completing) complete()
+      override def onAllStreamsClosed(): Unit = if (safeToComplete) complete()
+      override def onMultiplexerIdle(): Unit = if (safeToComplete) complete()
+
+      private def safeToComplete = {
+        if (isServer) completing && multiplexer.isIdle && activeStreamCount() == 0
+        else completing && activeStreamCount() == 0
+      }
+
       // Customized replacement for completeStage()
       private def complete(): Unit = {
         cancel(substreamIn)
@@ -395,7 +404,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         override def onUpstreamFinish(): Unit = {
           // marks StreamHandling as ready for completion
-          tryComplete()
+          onTryComplete()
           // FIXME: start a timer
           //  - on timer, log the timer event and proceed with the finish logic
         }
