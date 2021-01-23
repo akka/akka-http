@@ -44,6 +44,7 @@ private[http] object WebSocketClientBlueprint {
       .atop(simpleTls)
       .atopMat(handshake(request, settings, log))(Keep.right)
       .atop(WebSocket.framing)
+      .atop(FrameLogger.logFramesIfEnabled(settings.websocketSettings.logFrames))
       .atop(WebSocket.stack(serverSide = false, settings.websocketSettings, log = log))
       .reversed
 
