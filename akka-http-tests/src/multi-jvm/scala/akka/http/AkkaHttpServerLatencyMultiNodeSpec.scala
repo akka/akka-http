@@ -14,7 +14,7 @@ import akka.http.scaladsl.server.{ Directives, Route }
 import akka.http.scaladsl.Http
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.stream.scaladsl.Source
-import akka.testkit.{ ImplicitSender, LongRunningTest, SocketUtil }
+import akka.testkit.{ ImplicitSender, LongRunningTest }
 import akka.util.{ ByteString, Timeout }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
@@ -176,7 +176,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
         enterBarrier("load-gen-ready")
 
         runOn(server) {
-          val (_, port) = SocketUtil.temporaryServerHostnameAndPort()
+          val port = 0
           info(s"Binding Akka HTTP Server to port: $port @ ${myself}")
           val futureBinding = Http().newServerAt("0.0.0.0", port).bind(routes)
 
