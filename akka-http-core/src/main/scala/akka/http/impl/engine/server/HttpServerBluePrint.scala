@@ -408,7 +408,7 @@ private[http] object HttpServerBluePrint {
           grab(requestParsingIn) match {
             case r: RequestStart =>
               val rs0 =
-                if(settings.aroundRequest) {
+                if (settings.aroundRequest) {
                   r.copy(attributes = r.attributes + (AttributeKeys.onCompleteAccess -> new OnCompleteAccess()))
                 } else {
                   r
@@ -524,7 +524,7 @@ private[http] object HttpServerBluePrint {
       })
 
       def aroundRequestComplete(start: RequestStart, response: HttpResponse) =
-        if(settings.aroundRequest) {
+        if (settings.aroundRequest) {
           start.attributes.get(AttributeKeys.onCompleteAccess) foreach { case v: OnCompleteAccess => v.onComplete.foreach(_(response)) }
         }
 
