@@ -1,0 +1,9 @@
+# Added new settings accessors added to toggle around request behaviour
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getAroundRequest")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.aroundRequest")
+
+# Added new settings on @InternalApi ServerSettingsImpl
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.apply")
