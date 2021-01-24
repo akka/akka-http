@@ -29,14 +29,14 @@ import akka.http.impl.engine.rendering.ResponseRenderingContext.CloseRequested
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
 import akka.http.impl.util._
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
-import akka.http.scaladsl.{ Http, OnCompleteAccess, TimeoutAccess }
-import akka.http.scaladsl.model.headers.{ OnComplete, `Timeout-Access` }
+import akka.http.scaladsl.{ Http, TimeoutAccess }
+import akka.http.scaladsl.model.headers.`Timeout-Access`
 import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.impl.util.LogByteStringTools._
 import com.github.ghik.silencer.silent
 
-import scala.util.{ Failure, Success }
+import scala.util.Failure
 
 /**
  * INTERNAL API
@@ -407,7 +407,12 @@ private[http] object HttpServerBluePrint {
         def onPush(): Unit =
           grab(requestParsingIn) match {
             case r: RequestStart =>
-              val rs0 = r.copy(headers = r.headers :+ OnComplete(OnCompleteAccess()))
+              val rs0 =
+                if(settings.aroundRequest) {
+                  r.copy(attributes = r.attributes + (AttributeKeys.onCompleteAccess -> new OnCompleteAccess()))
+                } else {
+                  r
+                }
               openRequests = openRequests.enqueue(rs0)
               messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
               val rs = if (rs0.expect100Continue) {
@@ -443,24 +448,24 @@ private[http] object HttpServerBluePrint {
         def onPush(): Unit = {
           val requestStart = openRequests.head
           openRequests = openRequests.tail
-          val onComplete =
-            requestStart.headers.find(_.name.equals(OnComplete.name)).map { case header: OnComplete => header.onCompleteAccess.onComplete }
 
           val response0 = grab(httpResponseIn)
-          val response = response0 mapEntity { e =>
-            e.transformDataBytes(Flow[ByteString].watchTermination() {
-              case (mat, fut) =>
-                fut.onComplete {
-                  case Success(_) =>
-                    onComplete.foreach(_(response0))
-                  case Failure(ex) =>
-                    onComplete.foreach(_(response0))
-                    log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
-
-                }(ExecutionContexts.sameThreadExecutionContext)
-                mat
-            })
-          }
+          val response =
+            if (response0.entity.isStrict) {
+              aroundRequestComplete(requestStart, response0)
+              response0
+            } // response stream cannot fail
+            else response0.mapEntity { e =>
+              val (newEntity, fut) = HttpEntity.captureTermination(e)
+              fut.onComplete {
+                case Failure(ex) =>
+                  aroundRequestComplete(requestStart, response0)
+                  log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
+                case _ =>
+                  aroundRequestComplete(requestStart, response0)
+              }(ExecutionContexts.sameThreadExecutionContext)
+              newEntity
+            }
 
           val isEarlyResponse = messageEndPending && openRequests.isEmpty
           if (isEarlyResponse && response.status.isSuccess)
@@ -517,6 +522,11 @@ private[http] object HttpServerBluePrint {
           setHandler(responseCtxOut, GraphStageLogic.EagerTerminateOutput)
         }
       })
+
+      def aroundRequestComplete(start: RequestStart, response: HttpResponse) =
+        if(settings.aroundRequest) {
+          start.attributes.get(AttributeKeys.onCompleteAccess) foreach { case v: OnCompleteAccess => v.onComplete.foreach(_(response)) }
+        }
 
       def finishWithIllegalRequestError(status: StatusCode, info: ErrorInfo): Unit = {
         val errorResponse = JavaMapping.toScala(parsingErrorHandler.handle(status, info, log, settings))

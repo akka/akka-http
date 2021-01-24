@@ -4,20 +4,19 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OnComplete
+import akka.http.scaladsl.model.{ AttributeKeys, HttpResponse, OnCompleteAccess }
 import akka.http.scaladsl.server.{ Directive, Directive0, RequestContext }
 
 trait AroundRequestDirectives {
 
   def aroundRequest(onRequest: RequestContext => HttpResponse => HttpResponse): Directive0 =
     Directive { inner => ctx =>
-      ctx.request.header[OnComplete] match {
-        case Some(och) =>
+      ctx.request.attribute[OnCompleteAccess](AttributeKeys.onCompleteAccess) match {
+        case Some(oca) =>
           val onComplete = onRequest(ctx)
-          och.onCompleteAccess.add(onComplete)
+          oca.add(onComplete)
         case _ =>
-          ctx.log.warning("aroundRequest was used in route however no OnComplete is set!")
+          ctx.log.warning("aroundRequest directive was used however no OnComplete attribute is set! Check akka-http.server.around-request config.")
       }
       inner(())(ctx)
     }

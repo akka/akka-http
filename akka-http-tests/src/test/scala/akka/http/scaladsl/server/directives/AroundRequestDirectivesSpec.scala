@@ -7,24 +7,25 @@ package directives
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpResponse, StatusCodes, _ }
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes, _}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream.scaladsl.Source
 import akka.testkit.SocketUtil
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-import org.scalatest.time.{ Millis, Span }
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.time.{Millis, Span}
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
 
 class AroundRequestDirectivesSpec extends RoutingSpec with BeforeAndAfterEach with Eventually with ScalaFutures {
 
   override def testConfigSource =
     """
-    akka.loggers = ["akka.testkit.TestEventListener"]
-  """
+       akka.http.server.around-request = on
+       akka.loggers = ["akka.testkit.TestEventListener"]
+    """
 
   override def beforeEach(): Unit = {
     results = Map.empty[String, HttpResponse]
