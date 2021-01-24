@@ -1043,7 +1043,7 @@ final case class `Tls-Session-Info`(session: SSLSession) extends jm.headers.TlsS
   def getSession: SSLSession = session
 }
 
-// http://tools.ietf.org/html/rfc7230#section-3.3.1
+// https://tools.ietf.org/html/rfc7230#section-3.3.1
 object `Transfer-Encoding` extends ModeledCompanion[`Transfer-Encoding`] {
   def apply(first: TransferEncoding, more: TransferEncoding*): `Transfer-Encoding` = apply(immutable.Seq(first +: more: _*))
   implicit val encodingsRenderer = Renderer.defaultSeqRenderer[TransferEncoding] // cache

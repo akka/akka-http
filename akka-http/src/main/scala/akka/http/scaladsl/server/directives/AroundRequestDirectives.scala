@@ -16,7 +16,7 @@ trait AroundRequestDirectives {
           val onComplete = onRequest(ctx)
           oca.add(onComplete)
         case _ =>
-          ctx.log.warning("aroundRequest directive was used however no OnComplete attribute is set! Check akka-http.server.around-request config.")
+          ctx.log.warning("aroundRequest directive was used however no OnComplete attribute is set! Check akka.http.server.around-request config.")
       }
       inner(())(ctx)
     }
