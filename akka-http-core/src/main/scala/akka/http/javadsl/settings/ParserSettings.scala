@@ -42,7 +42,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def getErrorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
   def getIllegalResponseHeaderNameProcessingMode: ParserSettings.IllegalResponseHeaderNameProcessingMode
   def getIllegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
-  def getConflictingResponseContentTypeHeaderProcessingMode: ParserSettings.ConflictingResponseContentTypeHeaderProcessingMode
+  def getConflictingContentTypeHeaderProcessingMode: ParserSettings.ConflictingContentTypeHeaderProcessingMode
   def getHeaderValueCacheLimits: ju.Map[String, Int]
   def getIncludeTlsSessionInfoHeader: Boolean
   def getIncludeSslSessionAttribute: Boolean
@@ -99,7 +99,7 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
   trait ErrorLoggingVerbosity
   trait IllegalResponseHeaderNameProcessingMode
   trait IllegalResponseHeaderValueProcessingMode
-  trait ConflictingResponseContentTypeHeaderProcessingMode
+  trait ConflictingContentTypeHeaderProcessingMode
 
   /**
    * @deprecated Use forServer or forClient instead.

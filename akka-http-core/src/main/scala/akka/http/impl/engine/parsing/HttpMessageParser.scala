@@ -19,7 +19,7 @@ import headers._
 import HttpProtocols._
 import ParserOutput._
 import akka.annotation.InternalApi
-import akka.http.scaladsl.settings.ParserSettings.ConflictingResponseContentTypeHeaderProcessingMode
+import akka.http.scaladsl.settings.ParserSettings.ConflictingContentTypeHeaderProcessingMode
 
 /**
  * INTERNAL API
@@ -168,9 +168,9 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
             parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
           case Some(`Content-Type`(ContentTypes.`NoContentType`)) =>
             parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
-          case Some(x) if isResponseParser =>
-            import ConflictingResponseContentTypeHeaderProcessingMode._
-            settings.conflictingResponseContentTypeHeaderProcessingMode match {
+          case Some(x) =>
+            import ConflictingContentTypeHeaderProcessingMode._
+            settings.conflictingContentTypeHeaderProcessingMode match {
               case Error         => failMessageStart("HTTP message must not contain more than one Content-Type header")
               case First         => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
               case Last          => parseHeaderLines(input, lineEnd, headers += x, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)

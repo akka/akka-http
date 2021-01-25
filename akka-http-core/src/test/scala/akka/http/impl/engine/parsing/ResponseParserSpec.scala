@@ -29,7 +29,7 @@ import StatusCodes._
 import HttpEntity._
 import ParserOutput._
 import akka.http.scaladsl.model.MediaType.WithOpenCharset
-import akka.http.scaladsl.settings.ParserSettings.ConflictingResponseContentTypeHeaderProcessingMode
+import akka.http.scaladsl.settings.ParserSettings.ConflictingContentTypeHeaderProcessingMode
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.testkit._
 import org.scalatest.freespec.AnyFreeSpec
@@ -153,7 +153,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
 
       "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = first" in new Test {
         override def parserSettings: ParserSettings =
-          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.First)
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingContentTypeHeaderProcessingMode.First)
         """HTTP/1.1 200 OK
           |Content-Type: text/plain; charset=UTF-8
           |Content-Type: application/json; charset=utf-8
@@ -165,7 +165,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
 
       "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = last" in new Test {
         override def parserSettings: ParserSettings =
-          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.Last)
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingContentTypeHeaderProcessingMode.Last)
         """HTTP/1.1 200 OK
           |Content-Type: text/plain; charset=UTF-8
           |Content-Type: application/json; charset=utf-8
@@ -177,7 +177,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
 
       "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = no-content-type" in new Test {
         override def parserSettings: ParserSettings =
-          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.NoContentType)
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingContentTypeHeaderProcessingMode.NoContentType)
         """HTTP/1.1 200 OK
           |Content-Type: text/plain; charset=UTF-8
           |Content-Type: application/json; charset=utf-8
