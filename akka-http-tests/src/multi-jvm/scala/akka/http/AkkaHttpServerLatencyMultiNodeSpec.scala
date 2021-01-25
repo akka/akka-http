@@ -178,10 +178,10 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
         runOn(server) {
           val port = 0
           info(s"Binding Akka HTTP Server to port: $port @ ${myself}")
-          val futureBinding = Http().newServerAt("0.0.0.0", port).bind(routes)
+          val binding = Http().newServerAt("0.0.0.0", port).bind(routes).futureValue
 
-          _binding = Some(futureBinding.futureValue)
-          setServerPort(port)
+          _binding = Some(binding)
+          setServerPort(binding.localAddress.getPort)
         }
 
         enterBarrier("http-server-running")
