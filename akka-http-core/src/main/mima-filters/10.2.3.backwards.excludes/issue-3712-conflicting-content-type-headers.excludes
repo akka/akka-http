@@ -1,6 +1,5 @@
 # implementation classes
 ProblemFilters.exclude[Problem]("akka.http.impl.settings.ParserSettingsImpl*")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.HeaderParser.Settings")
 
 # adding fields to @DoNotInherit settings classes
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getConflictingResponseContentTypeHeaderProcessingMode")
