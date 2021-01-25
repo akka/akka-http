@@ -189,13 +189,15 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
   sealed trait ConflictingResponseContentTypeHeaderProcessingMode extends akka.http.javadsl.settings.ParserSettings.ConflictingResponseContentTypeHeaderProcessingMode
   object ConflictingResponseContentTypeHeaderProcessingMode {
     case object Error extends ConflictingResponseContentTypeHeaderProcessingMode
-    case object Arbitrary extends ConflictingResponseContentTypeHeaderProcessingMode
+    case object First extends ConflictingResponseContentTypeHeaderProcessingMode
+    case object Last extends ConflictingResponseContentTypeHeaderProcessingMode
     case object NoContentType extends ConflictingResponseContentTypeHeaderProcessingMode
 
     def apply(string: String): ConflictingResponseContentTypeHeaderProcessingMode =
       string.toRootLowerCase match {
         case "error"           => Error
-        case "arbitrary"       => Arbitrary
+        case "first"           => First
+        case "last"            => Last
         case "no-content-type" => NoContentType
         case x                 => throw new IllegalArgumentException(s"[$x] is not a legal `conflicting-response-content-type-header-processing-mode` setting")
       }

@@ -151,15 +151,27 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = arbitrary" in new Test {
+      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = first" in new Test {
         override def parserSettings: ParserSettings =
-          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.Arbitrary)
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.First)
         """HTTP/1.1 200 OK
           |Content-Type: text/plain; charset=UTF-8
           |Content-Type: application/json; charset=utf-8
           |Content-Length: 0
           |
           |""" should parseTo(HttpResponse(headers = List(`Content-Type`(ContentTypes.`application/json`)), entity = HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "a response with several conflicting Content-Type headers with conflicting-response-content-type-header-processing-mode = last" in new Test {
+        override def parserSettings: ParserSettings =
+          super.parserSettings.withConflictingResponseContentTypeHeaderProcessingMode(ConflictingResponseContentTypeHeaderProcessingMode.Last)
+        """HTTP/1.1 200 OK
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Type: application/json; charset=utf-8
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpResponse(headers = List(`Content-Type`(ContentTypes.`text/plain(UTF-8)`)), entity = HttpEntity.empty(ContentTypes.`application/json`)))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 

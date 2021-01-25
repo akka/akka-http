@@ -172,7 +172,8 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
             import ConflictingResponseContentTypeHeaderProcessingMode._
             settings.conflictingResponseContentTypeHeaderProcessingMode match {
               case Error         => failMessageStart("HTTP message must not contain more than one Content-Type header")
-              case Arbitrary     => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
+              case First         => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
+              case Last          => parseHeaderLines(input, lineEnd, headers += x, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
               case NoContentType => parseHeaderLines(input, lineEnd, headers += x += h, headerCount + 1, ch, clh, Some(`Content-Type`(ContentTypes.`NoContentType`)), teh, e100c, hh)
             }
           case _ => failMessageStart("HTTP message must not contain more than one Content-Type header")
