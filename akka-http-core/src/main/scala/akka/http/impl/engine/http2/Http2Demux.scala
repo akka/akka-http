@@ -337,7 +337,10 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           pullFrameIn()
         }
 
-        override def onUpstreamFinish(): Unit = onTryComplete()
+        override def onUpstreamFinish(): Unit = {
+          onTryComplete()
+          scheduleOnce(CompletionTimeout, settings.completionTimeout)
+        }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
           ex match {
@@ -378,11 +381,14 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         if (safeToComplete) complete()
       }
       override def onAllStreamsClosed(): Unit = if (safeToComplete) complete()
-      override def onMultiplexerIdle(): Unit = if (safeToComplete) complete()
+      override def onAllDataFlushed(): Unit = if (safeToComplete) complete()
 
       private def safeToComplete = {
-        if (isServer) completing && multiplexer.isIdle && activeStreamCount() == 0
-        else completing && activeStreamCount() == 0
+        if (isServer) {
+          completing && activeStreamCount() == 0 && (!isClosed(frameOut) && multiplexer.hasFlushedAllData)
+        } else {
+          completing && activeStreamCount() == 0
+        }
       }
 
       // Customized replacement for completeStage()
@@ -408,6 +414,11 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           // marks StreamHandling as ready for completion
           onTryComplete()
           scheduleOnce(CompletionTimeout, settings.completionTimeout)
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          onTryComplete()
+          super.onUpstreamFailure(ex)
         }
       })
 

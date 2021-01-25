@@ -185,11 +185,9 @@ private[http2] object PersistentConnection {
         }
         override def onPull(): Unit = responseIn.pull()
 
-        override def onUpstreamFinish(): Unit = {
+        override def onUpstreamFinish(): Unit =
           requestOut.complete()
-          responseIn.cancel()
-          completeStage()
-        }
+
         override def onUpstreamFailure(ex: Throwable): Unit = {
           requestOut.fail(ex)
           responseIn.cancel()

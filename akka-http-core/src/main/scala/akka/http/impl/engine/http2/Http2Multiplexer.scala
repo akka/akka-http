@@ -37,7 +37,7 @@ private[http2] trait Http2Multiplexer {
 
   def maxBytesToBufferPerSubstream: Int
 
-  def isIdle: Boolean
+  def hasFlushedAllData: Boolean
 }
 
 @InternalApi
@@ -86,7 +86,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
   def pushFrameOut(event: FrameEvent): Unit
 
-  def onMultiplexerIdle(): Unit
+  def onAllDataFlushed(): Unit
 
   def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogHelper { self =>
@@ -127,7 +127,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       private var _state: MultiplexerState = Idle
 
-      def isIdle: Boolean = _state == Idle
+      def hasFlushedAllData: Boolean = allDataFlushed(_state)
+      private def allDataFlushed(state: MultiplexerState): Boolean = (state == WaitingForData || state == Idle)
 
       private def updateState(transition: MultiplexerState => MultiplexerState): Unit = {
         val oldState = _state
@@ -135,7 +136,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         _state = newState
 
         if (newState.name != oldState.name) recordStateChange(oldState.name, newState.name)
-        if (newState == Idle) onMultiplexerIdle()
+        if (allDataFlushed(newState)) onAllDataFlushed()
       }
 
       private[http2] sealed trait MultiplexerState extends Product {
