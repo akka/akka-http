@@ -17,9 +17,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.logFrames")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.withLogFrames")
 ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.unapply")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.WebSocketSettings.logFrames")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.WebSocketSettings.withLogFrames")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.WebSocketSettings.logFrames")
 
 # Internal class changes
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.apply")
