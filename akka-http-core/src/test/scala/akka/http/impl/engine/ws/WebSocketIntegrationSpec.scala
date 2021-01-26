@@ -31,6 +31,7 @@ class WebSocketIntegrationSpec extends AkkaSpec(
      akka {
        stream.materializer.debug.fuzzing-mode=off
        http.server.websocket.log-frames = on
+       http.client.websocket.log-frames = on
      }
   """) with Eventually {
 

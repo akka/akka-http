@@ -23,7 +23,7 @@ import akka.util.ByteString
 import akka.testkit._
 import akka.http.impl.util._
 
-class WebSocketClientSpec extends AkkaSpecWithMaterializer("akka.http.server.websocket.log-frames = on") {
+class WebSocketClientSpec extends AkkaSpecWithMaterializer("akka.http.client.websocket.log-frames = on") {
   "The client-side WebSocket implementation should" should {
     "establish a websocket connection when the user requests it" in new EstablishedConnectionSetup with ClientEchoes
 
