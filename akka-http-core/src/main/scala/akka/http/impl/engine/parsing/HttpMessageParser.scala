@@ -166,7 +166,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
             parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
           case Some(`h`) =>
             parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
-          case Some(`Content-Type`(ContentTypes.`NoContentType`)) =>
+          case Some(`Content-Type`(ContentTypes.`NoContentType`)) => // never encountered except when parsing conflicting headers (see below)
             parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
           case Some(x) =>
             import ConflictingContentTypeHeaderProcessingMode._
@@ -176,7 +176,6 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
               case Last          => parseHeaderLines(input, lineEnd, headers += x, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
               case NoContentType => parseHeaderLines(input, lineEnd, headers += x += h, headerCount + 1, ch, clh, Some(`Content-Type`(ContentTypes.`NoContentType`)), teh, e100c, hh)
             }
-          case _ => failMessageStart("HTTP message must not contain more than one Content-Type header")
         }
         case h: `Transfer-Encoding` => teh match {
           case None    => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), e100c, hh)
