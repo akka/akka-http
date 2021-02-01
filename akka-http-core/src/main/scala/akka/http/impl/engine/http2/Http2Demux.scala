@@ -416,10 +416,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           scheduleOnce(CompletionTimeout, settings.completionTimeout)
         }
 
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          onTryComplete()
-          super.onUpstreamFailure(ex)
-        }
       })
 
       /**
