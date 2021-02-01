@@ -4,8 +4,6 @@
 
 package akka.http.impl.engine.http2
 
-import java.net.InetSocketAddress
-
 import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
@@ -29,22 +27,24 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
-import akka.stream.testkit.TestPublisher.{ ManualProbe, Probe }
-import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestPublisher.ManualProbe
+import akka.stream.testkit.TestPublisher.Probe
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.testkit._
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
-import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import java.net.InetSocketAddress
+import javax.net.ssl.SSLContext
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 /**
  * This tests the http2 server protocol logic.
@@ -58,6 +58,7 @@ import scala.concurrent.Promise
 class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
     akka.http.server.http2.log-frames = on
+    akka.http.server.http2.completion-timeout = 500ms
   """)
   with WithInPendingUntilFixed with Eventually {
   override def failOnSevereMessages: Boolean = true
@@ -1330,7 +1331,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     "delay stage completion" should {
 
       "until in-flight responses are pushed to the network" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
-
         network.sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         user.expectRequest() shouldBe HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`)
 
@@ -1343,22 +1343,34 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       }
 
-      //      "actually complete as soon as required if there are no open (in-flight) streams" inAssertAllStagesStopped new TestSetup with NetProbes {
-      //        // Given a request...
-      //        user.emitRequest(HttpRequest(uri = "https://www.example.com/"))
-      //        network.expectDecodedResponseHEADERSPairs(1)
-      //        // ... and return response for that request (so there's nothing in-flight)
-      //        network.sendFrame(
-      //          HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
-      //        )
-      //        user.expectResponse()
-      //
-      //        // When the user completes the stream
-      //        user.requestOut.sendComplete()
-      //
-      //        // Then all stages are stopped
-      //        user.responseIn.expectComplete()
-      //      }
+      "until a timeout occurs" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        user.expectRequest() shouldBe HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`)
+
+        network.fromNet.sendComplete()
+        // timeout is configured to 500ms spec-wide (see config string at the beginning of this file)
+        network.toNet.expectNoBytes(400.millis)
+        network.expectComplete()
+      }
+
+      "actually complete as soon as required if there are no open (in-flight) streams" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        // Given a request...
+        network.sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        user.expectRequest() shouldBe HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`)
+        // ... and return response for that request (so there's nothing in-flight)
+        user.emitResponse(1, HPackSpecExamples.FirstResponse)
+
+        // ... and the response was consumed/pulled
+        val headerPayload = network.expectHeaderBlock(1)
+        headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
+
+        // When the network inlet completes
+        network.fromNet.sendComplete()
+
+        // Then all stages are stopped
+        user.requestIn.expectComplete()
+        network.toNet.expectComplete()
+      }
 
     }
 
