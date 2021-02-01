@@ -185,6 +185,10 @@ private[http2] object PersistentConnection {
         }
         override def onPull(): Unit = responseIn.pull()
 
+        // onUpstreamFinish expects "reasonable behavior" from downstream stages, i.e. that
+        // the downstream stage will eventually close all remaining inputs/outputs. Note
+        // that the PersistentConnection is often used in combination with HTTP/2 connections
+        // which to timeout if the stage completion stalls.
         override def onUpstreamFinish(): Unit =
           requestOut.complete()
 
