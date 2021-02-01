@@ -82,8 +82,8 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "report failure if bind fails" in EventFilter[BindException](occurrences = 2).intercept {
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = Http().newServerAt(hostname, port).connectionSource()
+      val port = 1025 // non-root users typically can't bind to port numbers below 1024
+      val binding = Http().newServerAt("localhost", port).connectionSource()
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
       val b1 = Await.result(binding.to(Sink.fromSubscriber(probe1)).run(), 3.seconds.dilated)
@@ -903,7 +903,6 @@ Host: example.com
 
   class TestSetup {
     val hostname = "localhost"
-    //val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
     def configOverrides = ""
 
     // automatically bind a server
