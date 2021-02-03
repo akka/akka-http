@@ -1330,7 +1330,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
     "delay stage completion" should {
 
-      "until in-flight responses are pushed to the network" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+      /*"until in-flight responses are pushed to the network" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         network.sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         user.expectRequest() shouldBe HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`)
 
@@ -1370,7 +1370,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         // Then all stages are stopped
         user.requestIn.expectComplete()
         network.toNet.expectComplete()
-      }
+      }*/
 
     }
 

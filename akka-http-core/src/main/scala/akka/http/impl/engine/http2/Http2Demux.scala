@@ -337,11 +337,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           pullFrameIn()
         }
 
-        override def onUpstreamFinish(): Unit = {
-          onTryComplete()
-          scheduleOnce(CompletionTimeout, settings.completionTimeout)
-        }
-
         override def onUpstreamFailure(ex: Throwable): Unit = {
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
@@ -375,30 +370,19 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
 
       // -----------------------------------------------------------------
-      private var completing = false
-      private def onTryComplete(): Unit = {
-        completing = true
-        if (safeToComplete) complete()
-      }
-      override def onAllStreamsClosed(): Unit = if (safeToComplete) complete()
-      override def onAllDataFlushed(): Unit = if (safeToComplete) complete()
+      override def onAllStreamsClosed(): Unit = completeIfDone()
+      override def onAllDataFlushed(): Unit = completeIfDone()
 
-      private def safeToComplete = {
-        if (isServer) {
-          completing && activeStreamCount() == 0 && (!isClosed(frameOut) && multiplexer.hasFlushedAllData)
-        } else {
-          completing && activeStreamCount() == 0
+      private def completeIfDone(): Unit = {
+        val noMoreOutgoingStreams = isClosed(substreamIn) && activeStreamCount() == 0
+        def allOutgoingDataFlushed = isClosed(frameOut) || multiplexer.hasFlushedAllData
+        if (noMoreOutgoingStreams && (!isServer || allOutgoingDataFlushed)) {
+          cancel(frameIn)
+          complete(frameOut)
+          // Using complete here (instead of a simpler `completeStage`) will make sure the buffer can be
+          // drained by the user before completely shutting down the stage finally.
+          bufferedSubStreamOutput.complete()
         }
-      }
-
-      // Customized replacement for completeStage()
-      private def complete(): Unit = {
-        cancel(substreamIn)
-        cancel(frameIn)
-        complete(frameOut)
-        // Unlike the default `completeStage`, we need to delegate to
-        // bufferedSubStreamOutput#complete(substreamOut) instead of complete(substreamOut)
-        bufferedSubStreamOutput.complete()
       }
 
       // -----------------------------------------------------------------
@@ -412,7 +396,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         override def onUpstreamFinish(): Unit = {
           // marks StreamHandling as ready for completion
-          onTryComplete()
+          completeIfDone()
           scheduleOnce(CompletionTimeout, settings.completionTimeout)
         }
 
