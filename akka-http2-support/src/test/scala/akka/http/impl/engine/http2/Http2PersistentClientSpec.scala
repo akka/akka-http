@@ -233,6 +233,27 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       }
     }
 
+    "eventually fail" should {
+      "when connecting keeps failing" inAssertAllStagesStopped new TestSetup(tls) {
+        override def clientSettings = super.clientSettings
+          .withTransport(ClientTransport.withCustomResolver((_, _) => {
+            Future.successful(new InetSocketAddress("example.invalid", 80))
+          }))
+
+        client.sendRequest(
+          HttpRequest(
+            method = HttpMethods.POST,
+            entity = "ping",
+            headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+          )
+            .addAttribute(requestIdAttr, RequestId("request-1"))
+        )
+        // need some demand on response side, otherwise, no requests will be pulled in
+        client.responsesIn.request(1)
+        client.requestsOut.expectCancellation()
+      }
+    }
+
     "not leak any stages if completed" should {
       "when waiting for a response" inAssertAllStagesStopped new TestSetup(tls) {
         client.sendRequest(
