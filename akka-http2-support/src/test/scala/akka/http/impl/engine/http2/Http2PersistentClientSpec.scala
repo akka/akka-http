@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
-import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
+import akka.http.scaladsl.model.{ AttributeKey, AttributeKeys, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -33,7 +33,7 @@ class Http2PersistentClientPlaintextSpec extends Http2PersistentClientSpec(false
 abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMaterializer(
   // FIXME: would rather use remote-address-attribute, but that doesn't work with HTTP/2
   // see https://github.com/akka/akka-http/issues/3707
-  """akka.http.server.remote-address-header = on
+  """akka.http.server.remote-address-attribute = on
      akka.http.server.preview.enable-http2 = on
      akka.http.client.http2.log-frames = on
      akka.http.client.http2.max-persistent-attempts = 5
@@ -200,7 +200,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
         override def clientSettings = super.clientSettings.withTransport(ClientTransport.withCustomResolver((host, port) => {
           if (first) {
             first = false
-            // First request returns an address where we are not listening::
+            // First request returns an address where we are not listening
             Future.successful(new InetSocketAddress("example.invalid", 80))
           } else
             Future.successful(server.binding.localAddress)
@@ -276,7 +276,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
     }
 
     /** Port of tcp connection as determined by remote-address attribute */
-    def clientPort: Int = request.header[headers.`Remote-Address`].get.address.getPort
+    def clientPort: Int = request.attribute(AttributeKeys.remoteAddress).get.getPort
   }
 
   class TestSetup(tls: Boolean) {

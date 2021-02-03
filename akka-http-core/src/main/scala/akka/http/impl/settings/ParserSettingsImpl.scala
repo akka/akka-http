@@ -5,7 +5,7 @@
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.scaladsl.settings.ParserSettings.{ CookieParsingMode, ErrorLoggingVerbosity, IllegalResponseHeaderValueProcessingMode, IllegalResponseHeaderNameProcessingMode }
+import akka.http.scaladsl.settings.ParserSettings.{ ConflictingContentTypeHeaderProcessingMode, CookieParsingMode, ErrorLoggingVerbosity, IllegalResponseHeaderValueProcessingMode, IllegalResponseHeaderNameProcessingMode }
 import akka.util.ConstantFun
 import com.typesafe.config.Config
 
@@ -17,30 +17,31 @@ import akka.http.scaladsl.settings.ParserSettings
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class ParserSettingsImpl(
-  maxUriLength:                             Int,
-  maxMethodLength:                          Int,
-  maxResponseReasonLength:                  Int,
-  maxHeaderNameLength:                      Int,
-  maxHeaderValueLength:                     Int,
-  maxHeaderCount:                           Int,
-  maxContentLengthSetting:                  Option[Long],
-  maxToStrictBytes:                         Long,
-  maxChunkExtLength:                        Int,
-  maxChunkSize:                             Int,
-  uriParsingMode:                           Uri.ParsingMode,
-  cookieParsingMode:                        CookieParsingMode,
-  illegalHeaderWarnings:                    Boolean,
-  ignoreIllegalHeaderFor:                   Set[String],
-  errorLoggingVerbosity:                    ErrorLoggingVerbosity,
-  illegalResponseHeaderNameProcessingMode:  IllegalResponseHeaderNameProcessingMode,
-  illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode,
-  headerValueCacheLimits:                   Map[String, Int],
-  includeTlsSessionInfoHeader:              Boolean,
-  includeSslSessionAttribute:               Boolean,
-  modeledHeaderParsing:                     Boolean,
-  customMethods:                            String => Option[HttpMethod],
-  customStatusCodes:                        Int => Option[StatusCode],
-  customMediaTypes:                         MediaTypes.FindCustom)
+  maxUriLength:                               Int,
+  maxMethodLength:                            Int,
+  maxResponseReasonLength:                    Int,
+  maxHeaderNameLength:                        Int,
+  maxHeaderValueLength:                       Int,
+  maxHeaderCount:                             Int,
+  maxContentLengthSetting:                    Option[Long],
+  maxToStrictBytes:                           Long,
+  maxChunkExtLength:                          Int,
+  maxChunkSize:                               Int,
+  uriParsingMode:                             Uri.ParsingMode,
+  cookieParsingMode:                          CookieParsingMode,
+  illegalHeaderWarnings:                      Boolean,
+  ignoreIllegalHeaderFor:                     Set[String],
+  errorLoggingVerbosity:                      ErrorLoggingVerbosity,
+  illegalResponseHeaderNameProcessingMode:    IllegalResponseHeaderNameProcessingMode,
+  illegalResponseHeaderValueProcessingMode:   IllegalResponseHeaderValueProcessingMode,
+  conflictingContentTypeHeaderProcessingMode: ConflictingContentTypeHeaderProcessingMode,
+  headerValueCacheLimits:                     Map[String, Int],
+  includeTlsSessionInfoHeader:                Boolean,
+  includeSslSessionAttribute:                 Boolean,
+  modeledHeaderParsing:                       Boolean,
+  customMethods:                              String => Option[HttpMethod],
+  customStatusCodes:                          Int => Option[StatusCode],
+  customMediaTypes:                           MediaTypes.FindCustom)
   extends akka.http.scaladsl.settings.ParserSettings {
 
   require(maxUriLength > 0, "max-uri-length must be > 0")
@@ -98,6 +99,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
       ErrorLoggingVerbosity(c.getString("error-logging-verbosity")),
       IllegalResponseHeaderNameProcessingMode(c.getString("illegal-response-header-name-processing-mode")),
       IllegalResponseHeaderValueProcessingMode(c.getString("illegal-response-header-value-processing-mode")),
+      ConflictingContentTypeHeaderProcessingMode(c.getString("conflicting-content-type-header-processing-mode")),
       cacheConfig.entrySet.asScala.iterator.map(kvp => kvp.getKey -> cacheConfig.getInt(kvp.getKey)).toMap,
       c.getBoolean("tls-session-info-header"),
       c.getBoolean("ssl-session-attribute"),

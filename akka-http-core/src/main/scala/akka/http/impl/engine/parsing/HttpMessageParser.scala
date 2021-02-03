@@ -19,6 +19,7 @@ import headers._
 import HttpProtocols._
 import ParserOutput._
 import akka.annotation.InternalApi
+import akka.http.scaladsl.settings.ParserSettings.ConflictingContentTypeHeaderProcessingMode
 
 /**
  * INTERNAL API
@@ -161,9 +162,20 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
           case _         => failMessageStart("HTTP message must not contain more than one Content-Length header")
         }
         case h: `Content-Type` => cth match {
-          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
-          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
-          case _         => failMessageStart("HTTP message must not contain more than one Content-Type header")
+          case None =>
+            parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
+          case Some(`h`) =>
+            parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
+          case Some(`Content-Type`(ContentTypes.`NoContentType`)) => // never encountered except when parsing conflicting headers (see below)
+            parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
+          case Some(x) =>
+            import ConflictingContentTypeHeaderProcessingMode._
+            settings.conflictingContentTypeHeaderProcessingMode match {
+              case Error         => failMessageStart("HTTP message must not contain more than one Content-Type header")
+              case First         => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
+              case Last          => parseHeaderLines(input, lineEnd, headers += x, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
+              case NoContentType => parseHeaderLines(input, lineEnd, headers += x += h, headerCount + 1, ch, clh, Some(`Content-Type`(ContentTypes.`NoContentType`)), teh, e100c, hh)
+            }
         }
         case h: `Transfer-Encoding` => teh match {
           case None    => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), e100c, hh)
