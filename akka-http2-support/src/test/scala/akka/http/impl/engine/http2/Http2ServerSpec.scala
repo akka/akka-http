@@ -1327,53 +1327,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       })
 
     }
-
-    "delay stage completion" should {
-
-      /*"until in-flight responses are pushed to the network" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
-        network.sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        user.expectRequest() shouldBe HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`)
-
-        network.fromNet.sendComplete()
-
-        user.emitResponse(1, HPackSpecExamples.FirstResponse)
-        val headerPayload = network.expectHeaderBlock(1)
-        headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
-        network.expectComplete()
-
-      }
-
-      "until a timeout occurs" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
-        network.sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        user.expectRequest() shouldBe HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`)
-
-        network.fromNet.sendComplete()
-        // timeout is configured to 500ms spec-wide (see config string at the beginning of this file)
-        network.toNet.expectNoBytes(400.millis)
-        network.expectComplete()
-      }
-
-      "actually complete as soon as required if there are no open (in-flight) streams" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
-        // Given a request...
-        network.sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        user.expectRequest() shouldBe HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`)
-        // ... and return response for that request (so there's nothing in-flight)
-        user.emitResponse(1, HPackSpecExamples.FirstResponse)
-
-        // ... and the response was consumed/pulled
-        val headerPayload = network.expectHeaderBlock(1)
-        headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
-
-        // When the network inlet completes
-        network.fromNet.sendComplete()
-
-        // Then all stages are stopped
-        user.requestIn.expectComplete()
-        network.toNet.expectComplete()
-      }*/
-
-    }
-
   }
 
   implicit class InWithStoppedStages(name: String) {

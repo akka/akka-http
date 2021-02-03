@@ -394,12 +394,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           tryPullSubStreams()
         }
 
-        override def onUpstreamFinish(): Unit = {
-          // marks StreamHandling as ready for completion
-          completeIfDone()
-          scheduleOnce(CompletionTimeout, settings.completionTimeout)
-        }
-
+        override def onUpstreamFinish(): Unit =
+          if (isServer) // on the server side conservatively shut everything down if user handler completes prematurely
+            super.onUpstreamFinish()
+          else { // on the client side allow ongoing responses to be delivered for a while even if requests are done
+            completeIfDone()
+            scheduleOnce(CompletionTimeout, settings.completionTimeout)
+          }
       })
 
       /**
