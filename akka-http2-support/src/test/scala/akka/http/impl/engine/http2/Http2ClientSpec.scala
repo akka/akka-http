@@ -786,10 +786,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         user.responseIn.expectComplete()
       }
 
-      "until in-flight streams deliver the request and responses are received" inAssertAllStagesStopped new TestSetup(
+      "until in-flight streaming responses are received" inAssertAllStagesStopped new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
       ) with NetProbes {
-        implicit val ctx = system.dispatcher
         // Given several in-flight requests...
         val request = HttpRequest(uri = "https://www.example.com/")
         user.emitRequest(request)
@@ -839,14 +838,47 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
       }
 
-      "until in-flight responses with chunked payload are fully received and consumed" ignore {
-        // Assert that not only the response but the full entity is available
+      "until in-flight streaming requests are fully sent (after response is already complete) (uncommon)" inAssertAllStagesStopped new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
+      ) with NetProbes {
+        val requestStreamProbe = TestPublisher.probe[ByteString]()
+        val requestEntity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStreamProbe))
+
+        // Given several in-flight requests...
+        val request = HttpRequest(method = HttpMethods.POST, uri = "https://www.example.com/", entity = requestEntity)
+        user.emitRequest(request)
+
+        network.expectDecodedResponseHEADERSPairs(1, endStream = false)
+
+        // ... and some request already got their response (canary round-trip)
+        network.sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        user.expectResponse()
+
+        requestStreamProbe.sendNext(ByteString("hello"))
+        network.expectDATA(1, endStream = false, ByteString("hello"))
+
+        // now closing user out
+        user.requestOut.sendComplete()
+
+        // stage needs to stay alive to send rest of request entity
+        requestStreamProbe.sendNext(ByteString("world"))
+        network.expectDATA(1, endStream = false, ByteString("world"))
+
+        // queueing more data in the multiplexer without immediately fetching it on the network
+        requestStreamProbe.sendNext(ByteString("almost"))
+        requestStreamProbe.sendNext(ByteString(" done"))
+        requestStreamProbe.sendComplete()
+        network.expectDATA(1, endStream = true, ByteString("almost done"))
+
+        // Completion doesn't happen until entities are sent
+        user.responseIn.expectComplete()
+        network.toNet.expectComplete()
+        network.fromNet.expectCancellation()
       }
 
       "until a timeout occurs" inAssertAllStagesStopped new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
       ) with NetProbes {
-        implicit val ctx = system.dispatcher
         // Given several in-flight requests...
         val request = HttpRequest(uri = "https://www.example.com/")
         user.emitRequest(request)

@@ -376,7 +376,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       private def completeIfDone(): Unit = {
         val noMoreOutgoingStreams = isClosed(substreamIn) && activeStreamCount() == 0
         def allOutgoingDataFlushed = isClosed(frameOut) || multiplexer.hasFlushedAllData
-        if (noMoreOutgoingStreams && (!isServer || allOutgoingDataFlushed)) {
+        if (noMoreOutgoingStreams && allOutgoingDataFlushed) {
           cancel(frameIn)
           complete(frameOut)
           // Using complete here (instead of a simpler `completeStage`) will make sure the buffer can be
