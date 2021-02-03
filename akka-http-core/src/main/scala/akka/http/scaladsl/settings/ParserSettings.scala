@@ -125,7 +125,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
     self.copy(illegalResponseHeaderNameProcessingMode = newValue)
   def withIllegalResponseHeaderValueProcessingMode(newValue: ParserSettings.IllegalResponseHeaderValueProcessingMode): ParserSettings =
     self.copy(illegalResponseHeaderValueProcessingMode = newValue)
-  def withConflictingResponseContentTypeHeaderProcessingMode(newValue: ParserSettings.ConflictingContentTypeHeaderProcessingMode): ParserSettings =
+  def withConflictingContentTypeHeaderProcessingMode(newValue: ParserSettings.ConflictingContentTypeHeaderProcessingMode): ParserSettings =
     self.copy(conflictingContentTypeHeaderProcessingMode = newValue)
 }
 
