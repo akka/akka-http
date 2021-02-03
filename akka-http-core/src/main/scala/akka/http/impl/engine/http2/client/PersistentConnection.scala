@@ -100,19 +100,19 @@ private[http2] object PersistentConnection {
           override def onDownstreamFinish(): Unit = ()
         })
         responseIn.setHandler(new InHandler {
-          override def onPush(): Unit = ()
+          override def onPush(): Unit = throw new IllegalStateException("no response push expected while connecting")
           override def onUpstreamFinish(): Unit = ()
           override def onUpstreamFailure(ex: Throwable): Unit = ()
         })
 
-        override def onPush(): Unit = ()
+        override def onPush(): Unit = () // Pull might have happened before the connection failed. Element is kept in slot.
 
         override def onPull(): Unit = {
           if (!isAvailable(requestIn) && !hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
             pull(requestIn)
         }
 
-        val onConnected = getAsyncCallback[Unit] { (_) =>
+        val onConnected = getAsyncCallback[Unit] { _ =>
           val newState = new Connected(requestOut, responseIn)
           become(newState)
           if (requestOutPulled) {
@@ -122,13 +122,13 @@ private[http2] object PersistentConnection {
         }
         val onFailed = getAsyncCallback[Throwable] { cause =>
           responseIn.cancel()
-          requestOut.fail(new RuntimeException("connection broken"))
+          requestOut.fail(new RuntimeException("connection broken", cause))
 
           if (connectsLeft.contains(0)) {
-            failStage(cause)
+            failStage(new RuntimeException(s"Connection failed after $maxAttempts attempts", cause))
           } else {
             setHandler(requestIn, Unconnected)
-            log.info(s"failed, trying to connect again: ${cause.getMessage}${connectsLeft.map(n => s" ($n left)").getOrElse("")}")
+            log.info(s"Connection attempt failed: ${cause.getMessage}. Trying to connect again${connectsLeft.map(n => s" ($n attempts left)").getOrElse("")}.")
             connect(connectsLeft)
           }
         }
