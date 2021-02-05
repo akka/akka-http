@@ -178,8 +178,17 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
             }
         }
         case h: `Transfer-Encoding` => teh match {
-          case None    => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), e100c, hh)
-          case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, Some(x append h.encodings), e100c, hh)
+          case None =>
+            val chunkedIndex = h.encodings.indexOf(TransferEncodings.chunked)
+            if (chunkedIndex == -1 || chunkedIndex == h.encodings.size - 1)
+              parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), e100c, hh)
+            else
+              failMessageStart("HTTP message must not contain additional Transfer-Encoding entries after 'chunked'")
+
+          case Some(x) =>
+            // https://tools.ietf.org/html/rfc2616#section-3.6
+            if (x.isChunked) failMessageStart("HTTP message must not contain additional Transfer-Encoding entries after 'chunked'")
+            else parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, Some(x append h.encodings), e100c, hh)
         }
         case h: Connection => ch match {
           case None    => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, Some(h), clh, cth, teh, e100c, hh)

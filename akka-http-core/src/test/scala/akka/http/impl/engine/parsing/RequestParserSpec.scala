@@ -155,17 +155,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
 
-      "with a funky `Transfer-Encoding` header" in new Test {
-        """PUT / HTTP/1.1
-          |Transfer-Encoding: foo, chunked, bar
-          |Host: x
-          |
-          |""" should parseTo(HttpRequest(PUT, "/", List(`Transfer-Encoding`(
-          TransferEncodings.Extension("foo"),
-          TransferEncodings.chunked, TransferEncodings.Extension("bar")), Host("x"))))
-        closeAfterResponseCompletion shouldEqual Seq(false)
-      }
-
       "with several identical `Content-Type` headers" in new Test {
         """GET /data HTTP/1.1
           |Host: x
@@ -351,6 +340,29 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
         `Transfer-Encoding`(TransferEncodings.Extension("fancy")),
         Host("ping")), HttpEntity.Chunked(`application/pdf`, source(LastChunk))))
       closeAfterResponseCompletion shouldEqual Seq(false)
+    }
+
+    "fail when parsing a chunked request with additional transfer encodings after chunked in multiple headers" in new Test {
+      """PATCH /data HTTP/1.1
+        |Transfer-Encoding: chunked
+        |Transfer-Encoding: fancy
+        |Content-Type: application/pdf
+        |Host: ping
+        |
+        |0
+        |
+        |""" should parseToError(BadRequest, ErrorInfo("HTTP message must not contain additional Transfer-Encoding entries after 'chunked'"))
+    }
+
+    "fail when parsing a chunked request with additional transfer encodings after chunked in one header" in new Test {
+      """PATCH /data HTTP/1.1
+        |Transfer-Encoding: chunked, fancy
+        |Content-Type: application/pdf
+        |Host: ping
+        |
+        |0
+        |
+        |""" should parseToError(BadRequest, ErrorInfo("HTTP message must not contain additional Transfer-Encoding entries after 'chunked'"))
     }
 
     "support `rawRequestUriHeader` setting" in new Test {
