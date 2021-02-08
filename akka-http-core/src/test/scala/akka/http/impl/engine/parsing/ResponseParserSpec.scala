@@ -332,7 +332,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
         """HTTP/1.1 200 OK
           |Transfer-Encoding: fancy, chunked
           |
-          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("Multiple HTTP Transfer-Encoding entries not supported")))
+          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported")))
       }
 
       "multiple transfer encoding headers" in new Test {
@@ -340,7 +340,15 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
           |Transfer-Encoding: chunked
           |Transfer-Encoding: fancy
           |
-          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("Multiple HTTP Transfer-Encoding entries not supported")))
+          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported")))
+      }
+
+      "transfer encoding chunked and a content length" in new Test {
+        """HTTP/1.1 200 OK
+          |Transfer-Encoding: chunked
+          |Content-Length: 7
+          |
+          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("A chunked response must not contain a Content-Length header")))
       }
     }
   }

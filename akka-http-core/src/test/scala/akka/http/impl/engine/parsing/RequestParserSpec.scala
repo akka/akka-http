@@ -663,7 +663,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |
           |0
           |
-          |""" should parseToError(BadRequest, ErrorInfo("HTTP unsupported Transfer-Encoding entry 'fancy'"))
+          |""" should parseToError(BadRequest, ErrorInfo("Unsupported Transfer-Encoding 'fancy'"))
       }
 
       "a chunked request with additional transfer encodings" in new Test {
@@ -674,7 +674,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |
           |0
           |
-          |""" should parseToError(BadRequest, ErrorInfo("Multiple HTTP Transfer-Encoding entries not supported"))
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
       }
 
       "a chunked request with additional transfer encodings after chunked in multiple headers" in new Test {
@@ -686,7 +686,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |
           |0
           |
-          |""" should parseToError(BadRequest, ErrorInfo("Multiple HTTP Transfer-Encoding entries not supported"))
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
       }
 
       "a chunked request with additional transfer encodings after chunked in one header" in new Test {
@@ -697,7 +697,19 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |
           |0
           |
-          |""" should parseToError(BadRequest, ErrorInfo("Multiple HTTP Transfer-Encoding entries not supported"))
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
+      }
+
+      "a chunked request with a content length" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: chunked
+          |Content-Type: application/pdf
+          |Content-Length: 7
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("A chunked request must not contain a Content-Length header"))
       }
     }
   }
