@@ -1,0 +1,10 @@
+# parsing internals only
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.parsing.HttpResponseParser.parseHeaderLines")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpResponseParser.addTransferEncodingWithChunkedPeeled")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.parsing.HttpResponseParser.parseHeaderLines$default$8")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.parsing.HttpResponseParser.parseEntity")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.parsing.HttpMessageParser.parseEntity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpMessageParser.parseHeaderLines")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpMessageParser.parseHeaderLines$default$8")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpMessageParser.addTransferEncodingWithChunkedPeeled")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpMessageParser.parseEntity")
