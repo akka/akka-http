@@ -283,40 +283,6 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "response with additional transfer encodings" in new Test {
-        Seq("""HTTP/1.1 200 OK
-          |Transfer-Encoding: fancy, chunked
-          |Cont""", """ent-Type: application/pdf
-          |
-          |""") should generalMultiParseTo(
-          Right(HttpResponse(
-            headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
-            entity = HttpEntity.Chunked(`application/pdf`, source()))),
-          Left(EntityStreamError(ErrorInfo("Entity stream truncation. The HTTP parser was receiving an entity when the underlying connection was closed unexpectedly."))))
-        closeAfterResponseCompletion shouldEqual Seq(false)
-      }
-
-      "response with additional transfer encodings after chunked in multiple headers" in new Test {
-        Seq("""HTTP/1.1 200 OK
-              |Transfer-Encoding: chunked
-              |Transfer-Encoding: fancy
-              |Cont""", """ent-Type: application/pdf
-                          |
-                          |""") should generalMultiParseTo(
-          Left(MessageStartError(BadRequest, ErrorInfo("HTTP message must not contain additional Transfer-Encoding entries after 'chunked'"))))
-        // FIXME what should closeAfterResponseCompletion be here, should we verify?
-      }
-
-      "response with additional transfer encodings after chunked in one header" in new Test {
-        Seq("""HTTP/1.1 200 OK
-              |Transfer-Encoding: chunked, fancy
-              |Cont""", """ent-Type: application/pdf
-                          |
-                          |""") should generalMultiParseTo(
-          Left(MessageStartError(BadRequest, ErrorInfo("HTTP message must not contain additional Transfer-Encoding entries after 'chunked'"))))
-        // FIXME what should closeAfterResponseCompletion be here, should we verify?
-      }
-
       "a response configured to override a built-in media type" in new Test {
         // Override the application/json media type and give it an open instead of fixed charset.
         // This allows us to support various third-party agents which use an explicit charset.
@@ -360,6 +326,21 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
           |Content-Length: 0
           |
           |""" should parseToError(MessageStartError(400: StatusCode, ErrorInfo("HTTP message must not contain more than one Content-Type header")))
+      }
+
+      "multiple transfer encodings in one header" in new Test {
+        """HTTP/1.1 200 OK
+          |Transfer-Encoding: fancy, chunked
+          |
+          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("Multiple HTTP Transfer-Encoding entries not supported")))
+      }
+
+      "multiple transfer encoding headers" in new Test {
+        """HTTP/1.1 200 OK
+          |Transfer-Encoding: chunked
+          |Transfer-Encoding: fancy
+          |
+          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("Multiple HTTP Transfer-Encoding entries not supported")))
       }
     }
   }
