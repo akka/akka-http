@@ -72,6 +72,11 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
          git add docs/akka-http/ api/akka-http/ japi/akka-http/
          git commit -m "Akka HTTP $VERSION$"
          ```
+    - [ ] push changes to the [remote git repository](https://github.com/akka/doc.akka.io)
+         ```
+         cd ~/www
+         git push origin master
+         ```
   - [ ] Merge draft news item at https://github.com/akka/akka.io/pulls
   - [ ] Wait until the release page is published
   - [ ] Create the GitHub [release](https://github.com/akka/akka-http/releases/tag/v$VERSION$) with the tag, title and release description linking to announcement, release notes and milestone.
