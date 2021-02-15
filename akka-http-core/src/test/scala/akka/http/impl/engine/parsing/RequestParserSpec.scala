@@ -155,17 +155,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
 
-      "with a funky `Transfer-Encoding` header" in new Test {
-        """PUT / HTTP/1.1
-          |Transfer-Encoding: foo, chunked, bar
-          |Host: x
-          |
-          |""" should parseTo(HttpRequest(PUT, "/", List(`Transfer-Encoding`(
-          TransferEncodings.Extension("foo"),
-          TransferEncodings.chunked, TransferEncodings.Extension("bar")), Host("x"))))
-        closeAfterResponseCompletion shouldEqual Seq(false)
-      }
-
       "with several identical `Content-Type` headers" in new Test {
         """GET /data HTTP/1.1
           |Host: x
@@ -339,17 +328,15 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
       }
     }
 
-    "properly parse a chunked request with additional transfer encodings" in new Test {
+    "properly parse a chunked transfer encoding request" in new Test {
       """PATCH /data HTTP/1.1
-        |Transfer-Encoding: fancy, chunked
+        |Transfer-Encoding: chunked
         |Content-Type: application/pdf
         |Host: ping
         |
         |0
         |
-        |""" should parseTo(HttpRequest(PATCH, "/data", List(
-        `Transfer-Encoding`(TransferEncodings.Extension("fancy")),
-        Host("ping")), HttpEntity.Chunked(`application/pdf`, source(LastChunk))))
+        |""" should parseTo(HttpRequest(PATCH, "/data", List(Host("ping")), HttpEntity.Chunked(`application/pdf`, source(LastChunk))))
       closeAfterResponseCompletion shouldEqual Seq(false)
     }
 
@@ -666,6 +653,63 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |Host: x
           |
           |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
+      }
+
+      "a request with an unsupported transfer encoding" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: fancy
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("Unsupported Transfer-Encoding 'fancy'"))
+      }
+
+      "a chunked request with additional transfer encodings" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: fancy, chunked
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
+      }
+
+      "a chunked request with additional transfer encodings after chunked in multiple headers" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: chunked
+          |Transfer-Encoding: fancy
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
+      }
+
+      "a chunked request with additional transfer encodings after chunked in one header" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: chunked, fancy
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
+      }
+
+      "a chunked request with a content length" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: chunked
+          |Content-Type: application/pdf
+          |Content-Length: 7
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("A chunked request must not contain a Content-Length header"))
       }
     }
   }
