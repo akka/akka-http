@@ -182,7 +182,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
             h.encodings match {
               case Seq(TransferEncodings.chunked) =>
                 // A single chunked is the only one we support
-                parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, true, e100c, hh)
+                parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, isChunked = true, e100c, hh)
               case Seq(unknown) =>
                 failMessageStart(s"Unsupported Transfer-Encoding '${unknown.name}'")
               case _ =>
