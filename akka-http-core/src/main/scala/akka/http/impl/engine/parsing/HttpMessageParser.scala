@@ -49,7 +49,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
   protected def onBadProtocol(): Nothing
   protected def parseMessage(input: ByteString, offset: Int): HttpMessageParser.StateResult
   protected def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
-                            clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+                            clh: Option[`Content-Length`], cth: Option[`Content-Type`], isChunked: Boolean,
                             expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): HttpMessageParser.StateResult
 
   protected final def initialHeaderBuffer: ListBuffer[HttpHeader] =
@@ -126,7 +126,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
   @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
                                                 headerCount: Int = 0, ch: Option[Connection] = None,
                                                 clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
-                                                teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
+                                                isChunked: Boolean = false, e100c: Boolean = false,
                                                 hh: Boolean = false): StateResult =
     if (headerCount < settings.maxHeaderCount) {
       var lineEnd = 0
@@ -138,46 +138,58 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
           case NotEnoughDataException => null
         }
       resultHeader match {
-        case null => continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, ch, clh, cth, teh, e100c, hh))
+        case null => continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, ch, clh, cth, isChunked, e100c, hh))
 
         case EmptyHeader =>
           val close = HttpMessage.connectionCloseExpected(protocol, ch)
           setCompletionHandling(CompletionIsEntityStreamError)
-          parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
+          parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, isChunked, e100c, hh, close)
 
         case h: `Content-Length` => clh match {
-          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh)
-          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
+          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, isChunked, e100c, hh)
+          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, isChunked, e100c, hh)
           case _         => failMessageStart("HTTP message must not contain more than one Content-Length header")
         }
         case h: `Content-Type` => cth match {
-          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
-          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
+          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), isChunked, e100c, hh)
+          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, isChunked, e100c, hh)
           case _         => failMessageStart("HTTP message must not contain more than one Content-Type header")
         }
-        case h: `Transfer-Encoding` => teh match {
-          case None    => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), e100c, hh)
-          case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, Some(x append h.encodings), e100c, hh)
-        }
+        case h: `Transfer-Encoding` =>
+          if (!isChunked) {
+            h.encodings match {
+              case Seq(TransferEncodings.chunked) =>
+                // A single chunked is the only one we support
+                parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, isChunked = true, e100c, hh)
+              case Seq(unknown) =>
+                failMessageStart(s"Unsupported Transfer-Encoding '${unknown.name}'")
+              case _ =>
+                failMessageStart("Multiple Transfer-Encoding entries not supported")
+
+            }
+          } else {
+            // only allow one 'chunked'
+            failMessageStart("Multiple Transfer-Encoding entries not supported")
+          }
         case h: Connection => ch match {
-          case None    => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, Some(h), clh, cth, teh, e100c, hh)
-          case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, Some(x append h.tokens), clh, cth, teh, e100c, hh)
+          case None    => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, Some(h), clh, cth, isChunked, e100c, hh)
+          case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, Some(x append h.tokens), clh, cth, isChunked, e100c, hh)
         }
         case h: Host =>
-          if (!hh) parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh = true)
+          if (!hh) parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, isChunked, e100c, hh = true)
           else failMessageStart("HTTP message must not contain more than one Host header")
 
-        case h: Expect => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c = true, hh)
+        case h: Expect => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, isChunked, e100c = true, hh)
 
-        case h         => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
+        case h         => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, isChunked, e100c, hh)
       }
     } else failMessageStart(s"HTTP message contains more than the configured limit of ${settings.maxHeaderCount} headers")
 
   // work-around for compiler complaining about non-tail-recursion if we inline this method
   private def parseHeaderLinesAux(headers: ListBuffer[HttpHeader], headerCount: Int, ch: Option[Connection],
-                                  clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+                                  clh: Option[`Content-Length`], cth: Option[`Content-Type`], isChunked: Boolean,
                                   e100c: Boolean, hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
-    parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, teh, e100c, hh)
+    parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, isChunked, e100c, hh)
 
   protected final def parseFixedLengthBody(
     remainingBodyBytes: Long,
@@ -348,12 +360,6 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         case EntityStreamError(info) => throw EntityStreamException(info)
       }
       HttpEntity.Chunked(contentType(cth), chunks)
-    }
-
-  protected final def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
-    teh.withChunkedPeeled match {
-      case Some(x) => x :: headers
-      case None    => headers
     }
 
   protected final def setCompletionHandling(completionHandling: CompletionHandling): Unit =

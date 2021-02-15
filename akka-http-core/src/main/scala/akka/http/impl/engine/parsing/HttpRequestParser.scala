@@ -165,7 +165,7 @@ private[http] final class HttpRequestParser(
 
     // http://tools.ietf.org/html/rfc7230#section-3.3
     override def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
-                             clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+                             clh: Option[`Content-Length`], cth: Option[`Content-Type`], isChunked: Boolean,
                              expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
       if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
         def emitRequestStart(
@@ -186,40 +186,35 @@ private[http] final class HttpRequestParser(
           emit(RequestStart(method, uri, protocol, allHeaders, createEntity, expect100continue, closeAfterResponseCompletion))
         }
 
-        teh match {
-          case None =>
-            val contentLength = clh match {
-              case Some(`Content-Length`(len)) => len
-              case None                        => 0
-            }
-            if (contentLength == 0) {
-              emitRequestStart(emptyEntity(cth))
-              setCompletionHandling(HttpMessageParser.CompletionOk)
-              startNewMessage(input, bodyStart)
-            } else if (!method.isEntityAccepted) {
-              failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
-            } else if (contentLength <= input.size - bodyStart) {
-              val cl = contentLength.toInt
-              emitRequestStart(strictEntity(cth, input, bodyStart, cl))
-              setCompletionHandling(HttpMessageParser.CompletionOk)
-              startNewMessage(input, bodyStart + cl)
-            } else {
-              emitRequestStart(defaultEntity(cth, contentLength))
-              parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
-            }
-
-          case Some(_) if !method.isEntityAccepted =>
+        if (!isChunked) {
+          val contentLength = clh match {
+            case Some(`Content-Length`(len)) => len
+            case None                        => 0
+          }
+          if (contentLength == 0) {
+            emitRequestStart(emptyEntity(cth))
+            setCompletionHandling(HttpMessageParser.CompletionOk)
+            startNewMessage(input, bodyStart)
+          } else if (!method.isEntityAccepted) {
             failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
-
-          case Some(te) =>
-            val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
-            if (te.isChunked) {
-              if (clh.isEmpty) {
-                emitRequestStart(chunkedEntity(cth), completedHeaders)
-                parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
-              } else failMessageStart("A chunked request must not contain a Content-Length header.")
-            } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
-              expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
+          } else if (contentLength <= input.size - bodyStart) {
+            val cl = contentLength.toInt
+            emitRequestStart(strictEntity(cth, input, bodyStart, cl))
+            setCompletionHandling(HttpMessageParser.CompletionOk)
+            startNewMessage(input, bodyStart + cl)
+          } else {
+            emitRequestStart(defaultEntity(cth, contentLength))
+            parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
+          }
+        } else {
+          if (!method.isEntityAccepted) {
+            failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
+          } else {
+            if (clh.isEmpty) {
+              emitRequestStart(chunkedEntity(cth), headers)
+              parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
+            } else failMessageStart("A chunked request must not contain a Content-Length header")
+          }
         }
       } else failMessageStart("Request is missing required `Host` header")
 

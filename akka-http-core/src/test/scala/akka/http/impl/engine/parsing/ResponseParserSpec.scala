@@ -107,20 +107,6 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "a response funky `Transfer-Encoding` header" in new Test {
-        override def parserSettings: ParserSettings =
-          super.parserSettings.withCustomStatusCodes(ServerOnTheMove)
-
-        """HTTP/1.1 331 Server on the move
-          |Transfer-Encoding: foo, chunked, bar
-          |Content-Length: 0
-          |
-          |""" should parseTo(HttpResponse(ServerOnTheMove, List(`Transfer-Encoding`(
-          TransferEncodings.Extension("foo"),
-          TransferEncodings.chunked, TransferEncodings.Extension("bar")))))
-        closeAfterResponseCompletion shouldEqual Seq(false)
-      }
-
       "a response with one header, a body, but no Content-Length header" in new Test {
         """HTTP/1.0 404 Not Found
           |Host: api.example.com
@@ -231,19 +217,6 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "response with additional transfer encodings" in new Test {
-        Seq("""HTTP/1.1 200 OK
-          |Transfer-Encoding: fancy, chunked
-          |Cont""", """ent-Type: application/pdf
-          |
-          |""") should generalMultiParseTo(
-          Right(HttpResponse(
-            headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
-            entity = HttpEntity.Chunked(`application/pdf`, source()))),
-          Left(EntityStreamError(ErrorInfo("Entity stream truncation. The HTTP parser was receiving an entity when the underlying connection was closed unexpectedly."))))
-        closeAfterResponseCompletion shouldEqual Seq(false)
-      }
-
       "a response configured to override a built-in media type" in new Test {
         // Override the application/json media type and give it an open instead of fixed charset.
         // This allows us to support various third-party agents which use an explicit charset.
@@ -278,6 +251,38 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
       "a too-long response status reason" in new Test {
         Seq("HTTP/1.1 204 12345678", s"90123456789012${newLine}") should generalMultiParseTo(Left(
           MessageStartError(400: StatusCode, ErrorInfo("Response reason phrase exceeds the configured limit of 21 characters"))))
+      }
+
+      "conflicting Content-Type headers" in new Test {
+        """HTTP/1.1 200 OK
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Type: application/json; charset=utf-8
+          |Content-Length: 0
+          |
+          |""" should parseToError(MessageStartError(400: StatusCode, ErrorInfo("HTTP message must not contain more than one Content-Type header")))
+      }
+
+      "multiple transfer encodings in one header" in new Test {
+        """HTTP/1.1 200 OK
+          |Transfer-Encoding: fancy, chunked
+          |
+          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported")))
+      }
+
+      "multiple transfer encoding headers" in new Test {
+        """HTTP/1.1 200 OK
+          |Transfer-Encoding: chunked
+          |Transfer-Encoding: fancy
+          |
+          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported")))
+      }
+
+      "transfer encoding chunked and a content length" in new Test {
+        """HTTP/1.1 200 OK
+          |Transfer-Encoding: chunked
+          |Content-Length: 7
+          |
+          |""" should parseToError(MessageStartError(BadRequest, ErrorInfo("A chunked response must not contain a Content-Length header")))
       }
     }
   }
