@@ -122,6 +122,7 @@ abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHe
 
   final override def name = companion.name
   final override def lowercaseName = name.toRootLowerCase
+  
 }
 
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -773,7 +774,8 @@ final case class Range(rangeUnit: RangeUnit, ranges: immutable.Seq[ByteRange]) e
 
 final case class RawHeader(name: String, value: String) extends jm.headers.RawHeader {
   if (name == null) throw new IllegalArgumentException("name must not be null")
-  if (value == null) throw new IllegalArgumentException("value must not be null")
+  if (value == null || HttpHeader.containsLineBreak(value))
+    throw new IllegalArgumentException("value must not be null or contain line break characters")
   def renderInRequests = true
   def renderInResponses = true
   val lowercaseName = name.toRootLowerCase

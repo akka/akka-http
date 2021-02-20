@@ -95,6 +95,10 @@ object HttpHeader {
       }
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
 
+  def containsLineBreak(s: String): Boolean = {
+    s.contains("\n") || s.contains("\r") || s.contains("\r\n")
+  }
+
   /** INTERNAL API */
   @InternalApi
   private[akka] def fastFind[T >: Null <: jm.HttpHeader](clazz: Class[T], headers: immutable.Seq[HttpHeader]): OptionVal[T] = {
