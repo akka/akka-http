@@ -119,7 +119,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
 
   // http://tools.ietf.org/html/rfc7230#section-3.3
   protected final def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
-                                  clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
+                                  clh: Option[`Content-Length`], cth: Option[`Content-Type`], isChunked: Boolean,
                                   expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
 
     def emitResponseStart(
@@ -170,41 +170,37 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
         }
         case HttpMethods.CONNECT =>
           finishEmptyResponse()
-        case _ => teh match {
-          case None => clh match {
-            case Some(`Content-Length`(contentLength)) =>
-              if (contentLength == 0) finishEmptyResponse()
-              else if (contentLength <= input.size - bodyStart) {
-                val cl = contentLength.toInt
-                emitResponseStart(strictEntity(cth, input, bodyStart, cl))
-                setCompletionHandling(HttpMessageParser.CompletionOk)
-                emit(MessageEnd)
-                startNewMessage(input, bodyStart + cl)
-              } else {
-                emitResponseStart(defaultEntity(cth, contentLength))
-                parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
-              }
-            case None =>
-              emitResponseStart {
-                StreamedEntityCreator { entityParts =>
-                  val data = entityParts.collect { case EntityPart(bytes) => bytes }
-                  HttpEntity.CloseDelimited(contentType(cth), data)
+        case _ =>
+          if (!isChunked) {
+            clh match {
+              case Some(`Content-Length`(contentLength)) =>
+                if (contentLength == 0) finishEmptyResponse()
+                else if (contentLength <= input.size - bodyStart) {
+                  val cl = contentLength.toInt
+                  emitResponseStart(strictEntity(cth, input, bodyStart, cl))
+                  setCompletionHandling(HttpMessageParser.CompletionOk)
+                  emit(MessageEnd)
+                  startNewMessage(input, bodyStart + cl)
+                } else {
+                  emitResponseStart(defaultEntity(cth, contentLength))
+                  parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
                 }
-              }
-              setCompletionHandling(HttpMessageParser.CompletionOk)
-              parseToCloseBody(input, bodyStart, totalBytesRead = 0)
+              case None =>
+                emitResponseStart {
+                  StreamedEntityCreator { entityParts =>
+                    val data = entityParts.collect { case EntityPart(bytes) => bytes }
+                    HttpEntity.CloseDelimited(contentType(cth), data)
+                  }
+                }
+                setCompletionHandling(HttpMessageParser.CompletionOk)
+                parseToCloseBody(input, bodyStart, totalBytesRead = 0)
+            }
+          } else {
+            if (clh.isEmpty) {
+              emitResponseStart(chunkedEntity(cth), headers)
+              parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
+            } else failMessageStart("A chunked response must not contain a Content-Length header")
           }
-
-          case Some(te) =>
-            val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
-            if (te.isChunked) {
-              if (clh.isEmpty) {
-                emitResponseStart(chunkedEntity(cth), completedHeaders)
-                parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
-              } else failMessageStart("A chunked response must not contain a Content-Length header.")
-            } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
-              expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
-        }
       }
     } else finishEmptyResponse()
   }
