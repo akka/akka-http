@@ -122,7 +122,7 @@ abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHe
 
   final override def name = companion.name
   final override def lowercaseName = name.toRootLowerCase
-  
+
 }
 
 import akka.http.impl.util.JavaMapping.Implicits._
