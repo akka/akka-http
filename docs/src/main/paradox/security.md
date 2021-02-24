@@ -17,6 +17,10 @@ to ensure that a fix can be provided without delay.
 
 ## Fixed Security Vulnerabilities
 
+### Fixed in Akka HTTP 10.2.4 & 10.1.14
+
+* @ref:[Incorrect handling of Transfer-Encoding header](security/2021-02-24-incorrect-handling-of-Transfer-Encoding-header.md)
+
 ### Fixed in Akka HTTP 10.1.5 & 10.0.14
 
 * @ref:[Denial of Service via unlimited decoding with decodeRequest directive ("zip bomb")](security/2018-09-05-denial-of-service-via-decodeRequest.md)
@@ -36,6 +40,7 @@ to ensure that a fix can be provided without delay.
 
 @@@ index
 
+ * [2020](security/2021.md)
  * [2018](security/2018.md)
  * [2017](security/2017.md)
  * [2016](security/2016.md)
