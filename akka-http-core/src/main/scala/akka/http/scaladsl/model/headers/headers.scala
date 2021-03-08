@@ -1008,8 +1008,7 @@ object TE extends ModeledCompanion[TE] {
 }
 final case class TE(acceptableEncodings: immutable.Seq[TransferEncoding]) extends jm.headers.TE with RequestHeader {
   def append(encodings: immutable.Seq[TransferEncoding]) = TE(this.acceptableEncodings ++ encodings)
-  import `Transfer-Encoding`.encodingsRenderer
-  def renderValue[R <: Rendering](r: R): r.type = r ~~ acceptableEncodings
+  def renderValue[R <: Rendering](r: R): r.type = r.~~(acceptableEncodings)(`Transfer-Encoding`.encodingsRenderer)
   protected def companion = TE
 
   /** Java API */
