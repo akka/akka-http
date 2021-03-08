@@ -98,8 +98,12 @@ object HttpHeader {
       }
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
 
-  // https://tools.ietf.org/html/rfc5234#appendix-B.1
-  def validateHeaderValue(value: String): Boolean = CRLF.matchesAny(value)
+  // https://tools.ietf.org/html/rfc7230#section-3.2.6
+  def validateHeaderValue(value: String): Unit =
+    if (value == null)
+      throw new IllegalArgumentException("value must not be null")
+    else if (CRLF.matchesAny(value))
+      throw new IllegalArgumentException("Value must not contain CR or LF characters")
 
   /** INTERNAL API */
   @InternalApi
