@@ -629,6 +629,121 @@ class HttpServerSpec extends AkkaSpec(
       netOut.expectComplete()
     })
 
+    "produce a `100 Continue` response when requested by a `Default` entity and some data sent early" in assertAllStagesStopped(new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Expect: 100-continue
+             |Content-Length: 24
+             |
+             |0123456789ABCDEF""") // only 16 bytes get send at first
+      inside(expectRequest()) {
+        case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 24, data), _) =>
+          val dataProbe = TestSubscriber.manualProbe[ByteString]()
+          data.to(Sink.fromSubscriber(dataProbe)).run()
+          val dataSub = dataProbe.expectSubscription()
+          netOut.expectNoBytes(50.millis.dilated)
+          dataSub.request(1) // triggers `100 Continue` response
+          expectResponseWithWipedDate(
+            """HTTP/1.1 100 Continue
+              |Server: akka-http/test
+              |Date: XXXX
+              |
+              |""")
+          dataProbe.expectNext(ByteString("0123456789ABCDEF"))
+          dataSub.request(1)
+          dataProbe.expectNoMessage(50.millis)
+          send("GHIJKLMN") // send missing 8 bytes
+          dataProbe.expectNext(ByteString("GHIJKLMN"))
+          dataSub.request(1)
+          dataProbe.expectComplete()
+          responses.sendNext(HttpResponse(entity = "Yeah"))
+          expectResponseWithWipedDate(
+            """HTTP/1.1 200 OK
+              |Server: akka-http/test
+              |Date: XXXX
+              |Content-Type: text/plain; charset=UTF-8
+              |Content-Length: 4
+              |
+              |Yeah""")
+      }
+
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "not produce a `100 Continue` response for a `Strict` entity when all data sent early" in assertAllStagesStopped(new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Expect: 100-continue
+             |Content-Length: 16
+             |
+             |0123456789ABCDEF""")
+
+      val HttpRequest(POST, _, _, entity @ Strict(ContentType(`application/octet-stream`, None), data), _) = expectRequest()
+      data shouldEqual ByteString("0123456789ABCDEF")
+
+      responses.sendNext(HttpResponse(entity = "Yeah"))
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 4
+          |
+          |Yeah""")
+
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "not produce a `100 Continue` response if `Strict` entity is empty because `Content-Length` header is 0" in assertAllStagesStopped(new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Expect: 100-continue
+             |Content-Length: 0
+             |
+             |""")
+
+      val HttpRequest(POST, _, _, entity @ Strict(ContentTypes.NoContentType, ByteString.empty), _) = expectRequest()
+      responses.sendNext(HttpResponse(entity = "Yeah"))
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 4
+          |
+          |Yeah""")
+
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "not produce a `100 Continue` response if `Strict` entity is empty because `Content-Length` header is missing" in assertAllStagesStopped(new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Expect: 100-continue
+             |
+             |""")
+
+      val HttpRequest(POST, _, _, entity @ Strict(ContentTypes.NoContentType, ByteString.empty), _) = expectRequest()
+      responses.sendNext(HttpResponse(entity = "Yeah"))
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 4
+          |
+          |Yeah""")
+
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
     "produce a `100 Continue` response when requested by a `Chunked` entity" in assertAllStagesStopped(new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
