@@ -25,7 +25,7 @@ Based on our assessment, the CVSS score of this vulnerability is 4.2 (Medium), b
 A vulnerable Akka HTTP server will accept a malformed message as described above and hand it over to the user. If the user application proxies this message to another server unchanged
 and that server also accepts that message but interprets it as two HTTP messages, the second message has reached the second server without having been inspected by the proxy.
 
-Note that Akka HTTP itself does currently not provide functionality to proxy requests to other servers (but it's easy to build).
+Note that Akka HTTP itself currently does not provide functionality to proxy requests to other servers (but it's easy to build).
 
 In summary, these conditions must be true for an application to be vulnerable:
 
