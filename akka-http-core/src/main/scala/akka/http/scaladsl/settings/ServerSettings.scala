@@ -56,6 +56,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def terminationDeadlineExceededResponse: HttpResponse
   def parsingErrorHandler: String
   def streamCancellationDelay: FiniteDuration
+  def aroundRequest: Boolean
 
   /* Java APIs */
 
@@ -85,6 +86,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
     terminationDeadlineExceededResponse
   override def getParsingErrorHandler: String = parsingErrorHandler
   override def getStreamCancellationDelay: FiniteDuration = streamCancellationDelay
+  override def getAroundRequest: Boolean = aroundRequest
   // ---
 
   // override for more specific return type

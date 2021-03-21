@@ -407,12 +407,18 @@ private[http] object HttpServerBluePrint {
         def onPush(): Unit =
           grab(requestParsingIn) match {
             case r: RequestStart =>
-              openRequests = openRequests.enqueue(r)
+              val rs0 =
+                if (settings.aroundRequest) {
+                  r.copy(attributes = r.attributes + (AttributeKeys.onCompleteAccess -> new OnCompleteAccess()))
+                } else {
+                  r
+                }
+              openRequests = openRequests.enqueue(rs0)
               messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
-              val rs = if (r.expect100Continue) {
+              val rs = if (rs0.expect100Continue) {
                 oneHundredContinueResponsePending = true
-                r.copy(createEntity = with100ContinueTrigger(r.createEntity))
-              } else r
+                rs0.copy(createEntity = with100ContinueTrigger(r.createEntity))
+              } else rs0
               push(requestPrepOut, rs)
             case MessageEnd =>
               messageEndPending = false
@@ -445,13 +451,18 @@ private[http] object HttpServerBluePrint {
 
           val response0 = grab(httpResponseIn)
           val response =
-            if (response0.entity.isStrict) response0 // response stream cannot fail
+            if (response0.entity.isStrict) {
+              aroundRequestComplete(requestStart, response0)
+              response0
+            } // response stream cannot fail
             else response0.mapEntity { e =>
               val (newEntity, fut) = HttpEntity.captureTermination(e)
               fut.onComplete {
                 case Failure(ex) =>
+                  aroundRequestComplete(requestStart, response0)
                   log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
-                case _ => // ignore
+                case _ =>
+                  aroundRequestComplete(requestStart, response0)
               }(ExecutionContexts.sameThreadExecutionContext)
               newEntity
             }
@@ -511,6 +522,11 @@ private[http] object HttpServerBluePrint {
           setHandler(responseCtxOut, GraphStageLogic.EagerTerminateOutput)
         }
       })
+
+      def aroundRequestComplete(start: RequestStart, response: HttpResponse) =
+        if (settings.aroundRequest) {
+          start.attributes.get(AttributeKeys.onCompleteAccess) foreach { case v: OnCompleteAccess => v.onComplete.foreach(_(response)) }
+        }
 
       def finishWithIllegalRequestError(status: StatusCode, info: ErrorInfo): Unit = {
         val errorResponse = JavaMapping.toScala(parsingErrorHandler.handle(status, info, log, settings))
