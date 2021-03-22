@@ -387,8 +387,16 @@ private[http] object HttpServerBluePrint {
               openRequests = openRequests.enqueue(r)
               messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
               val rs = if (r.expect100Continue) {
-                oneHundredContinueResponsePending = true
-                r.copy(createEntity = with100ContinueTrigger(r.createEntity))
+                r.createEntity match {
+                  case StrictEntityCreator(HttpEntity.Strict(_, _)) =>
+                    // This covers two cases:
+                    // - Either: The strict entity got all its data send already, so no need to wait for more data
+                    // - Or: The strict entity contains no data (Content-Length header value was 0 or it did not exist), the client will not send any data
+                    r
+                  case _ =>
+                    oneHundredContinueResponsePending = true
+                    r.copy(createEntity = with100ContinueTrigger(r.createEntity))
+                }
               } else r
               push(requestPrepOut, rs)
             case MessageEnd =>
