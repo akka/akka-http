@@ -13,6 +13,7 @@ import com.lightbend.paradox.apidoc.ApidocPlugin.autoImport.apidocRootPackage
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
+  sonatypeProfileName := "com.typesafe",
   organizationName := "Lightbend",
   organizationHomepage := Some(url("https://www.lightbend.com")),
   homepage := Some(url("https://akka.io")),
