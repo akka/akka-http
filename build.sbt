@@ -73,7 +73,7 @@ lazy val root = Project(
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
     unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench, httpScalafix, httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests),
@@ -249,7 +249,7 @@ lazy val httpTests = project("akka-http-tests")
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test",
     httpScalafixRules % ScalafixConfig)
-  .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release tests
+  .enablePlugins(NoPublish) // don't release tests
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
@@ -263,13 +263,13 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
   .dependsOn(http, http2Support % "compile->compile,test")
   .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
-  .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release benchs
+  .enablePlugins(NoPublish) // don't release benchs
   .disablePlugins(MimaPlugin)
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .settings(commonSettings)
   .enablePlugins(NoPublish/*, AggregatePRValidation*/)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
@@ -287,7 +287,7 @@ lazy val httpSprayJson =
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .settings(commonSettings)
   .enablePlugins(NoPublish/*, AggregatePRValidation*/)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
@@ -333,7 +333,7 @@ def httpMarshallersJavaSubproject(name: String) =
 
 lazy val httpScalafix = project("akka-http-scalafix")
   .enablePlugins(NoPublish)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .aggregate(httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests)
 
 lazy val httpScalafixRules =
@@ -348,7 +348,7 @@ lazy val httpScalafixTestInput =
     .dependsOn(http)
     .addAkkaModuleDependency("akka-stream")
     .enablePlugins(NoPublish)
-    .disablePlugins(BintrayPlugin, MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
+    .disablePlugins(MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
     .settings(
       addCompilerPlugin(scalafixSemanticdb),
       scalacOptions ++= List(
@@ -363,12 +363,12 @@ lazy val httpScalafixTestOutput =
     .dependsOn(http)
     .addAkkaModuleDependency("akka-stream")
     .enablePlugins(NoPublish)
-    .disablePlugins(BintrayPlugin, MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
+    .disablePlugins(MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
 
 lazy val httpScalafixTests =
   Project(id = "akka-http-scalafix-tests", base = file("akka-http-scalafix/scalafix-tests"))
     .enablePlugins(NoPublish)
-    .disablePlugins(BintrayPlugin, MimaPlugin)
+    .disablePlugins(MimaPlugin)
     .settings(
       skip in publish := true,
       libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % Dependencies.scalafixVersion % Test cross CrossVersion.full,
@@ -386,7 +386,7 @@ lazy val httpScalafixTests =
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-typed", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-multi-node-testkit", "provided", AkkaDependency.docs)
@@ -459,7 +459,7 @@ lazy val docs = project("docs")
 
 lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akka-http-compatibility-tests"))
   .enablePlugins(NoPublish)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(
     libraryDependencies ++= Seq(

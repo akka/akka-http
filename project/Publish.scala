@@ -15,24 +15,10 @@ object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
   override def projectSettings = Seq(
+    skip in publish := true,
     publishArtifact := false,
     publish := {},
     publishLocal := {},
     whitesourceIgnore := true,
-  )
-
-}
-
-object Publish extends AutoPlugin {
-  import bintray.BintrayPlugin
-  import bintray.BintrayPlugin.autoImport._
-
-  override def trigger = allRequirements
-  override def requires = BintrayPlugin
-
-  override def projectSettings = Seq(
-    bintrayOrganization := Some("akka"),
-    bintrayPackage := "akka-http",
-    bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven")
   )
 }
