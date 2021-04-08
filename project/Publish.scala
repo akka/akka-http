@@ -5,8 +5,10 @@
 package akka
 
 import scala.language.postfixOps
-import sbt._, Keys._
+import sbt.{Def, _}
+import Keys._
 import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
+import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
 /**
  * For projects that are not published.
@@ -15,24 +17,19 @@ object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
   override def projectSettings = Seq(
+    skip in publish := true,
     publishArtifact := false,
     publish := {},
     publishLocal := {},
     whitesourceIgnore := true,
   )
-
 }
 
 object Publish extends AutoPlugin {
-  import bintray.BintrayPlugin
-  import bintray.BintrayPlugin.autoImport._
+  override def requires = plugins.JvmPlugin
+  override def trigger = AllRequirements
 
-  override def trigger = allRequirements
-  override def requires = BintrayPlugin
-
-  override def projectSettings = Seq(
-    bintrayOrganization := Some("akka"),
-    bintrayPackage := "akka-http",
-    bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven")
+  override def projectSettings: Seq[Def.Setting[_]] = Seq(
+    sonatypeProfileName := "com.typesafe",
   )
 }
