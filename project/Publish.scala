@@ -5,8 +5,10 @@
 package akka
 
 import scala.language.postfixOps
-import sbt._, Keys._
+import sbt.{Def, _}
+import Keys._
 import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
+import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
 /**
  * For projects that are not published.
@@ -20,5 +22,14 @@ object NoPublish extends AutoPlugin {
     publish := {},
     publishLocal := {},
     whitesourceIgnore := true,
+  )
+}
+
+object Publish extends AutoPlugin {
+  override def requires = plugins.JvmPlugin
+  override def trigger = AllRequirements
+
+  override def projectSettings: Seq[Def.Setting[_]] = Seq(
+    sonatypeProfileName := "com.typesafe",
   )
 }
