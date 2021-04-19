@@ -44,9 +44,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 - [ ] Wait until [master build finished](https://travis-ci.org/akka/akka-http/builds/) after merging the release notes
 - [ ] Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description linking to announcement, release notes and milestone.
 - [ ] Check that the Travis CI [release build](https://travis-ci.org/akka/akka-http/branches) has executed successfully
-- [ ] Go to https://bintray.com/akka/maven/akka-http and select the just released version
-- [ ] Go to the Maven Central tab and sync with Sonatype. You may need to log in and switch to the 'Old Look' for this.
-- [ ] Log in to Sonatype to Close the staging repository (optional, should happen automatically if selected in Bintray)
+- [ ] Log in to Sonatype to Close the staging repository
 - [ ] Notify Telemetry / Play team to check against staged artifacts
 - [ ] Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-quickstart-scala.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxx"`
 - [ ] Release the staging repository to Maven Central.

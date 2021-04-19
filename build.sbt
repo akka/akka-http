@@ -43,7 +43,7 @@ lazy val root = Project(
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish, DeployRsync, AggregatePRValidation)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
     unidocProjectExcludes := Seq(parsing),
@@ -138,7 +138,6 @@ lazy val parsing = project("akka-parsing")
   .settings(
     scalacOptions --= Seq("-Xfatal-warnings", "-Xlint", "-Ywarn-dead-code"), // disable warnings for parboiled code
     scalacOptions += "-language:_",
-    unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
   )
   .settings(scalaMacroSupport)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
@@ -242,7 +241,7 @@ lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
-  .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release tests
+  .enablePlugins(NoPublish) // don't release tests
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
@@ -256,13 +255,13 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
-  .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release benchs
+  .enablePlugins(NoPublish) // don't release benchs
   .disablePlugins(MimaPlugin)
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .settings(commonSettings)
   .enablePlugins(NoPublish/*, AggregatePRValidation*/)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
@@ -280,7 +279,7 @@ lazy val httpSprayJson =
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .settings(commonSettings)
   .enablePlugins(NoPublish/*, AggregatePRValidation*/)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
@@ -322,9 +321,10 @@ def httpMarshallersJavaSubproject(name: String) =
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-actor-typed", "provided", includeIfScalaVersionMatches = _ != "2.11") // no akka-actor-typed in 2.11 any more
+
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
@@ -379,7 +379,7 @@ lazy val docs = project("docs")
 
 lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akka-http-compatibility-tests"))
   .enablePlugins(NoPublish)
-  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(
     libraryDependencies ++= Seq(

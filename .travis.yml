@@ -1,3 +1,8 @@
+version: ~> 1.0
+
+os: linux
+dist: xenial
+
 language: scala
 
 scala:
@@ -8,14 +13,22 @@ sudo: false
 before_install:
   # make comparing to origin/master work
   - git remote set-branches --add origin master && git fetch
-  # using jabba for custom jdk management
-  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.1/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install adopt@1.8-0
+  - whereis java
+  - java -version
+  # Initialize launcher from the correct URL so that later sbt runs work out of the box.
+  # Travis' default sbt launch script refers to `repo.scala-sbt.org` for downloading the launcher
+  # which currently doesn't work any more
+  - sbt -sbt-launch-repo https://repo1.maven.org/maven2 exit
 
 addons:
   apt:
+    sources:
+      # Official debian package for AdoptOpenJDK from https://adoptopenjdk.net/installation.html#linux-pkg
+      - sourceline: deb https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ xenial main
+        key_url: https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
     packages:
-    - graphviz
+      - graphviz
+      - adoptopenjdk-8-hotspot
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
@@ -24,13 +37,17 @@ before_cache:
 cache:
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
-    - $HOME/.jabba/jdk
+    - $HOME/.sbt
     - $HOME/.cache/coursier
 
+env:
+  global:
+    - JAVA_HOME=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64
+    - PATH=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64/bin:$PATH
+    # override default (release to maven central) to only close and go to staging repo
+    - CI_SONATYPE_RELEASE="; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
+
 script:
-  - jabba use "adopt@1.8-0"
-  - java -version
   - sbt -jvm-opts .jvmopts-travis "$CMD"
 
 jobs:
@@ -40,7 +57,8 @@ jobs:
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
     - stage: publish
-      env: CMD="+publish"
+      env: CMD="ci-release"
+      name: artifacts to bintray
 
 stages:
   - name: mima
@@ -50,16 +68,3 @@ stages:
 
   - name: publish
     if: repo=akka/akka-http AND ( ( (branch = master OR branch = release-10.1) AND type = push ) OR tag =~ ^v )
-
-env:
-  global:
-    # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
-    - secure: "O3bUB/B1CusDUGTcGaMndQK2nPw+XK5GMrecQ9awLCtnX6bkqSdX18pK9l2XP8r7yR+DYyFoyknf1rJ6JiybsBrc3udNpSBBTTG+4EMAMK12kxiQmy82JEepZrD/BkGtmMhzD6X41s+J2tY0XDa6p/Xqbr2Hb+oTQ7+WXdhfwyfdrszUcEL/t1IrdI2jgh37NJlBMuoHUWOXanpVv6KR7Kfjahd34k79bbfEK/8sX4kv7YU7uZWe/UxJse1b767sbijAqInFm+3n3lxv8eqnbbaAcdTuZBYkwkf5uZcXmV/Px1xupPBt1C6k49vfogT148KxJ7CzYawAC3oZq10m8I/6NREPUpoLN6ie+K9g3P+FcvCbKju8sxaoYmxNW+V+r6B/I+mXrbpD5YHT7WpvfF9gZt3HJk3V6/+Cu9vvgrnTGkUYymTWymEGRRq5TB2Q+/IDR7Qq8XTwkzA7UwcQ3WBotVY7TQKMEp9LvILTBnP0GZiUfeq+OXzLUN7sjsaEevD1dV0ZkIeILAFDwEmzPXKlmV70+IIM+Km8uCZ4XJ6GOklnEar+zltwBdFPrcvC6Pcb77O02DeMz773Uu9PxXgdUcjsW06v0wUO+5KXB9Y+6+9SJtW0gs5BtaiUnY7d38YPoXWq9Gm+sNUnJe5NH/nBdjF/O8xqAhUgs0OPApE="
-    # encrypt with: travis encrypt BINTRAY_USER=...
-    - secure: "cF1u1wF3Jhn5sfMATA6PltwUdfohX4TMtqluqWtZ5ZhKknIphMa9qmwpyVjaymO9dbEoBTejhGJdvxtwezkHE9K2rYGGP5o5BnOBNrbwY6+Z3FP+woHLUJrLKCL5cQvW+ReVmms7NyE4kH/2ngqXYb9MPHbs8RMXvdjclrZVWaIdyEE1TMb9TBI4F/oEpBY2Gee1eN3n6V7C01prCmrBdA0PHzqDyWIr/Axy+6ok6Fmou1bysSGjYl1aTRZFng/nNBO/smm6HoC9Pxj+uesZjaF0SaS/oce5ke9xefyW93lr024A300sJzVAEpexLgBBGMTupd3hLBRygPbY0B9yH4jPIElM0gRNt65BiV12PNhvRTyFm+OUwDPFiCjD8ttsZWAix5/81nIODMqu1HqViqdY5XQhmJmVjfjXSZHi+IDia2LDWxtq+bJ17YHnCtoGCGHTYbaYuwaESx23HZ90GvSwCtG5p8e7HSB0BUkgDj9BcjI1WQZRoIh8/KFBR04G1hHWt8cLKvefAiN//d+8RaoEza1THkZZqfYYr91QEDJ1xxtUnjKIc24i8FTSvDUJUkCF5xviKiaDzhdaBIIhJDuFJDgzDfQa7ttktkAFuY553fFxHYQVSK2l/FA2WojfEOzlbegKEXe5INfL9AgWLddnVdXtWulAf3hCb7v/WJo="
-    # encrypt with: travis encrypt BINTRAY_PASS=...
-    - secure: "ZBEa9eGU+jb6kXh1D53hw0oDIVss1vGMb0boBnQkoGnUI3DLnWbL0x+xNL6yH7V9trl7VnO2XWS+aT+PkY0yZHw1oymwiEwd0wESSrEyY7SwdjYrod+91Y8Yn1e7kainfXs2mH8P0kpKahw/kHZp0o0mEoucYj05zPNAkb2sK56+rzvJ5ohV8fF1k79xLpuJ6RMhDKX2ip/+DGUn5t9SD+tshRY134yh7A8BKcUtPEp30VTaA64+EuVweNtqdonsgCAAoyEei5D6id6tCyqGGnN1c+UXSW5QHunM2LTVGaCi9W3Zm71HCB34YSVsTtTW3CxSWIjsA2yi4HypojPebH3sUpDiBMtbqt2fVpMHjcVDRX5x+p3L2n7GKcWBDTDiCS7YXktzTvZPRyDNL2EZIPpOBDdAAEIkUNP9JjpH47S6lCjsLRFk1JPeBLSfwn3GqUOsvErNDw+VEZ4FQ8wJhptnJcjSUT4pqaRp3KoVMjA1SqajOHelMaIEw1qkH1mvGebVwXVkd86IfY+L6roJi/NwBbSvpovMCfZTTEpApc4AldBFapno3aWHpVkAYWTpv1d39cmzGo3UwKmSAqHMcJPGAB87gW8lzNU8LkCesQ6q46rRT5hJVdbAzf8H4TgYXwObJ6mp6U5IfdXwEcoELdIFI+CMVo09/WteJfW8bB8="
-    # encrypt with: travis encrypt SONATYPE_USER=...
-    - secure: "OCg+rBabEUkV4wi4Bd5FwJzJKC5ED/12y/WY4HGvcdYv4M3Skd6uPrgGKc+daYY1Hmk+uDb3G5mqpqdjrb1uAA/bWuTqVUoeXKp/nlegRChK04bX38sVe5P88/nTIrar0SWTgpa2HfAc6q1cNVSnD60SyOM2FzJ5IPpejT94ajwdAARbZYpKP8tGGtU7Mf0+JmJ+yBJW1tM2vOrLYaqXZ+KE4x7QLHRtTLbeuUmgAbzhah6oVyoG5RwX2bRr2+4lwEGVEEHws/qzWt6eOYSx2v5HNL2XDy5ISXoPjsVuexf1G5nwspoKR8sdzQasCUyMOSTYR6iNdj62NjAYNI+MOqANx0pcC7opUNyuAwJYbvZQXYRLLBFZTL+tDBV7LKutJxbdDcSPh4aMKHRoyTXklDfPP+a4EJuzHbcI5q0b9GktGadfTYVca4TjVnu4pP9R/lXZUTYBzWFpe/Tsy963aDWY5mioZIDshP2XDUR9aol6yQghHkIT4dtglmTuoLUT+v35i0P6YZFUnA37kfBN/x4X0FzYJa0X/zg+K9aGmuq4wxhnAPVYgFzsz2hN4AewnORiyMcm5FrG3daJcWDUc6SB14ckcvuokGcPlLPkPEtStM9l47UEI7RZ8llFoqkFjA37yHtXBupfgIP+GzErNLDFtvtvEqtOYS75urWzmyk="
-    # encrypt with: travis encrypt SONATYPE_PASS=...
-    - secure: "X7oP/QFd6LxlsCMOLj75G5KefxmpyUnKpPA1+T5WU2jD3XXsU1JrxeVj3NSIWXNT/QuzcOBPT982kKClAGgmyOVcVfcHwxxL2a5zQRFGEx5Z14wQo83b45oLAFXnaTZQjLHzY2kzIaEkpEuAqmMzzWNgIo2smJEYYy2YbenWTGCj8Lj6pyV7XbV9vvXIcNoSTA0HBsTCGz+gif2WAxh5aASsRjdpkk7fTQRwLibulvDbYccSJTGlE4P8YzVh6wlS2pzbfYBKWCVP0v4/xmOAdcglShCt1JcZmutomhtZtxyMU7zeSC6b0E7ZwP9wrtVSrRRQcxcB+Ai/N0h62bI6LhzHzd18FClNpYlTPvrJB5+SLAMrEbX/5COW3UTqt1yAhCDDw99SNJChtUrLJxJaG9Z+UnINT8vickP5Qd5YWnWED/Sn0OhzBNec2ini8rivDVrm4SEpvtfDxf+v4dAhHNMKE/E6xjvoe9InCba8VSMydfXWR00BTV9ePIKw3XzUbYtSmuZMdkZg2MzxS+kwhgTTwzlVGeo31zgIcNQgqkcyTE8FQLMiOXgO6xYRVDsOF7Ge6izQ2p/Fcx6dzIoH5hhQULJIA3Bj1RnlSssYHbta4kex8j8utHznY81qpvKAYwQiZ3AbKW305Gucb+3/ekMxsmkKm0+PRSBG/DUaAFo="
