@@ -28,6 +28,10 @@ cache:
     - $HOME/.jabba/jdk
     - $HOME/.cache/coursier
 
+env:
+  # override default (release to maven central) to only close and go to staging repo
+  - CI_SONATYPE_RELEASE="; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
+
 script:
   - jabba use "adopt@1.8-0"
   - java -version
@@ -40,7 +44,8 @@ jobs:
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
     - stage: publish
-      env: CMD="+publish"
+      env: CMD="ci-release"
+      name: artifacts to bintray
 
 stages:
   - name: mima
