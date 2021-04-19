@@ -16,6 +16,10 @@ before_install:
   - git remote set-branches --add origin master && git fetch
   - whereis java
   - java -version
+  # Initialize launcher from the correct URL so that later sbt runs work out of the box.
+  # Travis' default sbt launch script refers to `repo.scala-sbt.org` for downloading the launcher
+  # which currently doesn't work any more
+  - sbt -sbt-launch-repo https://repo1.maven.org/maven2 exit
 
 addons:
   apt:
@@ -34,7 +38,7 @@ before_cache:
 cache:
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
+    - $HOME/.sbt
     - $HOME/.cache/coursier
 
 env:
