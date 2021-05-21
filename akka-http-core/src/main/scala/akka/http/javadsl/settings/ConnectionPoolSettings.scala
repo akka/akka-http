@@ -31,6 +31,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getBaseConnectionBackoff: FiniteDuration = baseConnectionBackoff
   def getMaxConnectionBackoff: FiniteDuration = maxConnectionBackoff
   def getIdleTimeout: Duration = idleTimeout
+  def getMaxConnectionIdleTimeout: Duration = maxConnectionIdleTimeout
   def getConnectionSettings: ClientConnectionSettings = connectionSettings
 
   @ApiMayChange
@@ -56,6 +57,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings
   def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings
+  def withMaxConnectionIdleTimeout(newValue: Duration): ConnectionPoolSettings
   def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copyDeep(_.withConnectionSettings(newValue.asScala), connectionSettings = newValue.asScala)
 

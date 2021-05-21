@@ -28,6 +28,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def baseConnectionBackoff: FiniteDuration
   def maxConnectionBackoff: FiniteDuration
   def idleTimeout: Duration
+  def maxConnectionIdleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
   def maxConnectionLifetime: Duration
   private[akka] def hostOverrides: immutable.Seq[(Regex, ConnectionPoolSettings)]
@@ -65,6 +66,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copyDeep(_.withMaxConnectionBackoff(newValue), maxConnectionBackoff = newValue)
   override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copyDeep(_.withPipeliningLimit(newValue), pipeliningLimit = newValue)
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copyDeep(_.withIdleTimeout(newValue), idleTimeout = newValue)
+  override def withMaxConnectionIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copyDeep(_.withMaxConnectionIdleTimeout(newValue), idleTimeout = newValue)
   override def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copyDeep(_.withMaxConnectionLifetime(newValue), maxConnectionLifetime = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copyDeep(_.withConnectionSettings(newValue), connectionSettings = newValue)
 
