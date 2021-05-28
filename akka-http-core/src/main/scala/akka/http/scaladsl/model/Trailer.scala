@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2021 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.scaladsl.model
 
 import akka.http.javadsl.{ model => jm }
