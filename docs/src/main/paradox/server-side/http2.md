@@ -75,6 +75,23 @@ For the reason this approach is known as h2c with
 [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2
 support.
 
+## Trailing headers
+
+Like in the [HTTP/1.1 'Chunked' transfer encoding](https://datatracker.ietf.org/doc/html/rfc7230#section-4.1.2),
+HTTP/2 supports a [trailer part](https://httpwg.org/specs/rfc7540.html#rfc.section.8.1) containing headers
+after the body. Akka HTTP currently doesn't expose the trailing headers of the request. For the response, you
+can either model the trailing headers as the @scala[@scaladoc[HttpEntity.LastChunk](akka.http.scaladsl.model.HttpEntity.LastChunk)]@java[last chunk]
+of a @scala[@scaladoc[HttpEntity.Chunked](akka.http.scaladsl.model.HttpEntity.Chunked)]@java[chunked] response entity, or use the
+@apidoc[trailer](AttributeKeys$) attribute:
+
+Scala
+:   @@snip[Http2Spec.scala](/docs/src/test/scala/docs/http/scaladsl/Http2Spec.scala) { #trailingHeaders }
+
+Java
+:   @@snip[Http2Test.java](/docs/src/test/java/docs/http/javadsl/Http2Test.java) { #trailingHeaders }
+
+Having both a `trailingHeaders` attribute and a `LastChunk` element is not supported.
+
 ## Testing with cURL
 
 At this point you should be able to connect, but HTTP/2 may still not be available.

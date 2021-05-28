@@ -55,7 +55,11 @@ trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSen
     encodeHeaderPairs(headerPairsForHeaders(headers))
 
   def headersForRequest(request: HttpRequest): Seq[HttpHeader] =
-    headerPairsForRequest(request).map[HttpHeader]({ case (k, v) => RawHeader(k, v) })
+    headerPairsForRequest(request).map {
+      case (name, value) =>
+        val header: HttpHeader = RawHeader(name, value)
+        header
+    }
 
   def headersForResponse(response: HttpResponse): Seq[HttpHeader] =
     Seq(

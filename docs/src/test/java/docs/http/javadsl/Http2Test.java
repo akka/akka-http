@@ -9,6 +9,12 @@ import java.util.concurrent.CompletionStage;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.HttpsConnectionContext;
+//#trailingHeaders
+import akka.http.javadsl.model.Trailer;
+import akka.http.javadsl.model.headers.RawHeader;
+import static akka.http.javadsl.model.AttributeKeys.trailer;
+
+//#trailingHeaders
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.japi.function.Function;
@@ -60,6 +66,10 @@ class Http2Test {
             .http2WithPriorKnowledge();
     //#http2ClientWithPriorKnowledge
 
-
+    //#trailingHeaders
+    HttpResponse.create()
+            .withStatus(200)
+            .addAttribute(trailer, Trailer.create().addHeader(RawHeader.create("name", "value")));
+    //#trailingHeaders
   }
 }

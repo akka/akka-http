@@ -78,8 +78,8 @@ private[http2] sealed abstract class MessageRendering[R <: HttpMessage] extends 
     val streamId = nextStreamId(r)
     val headersFrame = ParsedHeadersFrame(streamId, endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
     val trailingHeadersFrame: Option[ParsedHeadersFrame] =
-      r.attribute(AttributeKeys.trailingHeaders) match {
-        case Some(headers) => Some(ParsedHeadersFrame(streamId, true, headers.map(header => (header.name, header.value)), None))
+      r.attribute(AttributeKeys.trailer) match {
+        case Some(trailer) => Some(ParsedHeadersFrame(streamId, true, trailer.headers.map(header => (header.name, header.value)), None))
         case None          => None
       }
 

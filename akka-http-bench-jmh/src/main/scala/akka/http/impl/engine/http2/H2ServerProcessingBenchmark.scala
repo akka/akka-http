@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
@@ -66,7 +67,7 @@ class H2ServerProcessingBenchmark extends CommonBenchmark {
     response = responsetype match {
       case "closedelimited" => HPackSpecExamples.FirstResponse
       case "chunked" => HPackSpecExamples.FirstResponse.withEntity(
-        HttpEntity.Chunked(ContentTypes.NoContentType, Source.single(LastChunk(trailer = Seq(RawHeader("grpc-status", "9")))))
+        HttpEntity.Chunked(ContentTypes.NoContentType, Source.single(LastChunk(trailer = immutable.Seq(RawHeader("grpc-status", "9")))))
       )
     }
     val config =
