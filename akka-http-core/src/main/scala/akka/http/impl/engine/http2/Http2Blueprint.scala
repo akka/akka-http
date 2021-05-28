@@ -30,8 +30,11 @@ import scala.collection.immutable
  */
 @InternalApi
 private[http2] case class Http2SubStream(
-  initialHeaders:        ParsedHeadersFrame,
-  data:                  Source[Any, Any],
+  initialHeaders: ParsedHeadersFrame,
+  // outgoing response trailing headers can either be passed in eagerly via an attribute
+  // or streaming as the LastChunk of a chunked data stream
+  trailingHeaders:       Option[ParsedHeadersFrame],
+  data:                  Source[Any /* ByteString | HttpEntity.ChunkStreamPart */ , Any],
   correlationAttributes: Map[AttributeKey[_], _]
 ) {
   def streamId: Int = initialHeaders.streamId
@@ -40,6 +43,9 @@ private[http2] case class Http2SubStream(
   def withCorrelationAttributes(newAttributes: Map[AttributeKey[_], _]): Http2SubStream =
     copy(correlationAttributes = newAttributes)
 
+  /**
+   * Create the request entity (when we're the server) or response entity (when we're the client) for this substream
+   */
   def createEntity(contentLength: Long, contentTypeOption: OptionVal[ContentType]): RequestEntity = {
     def contentType: ContentType = contentTypeOption.getOrElse(ContentTypes.`application/octet-stream`)
 
@@ -64,13 +70,13 @@ private[http2] case class Http2SubStream(
 }
 @InternalApi
 private[http2] object Http2SubStream {
-  def apply(entity: HttpEntity, headers: ParsedHeadersFrame, correlationAttributes: Map[AttributeKey[_], _] = Map.empty): Http2SubStream = {
+  def apply(entity: HttpEntity, headers: ParsedHeadersFrame, trailingHeaders: Option[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _] = Map.empty): Http2SubStream = {
     val data =
       entity match {
         case HttpEntity.Chunked(_, chunks) => chunks
         case x                             => x.dataBytes
       }
-    Http2SubStream(headers, data, correlationAttributes)
+    Http2SubStream(headers, trailingHeaders, data, correlationAttributes)
   }
 }
 

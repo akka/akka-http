@@ -39,6 +39,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           keyValuePairs = keyValuePairs,
           priorityInfo = None
         ),
+        trailingHeaders = None,
         data = data,
         correlationAttributes = Map.empty
       )

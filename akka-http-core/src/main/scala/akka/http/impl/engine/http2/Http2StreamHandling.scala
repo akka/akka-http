@@ -13,7 +13,7 @@ import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
@@ -597,7 +597,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   object OutStream {
     def apply(sub: Http2SubStream): OutStream = {
       val subIn = new SubSinkInlet[Any](s"substream-in-${sub.streamId}")
-      val info = new OutStreamImpl(sub.streamId, None, multiplexer.currentInitialWindow)
+      val info = new OutStreamImpl(sub.streamId, None, multiplexer.currentInitialWindow, sub.trailingHeaders)
       info.registerIncomingData(subIn)
       sub.data.runWith(subIn.sink)(subFusingMaterializer)
       info
@@ -606,14 +606,14 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   class OutStreamImpl(
     val streamId:           Int,
     private var maybeInlet: Option[SubSinkInlet[_]],
-    var outboundWindowLeft: Int
+    var outboundWindowLeft: Int,
+    var trailer:            Option[ParsedHeadersFrame]
   ) extends InHandler with OutStream {
     private def inlet: SubSinkInlet[_] = maybeInlet.get
 
     private var buffer: ByteString = ByteString.empty
     private var upstreamClosed: Boolean = false
     var endStreamSent: Boolean = false
-    private var trailer: Option[ParsedHeadersFrame] = None
 
     /** Designates whether nextFrame can be called to get the next frame. */
     def canSend: Boolean = buffer.nonEmpty && outboundWindowLeft > 0
@@ -686,6 +686,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         case newData: ByteString          => buffer ++= newData
         case HttpEntity.Chunk(newData, _) => buffer ++= newData
         case HttpEntity.LastChunk(_, headers) =>
+          // TODO we should probably consider it 'invalid' when we see both 'eager' trailing headers and a LastChunk. Should we fail/log in that case?
           trailer = Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer), None))
       }
 

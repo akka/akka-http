@@ -75,9 +75,15 @@ private[http2] sealed abstract class MessageRendering[R <: HttpMessage] extends 
     HttpMessageRendering.addContentHeaders(headerPairs, r.entity)
     HttpMessageRendering.renderHeaders(r.headers, headerPairs, peerIdHeader, log, isServer = r.isResponse)
 
-    val headersFrame = ParsedHeadersFrame(nextStreamId(r), endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
+    val streamId = nextStreamId(r)
+    val headersFrame = ParsedHeadersFrame(streamId, endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
+    val trailingHeadersFrame: Option[ParsedHeadersFrame] =
+      r.attribute(AttributeKeys.trailingHeaders) match {
+        case Some(headers) => Some(ParsedHeadersFrame(streamId, true, headers.map(header => (header.name, header.value)), None))
+        case None          => None
+      }
 
-    Http2SubStream(r.entity, headersFrame, r.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
+    Http2SubStream(r.entity, headersFrame, trailingHeadersFrame, r.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
   }
 }
 

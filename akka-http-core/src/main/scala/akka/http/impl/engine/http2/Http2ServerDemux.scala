@@ -363,7 +363,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
       override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
-        bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
+        bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, None, data, correlationAttributes))
 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
