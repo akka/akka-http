@@ -13,7 +13,7 @@ import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
-import akka.util.{ ByteString, OptionVal }
+import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
