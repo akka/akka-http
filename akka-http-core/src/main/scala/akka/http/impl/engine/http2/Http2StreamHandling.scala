@@ -686,7 +686,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         case newData: ByteString          => buffer ++= newData
         case HttpEntity.Chunk(newData, _) => buffer ++= newData
         case HttpEntity.LastChunk(_, headers) =>
-          // TODO we should probably consider it 'invalid' when we see both 'eager' trailing headers and a LastChunk. Should we fail/log in that case?
+          if (headers.nonEmpty && trailer.nonEmpty)
+            log.warning("Found both an attribute with trailing headers, and headers in the `LastChunk`. This is not supported.")
           trailer = Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer), None))
       }
 
