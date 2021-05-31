@@ -52,7 +52,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
    */
   def tryPullSubStreams(): Unit
 
-  private var streamStates = new immutable.TreeMap[Int, StreamState]
+  private val streamStates = new java.util.Hashtable[Int, StreamState]()
   private var largestIncomingStreamId = 0
   private var outstandingConnectionLevelWindow = Http2Protocol.InitialWindowSize
   private var totalBufferedData = 0
@@ -80,21 +80,21 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   private def streamFor(streamId: Int): StreamState =
     streamStates.get(streamId) match {
-      case Some(state) => state
-      case None =>
+      case null =>
         if (streamId <= largestIncomingStreamId) Closed // closed streams are never put into the map
         else if (isUpgraded && streamId == 1) {
           require(isServer)
           // Stream 1 is implicitly "half-closed" from the client toward the server (see Section 5.1), since the request is completed as an HTTP/1.1 request
           // https://http2.github.io/http2-spec/#discover-http
           largestIncomingStreamId = streamId
-          streamStates += streamId -> HalfClosedRemoteWaitingForOutgoingStream(0)
+          streamStates.put(streamId, HalfClosedRemoteWaitingForOutgoingStream(0))
           HalfClosedRemoteWaitingForOutgoingStream(0)
         } else {
           largestIncomingStreamId = streamId
-          streamStates += streamId -> Idle // FIXME: is that needed at all? Should move out of Idle immediately
+          streamStates.put(streamId, Idle) // FIXME: is that needed at all? Should move out of Idle immediately
           Idle
         }
+      case state => state
     }
 
   def activeStreamCount(): Int = streamStates.size
@@ -143,8 +143,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def incomingStreamPulled(streamId: Int): Unit =
     updateState(streamId, _.incomingStreamPulled(), "incomingStreamPulled")
 
-  private def updateAllStates(handle: StreamState => StreamState, event: String, eventArg: AnyRef = null): Unit =
-    streamStates.keys.foreach(updateState(_, handle, event, eventArg))
+  private def updateAllStates(handle: StreamState => StreamState, event: String, eventArg: AnyRef = null): Unit = {
+    import scala.collection.JavaConverters._
+    streamStates.keys.asScala.foreach(updateState(_, handle, event, eventArg))
+  }
 
   private def updateState(streamId: Int, handle: StreamState => StreamState, event: String, eventArg: AnyRef = null): Unit =
     updateStateAndReturn(streamId, x => (handle(x), ()), event, eventArg)
@@ -155,17 +157,20 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     val (newState, ret) = handle(oldState)
     newState match {
       case Closed =>
-        streamStates -= streamId
+        streamStates.remove(streamId)
         if (streamStates.isEmpty) onAllStreamsClosed()
         tryPullSubStreams()
-      case newState => streamStates += streamId -> newState
+      case newState => streamStates.put(streamId, newState)
     }
 
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName} after handling [$event${if (eventArg ne null) s"($eventArg)" else ""}]")
     ret
   }
   /** Called to cleanup any state when the connection is torn down */
-  def shutdownStreamHandling(): Unit = streamStates.keys.foreach(id => updateState(id, { x => x.shutdown(); Closed }, "shutdownStreamHandling"))
+  def shutdownStreamHandling(): Unit = {
+    import scala.collection.JavaConverters._
+    streamStates.keys.asScala.foreach(id => updateState(id, { x => x.shutdown(); Closed }, "shutdownStreamHandling"))
+  }
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
     updateState(streamId, _ => Closed, "resetStream") // force stream to be closed
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
@@ -538,7 +543,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       debug(s"Incoming side of stream [$streamId]: cancelling because downstream finished")
       multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.CANCEL))
       // FIXME: go through state machine and don't manipulate vars directly here
-      streamStates -= streamId
+      streamStates.remove(streamId)
       wasClosed = true
       buffer = ByteString.empty
       trailingHeaders = None
