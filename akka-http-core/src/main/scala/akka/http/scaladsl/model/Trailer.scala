@@ -13,15 +13,16 @@ class Trailer(@ApiMayChange val headers: immutable.Seq[(String, String)]) extend
   /**
    * Java API
    */
-  override def addHeader(header: jm.HttpHeader): Trailer = {
-    val sheader = header.asInstanceOf[HttpHeader]
-    new Trailer((sheader.name, sheader.value) +: headers)
-  }
+  override def addHeader(header: jm.HttpHeader): Trailer = addHeaders(Seq(header))
 
   /**
    * Java API
    */
-  override def addHeaders(headers: Iterable[jm.HttpHeader]): Trailer = headers.foldLeft(this)((acc, h) => acc.addHeader(h))
+  override def addHeaders(headers: Iterable[jm.HttpHeader]): Trailer =
+    new Trailer(this.headers ++ headers.map { header =>
+      val sheader = header.asInstanceOf[HttpHeader]
+      (sheader.name, sheader.value)
+    })
 
   /**
    * Java API
