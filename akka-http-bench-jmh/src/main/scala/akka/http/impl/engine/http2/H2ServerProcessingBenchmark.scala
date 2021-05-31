@@ -4,6 +4,11 @@
 
 package akka.http.impl.engine.http2
 
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
+
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.http.CommonBenchmark
 import akka.http.impl.engine.http2.FrameEvent.HeadersFrame
@@ -17,16 +22,16 @@ import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-
-class H2ServerSwitchBenchmark extends CommonBenchmark {
+/**
+ * Emulates request bytes coming in, selecting HTTP/2 over HTTP/1, sending a static response back,
+ * validating the response bytes come out again.
+ */
+class H2ServerProcessingBenchmark extends CommonBenchmark {
   // Obtained by converting the input request bytes from curl with --http2-prior-knowledge
   def request(streamId: Int) =
     FrameRenderer.render(HeadersFrame(streamId, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman, None))
 
-  var response: HttpResponse = HPackSpecExamples.FirstResponse
+  val response: HttpResponse = HPackSpecExamples.FirstResponse
 
   var httpFlow: Flow[ByteString, ByteString, Any] = _
   implicit var system: ActorSystem = _

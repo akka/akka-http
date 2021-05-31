@@ -26,6 +26,10 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 
+/**
+ * Test converting a HttpRequest to bytes at the client and back to a request at the server, and vice-versa
+ * for the response. Does not include the network.
+ */
 class H2ClientServerBenchmark extends CommonBenchmark {
   // Obtained by converting the input request bytes from curl with --http2-prior-knowledge
   def request(streamId: Int) =
