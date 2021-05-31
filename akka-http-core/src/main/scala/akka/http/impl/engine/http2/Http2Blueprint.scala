@@ -33,7 +33,7 @@ private[http2] case class Http2SubStream(
   initialHeaders: ParsedHeadersFrame,
   // outgoing response trailing headers can either be passed in eagerly via an attribute
   // or streaming as the LastChunk of a chunked data stream
-  trailingHeaders:       Option[ParsedHeadersFrame],
+  trailingHeaders:       OptionVal[ParsedHeadersFrame],
   data:                  Source[Any /* ByteString | HttpEntity.ChunkStreamPart */ , Any],
   correlationAttributes: Map[AttributeKey[_], _]
 ) {
@@ -70,7 +70,7 @@ private[http2] case class Http2SubStream(
 }
 @InternalApi
 private[http2] object Http2SubStream {
-  def apply(entity: HttpEntity, headers: ParsedHeadersFrame, trailingHeaders: Option[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _] = Map.empty): Http2SubStream = {
+  def apply(entity: HttpEntity, headers: ParsedHeadersFrame, trailingHeaders: OptionVal[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _] = Map.empty): Http2SubStream = {
     val data =
       entity match {
         case HttpEntity.Chunked(_, chunks) => chunks

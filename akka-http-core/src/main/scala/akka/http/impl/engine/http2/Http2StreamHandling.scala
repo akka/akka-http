@@ -13,7 +13,7 @@ import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
@@ -597,7 +597,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   object OutStream {
     def apply(sub: Http2SubStream): OutStream = {
       val subIn = new SubSinkInlet[Any](s"substream-in-${sub.streamId}")
-      val info = new OutStreamImpl(sub.streamId, None, multiplexer.currentInitialWindow, sub.trailingHeaders)
+      val info = new OutStreamImpl(sub.streamId, OptionVal.None, multiplexer.currentInitialWindow, sub.trailingHeaders)
       info.registerIncomingData(subIn)
       sub.data.runWith(subIn.sink)(subFusingMaterializer)
       info
@@ -605,9 +605,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   }
   class OutStreamImpl(
     val streamId:           Int,
-    private var maybeInlet: Option[SubSinkInlet[_]],
+    private var maybeInlet: OptionVal[SubSinkInlet[_]],
     var outboundWindowLeft: Int,
-    var trailer:            Option[ParsedHeadersFrame]
+    var trailer:            OptionVal[ParsedHeadersFrame]
   ) extends InHandler with OutStream {
     private def inlet: SubSinkInlet[_] = maybeInlet.get
 
@@ -622,7 +622,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def registerIncomingData(inlet: SubSinkInlet[_]): Unit = {
       require(!maybeInlet.isDefined)
 
-      this.maybeInlet = Some(inlet)
+      this.maybeInlet = OptionVal.Some(inlet)
       inlet.pull()
       inlet.setHandler(this)
     }
@@ -668,7 +668,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       buffer = ByteString.empty
       upstreamClosed = true
       endStreamSent = true
-      maybeInlet.foreach(_.cancel())
+      maybeInlet match {
+        case OptionVal.Some(inlet) => inlet.cancel()
+        case OptionVal.None        => // nothing to clean up
+      }
     }
 
     def cancelStream(): Unit = cleanupStream()
@@ -686,9 +689,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         case newData: ByteString          => buffer ++= newData
         case HttpEntity.Chunk(newData, _) => buffer ++= newData
         case HttpEntity.LastChunk(_, headers) =>
-          if (headers.nonEmpty && trailer.nonEmpty)
+          if (headers.nonEmpty && !trailer.isEmpty)
             log.warning("Found both an attribute with trailing headers, and headers in the `LastChunk`. This is not supported.")
-          trailer = Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer), None))
+          trailer = OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer), None))
       }
 
       maybePull()
