@@ -10,8 +10,6 @@ import scala.collection.immutable
 
 /** Trailing headers for HTTP/2 responses */
 trait Trailer {
-  def getHeaders(): Iterable[HttpHeader]
-
   /**
    * Returns a copy of this trailer with the given header added to the list of headers.
    */

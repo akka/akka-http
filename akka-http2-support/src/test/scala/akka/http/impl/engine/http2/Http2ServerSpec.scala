@@ -244,7 +244,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         user.expectRequest()
         val response =
           HttpResponse(StatusCodes.OK, entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("Hello")))
-            .addAttribute(AttributeKeys.trailer, Trailer(immutable.Seq[HttpHeader](RawHeader("Status", "grpc-status 10"))))
+            .addAttribute(AttributeKeys.trailer, Trailer(RawHeader("Status", "grpc-status 10")))
         user.emitResponse(streamId, response)
 
         network.expectHeaderBlock(streamId, endStream = false)
