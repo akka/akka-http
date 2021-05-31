@@ -5,16 +5,13 @@
 package akka.http.impl.engine.http2
 package framing
 
-import java.nio.ByteOrder
-
-import akka.util.ByteString.ByteString1C
-import akka.util.{ ByteString, ByteStringBuilder }
-import Http2Protocol.FrameType
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.FrameEvent._
+import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.util.ByteString
 
+import java.nio.ByteOrder
 import scala.annotation.tailrec
-
-import FrameEvent._
 
 /** INTERNAL API */
 @InternalApi
@@ -24,141 +21,200 @@ private[http2] object FrameRenderer {
   def render(frame: FrameEvent): ByteString =
     frame match {
       case GoAwayFrame(lastStreamId, errorCode, debug) =>
-        val bb = new ByteStringBuilder
-        bb.putInt(lastStreamId)
-        bb.putInt(errorCode.id)
-        // appends debug data, if any
-        bb.append(debug)
-
-        renderFrame(
-          Http2Protocol.FrameType.GOAWAY,
-          Http2Protocol.Flags.NO_FLAGS,
-          Http2Protocol.NoStreamId,
-          bb.result()
-        )
+        HeaderBuilder(8 + debug.size)
+          .putHeader(
+            Http2Protocol.FrameType.GOAWAY,
+            Http2Protocol.Flags.NO_FLAGS,
+            Http2Protocol.NoStreamId,
+          )
+          .putInt32(lastStreamId)
+          .putInt32(errorCode.id)
+          // appends debug data, if any
+          .put(debug)
+          .result()
 
       case DataFrame(streamId, endStream, payload) =>
         // TODO: should padding be emitted? In which cases?
-
-        renderFrame(
-          Http2Protocol.FrameType.DATA,
-          Http2Protocol.Flags.END_STREAM.ifSet(endStream),
-          streamId,
-          payload
-        )
+        HeaderBuilder(payload.size)
+          .putHeader(
+            Http2Protocol.FrameType.DATA,
+            Http2Protocol.Flags.END_STREAM.ifSet(endStream),
+            streamId
+          )
+          .put(payload)
+          .result()
       case HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, prioInfo) =>
-        val renderedPrioInfo = prioInfo.map(renderPriorityInfo).getOrElse(ByteString.empty)
-
-        renderFrame(
-          Http2Protocol.FrameType.HEADERS,
-          Http2Protocol.Flags.END_STREAM.ifSet(endStream) |
-            Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders) |
-            Http2Protocol.Flags.PRIORITY.ifSet(prioInfo.isDefined),
-          streamId,
-          renderedPrioInfo ++ headerBlockFragment
-        )
+        HeaderBuilder(headerBlockFragment.size + (if (prioInfo.isDefined) 5 else 0))
+          .putHeader(
+            Http2Protocol.FrameType.HEADERS,
+            Http2Protocol.Flags.END_STREAM.ifSet(endStream) |
+              Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders) |
+              Http2Protocol.Flags.PRIORITY.ifSet(prioInfo.isDefined),
+            streamId
+          )
+          .putPriorityInfo(prioInfo)
+          .put(headerBlockFragment)
+          .result()
 
       case WindowUpdateFrame(streamId, windowSizeIncrement) =>
-        val bb = new ByteStringBuilder
-        bb.putInt(windowSizeIncrement)
-
-        renderFrame(
-          Http2Protocol.FrameType.WINDOW_UPDATE,
-          Http2Protocol.Flags.NO_FLAGS,
-          streamId,
-          bb.result()
-        )
+        HeaderBuilder(4)
+          .putHeader(
+            Http2Protocol.FrameType.WINDOW_UPDATE,
+            Http2Protocol.Flags.NO_FLAGS,
+            streamId
+          )
+          .putInt32(windowSizeIncrement)
+          .result()
 
       case ContinuationFrame(streamId, endHeaders, payload) =>
-        renderFrame(
-          Http2Protocol.FrameType.CONTINUATION,
-          Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
-          streamId,
-          payload)
+        HeaderBuilder(payload.size)
+          .putHeader(
+            Http2Protocol.FrameType.CONTINUATION,
+            Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
+            streamId
+          )
+          .put(payload)
+          .result()
 
       case SettingsFrame(settings) =>
-        val bb = new ByteStringBuilder
+        val b = HeaderBuilder(settings.size * 6)
         @tailrec def renderNext(remaining: Seq[Setting]): Unit =
           remaining match {
             case Setting(id, value) +: remaining =>
-              bb.putShort(id.id)
-              bb.putInt(value)
+              b.putInt16(id.id)
+              b.putInt32(value)
 
               renderNext(remaining)
             case Nil =>
           }
 
-        renderNext(settings)
-
-        renderFrame(
+        b.putHeader(
           Http2Protocol.FrameType.SETTINGS,
           Http2Protocol.Flags.NO_FLAGS,
-          Http2Protocol.NoStreamId,
-          bb.result()
+          Http2Protocol.NoStreamId
         )
+        renderNext(settings)
+        b.result()
 
       case _: SettingsAckFrame =>
-        renderFrame(
-          Http2Protocol.FrameType.SETTINGS,
-          Http2Protocol.Flags.ACK,
-          Http2Protocol.NoStreamId,
-          ByteString.empty
-        )
+        HeaderBuilder(0)
+          .putHeader(
+            Http2Protocol.FrameType.SETTINGS,
+            Http2Protocol.Flags.ACK,
+            Http2Protocol.NoStreamId
+          )
+          .result()
 
       case PingFrame(ack, data) =>
-        renderFrame(
-          Http2Protocol.FrameType.PING,
-          Http2Protocol.Flags.ACK.ifSet(ack),
-          Http2Protocol.NoStreamId,
-          data
-        )
+        HeaderBuilder(data.size)
+          .putHeader(
+            Http2Protocol.FrameType.PING,
+            Http2Protocol.Flags.ACK.ifSet(ack),
+            Http2Protocol.NoStreamId
+          )
+          .put(data)
+          .result()
 
       case RstStreamFrame(streamId, errorCode) =>
-        renderFrame(
-          Http2Protocol.FrameType.RST_STREAM,
-          Http2Protocol.Flags.NO_FLAGS,
-          streamId,
-          new ByteStringBuilder().putInt(errorCode.id).result()
-        )
+        HeaderBuilder(4)
+          .putHeader(
+            Http2Protocol.FrameType.RST_STREAM,
+            Http2Protocol.Flags.NO_FLAGS,
+            streamId
+          )
+          .putInt32(errorCode.id)
+          .result()
 
       case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) =>
-        renderFrame(
-          Http2Protocol.FrameType.PUSH_PROMISE,
-          Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
-          streamId,
-          new ByteStringBuilder()
-            .putInt(promisedStreamId)
-            .append(headerBlockFragment)
-            .result()
-        )
+        HeaderBuilder(4 + headerBlockFragment.size)
+          .putHeader(
+            Http2Protocol.FrameType.PUSH_PROMISE,
+            Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
+            streamId
+          )
+          .putInt32(promisedStreamId)
+          .put(headerBlockFragment)
+          .result()
 
-      case frame @ PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) =>
-        renderFrame(
-          Http2Protocol.FrameType.PRIORITY,
-          Http2Protocol.Flags.NO_FLAGS,
-          streamId,
-          renderPriorityInfo(frame)
-        )
+      case frame @ PriorityFrame(streamId, _, _, _) =>
+        HeaderBuilder(5)
+          .putHeader(
+            Http2Protocol.FrameType.PRIORITY,
+            Http2Protocol.Flags.NO_FLAGS,
+            streamId
+          )
+          .putPriorityInfo(frame)
+          .result()
       case _ => throw new IllegalStateException(s"Unexpected frame type ${frame.frameTypeName}.")
     }
 
-  def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString = {
-    val length = payload.length
-    val headerBytes = new Array[Byte](9)
-    headerBytes(0) = (length >> 16).toByte
-    headerBytes(1) = (length >> 8).toByte
-    headerBytes(2) = (length >> 0).toByte
-    headerBytes(3) = tpe.id.toByte
-    headerBytes(4) = flags.value.toByte
-    headerBytes(5) = (streamId >> 24).toByte
-    headerBytes(6) = (streamId >> 16).toByte
-    headerBytes(7) = (streamId >> 8).toByte
-    headerBytes(8) = (streamId >> 0).toByte
+  private class HeaderBuilder(payloadSize: Int) {
+    private val targetSize = 9 + payloadSize
+    private val buffer = new Array[Byte](targetSize)
+    private var pos = 0
 
-    ByteString1C(headerBytes) ++ payload
+    def putHeader(tpe: FrameType, flags: ByteFlag, streamId: Int): HeaderBuilder = {
+      putInt24(payloadSize)
+      putByte(tpe.id.toByte)
+      putByte(flags.value.toByte)
+      putInt32(streamId)
+    }
+    def putPriorityInfo(priorityFrame: PriorityFrame): HeaderBuilder = {
+      val exclusiveBit: Int = if (priorityFrame.exclusiveFlag) 0x80000000 else 0
+      putInt32(exclusiveBit | priorityFrame.streamDependency)
+      putByte(priorityFrame.weight.toByte)
+    }
+    def putPriorityInfo(priorityFrame: Option[PriorityFrame]): HeaderBuilder =
+      priorityFrame match {
+        case Some(p) => putPriorityInfo(p)
+        case None    => this
+      }
+
+    def putByte(byte: Byte): this.type = {
+      buffer(pos) = byte
+      pos += 1
+      this
+    }
+    def putInt32(value: Int): this.type = {
+      buffer(pos + 0) = (value >> 24).toByte
+      buffer(pos + 1) = (value >> 16).toByte
+      buffer(pos + 2) = (value >> 8).toByte
+      buffer(pos + 3) = (value >> 0).toByte
+      pos += 4
+      this
+    }
+    def putInt24(value: Int): this.type = {
+      buffer(pos + 0) = (value >> 16).toByte
+      buffer(pos + 1) = (value >> 8).toByte
+      buffer(pos + 2) = (value >> 0).toByte
+      pos += 3
+      this
+    }
+    def putInt16(value: Int): this.type = {
+      buffer(pos + 0) = (value >> 8).toByte
+      buffer(pos + 1) = (value >> 0).toByte
+      pos += 2
+      this
+    }
+    def put(bytes: ByteString): this.type =
+      if (bytes.isEmpty) this
+      else {
+        bytes.copyToArray(buffer, pos)
+        pos += bytes.size
+        this
+      }
+
+    def result(): ByteString =
+      if (pos != targetSize) throw new IllegalStateException(s"Did not write exactly $targetSize bytes but $pos")
+      else ByteString.fromArrayUnsafe(buffer)
   }
-  def renderPriorityInfo(priorityFrame: PriorityFrame): ByteString = {
-    val exclusiveBit: Int = if (priorityFrame.exclusiveFlag) 0x80000000 else 0
-    new ByteStringBuilder().putInt(exclusiveBit | priorityFrame.streamDependency).putByte(priorityFrame.weight.toByte).result()
+  private object HeaderBuilder {
+    def apply(payloadSize: Int): HeaderBuilder = new HeaderBuilder(payloadSize)
   }
+
+  def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString =
+    HeaderBuilder(payload.size)
+      .putHeader(tpe, flags, streamId)
+      .put(payload)
+      .result()
 }
