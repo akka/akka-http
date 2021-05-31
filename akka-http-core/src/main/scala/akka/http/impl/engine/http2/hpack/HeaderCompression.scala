@@ -44,7 +44,7 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
         case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) =>
           kvs.foreach {
             case (key, value) =>
-              encoder.encodeHeader(os, key.getBytes(HeaderDecompression.UTF8), value.getBytes(HeaderDecompression.UTF8), false)
+              encoder.encodeHeader(os, key.getBytes(HeaderDecompression.US_ASCII), value.getBytes(HeaderDecompression.US_ASCII), false)
           }
           val result = ByteString(os.toByteArray)
           os.reset()
