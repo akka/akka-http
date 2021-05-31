@@ -5,7 +5,6 @@
 package akka.http.impl.engine.http2
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent.ParsedHeadersFrame
@@ -14,6 +13,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Date
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ServerSettings
+import akka.util.OptionVal
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
@@ -75,9 +75,15 @@ private[http2] sealed abstract class MessageRendering[R <: HttpMessage] extends 
     HttpMessageRendering.addContentHeaders(headerPairs, r.entity)
     HttpMessageRendering.renderHeaders(r.headers, headerPairs, peerIdHeader, log, isServer = r.isResponse)
 
-    val headersFrame = ParsedHeadersFrame(nextStreamId(r), endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
+    val streamId = nextStreamId(r)
+    val headersFrame = ParsedHeadersFrame(streamId, endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
+    val trailingHeadersFrame =
+      r.attribute(AttributeKeys.trailer) match {
+        case Some(trailer) => OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, trailer.headers, None))
+        case None          => OptionVal.None
+      }
 
-    Http2SubStream(r.entity, headersFrame, r.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
+    Http2SubStream(r.entity, headersFrame, trailingHeadersFrame, r.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
   }
 }
 

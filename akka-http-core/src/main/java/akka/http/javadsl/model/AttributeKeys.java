@@ -13,4 +13,6 @@ public final class AttributeKeys {
             (AttributeKey<WebSocketUpgrade>)(Object)akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade();
     public static final AttributeKey<SslSessionInfo> sslSession =
             (AttributeKey<SslSessionInfo>)(Object)akka.http.scaladsl.model.AttributeKeys.sslSession();
+    public static final AttributeKey<Trailer> trailer =
+            (AttributeKey<Trailer>)(Object)akka.http.scaladsl.model.AttributeKeys.trailer();
 }

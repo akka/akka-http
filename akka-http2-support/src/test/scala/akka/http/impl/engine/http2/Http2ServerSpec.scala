@@ -5,7 +5,6 @@
 package akka.http.impl.engine.http2
 
 import java.net.InetSocketAddress
-
 import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
@@ -17,6 +16,7 @@ import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.LogByteStringTools
+import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives
 import akka.http.scaladsl.model.headers.RawHeader
@@ -36,6 +36,7 @@ import akka.stream.testkit.TestSubscriber
 import akka.testkit._
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
+
 import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -235,6 +236,22 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           protocol = HttpProtocols.`HTTP/2.0`))
         network.sendHEADERS(streamId, endStream = true, endHeaders = true, requestHeaderBlock)
         user.expectRequest().headers shouldBe expectedRequest.headers
+      }
+
+      "allow trailing headers on strict responses" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        val streamId = 1
+        network.sendHEADERS(streamId, endStream = true, network.headersForRequest(Get("/")))
+        user.expectRequest()
+        val response =
+          HttpResponse(StatusCodes.OK, entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("Hello")))
+            .addAttribute(AttributeKeys.trailer, Trailer(RawHeader("Status", "grpc-status 10")))
+        user.emitResponse(streamId, response)
+
+        network.expectHeaderBlock(streamId, endStream = false)
+        network.expectDATA(streamId, endStream = false, ByteString("Hello"))
+        val trailingResponseHeaders = network.expectDecodedResponseHEADERSPairs(streamId)
+        trailingResponseHeaders.size should be(1)
+        trailingResponseHeaders.head should be(("Status", "grpc-status 10"))
       }
 
       "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {

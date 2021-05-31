@@ -11,7 +11,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 import org.scalatest.{ Inside, Inspectors }
 import FrameEvent._
 import akka.http.impl.engine.server.HttpAttributes
@@ -39,6 +39,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           keyValuePairs = keyValuePairs,
           priorityInfo = None
         ),
+        trailingHeaders = OptionVal.None,
         data = data,
         correlationAttributes = Map.empty
       )

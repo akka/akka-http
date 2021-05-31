@@ -61,4 +61,18 @@ object Http2Spec {
     Http().connectionTo("localhost").toPort(8080).http2WithPriorKnowledge()
     //#http2ClientWithPriorKnowledge
   }
+
+  {
+    //#trailingHeaders
+    import akka.http.scaladsl.model.ContentTypes
+    import akka.http.scaladsl.model.HttpEntity
+    import akka.http.scaladsl.model.Trailer
+    import akka.http.scaladsl.model.AttributeKeys.trailer
+    import akka.http.scaladsl.model.headers.RawHeader
+    import akka.util.ByteString
+
+    HttpResponse(StatusCodes.OK, entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("Tralala")))
+      .addAttribute(trailer, Trailer(RawHeader("name", "value")))
+    //#trailingHeaders
+  }
 }

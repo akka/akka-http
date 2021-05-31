@@ -17,7 +17,6 @@ import akka.util.ByteString
 import akka.util.OptionVal
 import com.github.ghik.silencer.silent
 
-import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 
