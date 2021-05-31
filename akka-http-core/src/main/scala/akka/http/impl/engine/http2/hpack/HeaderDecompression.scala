@@ -27,6 +27,7 @@ import FrameEvent._
 @InternalApi
 private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val UTF8 = StandardCharsets.UTF_8
+  val US_ASCII = StandardCharsets.US_ASCII
 
   val eventsIn = Inlet[FrameEvent]("HeaderDecompression.eventsIn")
   val eventsOut = Outlet[FrameEvent]("HeaderDecompression.eventsOut")
@@ -47,7 +48,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += new String(name, UTF8) -> new String(value, UTF8)
+          headers += new String(name, US_ASCII) -> new String(value, US_ASCII)
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)
