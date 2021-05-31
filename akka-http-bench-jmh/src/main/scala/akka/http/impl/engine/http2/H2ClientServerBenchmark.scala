@@ -46,7 +46,7 @@ class H2ClientServerBenchmark extends CommonBenchmark {
   val numRequests = 1000
 
   @Benchmark
-  @OperationsPerInvocation(10000) // should be same as numRequest
+  @OperationsPerInvocation(1000) // should be same as numRequest
   def benchRequestProcessing(): Unit = {
     implicit val ec: ExecutionContext = system.dispatcher
 
