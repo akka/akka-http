@@ -250,7 +250,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.expectHeaderBlock(streamId, endStream = false)
         network.expectDATA(streamId, endStream = false, ByteString("Hello"))
         val trailingResponseHeaders = network.expectDecodedResponseHEADERSPairs(streamId)
-        println(trailingResponseHeaders)
+        trailingResponseHeaders.size should be(1)
+        trailingResponseHeaders.head should be(("Status", "grpc-status 10"))
       }
 
       "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
