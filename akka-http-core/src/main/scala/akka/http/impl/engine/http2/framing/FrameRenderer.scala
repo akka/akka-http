@@ -21,63 +21,69 @@ private[http2] object FrameRenderer {
   def render(frame: FrameEvent): ByteString =
     frame match {
       case GoAwayFrame(lastStreamId, errorCode, debug) =>
-        HeaderBuilder(8 + debug.size)
-          .putHeader(
-            Http2Protocol.FrameType.GOAWAY,
-            Http2Protocol.Flags.NO_FLAGS,
-            Http2Protocol.NoStreamId,
-          )
+        Frame(
+          8 + debug.size,
+          Http2Protocol.FrameType.GOAWAY,
+          Http2Protocol.Flags.NO_FLAGS,
+          Http2Protocol.NoStreamId
+        )
           .putInt32(lastStreamId)
           .putInt32(errorCode.id)
           // appends debug data, if any
           .put(debug)
-          .result()
+          .build()
 
       case DataFrame(streamId, endStream, payload) =>
         // TODO: should padding be emitted? In which cases?
-        HeaderBuilder(payload.size)
-          .putHeader(
-            Http2Protocol.FrameType.DATA,
-            Http2Protocol.Flags.END_STREAM.ifSet(endStream),
-            streamId
-          )
+        Frame(
+          payload.size,
+          Http2Protocol.FrameType.DATA,
+          Http2Protocol.Flags.END_STREAM.ifSet(endStream),
+          streamId
+        )
           .put(payload)
-          .result()
+          .build()
       case HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, prioInfo) =>
-        HeaderBuilder(headerBlockFragment.size + (if (prioInfo.isDefined) 5 else 0))
-          .putHeader(
-            Http2Protocol.FrameType.HEADERS,
-            Http2Protocol.Flags.END_STREAM.ifSet(endStream) |
-              Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders) |
-              Http2Protocol.Flags.PRIORITY.ifSet(prioInfo.isDefined),
-            streamId
-          )
+        Frame(
+          (if (prioInfo.isDefined) 5 else 0) + headerBlockFragment.size,
+          Http2Protocol.FrameType.HEADERS,
+          Http2Protocol.Flags.END_STREAM.ifSet(endStream) |
+            Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders) |
+            Http2Protocol.Flags.PRIORITY.ifSet(prioInfo.isDefined),
+          streamId
+        )
           .putPriorityInfo(prioInfo)
           .put(headerBlockFragment)
-          .result()
+          .build()
 
       case WindowUpdateFrame(streamId, windowSizeIncrement) =>
-        HeaderBuilder(4)
-          .putHeader(
-            Http2Protocol.FrameType.WINDOW_UPDATE,
-            Http2Protocol.Flags.NO_FLAGS,
-            streamId
-          )
+        Frame(
+          4,
+          Http2Protocol.FrameType.WINDOW_UPDATE,
+          Http2Protocol.Flags.NO_FLAGS,
+          streamId
+        )
           .putInt32(windowSizeIncrement)
-          .result()
+          .build()
 
       case ContinuationFrame(streamId, endHeaders, payload) =>
-        HeaderBuilder(payload.size)
-          .putHeader(
-            Http2Protocol.FrameType.CONTINUATION,
-            Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
-            streamId
-          )
+        Frame(
+          payload.size,
+          Http2Protocol.FrameType.CONTINUATION,
+          Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
+          streamId
+        )
           .put(payload)
-          .result()
+          .build()
 
       case SettingsFrame(settings) =>
-        val b = HeaderBuilder(settings.size * 6)
+        val b = Frame(
+          settings.size * 6,
+          Http2Protocol.FrameType.SETTINGS,
+          Http2Protocol.Flags.NO_FLAGS,
+          Http2Protocol.NoStreamId
+        )
+
         @tailrec def renderNext(remaining: Seq[Setting]): Unit =
           remaining match {
             case Setting(id, value) +: remaining =>
@@ -88,83 +94,85 @@ private[http2] object FrameRenderer {
             case Nil =>
           }
 
-        b.putHeader(
-          Http2Protocol.FrameType.SETTINGS,
-          Http2Protocol.Flags.NO_FLAGS,
-          Http2Protocol.NoStreamId
-        )
         renderNext(settings)
-        b.result()
+        b.build()
 
       case _: SettingsAckFrame =>
-        HeaderBuilder(0)
-          .putHeader(
-            Http2Protocol.FrameType.SETTINGS,
-            Http2Protocol.Flags.ACK,
-            Http2Protocol.NoStreamId
-          )
-          .result()
+        Frame(
+          0,
+          Http2Protocol.FrameType.SETTINGS,
+          Http2Protocol.Flags.ACK,
+          Http2Protocol.NoStreamId
+        )
+          .build()
 
       case PingFrame(ack, data) =>
-        HeaderBuilder(data.size)
-          .putHeader(
-            Http2Protocol.FrameType.PING,
-            Http2Protocol.Flags.ACK.ifSet(ack),
-            Http2Protocol.NoStreamId
-          )
+        Frame(
+          data.size,
+          Http2Protocol.FrameType.PING,
+          Http2Protocol.Flags.ACK.ifSet(ack),
+          Http2Protocol.NoStreamId
+        )
           .put(data)
-          .result()
+          .build()
 
       case RstStreamFrame(streamId, errorCode) =>
-        HeaderBuilder(4)
-          .putHeader(
-            Http2Protocol.FrameType.RST_STREAM,
-            Http2Protocol.Flags.NO_FLAGS,
-            streamId
-          )
+        Frame(
+          4,
+          Http2Protocol.FrameType.RST_STREAM,
+          Http2Protocol.Flags.NO_FLAGS,
+          streamId
+        )
           .putInt32(errorCode.id)
-          .result()
+          .build()
 
       case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) =>
-        HeaderBuilder(4 + headerBlockFragment.size)
-          .putHeader(
-            Http2Protocol.FrameType.PUSH_PROMISE,
-            Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
-            streamId
-          )
+        Frame(
+          4 + headerBlockFragment.size,
+          Http2Protocol.FrameType.PUSH_PROMISE,
+          Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
+          streamId
+        )
           .putInt32(promisedStreamId)
           .put(headerBlockFragment)
-          .result()
+          .build()
 
       case frame @ PriorityFrame(streamId, _, _, _) =>
-        HeaderBuilder(5)
-          .putHeader(
-            Http2Protocol.FrameType.PRIORITY,
-            Http2Protocol.Flags.NO_FLAGS,
-            streamId
-          )
+        Frame(
+          5,
+          Http2Protocol.FrameType.PRIORITY,
+          Http2Protocol.Flags.NO_FLAGS,
+          streamId
+        )
           .putPriorityInfo(frame)
-          .result()
+          .build()
       case _ => throw new IllegalStateException(s"Unexpected frame type ${frame.frameTypeName}.")
     }
 
-  private class HeaderBuilder(payloadSize: Int) {
+  def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString =
+    Frame(payload.size, tpe, flags, streamId)
+      .put(payload)
+      .build()
+
+  private object Frame {
+    def apply(payloadSize: Int, tpe: FrameType, flags: ByteFlag, streamId: Int): Frame = new Frame(payloadSize, tpe, flags, streamId)
+  }
+  private class Frame(payloadSize: Int, tpe: FrameType, flags: ByteFlag, streamId: Int) {
     private val targetSize = 9 + payloadSize
     private val buffer = new Array[Byte](targetSize)
     private var pos = 0
 
-    def putHeader(tpe: FrameType, flags: ByteFlag, streamId: Int): HeaderBuilder = {
-      putInt24(payloadSize)
-      putByte(tpe.id.toByte)
-      putByte(flags.value.toByte)
-      putInt32(streamId)
-    }
-    def putPriorityInfo(priorityFrame: PriorityFrame): HeaderBuilder = {
+    putInt24(payloadSize)
+    putByte(tpe.id.toByte)
+    putByte(flags.value.toByte)
+    putInt32(streamId)
+
+    def putPriorityInfo(priorityFrame: PriorityFrame): Frame = {
       val exclusiveBit: Int = if (priorityFrame.exclusiveFlag) 0x80000000 else 0
       putInt32(exclusiveBit | priorityFrame.streamDependency)
       putByte(priorityFrame.weight.toByte)
     }
-    def putPriorityInfo(priorityFrame: Option[PriorityFrame]): HeaderBuilder =
+    def putPriorityInfo(priorityFrame: Option[PriorityFrame]): Frame =
       priorityFrame match {
         case Some(p) => putPriorityInfo(p)
         case None    => this
@@ -204,17 +212,8 @@ private[http2] object FrameRenderer {
         this
       }
 
-    def result(): ByteString =
+    def build(): ByteString =
       if (pos != targetSize) throw new IllegalStateException(s"Did not write exactly $targetSize bytes but $pos")
       else ByteString.fromArrayUnsafe(buffer)
   }
-  private object HeaderBuilder {
-    def apply(payloadSize: Int): HeaderBuilder = new HeaderBuilder(payloadSize)
-  }
-
-  def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString =
-    HeaderBuilder(payload.size)
-      .putHeader(tpe, flags, streamId)
-      .put(payload)
-      .result()
 }
