@@ -63,17 +63,17 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
    */
   def lastStreamId(): Int = largestIncomingStreamId
 
-  private var maxConcurrentStreams = Http2Protocol.InitialMaxConcurrentStreams
+  protected var maxConcurrentStreams = Http2Protocol.InitialMaxConcurrentStreams
   def setMaxConcurrentStreams(newValue: Int): Unit = maxConcurrentStreams = newValue
   /**
    * @return true if the number of outgoing Active streams (Active includes Open
-   *         and any variant of HalfClosedXxx) doesn't exceed MaxConcurrentStreams
+   *         and any variant of HalfClosedXxx) plus any outgoing streams that haven't yet fetched
+   *         doesn't exceed MaxConcurrentStreams
    */
-  def hasCapacityToCreateStreams: Boolean = {
+  def hasCapacityToCreateStreams(numBufferedOut: Int): Boolean =
     // StreamStates only contains streams in active states (active states are any variation
     // of Open, HalfClosed) so using the `size` works fine to compute the capacity
-    activeStreamCount() < maxConcurrentStreams
-  }
+    numBufferedOut + activeStreamCount() < maxConcurrentStreams
 
   private def streamFor(streamId: Int): StreamState =
     streamStates.get(streamId) match {
@@ -115,7 +115,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     } else
       // stream was cancelled by peer before our response was ready
       stream.data.runWith(Sink.cancelled)(subFusingMaterializer)
-
   }
 
   // Called by the outgoing stream multiplexer when that side of the stream is ended.
