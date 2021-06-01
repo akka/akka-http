@@ -276,7 +276,7 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
             pendingUserHandlerResponse = false
 
             // send response to pending in-flight request with Connection: close, and complete stage
-            emit(toNet, response.withHeaders(Connection("close")), () => completeStage())
+            emit(toNet, response.withHeaders(Connection("close") +: response.headers.filterNot(_.is(Connection.lowercaseName))), () => completeStage())
           }
         })
 
