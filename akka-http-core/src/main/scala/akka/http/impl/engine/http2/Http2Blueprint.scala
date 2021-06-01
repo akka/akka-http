@@ -34,7 +34,7 @@ private[http2] case class Http2SubStream(
   // outgoing response trailing headers can either be passed in eagerly via an attribute
   // or streaming as the LastChunk of a chunked data stream
   trailingHeaders:       OptionVal[ParsedHeadersFrame],
-  data:                  Source[Any /* ByteString | HttpEntity.ChunkStreamPart */ , Any],
+  data:                  Either[ByteString, Source[Any /* ByteString | HttpEntity.ChunkStreamPart */ , Any]],
   correlationAttributes: Map[AttributeKey[_], _]
 ) {
   def streamId: Int = initialHeaders.streamId
@@ -49,22 +49,28 @@ private[http2] case class Http2SubStream(
   def createEntity(contentLength: Long, contentTypeOption: OptionVal[ContentType]): RequestEntity = {
     def contentType: ContentType = contentTypeOption.getOrElse(ContentTypes.`application/octet-stream`)
 
-    if (data == Source.empty || contentLength == 0 || !hasEntity) {
-      if (contentTypeOption.isEmpty) HttpEntity.Empty
-      else HttpEntity.Strict(contentType, ByteString.empty)
-    } else if (contentLength > 0) {
-      val byteSource: Source[ByteString, Any] = data.collect {
-        case b: ByteString             => b
-        case HttpEntity.Chunk(data, _) => data
-        // ignore: HttpEntity.LastChunk
-      }
-      HttpEntity.Default(contentType, contentLength, byteSource)
-    } else {
-      val chunkSource: Source[HttpEntity.ChunkStreamPart, Any] = data.map {
-        case b: ByteString                 => HttpEntity.Chunk(b)
-        case p: HttpEntity.ChunkStreamPart => p
-      }
-      HttpEntity.Chunked(contentType, chunkSource)
+    data match {
+      case Right(data) =>
+        if (data == Source.empty || contentLength == 0 || !hasEntity) {
+          if (contentTypeOption.isEmpty) HttpEntity.Empty
+          else HttpEntity.Strict(contentType, ByteString.empty)
+        } else if (contentLength > 0) {
+          val byteSource: Source[ByteString, Any] = data.collect {
+            case b: ByteString             => b
+            case HttpEntity.Chunk(data, _) => data
+            // ignore: HttpEntity.LastChunk
+          }
+          HttpEntity.Default(contentType, contentLength, byteSource)
+        } else {
+          val chunkSource: Source[HttpEntity.ChunkStreamPart, Any] = data.map {
+            case b: ByteString                 => HttpEntity.Chunk(b)
+            case p: HttpEntity.ChunkStreamPart => p
+          }
+          HttpEntity.Chunked(contentType, chunkSource)
+        }
+      case Left(dataBytes) =>
+        if (dataBytes.isEmpty && contentTypeOption.isEmpty) HttpEntity.Empty
+        else HttpEntity.Strict(contentType, dataBytes)
     }
   }
 }
@@ -73,8 +79,9 @@ private[http2] object Http2SubStream {
   def apply(entity: HttpEntity, headers: ParsedHeadersFrame, trailingHeaders: OptionVal[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _] = Map.empty): Http2SubStream = {
     val data =
       entity match {
-        case HttpEntity.Chunked(_, chunks) => chunks
-        case x                             => x.dataBytes
+        case HttpEntity.Chunked(_, chunks) => Right(chunks)
+        case HttpEntity.Strict(_, data)    => Left(data)
+        case x                             => Right(x.dataBytes)
       }
     Http2SubStream(headers, trailingHeaders, data, correlationAttributes)
   }
