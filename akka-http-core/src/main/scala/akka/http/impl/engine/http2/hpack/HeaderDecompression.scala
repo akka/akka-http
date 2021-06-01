@@ -42,12 +42,15 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     // Idle: no ongoing HEADERS parsing
     // Receiving headers: waiting for CONTINUATION frame
 
+    private def byteArrayToAsciiString(bs: Array[Byte]): String =
+      new String(bs, 0, 0, bs.length)
+
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
       val headers = new VectorBuilder[(String, String)]
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += new String(name, US_ASCII) -> new String(value, US_ASCII)
+          headers += byteArrayToAsciiString(name) -> byteArrayToAsciiString(value)
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)
