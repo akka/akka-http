@@ -6,17 +6,15 @@ package akka.http.impl.engine.http2.hpack
 
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2._
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
-import akka.util.ByteString
+import akka.util.{ ByteString, Unsafe }
 import com.twitter.hpack.HeaderListener
 
 import scala.collection.immutable.VectorBuilder
-
 import FrameEvent._
 
 /**
@@ -43,12 +41,15 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     // Idle: no ongoing HEADERS parsing
     // Receiving headers: waiting for CONTINUATION frame
 
+    private def byteArrayToAsciiString(bs: Array[Byte]): String =
+      new String(bs, 0, 0, bs.length)
+
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
       val headers = new VectorBuilder[(String, String)]
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += new String(name, US_ASCII) -> new String(value, US_ASCII)
+          headers += byteArrayToAsciiString(name) -> byteArrayToAsciiString(value)
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)

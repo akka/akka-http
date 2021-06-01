@@ -5,16 +5,14 @@
 package akka.http.impl.engine.http2.hpack
 
 import java.io.ByteArrayOutputStream
-
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
-import akka.util.ByteString
+import akka.util.{ ByteString, Unsafe }
 
 import scala.collection.immutable
-
 import FrameEvent._
 
 /**
@@ -44,7 +42,11 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
         case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) =>
           kvs.foreach {
             case (key, value) =>
-              encoder.encodeHeader(os, key.getBytes(HeaderDecompression.US_ASCII), value.getBytes(HeaderDecompression.US_ASCII), false)
+              val keyBytes = new Array[Byte](key.length)
+              Unsafe.copyUSAsciiStrToBytes(key, keyBytes)
+              val valueBytes = new Array[Byte](value.length)
+              Unsafe.copyUSAsciiStrToBytes(value, valueBytes)
+              encoder.encodeHeader(os, keyBytes, valueBytes, false)
           }
           val result = ByteString(os.toByteArray)
           os.reset()
