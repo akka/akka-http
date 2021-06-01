@@ -477,6 +477,52 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
       }
       "fail entity stream if advertised content-length doesn't match" in pending
+
+      "collect Strict entity for single DATA frame" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMinCollectStrictEntitySize(1))
+        network.sendRequestHEADERS(1, HttpRequest(HttpMethods.POST, entity = HttpEntity("abcde")), endStream = false)
+        user.requestIn.ensureSubscription()
+        user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+        network.sendDATA(1, endStream = true, ByteString("abcde")) // send final frame
+        val receivedRequest = user.expectRequest()
+
+        receivedRequest.entity shouldBe Symbol("strict")
+        receivedRequest.entity.asInstanceOf[HttpEntity.Strict].data.utf8String shouldBe "abcde"
+      }
+      "collect Strict entity for multiple DATA frames if min-collect-strict-entity-size is set accordingly" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMinCollectStrictEntitySize(10))
+        network.sendRequestHEADERS(1, HttpRequest(HttpMethods.POST, entity = HttpEntity("abcde")), endStream = false)
+        user.requestIn.ensureSubscription()
+        user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+        network.sendDATA(1, endStream = false, ByteString("abcde")) // send final frame
+        user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+        network.sendDATA(1, endStream = true, ByteString("fghij")) // send fi
+        val receivedRequest = user.expectRequest()
+
+        receivedRequest.entity shouldBe Symbol("strict")
+        receivedRequest.entity.asInstanceOf[HttpEntity.Strict].data.utf8String shouldBe "abcdefghij"
+      }
+      "create streamed entity for multiple DATA frames if min-collect-strict-entity-size is too low" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMinCollectStrictEntitySize(10))
+        network.sendRequestHEADERS(1, HttpRequest(HttpMethods.POST, entity = HttpEntity("abcde")), endStream = false)
+        user.requestIn.ensureSubscription()
+        user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+        network.sendDATA(1, endStream = false, ByteString("abcde")) // send final frame
+        user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+        network.sendDATA(1, endStream = false, ByteString("fghij")) // send fi
+        val receivedRequest = user.expectRequest()
+
+        receivedRequest.entity shouldNot be(Symbol("strict"))
+        val entityDataIn = ByteStringSinkProbe()
+        receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
+        entityDataIn.ensureSubscription()
+        entityDataIn.expectUtf8EncodedString("abcdefghij")
+
+        network.sendDATA(1, endStream = false, ByteString("klmnop")) // send fi
+        entityDataIn.expectUtf8EncodedString("klmnop")
+        network.sendDATA(1, endStream = true, ByteString.empty) // send fi
+        entityDataIn.expectComplete()
+      }
     }
 
     "support streaming for sending response entity data" should {

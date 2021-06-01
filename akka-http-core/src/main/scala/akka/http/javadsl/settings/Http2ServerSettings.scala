@@ -22,6 +22,9 @@ trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings =>
   def getIncomingStreamLevelBufferSize: Int = incomingStreamLevelBufferSize
   def withIncomingStreamLevelBufferSize(newIncomingStreamLevelBufferSize: Int): Http2ServerSettings
 
+  def minCollectStrictEntitySize: Int
+  def withMinCollectStrictEntitySize(newValue: Int): Http2ServerSettings
+
   def getMaxConcurrentStreams: Int = maxConcurrentStreams
   def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings
 
