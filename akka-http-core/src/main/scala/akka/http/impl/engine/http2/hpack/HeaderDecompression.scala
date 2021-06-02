@@ -15,8 +15,8 @@ import akka.util.{ ByteString, Unsafe }
 
 import scala.collection.immutable.VectorBuilder
 import FrameEvent._
-import akka.http.impl.engine.http2.RequestParsing.malformedRequest
-import akka.http.scaladsl.model.ContentType
+import akka.http.impl.engine.http2.RequestParsing.{ checkNoRegularHeadersBeforePseudoHeader, checkUniquePseudoHeader, malformedRequest }
+import akka.http.scaladsl.model.{ ContentType, IllegalUriException, ParsingException, Uri }
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 
 /**
@@ -52,18 +52,37 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
         def addHeader(nameBytes: Array[Byte], valueBytes: Array[Byte], parsed: AnyRef, sensitive: Boolean): AnyRef = {
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
           val name = byteArrayToAsciiString(nameBytes)
-          def value = byteArrayToAsciiString(valueBytes)
 
           if (parsed ne null) {
             headers += name -> parsed
             parsed
-          } else if (name == "content-type") {
-            val contentTypeValue = ContentType.parse(value).right.getOrElse(malformedRequest(s"Invalid content-type: '$value'"))
-            headers += name -> contentTypeValue
-            contentTypeValue
           } else {
-            headers += name -> value
-            value
+            val value = byteArrayToAsciiString(valueBytes)
+            name match {
+              case "content-type" =>
+                val contentTypeValue = ContentType.parse(value).right.getOrElse(malformedRequest(s"Invalid content-type: '$value'"))
+                headers += name -> contentTypeValue
+                contentTypeValue
+              case ":authority" =>
+                val authority: Uri.Authority = try {
+                  Uri.parseHttp2AuthorityPseudoHeader(value /*FIXME: , mode = serverSettings.parserSettings.uriParsingMode*/ )
+                } catch {
+                  case IllegalUriException(info) => throw new ParsingException(info)
+                }
+                headers += name -> authority
+                authority
+              case ":path" =>
+                val newPathAndRawQuery: (Uri.Path, Option[String]) = try {
+                  Uri.parseHttp2PathPseudoHeader(value /* FIXME:, mode = serverSettings.parserSettings.uriParsingMode */ )
+                } catch {
+                  case IllegalUriException(info) => throw new ParsingException(info)
+                }
+                headers += name -> newPathAndRawQuery
+                newPathAndRawQuery
+              case _ =>
+                headers += name -> value
+                value
+            }
           }
         }
       }
