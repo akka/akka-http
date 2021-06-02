@@ -31,6 +31,7 @@ class HeaderField implements Comparable<HeaderField> {
 
   final byte[] name;
   final byte[] value;
+  Object parsedValue = null;
 
   // This constructor can only be used if name and value are ISO-8859-1 encoded.
   HeaderField(String name, String value) {
@@ -40,6 +41,11 @@ class HeaderField implements Comparable<HeaderField> {
   HeaderField(byte[] name, byte[] value) {
     this.name = requireNonNull(name);
     this.value = requireNonNull(value);
+  }
+  HeaderField(byte[] name, byte[] value, Object parsedValue) {
+    this.name = requireNonNull(name);
+    this.value = requireNonNull(value);
+    this.parsedValue = parsedValue;
   }
 
   int size() {
