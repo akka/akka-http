@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2._
+import akka.http.impl.engine.http2.RequestParsing.malformedRequest
+import akka.http.scaladsl.model.ContentType
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
@@ -46,11 +48,25 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       new String(bs, 0, 0, bs.length)
 
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
-      val headers = new VectorBuilder[(String, String)]
+      val headers = new VectorBuilder[(String, AnyRef)]
       object Receiver extends HeaderListener {
-        def addHeader(name: Array[Byte], value: Array[Byte], parsed: AnyRef, sensitive: Boolean): Unit =
+        def addHeader(nameBytes: Array[Byte], valueBytes: Array[Byte], parsed: AnyRef, sensitive: Boolean): AnyRef = {
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += byteArrayToAsciiString(name) -> byteArrayToAsciiString(value)
+          val name = byteArrayToAsciiString(nameBytes)
+          def value = byteArrayToAsciiString(valueBytes)
+
+          if (parsed ne null) {
+            headers += name -> parsed
+            parsed
+          } else if (name == "content-type") {
+            val contentTypeValue = ContentType.parse(value).right.getOrElse(malformedRequest(s"Invalid content-type: '$value'"))
+            headers += name -> contentTypeValue
+            contentTypeValue
+          } else {
+            headers += name -> value
+            value
+          }
+        }
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)

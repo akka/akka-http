@@ -103,7 +103,7 @@ private[http] object FrameEvent {
   final case class ParsedHeadersFrame(
     streamId:      Int,
     endStream:     Boolean,
-    keyValuePairs: Seq[(String, String)],
+    keyValuePairs: Seq[(String, AnyRef)],
     priorityInfo:  Option[PriorityFrame]
   ) extends StreamFrameEvent
 
