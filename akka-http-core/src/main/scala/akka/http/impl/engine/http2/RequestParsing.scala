@@ -109,6 +109,18 @@ private[http2] object RequestParsing {
               .orElse(serverSettings.parserSettings.customMethods(value))
               .getOrElse(malformedRequest(s"Unknown HTTP method: '$value'"))
             rec(remainingHeaders.tail, m, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+          case (":path", newPathAndRawQuery: (Uri.Path, Option[String])) =>
+            checkUniquePseudoHeader(":path", pathAndRawQuery)
+            checkNoRegularHeadersBeforePseudoHeader(":path", seenRegularHeader)
+            rec(remainingHeaders.tail, method, scheme, authority, newPathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+          case (":authority", newAuthority: Uri.Authority) =>
+            checkUniquePseudoHeader(":authority", authority)
+            checkNoRegularHeadersBeforePseudoHeader(":authority", seenRegularHeader)
+            rec(remainingHeaders.tail, method, scheme, newAuthority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+          case ("content-type", contentTypeValue: ContentType) =>
+            if (contentType.isEmpty) rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, OptionVal.Some(contentTypeValue), contentLength, cookies, true, headers)
+            else malformedRequest("HTTP message must not contain more than one content-type header")
+
           case (":path", value: String) =>
             checkUniquePseudoHeader(":path", pathAndRawQuery)
             checkNoRegularHeadersBeforePseudoHeader(":path", seenRegularHeader)
@@ -135,10 +147,6 @@ private[http2] object RequestParsing {
               val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
               rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, OptionVal.Some(contentTypeValue), contentLength, cookies, true, headers)
             } else malformedRequest("HTTP message must not contain more than one content-type header")
-
-          case ("content-type", contentTypeValue: ContentType) =>
-            if (contentType.isEmpty) rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, OptionVal.Some(contentTypeValue), contentLength, cookies, true, headers)
-            else malformedRequest("HTTP message must not contain more than one content-type header")
 
           case ("content-length", length: String) =>
             if (contentLength == -1) {
