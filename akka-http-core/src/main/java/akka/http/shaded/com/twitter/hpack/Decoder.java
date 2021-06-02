@@ -464,17 +464,19 @@ public final class Decoder {
   private void indexHeader(int index, HeaderListener headerListener) throws IOException {
     if (index <= StaticTable.length) {
       HeaderField headerField = StaticTable.getEntry(index);
-      addHeader(headerListener, headerField.name, headerField.value, false);
+      Object parsed = addHeader(headerListener, headerField.name, headerField.value, headerField.parsedValue, false);
+      headerField.parsedValue = parsed;
     } else if (index - StaticTable.length <= dynamicTable.length()) {
       HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
-      addHeader(headerListener, headerField.name, headerField.value, false);
+      Object parsed = addHeader(headerListener, headerField.name, headerField.value, headerField.parsedValue, false);
+      headerField.parsedValue = parsed;
     } else {
       throw ILLEGAL_INDEX_VALUE;
     }
   }
 
   private void insertHeader(HeaderListener headerListener, byte[] name, byte[] value, IndexType indexType) {
-    addHeader(headerListener, name, value, indexType == IndexType.NEVER);
+    Object parsedValue = addHeader(headerListener, name, value, null, indexType == IndexType.NEVER);
 
     switch (indexType) {
       case NONE:
@@ -482,7 +484,7 @@ public final class Decoder {
         break;
 
       case INCREMENTAL:
-        dynamicTable.add(new HeaderField(name, value));
+        dynamicTable.add(new HeaderField(name, value, parsedValue));
         break;
 
       default:
@@ -490,18 +492,19 @@ public final class Decoder {
     }
   }
 
-  private void addHeader(HeaderListener headerListener, byte[] name, byte[] value, boolean sensitive) {
+  private Object addHeader(HeaderListener headerListener, byte[] name, byte[] value, Object parsedValue, boolean sensitive) {
     if (name.length == 0) {
       throw new AssertionError("name is empty");
     }
     long newSize = headerSize + name.length + value.length;
     if (newSize <= maxHeaderSize) {
-      headerListener.addHeader(name, value, sensitive);
+      parsedValue = headerListener.addHeader(name, value, parsedValue, sensitive);
       headerSize = (int) newSize;
     } else {
       // truncation will be reported during endHeaderBlock
       headerSize = maxHeaderSize + 1;
     }
+    return parsedValue;
   }
 
   private boolean exceedsMaxHeaderSize(long size) {

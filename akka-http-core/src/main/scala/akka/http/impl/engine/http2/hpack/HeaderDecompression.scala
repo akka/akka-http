@@ -48,7 +48,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
       val headers = new VectorBuilder[(String, String)]
       object Receiver extends HeaderListener {
-        def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
+        def addHeader(name: Array[Byte], value: Array[Byte], parsed: AnyRef, sensitive: Boolean): Unit =
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
           headers += byteArrayToAsciiString(name) -> byteArrayToAsciiString(value)
       }
