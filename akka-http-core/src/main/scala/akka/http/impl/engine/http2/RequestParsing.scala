@@ -165,6 +165,9 @@ private[http2] object RequestParsing {
             cookiesBuilder.append(value)
             rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookiesBuilder, true, headers)
 
+          case (name, httpHeader: HttpHeader) =>
+            // FIXME: move validation to HeaderDecompression validateHeader(httpHeader)
+            rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += httpHeader)
           case (name, value: String) =>
             val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
             validateHeader(httpHeader)
