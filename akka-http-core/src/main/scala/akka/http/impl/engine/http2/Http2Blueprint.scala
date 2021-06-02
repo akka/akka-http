@@ -98,12 +98,13 @@ private[http] object Http2Blueprint {
       initialDemuxerSettings: immutable.Seq[Setting] = Nil,
       upgraded: Boolean = false,
       telemetry: TelemetrySpi,
-      dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+    dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+    val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log) // FIXME: reuse for framing
     telemetry.serverConnection atop
       httpLayer(settings, log, dateHeaderRendering) atop
       serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding() atop
+      hpackCoding(masterHttpHeaderParser) atop
       framing(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
@@ -120,7 +121,7 @@ private[http] object Http2Blueprint {
       httpLayerClient(masterHttpHeaderParser, settings, log) atop
       clientDemux(settings.http2Settings, masterHttpHeaderParser) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding() atop
+      hpackCoding(masterHttpHeaderParser) atop
       framingClient(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
@@ -162,10 +163,10 @@ private[http] object Http2Blueprint {
    * TODO: introduce another FrameEvent type that exclude HeadersFrame and ContinuationFrame from
    * reaching the higher-level.
    */
-  def hpackCoding(): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
+  def hpackCoding(masterHttpHeaderParser: HttpHeaderParser): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].via(HeaderCompression),
-      Flow[FrameEvent].via(HeaderDecompression)
+      Flow[FrameEvent].via(new HeaderDecompression(masterHttpHeaderParser))
     )
 
   /**

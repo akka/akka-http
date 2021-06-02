@@ -15,7 +15,8 @@ import akka.util.{ ByteString, Unsafe }
 
 import scala.collection.immutable.VectorBuilder
 import FrameEvent._
-import akka.http.impl.engine.http2.RequestParsing.{ checkNoRegularHeadersBeforePseudoHeader, checkUniquePseudoHeader, malformedRequest }
+import akka.http.impl.engine.http2.RequestParsing.{ checkNoRegularHeadersBeforePseudoHeader, checkUniquePseudoHeader, malformedRequest, parseHeaderPair }
+import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.scaladsl.model.{ ContentType, IllegalUriException, ParsingException, Uri }
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 
@@ -25,7 +26,7 @@ import akka.http.shaded.com.twitter.hpack.HeaderListener
  * Can be used on server and client side.
  */
 @InternalApi
-private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
+private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val UTF8 = StandardCharsets.UTF_8
   val US_ASCII = StandardCharsets.US_ASCII
 
@@ -35,6 +36,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
   val shape = FlowShape(eventsIn, eventsOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
+    val httpHeaderParser = masterHeaderParser.createShallowCopy()
     val decoder = new akka.http.shaded.com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
 
     become(Idle)
@@ -79,9 +81,16 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
                 }
                 headers += name -> newPathAndRawQuery
                 newPathAndRawQuery
-              case _ =>
+              case "content-length" | "cookie" =>
                 headers += name -> value
                 value
+              case x if x(0) == ':' =>
+                headers += name -> value
+                value
+              case _ =>
+                val parsed = parseHeaderPair(httpHeaderParser, name, value)
+                headers += name -> parsed
+                parsed
             }
           }
         }
