@@ -46,7 +46,7 @@ private[http2] class Http2ClientDemux(http2Settings: Http2ClientSettings, master
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = {
     val headerParser = masterHttpHeaderParser.createShallowCopy()
     Some(LastChunk(extension = "", headers.keyValuePairs.map {
-      case (name, value) => parseHeaderPair(headerParser, name, value)
+      case (name, value) => parseHeaderPair(headerParser, name, value.asInstanceOf[String])
     }.toList))
   }
 

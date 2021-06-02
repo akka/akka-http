@@ -44,8 +44,9 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
             case (key, value) =>
               val keyBytes = new Array[Byte](key.length)
               Unsafe.copyUSAsciiStrToBytes(key, keyBytes)
-              val valueBytes = new Array[Byte](value.length)
-              Unsafe.copyUSAsciiStrToBytes(value, valueBytes)
+              val valueStr = value.asInstanceOf[String]
+              val valueBytes = new Array[Byte](valueStr.length)
+              Unsafe.copyUSAsciiStrToBytes(valueStr, valueBytes)
               encoder.encodeHeader(os, keyBytes, valueBytes, false)
           }
           val result = ByteString(os.toByteArray)
