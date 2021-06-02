@@ -18,8 +18,10 @@ import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2ClientSettings, Http2ServerSettings, ParserSettings, ServerSettings }
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.{ ByteString, OptionVal }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -106,6 +108,7 @@ private[http] object Http2Blueprint {
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding(masterHttpHeaderParser) atop
       framing(log) atop
+      coalesceWrites atop
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
 
@@ -123,6 +126,7 @@ private[http] object Http2Blueprint {
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding(masterHttpHeaderParser) atop
       framingClient(log) atop
+      coalesceWrites atop
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
 
@@ -182,6 +186,49 @@ private[http] object Http2Blueprint {
    */
   def clientDemux(settings: Http2ClientSettings, masterHttpHeaderParser: HttpHeaderParser): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
     BidiFlow.fromGraph(new Http2ClientDemux(settings, masterHttpHeaderParser))
+
+  val coalesceWrites: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
+    BidiFlow.fromFlows(CoalesceWrites, Flow[ByteString])
+  object CoalesceWrites extends GraphStage[FlowShape[ByteString, ByteString]] {
+    val bytesIn = Inlet[ByteString]("CollectWrites.bytesIn")
+    val bytesOut = Outlet[ByteString]("CollectWrites.bytesOut")
+    val shape: FlowShape[ByteString, ByteString] = FlowShape(bytesIn, bytesOut)
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      val currentBatch = ByteString.newBuilder
+      var batched = 0
+      var hasCallbackScheduled = false
+
+      setHandlers(bytesIn, bytesOut, this)
+
+      val asyncCallback = getAsyncCallback[Unit] { _ =>
+        push(bytesOut, currentBatch.result())
+        currentBatch.clear()
+        hasCallbackScheduled = false
+        //println(s"Batched $batched frames")
+        batched = 0
+      }
+
+      override def onPush(): Unit = {
+        currentBatch ++= grab(bytesIn)
+        batched += 1
+        if (isAvailable(bytesOut) && !hasCallbackScheduled) {
+          hasCallbackScheduled = true
+          import scala.concurrent.duration._
+          interpreter.materializer.scheduleOnce(1.millis, () => { asyncCallback.invoke(()) })
+          //asyncCallback.invoke(())
+        }
+        if (!hasBeenPulled(bytesIn)) pull(bytesIn)
+      }
+      override def onPull(): Unit = if (!hasBeenPulled(bytesIn)) pull(bytesIn)
+
+      override def onUpstreamFinish(): Unit = {
+        if (currentBatch.nonEmpty)
+          push(bytesOut, currentBatch.result())
+        currentBatch.clear()
+        completeStage()
+      }
+    }
+  }
 
   /**
    * Translation between substream frames and Http messages (both directions)
