@@ -5,14 +5,13 @@
 package akka.http.impl.engine.http2
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
-
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model.{ ContentType, HttpEntity, HttpHeader, HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.shaded.com.twitter.hpack._
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.twitter.hpack.{ Decoder, Encoder, HeaderListener }
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable.VectorBuilder
