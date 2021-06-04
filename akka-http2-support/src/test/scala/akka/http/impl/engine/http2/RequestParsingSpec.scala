@@ -40,7 +40,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           priorityInfo = None
         ),
         trailingHeaders = OptionVal.None,
-        data = data,
+        data = Right(data),
         correlationAttributes = Map.empty
       )
       // Create the parsing function

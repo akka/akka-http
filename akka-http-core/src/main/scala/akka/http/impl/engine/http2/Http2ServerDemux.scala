@@ -362,7 +362,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       //        keep the buffer limited to the number of concurrent streams as negotiated
       //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
-      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
+      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Either[ByteString, Source[Any, Any]], correlationAttributes: Map[AttributeKey[_], _]): Unit =
         bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, OptionVal.None, data, correlationAttributes))
 
       setHandler(substreamIn, new InHandler {

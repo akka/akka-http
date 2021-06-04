@@ -34,7 +34,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def multiplexer: Http2Multiplexer
   def settings: Http2CommonSettings
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
-  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit
+  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Either[ByteString, Source[Any, Any]], correlationAttributes: Map[AttributeKey[_], _]): Unit
   def isUpgraded: Boolean
 
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
@@ -114,7 +114,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       }
     } else
       // stream was cancelled by peer before our response was ready
-      stream.data.runWith(Sink.cancelled)(subFusingMaterializer)
+      stream.data.foreach(_.runWith(Sink.cancelled)(subFusingMaterializer))
 
   }
 
@@ -254,7 +254,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
           // FIXME: after multiplexer PR is merged
           // prioInfo.foreach(multiplexer.updatePriority)
-          dispatchSubstream(frame, data, correlationAttributes)
+          dispatchSubstream(frame, Right(data), correlationAttributes)
           nextState
 
         case x => receivedUnexpectedFrame(x)
@@ -596,10 +596,15 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   }
   object OutStream {
     def apply(sub: Http2SubStream): OutStream = {
-      val subIn = new SubSinkInlet[Any](s"substream-in-${sub.streamId}")
       val info = new OutStreamImpl(sub.streamId, OptionVal.None, multiplexer.currentInitialWindow, sub.trailingHeaders)
-      info.registerIncomingData(subIn)
-      sub.data.runWith(subIn.sink)(subFusingMaterializer)
+      sub.data match {
+        case Right(data) =>
+          val subIn = new SubSinkInlet[Any](s"substream-in-${sub.streamId}")
+          info.registerIncomingData(subIn)
+          data.runWith(subIn.sink)(subFusingMaterializer)
+        case Left(data) =>
+          info.addAllData(data)
+      }
       info
     }
   }
@@ -625,6 +630,12 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       this.maybeInlet = OptionVal.Some(inlet)
       inlet.pull()
       inlet.setHandler(this)
+    }
+    def addAllData(data: ByteString): Unit = {
+      require(buffer.isEmpty)
+      buffer = data
+      upstreamClosed = true
+      if (canSend) multiplexer.enqueueOutStream(streamId)
     }
 
     def nextFrame(maxBytesToSend: Int): DataFrame = {
@@ -656,12 +667,11 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       } else
         None
 
-    private def maybePull(): Unit = {
+    private def maybePull(): Unit =
       // TODO: Check that buffer is not too much over the limit (which we might warn the user about)
       //       The problem here is that backpressure will only work properly if batch elements like
       //       ByteString have a reasonable size.
-      if (buffer.size < multiplexer.maxBytesToBufferPerSubstream && !inlet.hasBeenPulled && !inlet.isClosed) inlet.pull()
-    }
+      if (!upstreamClosed && buffer.size < multiplexer.maxBytesToBufferPerSubstream && !inlet.hasBeenPulled && !inlet.isClosed) inlet.pull()
 
     /** Cleans up internal state (but not external) */
     private def cleanupStream(): Unit = {
