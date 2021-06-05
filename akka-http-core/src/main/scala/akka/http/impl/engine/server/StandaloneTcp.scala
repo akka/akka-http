@@ -187,7 +187,7 @@ object StandaloneTcp {
             pull(userIn)
 
           case ChannelReadable =>
-            tryRead()
+            tryRead(registerInterest = false)
         }
 
         override def onPush(): Unit = {
@@ -205,9 +205,10 @@ object StandaloneTcp {
             pull(userIn)
           } finally bufferPool.release(buffer)
         }
-        override def onPull(): Unit = tryRead()
+        override def onPull(): Unit = tryRead(registerInterest = false)
+        val deferredRead = getAsyncCallback[Unit](_ => tryRead(registerInterest = true))
 
-        private def tryRead(): Unit = {
+        private def tryRead(registerInterest: Boolean): Unit = {
           require(isAvailable(userOut))
           val buffer = bufferPool.acquire()
           try {
@@ -219,7 +220,9 @@ object StandaloneTcp {
 
             result match {
               case 0 =>
-                registration.enableInterest(SelectionKey.OP_READ)
+                import scala.concurrent.duration._
+                if (registerInterest) registration.enableInterest(SelectionKey.OP_READ)
+                else materializer.scheduleOnce(1.millis, () => deferredRead.invoke(()))
               case -1 =>
                 registration.cancelAndClose(() => ())
                 completeStage()
