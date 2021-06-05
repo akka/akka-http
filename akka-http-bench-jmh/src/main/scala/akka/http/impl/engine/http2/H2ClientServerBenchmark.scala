@@ -9,6 +9,7 @@ import akka.actor.ActorSystem
 import akka.http.CommonBenchmark
 import akka.http.impl.engine.http2.FrameEvent.HeadersFrame
 import akka.http.impl.engine.http2.framing.FrameRenderer
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.model.headers.RawHeader
@@ -99,7 +100,7 @@ class H2ClientServerBenchmark extends CommonBenchmark {
       Http2Blueprint.handleWithStreamIdHeader(1)(req => {
         req.discardEntityBytes().future.map(_ => response)
       })(system.dispatcher)
-        .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry))
+        .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))
     val server: Flow[ByteString, ByteString, NotUsed] = Http2.priorKnowledge(http1, http2)
     val client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] = Http2Blueprint.clientStack(ClientConnectionSettings(system), log, NoOpTelemetry)
     httpFlow = client.join(server)

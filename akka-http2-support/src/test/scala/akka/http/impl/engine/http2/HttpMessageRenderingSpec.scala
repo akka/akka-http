@@ -5,16 +5,18 @@
 package akka.http.impl.engine.http2
 
 import java.time.format.DateTimeFormatter
-
 import akka.event.NoLogging
+import akka.http.impl.engine.rendering.DateHeaderRendering
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.{ ContentTypes, DateTime, TransferEncodings }
+import akka.http.scaladsl.model.{ ContentTypes, DateTime, HttpHeader, TransferEncodings }
 
 import scala.collection.immutable.Seq
 import scala.collection.immutable.VectorBuilder
 import scala.util.Try
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import scala.collection.immutable
 
 object MyCustomHeader extends ModeledCustomHeaderCompanion[MyCustomHeader] {
   override def name: String = "custom-header"
@@ -36,7 +38,7 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
         RawHeader("raw", "whatever"),
         new MyCustomHeader("whatever", renderInResponses = true)
       )
-      HttpMessageRendering.renderHeaders(headers, builder, None, NoLogging, isServer = true)
+      renderServerHeaders(headers, builder)
       val out = builder.result()
       out.exists(_._1 == "etag") shouldBe true
       out.exists(_._1 == "raw") shouldBe true
@@ -45,7 +47,7 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
 
     "add a date header when none is present" in {
       val builder = new VectorBuilder[(String, String)]
-      HttpMessageRendering.renderHeaders(Seq.empty, builder, None, NoLogging, isServer = true)
+      renderServerHeaders(Seq.empty, builder)
       val date = builder.result().collectFirst {
         case ("date", str) => str
       }
@@ -59,7 +61,7 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
     "keep the date header if it already is present" in {
       val builder = new VectorBuilder[(String, String)]
       val originalDateTime = DateTime(1981, 3, 6, 20, 30, 24)
-      HttpMessageRendering.renderHeaders(Seq(Date(originalDateTime)), builder, None, NoLogging, isServer = true)
+      renderServerHeaders(Seq(Date(originalDateTime)), builder)
       val date = builder.result().collectFirst {
         case ("date", str) => str
       }
@@ -69,14 +71,14 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
 
     "add server header if default provided (in server mode)" in {
       val builder = new VectorBuilder[(String, String)]
-      HttpMessageRendering.renderHeaders(Seq.empty, builder, Some(("server", "default server")), NoLogging, isServer = true)
+      renderServerHeaders(Seq.empty, builder, Some(("server", "default server")))
       val result = builder.result().find(_._1 == "server").map(_._2)
       result shouldEqual Some("default server")
     }
 
     "keep server header if explicitly provided (in server mode)" in {
       val builder = new VectorBuilder[(String, String)]
-      HttpMessageRendering.renderHeaders(Seq(Server("explicit server")), builder, Some(("server", "default server")), NoLogging, isServer = true)
+      renderServerHeaders(Seq(Server("explicit server")), builder, Some(("server", "default server")))
       val result = builder.result().find(_._1 == "server").map(_._2)
       result shouldEqual Some("explicit server")
     }
@@ -89,7 +91,7 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
         `Content-Type`(ContentTypes.`application/json`),
         `Transfer-Encoding`(TransferEncodings.gzip)
       )
-      HttpMessageRendering.renderHeaders(invalidExplicitHeaders, builder, None, NoLogging, isServer = true)
+      renderServerHeaders(invalidExplicitHeaders, builder)
       builder.result().exists(_._1 != "date") shouldBe false
     }
 
@@ -99,7 +101,7 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
         Host("example.com", 80),
         new MyCustomHeader("whatever", renderInResponses = false)
       )
-      HttpMessageRendering.renderHeaders(shouldNotBeRendered, builder, None, NoLogging, isServer = true)
+      renderServerHeaders(shouldNotBeRendered, builder)
       val value1 = builder.result()
       value1.exists(_._1 != "date") shouldBe false
     }
@@ -109,21 +111,21 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
       val invalidRawHeaders = Seq(
         "connection", "content-length", "content-type", "transfer-encoding", "date", "server"
       ).map(name => RawHeader(name, "whatever"))
-      HttpMessageRendering.renderHeaders(invalidRawHeaders, builder, None, NoLogging, isServer = true)
+      renderServerHeaders(invalidRawHeaders, builder)
       builder.result().exists(_._1 != "date") shouldBe false
     }
 
     // Client-specific tests
     "add user-agent header if default provided (in client mode)" in {
       val builder = new VectorBuilder[(String, String)]
-      HttpMessageRendering.renderHeaders(Seq.empty, builder, Some(("user-agent", "fancy browser")), NoLogging, isServer = false)
+      renderClientHeaders(Seq(`User-Agent`("fancy browser")), builder)
       val result = builder.result().find(_._1 == "user-agent").map(_._2)
       result shouldEqual Some("fancy browser")
     }
 
     "keep user-agent header if explicitly provided (in client mode)" in {
       val builder = new VectorBuilder[(String, String)]
-      HttpMessageRendering.renderHeaders(Seq(`User-Agent`("fancier client")), builder, Some(("user-agent", "fancy browser")), NoLogging, isServer = false)
+      renderClientHeaders(Seq(`User-Agent`("fancier client")), builder, Some(("user-agent", "fancy browser")))
       val result = builder.result().find(_._1 == "user-agent").map(_._2)
       result shouldEqual Some("fancier client")
     }
@@ -134,11 +136,21 @@ class HttpMessageRenderingSpec extends AnyWordSpec with Matchers {
         Host("example.com", 80),
         new MyCustomHeader("whatever", renderInResponses = false)
       )
-      HttpMessageRendering.renderHeaders(shouldNotBeRendered, builder, None, NoLogging, isServer = false)
+      renderClientHeaders(shouldNotBeRendered, builder)
       val value1 = builder.result()
       value1.exists(_._1 == "date") shouldBe false
     }
 
   }
 
+  private def renderClientHeaders(headers: immutable.Seq[HttpHeader], builder: VectorBuilder[(String, String)], peerIdHeader: Option[(String, String)] = None): Unit =
+    HttpMessageRendering.renderHeaders(headers, builder, peerIdHeader, NoLogging, isServer = false, shouldRenderAutoHeaders = true, dateHeaderRendering = DateHeaderRendering.Unavailable)
+
+  private def renderServerHeaders(headers: immutable.Seq[HttpHeader], builder: VectorBuilder[(String, String)], peerIdHeader: Option[(String, String)] = None): Unit =
+    HttpMessageRendering.renderHeaders(headers, builder, peerIdHeader, NoLogging, isServer = true, shouldRenderAutoHeaders = true, dateHeaderRendering = new DateHeaderRendering {
+      // fake date rendering
+      override def renderHeaderPair(): (String, String) = "date" -> DateTime.now.toRfc1123DateTimeString
+      override def renderHeaderBytes(): Array[Byte] = ???
+      override def renderHeaderValue(): String = ???
+    })
 }

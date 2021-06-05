@@ -16,6 +16,7 @@ import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.LogByteStringTools
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives
@@ -1374,7 +1375,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     def settings: ServerSettings = ServerSettings(system).withServerHeader(None)
 
     final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
-      modifyServer(Http2Blueprint.serverStack(settings, system.log, telemetry = NoOpTelemetry))
+      modifyServer(Http2Blueprint.serverStack(settings, system.log, telemetry = NoOpTelemetry, dateHeaderRendering = Http().dateHeaderRendering))
         .atop(LogByteStringTools.logByteStringBidi("network-plain-text").addAttributes(Attributes(LogLevels(Logging.DebugLevel, Logging.DebugLevel, Logging.DebugLevel))))
 
     handlerFlow
