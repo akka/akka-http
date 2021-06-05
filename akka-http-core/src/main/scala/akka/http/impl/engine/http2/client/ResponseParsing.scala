@@ -71,17 +71,17 @@ private[http2] object ResponseParsing {
           checkNoRegularHeadersBeforePseudoHeader(":status", seenRegularHeader)
           rec(remainingHeaders.tail, statusCodeValue.toInt, contentType, contentLength, seenRegularHeader, headers)
 
-        case ("content-type", ct: String) =>
-          if (contentType.isEmpty) {
-            val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
-            rec(remainingHeaders.tail, status, OptionVal.Some(contentTypeValue), contentLength, seenRegularHeader, headers)
-          } else malformedRequest("HTTP message must not contain more than one content-type header")
-
         case ("content-type", contentTypeValue: ContentType) =>
           if (contentType.isEmpty)
             rec(remainingHeaders.tail, status, OptionVal.Some(contentTypeValue), contentLength, seenRegularHeader, headers)
           else
             malformedRequest("HTTP message must not contain more than one content-type header")
+
+        case ("content-type", ct: String) =>
+          if (contentType.isEmpty) {
+            val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
+            rec(remainingHeaders.tail, status, OptionVal.Some(contentTypeValue), contentLength, seenRegularHeader, headers)
+          } else malformedRequest("HTTP message must not contain more than one content-type header")
 
         case ("content-length", length: String) =>
           if (contentLength == -1) {
@@ -92,6 +92,10 @@ private[http2] object ResponseParsing {
 
         case (name, _) if name.startsWith(":") =>
           malformedRequest(s"Unexpected pseudo-header '$name' in response")
+
+        case (name, httpHeader: HttpHeader) =>
+          // FIXME: move validation to HeaderDecompression validateHeader(httpHeader)
+          rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)
 
         case (name, value: String) =>
           val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
