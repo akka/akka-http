@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.io
+package akka.http.impl.engine.server
 
 import java.util.{ Iterator => JIterator }
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,10 +23,11 @@ import akka.actor._
 import akka.routing.RandomPool
 import akka.event.Logging
 import java.nio.channels.ClosedChannelException
+import akka.io.SelectionHandlerSettings
 
 import scala.util.Try
 
-abstract class SelectionHandlerSettings(config: Config) {
+/*abstract class SelectionHandlerSettings(config: Config) {
   import config._
 
   val MaxChannels: Int = getString("max-channels") match {
@@ -41,7 +42,7 @@ abstract class SelectionHandlerSettings(config: Config) {
   val TraceLogging: Boolean = getBoolean("trace-logging")
 
   def MaxChannelsPerSelector: Int
-}
+}*/
 
 /**
  * Interface behind which we hide our selector management logic from the connection actors
@@ -92,7 +93,7 @@ object SelectionHandler {
   case object ChannelReadable extends DeadLetterSuppression
   case object ChannelWritable extends DeadLetterSuppression
 
-  private[io] abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int) extends Actor {
+  private[server] abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int) extends Actor {
 
     override def supervisorStrategy = connectionSupervisorStrategy
 
@@ -109,7 +110,7 @@ object SelectionHandler {
    * Special supervisor strategy for parents of TCP connection and listener actors.
    * Stops the child on all errors and logs DeathPactExceptions only at debug level.
    */
-  private[io] final val connectionSupervisorStrategy: SupervisorStrategy =
+  private[server] final val connectionSupervisorStrategy: SupervisorStrategy =
     new OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider) {
       override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
                               decision: SupervisorStrategy.Directive): Unit =
@@ -120,7 +121,7 @@ object SelectionHandler {
         } else super.logFailure(context, child, cause, decision)
     }
 
-  private[io] class ChannelRegistryImpl(executionContext: ExecutionContext, settings: SelectionHandlerSettings, log: LoggingAdapter) extends ChannelRegistry {
+  private[server] class ChannelRegistryImpl(executionContext: ExecutionContext, settings: SelectionHandlerSettings, log: LoggingAdapter) extends ChannelRegistry {
     private[this] val selector = SelectorProvider.provider.openSelector
     private[this] val wakeUp = new AtomicBoolean(false)
 
@@ -276,7 +277,7 @@ object SelectionHandler {
   }
 }
 
-private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends Actor with ActorLogging
+private[server] class SelectionHandler(settings: SelectionHandlerSettings) extends Actor with ActorLogging
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import SelectionHandler._
   import settings._

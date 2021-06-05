@@ -11,13 +11,10 @@ import akka.actor.ActorRef
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.io.BufferPool
-import akka.io.ChanReg
-import akka.io.ChannelRegistration
-import akka.io.ChannelRegistry
 import akka.io.Inet
 import akka.io.Inet.SocketOption
-import akka.io.SelectionHandler.ChannelAcceptable
-import akka.io.SelectionHandler.ChannelReadable
+import SelectionHandler.ChannelAcceptable
+import SelectionHandler.ChannelReadable
 import akka.io.Tcp
 import akka.stream.ActorMaterializer
 import akka.stream.Attributes
