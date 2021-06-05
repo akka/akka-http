@@ -100,8 +100,10 @@ trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSen
     val hs = new VectorBuilder[(String, String)]()
 
     decoder.decode(bis, new HeaderListener {
-      def addHeader(name: Array[Byte], value: Array[Byte], parsedValue: AnyRef, sensitive: Boolean): Unit =
+      def addHeader(name: Array[Byte], value: Array[Byte], parsedValue: AnyRef, sensitive: Boolean): AnyRef = {
         hs += new String(name) -> new String(value)
+        parsedValue
+      }
     })
     hs.result()
   }
