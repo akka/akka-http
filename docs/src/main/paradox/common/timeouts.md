@@ -23,10 +23,6 @@ akka.http.host-connection-pool.idle-timeout
 akka.http.host-connection-pool.client.idle-timeout
 ```
 
-@@@ note
-For the client side connection pool, the idle period is counted only when the pool has no pending requests waiting.
-@@@
-
 ## Server timeouts
 
 <a id="request-timeout"></a>
@@ -73,7 +69,24 @@ The connecting timeout is the time period within which the TCP connecting proces
 Tweaking it should rarely be required, but it allows erroring out the connection in case a connection
 is unable to be established for a given amount of time.
 
-it can be configured using the `akka.http.client.connecting-timeout` setting.
+It can be configured using the `akka.http.client.connecting-timeout` setting.
+
+### Keep-alive timeouts
+
+When a server uses a `Connection: keep-alive` header to allow using the same
+connection to send a subsequent request, close the connection when no such
+request appears within the timeout.
+Set to `infinite` to allow the connection to remain open indefinitely
+(or be closed by the more general idle-timeout).
+
+This settings affects each single connection independently.
+
+A common scenario where this setting can be useful is when a server (or reverse-proxy) closes a connection according to its keep-alive
+timeout and at the same time the client tries to send a request on the now-invalid connection.
+Such a call will fail with `UnexpectedConnectionClosureException`.
+This can be avoided by configuring this timeout with a value lower than the server-side keep-alive timeout.
+
+It can be configured using the `akka.http.host-connection-pool.keep-alive-timeout` setting.
 
 ### Connection Lifetime timeout
 
