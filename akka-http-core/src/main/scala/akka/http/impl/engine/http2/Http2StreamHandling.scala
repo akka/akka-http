@@ -7,6 +7,7 @@ package akka.http.impl.engine.http2
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.rendering.DateHeaderRendering
 import akka.http.scaladsl.model.{ AttributeKey, HttpEntity }
 import akka.http.scaladsl.model.http2.PeerClosedStreamException
 import akka.http.scaladsl.settings.Http2CommonSettings
@@ -701,7 +702,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         case HttpEntity.LastChunk(_, headers) =>
           if (headers.nonEmpty && !trailer.isEmpty)
             log.warning("Found both an attribute with trailing headers, and headers in the `LastChunk`. This is not supported.")
-          trailer = OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer), None))
+          trailer = OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer, shouldRenderAutoHeaders = false, dateHeaderRendering = DateHeaderRendering.Unavailable), None))
       }
 
       maybePull()

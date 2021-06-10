@@ -32,7 +32,8 @@ import scala.util.control.NonFatal
 private[http] class HttpResponseRendererFactory(
   serverHeader:           Option[headers.Server],
   responseHeaderSizeHint: Int,
-  log:                    LoggingAdapter) {
+  log:                    LoggingAdapter,
+  dateHeaderRendering:    DateHeaderRendering) {
 
   private val renderDefaultServerHeader: Rendering => Unit =
     serverHeader match {
@@ -41,25 +42,6 @@ private[http] class HttpResponseRendererFactory(
         _ ~~ bytes
       case None => _ => ()
     }
-
-  // as an optimization we cache the Date header of the last second here
-  @volatile private[this] var cachedDateHeader: (Long, Array[Byte]) = (0L, null)
-
-  private def dateHeader: Array[Byte] = {
-    var (cachedSeconds, cachedBytes) = cachedDateHeader
-    val now = currentTimeMillis()
-    if (now / 1000 > cachedSeconds) {
-      cachedSeconds = now / 1000
-      val r = new ByteArrayRendering(48)
-      DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
-      cachedBytes = r.get
-      cachedDateHeader = cachedSeconds -> cachedBytes
-    }
-    cachedBytes
-  }
-
-  // split out so we can stabilize by overriding in tests
-  protected def currentTimeMillis(): Long = System.currentTimeMillis()
 
   def renderer: Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = Flow.fromGraph(HttpResponseRenderer)
 
@@ -214,7 +196,7 @@ private[http] class HttpResponseRendererFactory(
               }
 
             if (!serverSeen) renderDefaultServerHeader(r)
-            if (!dateSeen) r ~~ dateHeader
+            if (!dateSeen) r ~~ dateHeaderRendering.renderHeaderBytes()
 
             // Do we close the connection after this response?
             closeIf {

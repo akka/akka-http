@@ -13,6 +13,7 @@ import akka.http.impl.engine.http2.client.ResponseParsing
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.engine.rendering.DateHeaderRendering
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
@@ -91,8 +92,8 @@ private[http2] object Http2SubStream {
 @InternalApi
 private[http] object Http2Blueprint {
 
-  def serverStackTls(settings: ServerSettings, log: LoggingAdapter, telemetry: TelemetrySpi): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    serverStack(settings, log, telemetry = telemetry) atop
+  def serverStackTls(settings: ServerSettings, log: LoggingAdapter, telemetry: TelemetrySpi, dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    serverStack(settings, log, telemetry = telemetry, dateHeaderRendering = dateHeaderRendering) atop
       unwrapTls atop
       logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
 
@@ -102,9 +103,10 @@ private[http] object Http2Blueprint {
       log: LoggingAdapter,
       initialDemuxerSettings: immutable.Seq[Setting] = Nil,
       upgraded: Boolean = false,
-      telemetry: TelemetrySpi): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+      telemetry: TelemetrySpi,
+      dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
     telemetry.serverConnection atop
-      httpLayer(settings, log) atop
+      httpLayer(settings, log, dateHeaderRendering) atop
       serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
@@ -194,14 +196,14 @@ private[http] object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the `bind`` API but for
    * `bindFlow` the user needs to take of this manually.
    */
-  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
+  def httpLayer(settings: ServerSettings, log: LoggingAdapter, dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
     val parserSettings = settings.parserSettings
     // This is master header parser, every other usage should do .createShallowCopy()
     // HttpHeaderParser is not thread safe and should not be called concurrently,
     // the internal trie, however, has built-in protection and will do copy-on-write
     val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log)
     BidiFlow.fromFlows(
-      Flow[HttpResponse].map(new ResponseRendering(settings, log)),
+      Flow[HttpResponse].map(new ResponseRendering(settings, log, dateHeaderRendering)),
       Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs =>
         val headerParser = masterHttpHeaderParser.createShallowCopy()
         RequestParsing.parseRequest(headerParser, settings, attrs)

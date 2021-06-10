@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.CommonBenchmark
 import akka.http.impl.engine.http2.FrameEvent.{ DataFrame, HeadersFrame }
 import akka.http.impl.engine.http2.framing.FrameRenderer
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, LastChunk }
 import akka.http.scaladsl.model.{ AttributeKeys, ContentTypes, HttpEntity, HttpResponse, Trailer }
 import akka.http.scaladsl.model.headers.RawHeader
@@ -124,7 +125,7 @@ class H2ServerProcessingBenchmark extends CommonBenchmark {
       Http2Blueprint.handleWithStreamIdHeader(1)(req => {
         req.discardEntityBytes().future.map(_ => response)
       })(system.dispatcher)
-        .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry))
+        .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))
     httpFlow = Http2.priorKnowledge(http1, http2)
   }
 
