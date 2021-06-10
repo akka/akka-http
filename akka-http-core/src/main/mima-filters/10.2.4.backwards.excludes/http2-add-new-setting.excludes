@@ -1,0 +1,9 @@
+# add new settings to @DoNotInherit traits
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2CommonSettings.minCollectStrictEntitySize")
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.minCollectStrictEntitySize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.withMinCollectStrictEntitySize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.minCollectStrictEntitySize")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.minCollectStrictEntitySize")
+
+ProblemFilters.exclude[Problem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl*")

@@ -245,21 +245,24 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       correlationAttributes: Map[AttributeKey[_], _]             = Map.empty): StreamState =
       event match {
         case frame @ ParsedHeadersFrame(streamId, endStream, _, _) =>
-          val (data, nextState) =
-            if (endStream)
-              (Source.empty, nextStateEmpty)
-            else {
-              val subSource = new SubSourceOutlet[Any](s"substream-out-$streamId")
-              (Source.fromGraph(subSource.source), nextStateStream(new IncomingStreamBuffer(streamId, subSource)))
-            }
-
-          // FIXME: after multiplexer PR is merged
-          // prioInfo.foreach(multiplexer.updatePriority)
-          dispatchSubstream(frame, Right(data), correlationAttributes)
-          nextState
+          if (endStream) {
+            dispatchSubstream(frame, Left(ByteString.empty), correlationAttributes)
+            nextStateEmpty
+          } else if (settings.minCollectStrictEntitySize > 0)
+            CollectingIncomingData(frame, nextStateEmpty, nextStateStream, correlationAttributes, ByteString.empty)
+          else
+            dispatchStream(streamId, frame, ByteString.empty, correlationAttributes, nextStateStream)
 
         case x => receivedUnexpectedFrame(x)
       }
+
+    protected def dispatchStream(streamId: Int, headers: ParsedHeadersFrame, initialData: ByteString, correlationAttributes: Map[AttributeKey[_], _], nextStateStream: IncomingStreamBuffer => StreamState): StreamState = {
+      val subSource = new SubSourceOutlet[Any](s"substream-out-$streamId")
+      val buffer = new IncomingStreamBuffer(streamId, subSource)
+      if (initialData.nonEmpty) buffer.onDataFrame(DataFrame(streamId, endStream = false, initialData)) // fabricate frame
+      dispatchSubstream(headers, Right(Source.fromGraph(subSource.source)), correlationAttributes)
+      nextStateStream(buffer)
+    }
 
     def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = throw new IllegalStateException(s"pullNextFrame not supported in state $stateName")
     def incomingStreamPulled(): StreamState = throw new IllegalStateException(s"incomingStreamPulled not supported in state $stateName")
@@ -280,6 +283,25 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
     override def handleOutgoingCreated(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]): StreamState = OpenSendingData(outStream, correlationAttributes)
     override def handleOutgoingCreatedAndFinished(correlationAttributes: Map[AttributeKey[_], _]): StreamState = HalfClosedLocalWaitingForPeerStream(correlationAttributes)
+  }
+  /** Special state that allows collecting some incoming data before dispatching it either as strict or streamed entity */
+  case class CollectingIncomingData(
+    headers:               ParsedHeadersFrame,
+    nextStateEmpty:        StreamState,
+    nextStateStream:       IncomingStreamBuffer => StreamState,
+    correlationAttributes: Map[AttributeKey[_], _],
+    collectedData:         ByteString) extends StreamState {
+    override def handle(event: StreamFrameEvent): StreamState = event match {
+      case DataFrame(streamId, endStream, payload) =>
+        val newData = collectedData ++ payload
+        if (endStream) {
+          dispatchSubstream(headers, Left(newData), correlationAttributes)
+          nextStateEmpty
+        } else if (newData.size >= settings.minCollectStrictEntitySize)
+          dispatchStream(streamId, headers, newData, correlationAttributes, nextStateStream)
+        else
+          copy(collectedData = newData)
+    }
   }
   case class OpenReceivingDataFirst(buffer: IncomingStreamBuffer, extraInitialWindow: Int = 0) extends ReceivingData(HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow)) {
     override def handleOutgoingCreated(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]): StreamState = {
@@ -508,7 +530,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         shutdown()
         pushGOAWAY(ErrorCode.PROTOCOL_ERROR, s"Received unexpected DATA frame after stream was already (half-)closed")
       } else {
-        if (data.endStream) wasClosed = true
+        wasClosed = data.endStream
 
         outstandingStreamWindow -= data.sizeInWindow
         if (outstandingStreamWindow < 0) {
