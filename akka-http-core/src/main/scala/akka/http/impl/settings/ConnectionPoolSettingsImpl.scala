@@ -26,7 +26,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   baseConnectionBackoff:             FiniteDuration,
   maxConnectionBackoff:              FiniteDuration,
   idleTimeout:                       Duration,
-  maxConnectionIdleTimeout:          Duration,
+  keepAliveTimeout:                  Duration,
   connectionSettings:                ClientConnectionSettings,
   responseEntitySubscriptionTimeout: Duration,
   hostOverrides:                     immutable.Seq[(Regex, ConnectionPoolSettings)])
@@ -73,7 +73,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
     baseConnectionBackoff:             FiniteDuration                                   = baseConnectionBackoff,
     maxConnectionBackoff:              FiniteDuration                                   = maxConnectionBackoff,
     idleTimeout:                       Duration                                         = idleTimeout,
-    maxConnectionIdleTimeout:          Duration                                         = maxConnectionIdleTimeout,
+    keepAliveTimeout:                  Duration                                         = keepAliveTimeout,
     connectionSettings:                ClientConnectionSettings                         = connectionSettings,
     responseEntitySubscriptionTimeout: Duration                                         = responseEntitySubscriptionTimeout): ConnectionPoolSettings =
     copy(
@@ -86,7 +86,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
       baseConnectionBackoff,
       maxConnectionBackoff,
       idleTimeout,
-      maxConnectionIdleTimeout,
+      keepAliveTimeout,
       connectionSettings,
       responseEntitySubscriptionTimeout,
       hostOverrides = hostOverrides.map { case (k, v) => k -> mapHostOverrides(v) })
@@ -108,7 +108,7 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
       c.getFiniteDuration("base-connection-backoff"),
       c.getFiniteDuration("max-connection-backoff"),
       c.getPotentiallyInfiniteDuration("idle-timeout"),
-      c.getPotentiallyInfiniteDuration("max-connection-idle-timeout"),
+      c.getPotentiallyInfiniteDuration("keep-alive-timeout"),
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
       List.empty
