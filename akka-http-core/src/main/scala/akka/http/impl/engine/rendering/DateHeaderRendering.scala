@@ -35,17 +35,8 @@ import scala.concurrent.ExecutionContext
     case object Idle extends DateState
     case class AutoUpdated(value: String) extends DateState {
       var wasUsed: Boolean = false
-      private[this] var _pair: (String, String) = _
-      def headerPair: (String, String) = {
-        if (_pair eq null) _pair = "date" -> value
-        _pair
-      }
-      private[this] var _bytes: Array[Byte] = _
-      def headerBytes: Array[Byte] = {
-        if (_bytes eq null)
-          _bytes = (new ByteArrayRendering(48) ~~ headers.Date ~~ value ~~ CrLf).get
-        _bytes
-      }
+      val headerPair: (String, String) = "date" -> value
+      val headerBytes: Array[Byte] = (new ByteArrayRendering(48) ~~ headers.Date ~~ value ~~ CrLf).get
     }
     val dateState = new AtomicReference[DateState](Idle)
     val updateInterval = 1.second
