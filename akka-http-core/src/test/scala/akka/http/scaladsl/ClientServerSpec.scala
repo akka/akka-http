@@ -362,6 +362,8 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
             actualTimeout.nanos should be < serverTimeout
           } finally Await.result(b1.unbind(), 1.second.dilated)
         }
+
+        // keepAliveTimeout is not so easy to observe from the 'outside', so tested in SlotStateSpec instead
       }
     }
 
