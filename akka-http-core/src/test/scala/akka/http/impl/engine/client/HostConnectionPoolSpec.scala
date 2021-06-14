@@ -346,7 +346,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         expectResponseEntityAsString() shouldEqual "response"
       }
 
-      "create a new connection when previous one timed out between requests" inWithShutdown
+      "create a new connection when previous one timed out between requests because of keep-alive-timeout" inWithShutdown
         new SetupWithServerProbes(_.withKeepAliveTimeout(800.millis)) {
           pushRequest(HttpRequest(uri = "/simple"))
 
@@ -361,9 +361,10 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
           conn1.serverRequests.expectComplete()
           conn1.serverResponses.sendComplete()
 
-          val complete = System.nanoTime()
-          (System.nanoTime() - receivedFirstResponse).nanos should be >= 800.millis
-          println("XXX", System.nanoTime() - receivedFirstResponse)
+          val lasted = System.nanoTime() - receivedFirstResponse
+
+          lasted.nanos should be >= 800.millis
+          lasted.nanos should be < 1500.millis
 
           pushRequest(HttpRequest(uri = "/next"))
           val conn2 = expectNextConnection()
