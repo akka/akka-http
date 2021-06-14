@@ -81,10 +81,11 @@ requests before it closes the connection (and eventually reestablishes it).
 
 A common scenario where this setting is useful is to prevent a race-condition inherent in HTTP: in most cases, a server
 or reverse-proxy closes a persistent (kept-alive) connection after some time. HTTP does not define a protocol between
-client and server to negotiate a graceful tear down of an idle persistent connection. Therefore, it can happen that a server decides to
+client and server to negotiate a graceful teardown of an idle persistent connection. Therefore, it can happen that a server decides to
 close a connection at the same time that a client decides to send a new request. In that case, the request will fail to be processed,
 but the client cannot determine for which reason the server closed the connection and whether the request was (partly) processed or not.
-Such a condition can be observed when a request fails with an `UnexpectedConnectionClosureException`.
+Such a condition can be observed when a request fails with an `UnexpectedConnectionClosureException` or a `StreamTcpException` stating
+"Connection reset by peer".
 
 To prevent this from happening, you can set the timeout to a lower value than the server-side keep-alive timeout
 (which you either have to know or find out experimentally).
