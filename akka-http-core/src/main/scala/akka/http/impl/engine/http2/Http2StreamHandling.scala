@@ -410,7 +410,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       case w: WindowUpdateFrame =>
         incrementWindow(w.windowSizeIncrement)
 
-      case other => receivedUnexpectedFrame(event)
+      case _ => receivedUnexpectedFrame(event)
     }
     protected def onReset(streamId: Int): Unit
 
