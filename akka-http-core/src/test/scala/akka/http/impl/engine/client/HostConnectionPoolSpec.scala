@@ -357,6 +357,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
           expectResponseEntityAsString() shouldEqual "/simple"
           val receivedFirstResponse = System.nanoTime()
 
+          // wait until pool closes connection because of keep-alive-timeout
           conn1.serverRequests.expectComplete()
           conn1.serverResponses.sendComplete()
 
