@@ -897,6 +897,44 @@ Host: example.com
       binding.unbind().futureValue
       Http().shutdownAllConnectionPools().futureValue
     }
+
+    "avoid client vs. server race-condition for persistent connections with keep-alive-timeout" in {
+      def handler(request: HttpRequest): Future[HttpResponse] = Future.successful(HttpResponse())
+      val serverSettings = ServerSettings(system).mapTimeouts(_.withIdleTimeout(300.millis))
+      val binding = Http().newServerAt("127.0.0.1", 0).withSettings(serverSettings).bind(handler).futureValue
+      val uri = "http://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
+
+      val clientSettings = ConnectionPoolSettings(system)
+        .withUpdatedConnectionSettings(
+          _.withTransport(new ClientTransport {
+            override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] =
+              Flow[ByteString]
+                .delay(200.millis, OverflowStrategy.backpressure) // delay request sending enough to make race-condition more likely
+                .viaMat(ClientTransport.TCP.connectTo(host, port, settings))(Keep.right)
+          }))
+
+      def runRequest(clientSettings: ConnectionPoolSettings): Future[HttpResponse] =
+        Http().singleRequest(HttpRequest(method = POST, uri = uri), settings = clientSettings)
+
+      def runTest(clientSettings: ConnectionPoolSettings): Future[HttpResponse] = {
+        // send first request
+        runRequest(clientSettings).awaitResult(1.second)
+
+        // delay so that next request is sent before idle-timeout of 300 millis
+        // but will arrive only 200 millis later, which is after the idle-timeout
+        Thread.sleep(200)
+
+        runRequest(clientSettings)
+      }
+
+      // send second request, should run into server-side idle-timeout
+      val ex = Try(runTest(clientSettings).awaitResult(1.second)).failed.get
+      ex.getCause.getMessage.contains("connection closed") shouldBe true
+
+      val clientSettings2 = clientSettings.withKeepAliveTimeout(100.millis) // < 300 millis server idle timeout
+      // same test on new pool with keep-alive-timeout which should succeed
+      runTest(clientSettings2).awaitResult(1.second)
+    }
   }
 
   override def beforeTermination() = {
