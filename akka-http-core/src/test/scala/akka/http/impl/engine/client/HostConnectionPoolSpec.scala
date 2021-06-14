@@ -345,6 +345,33 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         conn2.pushResponse(HttpResponse(entity = "response"))
         expectResponseEntityAsString() shouldEqual "response"
       }
+
+      "create a new connection when previous one timed out between requests because of keep-alive-timeout" inWithShutdown
+        new SetupWithServerProbes(_.withKeepAliveTimeout(800.millis)) {
+          pushRequest(HttpRequest(uri = "/simple"))
+
+          val conn1 = expectNextConnection()
+          val req = conn1.expectRequest()
+          conn1.pushResponse(HttpResponse(headers = headers.Connection("keep-alive") :: Nil, entity = req.uri.path.toString))
+
+          expectResponseEntityAsString() shouldEqual "/simple"
+          val receivedFirstResponse = System.nanoTime()
+
+          // wait until pool closes connection because of keep-alive-timeout
+          conn1.serverRequests.expectComplete()
+          conn1.serverResponses.sendComplete()
+
+          val lasted = System.nanoTime() - receivedFirstResponse
+
+          lasted.nanos should be >= 800.millis
+          lasted.nanos should be < 1500.millis
+
+          pushRequest(HttpRequest(uri = "/next"))
+          val conn2 = expectNextConnection()
+          conn2.expectRequestToPath("/next")
+          conn2.pushResponse(HttpResponse(entity = "response"))
+          expectResponseEntityAsString() shouldEqual "response"
+        }
       "create a new connection when previous one was closed regularly between requests without sending a `Connection: close` header first" inWithShutdown new SetupWithServerProbes {
         pushRequest(HttpRequest(uri = "/simple"))
 
