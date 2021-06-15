@@ -298,7 +298,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
     override protected def onDataFrame(dataFrame: DataFrame): StreamState = {
       val newData = collectedData ++ dataFrame.payload
+
       if (dataFrame.endStream) {
+        totalBufferedData -= newData.size
         dispatchSubstream(headers, Left(newData), correlationAttributes)
         HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow)
       } else if (newData.size >= settings.minCollectStrictEntitySize)
@@ -394,13 +396,14 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
           pushGOAWAY(ErrorCode.FLOW_CONTROL_ERROR, "Received more data than connection-level window would allow")
           Closed
         } else {
+          val nextState = onDataFrame(d)
+
           val windowSizeIncrement = flowController.onConnectionDataReceived(outstandingConnectionLevelWindow, totalBufferedData)
           if (windowSizeIncrement > 0) {
             multiplexer.pushControlFrame(WindowUpdateFrame(Http2Protocol.NoStreamId, windowSizeIncrement))
             outstandingConnectionLevelWindow += windowSizeIncrement
           }
-
-          onDataFrame(d)
+          nextState
         }
       case r: RstStreamFrame =>
         onRstStreamFrame(r)

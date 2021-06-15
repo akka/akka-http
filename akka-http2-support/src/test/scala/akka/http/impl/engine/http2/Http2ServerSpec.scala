@@ -547,6 +547,22 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           network.sendDATA(1, endStream = true, ByteString.empty) // send fi
           entityDataIn.expectComplete()
         }
+        def sendOutConnectionLevelWindowUpdate(singleDataFrame: Boolean) =
+          s"eventually send out WINDOW_UPDATE for dispatched data (singleDataFrame = $singleDataFrame)" inAssertAllStagesStopped new WaitingForRequestData {
+            override def settings: ServerSettings =
+              super.settings.mapHttp2Settings(_.withIncomingConnectionLevelBufferSize(Http2Protocol.InitialWindowSize)) // set to initial size
+
+            val data = ByteString("x" * Http2Protocol.InitialWindowSize) // exactly fills window
+            network.sendDATA(TheStreamId, endStream = singleDataFrame, data)
+            if (!singleDataFrame) network.sendDATA(TheStreamId, endStream = true, ByteString.empty)
+
+            entityDataIn.expectBytes(data)
+            network.remainingWindowForIncomingDataOnConnection shouldEqual 0
+            network.expectWindowUpdate()
+            network.remainingWindowForIncomingDataOnConnection shouldEqual Http2Protocol.InitialWindowSize
+          }
+        sendOutConnectionLevelWindowUpdate(singleDataFrame = true) // to examine strict entity handling when minCollectStrictEntityBytes != 0
+        sendOutConnectionLevelWindowUpdate(singleDataFrame = false) // to examine what happens when entity is collected but then converted to stream
 
         /** These cases are different when minCollectStrictEntityBytes = 1 because either a strict or a streamed request entity are then created  */
         def handleEarlyWindowUpdateCorrectly(endStreamSeen: Boolean) =
@@ -1065,8 +1081,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       "not exceed stream-level window while sending" in pending
       "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed" in pending
       "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed when window became negative through setting" in pending
-
-      "eventually send WINDOW_UPDATE frames for received data" in pending
 
       "reject WINDOW_UPDATE for connection with zero increment with PROTOCOL_ERROR" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         network.sendWINDOW_UPDATE(0, 0) // illegal
