@@ -12,12 +12,12 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 private[http2] object Http2Compliance {
 
   final class IllegalHttp2StreamIdException(id: Int, expected: String)
-    extends IllegalArgumentException(s"Illegal HTTP/2 stream id: [$id]. $expected!")
+    extends Http2ProtocolException(s"Illegal HTTP/2 stream id: [$id]. $expected!")
 
-  final class MissingHttpIdHeaderException extends IllegalArgumentException("Expected `Http2StreamIdHeader` header to be present but was missing!")
+  final class MissingHttpIdHeaderException extends Http2ProtocolException("Expected `Http2StreamIdHeader` header to be present but was missing!")
 
   final class IllegalHttp2StreamDependency(id: Int)
-    extends IllegalArgumentException(s"Illegal self dependency of stream for id: [$id]!")
+    extends Http2ProtocolException(s"Illegal self dependency of stream for id: [$id]!")
 
   final class IllegalPayloadInSettingsAckFrame(size: Int, expected: String) extends IllegalHttp2FrameSize(size, expected)
 
@@ -38,7 +38,9 @@ private[http2] object Http2Compliance {
     if (value > MaxFrameSize) throw new Http2ProtocolException(ErrorCode.PROTOCOL_ERROR, s"MAX_FRAME_SIZE MUST NOT be > than $MaxFrameSize, attempted setting to: $value!")
   }
 
-  class Http2ProtocolException(val errorCode: ErrorCode, message: String) extends IllegalStateException(message)
+  class Http2ProtocolException(val errorCode: ErrorCode, message: String) extends IllegalStateException(message) {
+    def this(message: String) = this(ErrorCode.PROTOCOL_ERROR, message)
+  }
   class Http2ProtocolStreamException(val streamId: Int, val errorCode: ErrorCode, message: String) extends IllegalStateException(message)
 
   final def requireZeroStreamId(id: Int): Unit =

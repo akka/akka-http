@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 
 import javax.net.ssl.SSLSession
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model
@@ -182,7 +183,7 @@ private[http2] object RequestParsing {
   private[http2] def checkNoRegularHeadersBeforePseudoHeader(name: String, seenRegularHeader: Boolean): Unit =
     if (seenRegularHeader) malformedRequest(s"Pseudo-header field '$name' must not appear after a regular header")
   private[http2] def malformedRequest(msg: String): Nothing =
-    throw new RuntimeException(s"Malformed request: $msg")
+    throw new Http2ProtocolException(s"Malformed request: $msg")
   private[http2] def validateHeader(httpHeader: HttpHeader) = httpHeader.lowercaseName match {
     case "connection" =>
       // https://tools.ietf.org/html/rfc7540#section-8.1.2.2

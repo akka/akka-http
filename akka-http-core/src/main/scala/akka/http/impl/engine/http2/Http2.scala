@@ -82,6 +82,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
             httpPlusSwitching(http1, http2).addAttributes(prepareServerAttributes(settings, incoming))
               .watchTermination()(Keep.right)
               .join(incoming.flow)
+              .addAttributes(Http.cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
               .run().recover {
                 // Ignore incoming errors from the connection as they will cancel the binding.
                 // As far as it is known currently, these errors can only happen if a TCP error bubbles up

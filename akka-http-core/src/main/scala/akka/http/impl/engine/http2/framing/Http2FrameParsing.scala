@@ -14,6 +14,7 @@ import akka.util.OptionVal
 import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.annotation.InternalApi
 import FrameEvent._
+import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.stream.impl.io.ByteStringParser.ByteReader
 
 import scala.annotation.tailrec
@@ -170,7 +171,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean, log: LoggingA
           else if (reader.take(24) == Http2Protocol.ClientConnectionPreface)
             ParseResult(None, ReadFrame, acceptUpstreamFinish = false)
           else
-            throw new RuntimeException("Expected ConnectionPreface!")
+            throw new Http2ProtocolException("Expected ConnectionPreface!")
       }
 
       object ReadFrame extends Step {

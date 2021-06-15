@@ -24,7 +24,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
      akka {
        loglevel = DEBUG
        loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
-       http.server.log-unencrypted-network-bytes = off
+       http.server.log-unencrypted-network-bytes = 100
        http.server.preview.enable-http2 = on
        http.server.http2.log-frames = on
 
