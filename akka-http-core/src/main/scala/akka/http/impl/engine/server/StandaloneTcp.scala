@@ -5,7 +5,6 @@ import java.net.SocketException
 import java.nio.channels.SelectionKey
 import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
-
 import akka.Done
 import akka.actor.ActorRef
 import akka.event.Logging
@@ -33,6 +32,7 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.ByteString
 
+import java.nio.ByteBuffer
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -194,16 +194,21 @@ object StandaloneTcp {
           // FIXME: need internal buffer because we might need to buffer here for several reasons
 
           val data = grab(userIn)
-          val buffer = bufferPool.acquire()
-          try {
+
+          def writeData(data: ByteString, buffer: ByteBuffer): Unit = {
             buffer.clear()
-            require(data.size <= buffer.limit())
-            data.copyToBuffer(buffer)
+            //require(data.size <= buffer.limit())
+            val copied = data.copyToBuffer(buffer)
             buffer.flip()
             val written = channel.write(buffer)
-            require(written == data.size) // FIXME: for now expect that all data be written all the time
-            pull(userIn)
-          } finally bufferPool.release(buffer)
+            require(written == copied) // FIXME: for now expect that all data be written all the time
+            if (data.size > copied) writeData(data.drop(copied), buffer)
+            else pull(userIn)
+          }
+
+          val buffer = bufferPool.acquire()
+          try writeData(data, buffer)
+          finally bufferPool.release(buffer)
         }
         override def onPull(): Unit = tryRead(registerInterest = false)
         val deferredRead = getAsyncCallback[Unit](_ => tryRead(registerInterest = true))
