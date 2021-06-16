@@ -55,13 +55,6 @@ private[http2] case class Http2SubStream(
         if (data == Source.empty || contentLength == 0 || !hasEntity) {
           if (contentTypeOption.isEmpty) HttpEntity.Empty
           else HttpEntity.Strict(contentType, ByteString.empty)
-        } else if (contentLength > 0) {
-          val byteSource: Source[ByteString, Any] = data.collect {
-            case b: ByteString             => b
-            case HttpEntity.Chunk(data, _) => data
-            // ignore: HttpEntity.LastChunk
-          }
-          HttpEntity.Default(contentType, contentLength, byteSource)
         } else {
           val chunkSource: Source[HttpEntity.ChunkStreamPart, Any] = data.map {
             case b: ByteString                 => HttpEntity.Chunk(b)
