@@ -249,14 +249,19 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
             dispatchSubstream(frame, Left(ByteString.empty), correlationAttributes)
             nextStateEmpty
           } else if (settings.minCollectStrictEntitySize > 0)
-            CollectingIncomingData(frame, nextStateEmpty, nextStateStream, correlationAttributes, ByteString.empty)
+            CollectingIncomingData(frame, correlationAttributes, ByteString.empty, extraInitialWindow = 0)
           else
             dispatchStream(streamId, frame, ByteString.empty, correlationAttributes, nextStateStream)
 
         case x => receivedUnexpectedFrame(x)
       }
 
-    protected def dispatchStream(streamId: Int, headers: ParsedHeadersFrame, initialData: ByteString, correlationAttributes: Map[AttributeKey[_], _], nextStateStream: IncomingStreamBuffer => StreamState): StreamState = {
+    protected def dispatchStream(
+      streamId:              Int,
+      headers:               ParsedHeadersFrame,
+      initialData:           ByteString,
+      correlationAttributes: Map[AttributeKey[_], _],
+      nextStateStream:       IncomingStreamBuffer => StreamState): StreamState = {
       val subSource = new SubSourceOutlet[Any](s"substream-out-$streamId")
       val buffer = new IncomingStreamBuffer(streamId, subSource)
       if (initialData.nonEmpty) buffer.onDataFrame(DataFrame(streamId, endStream = false, initialData)) // fabricate frame
@@ -287,31 +292,34 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   /** Special state that allows collecting some incoming data before dispatching it either as strict or streamed entity */
   case class CollectingIncomingData(
     headers:               ParsedHeadersFrame,
-    nextStateEmpty:        StreamState,
-    nextStateStream:       IncomingStreamBuffer => StreamState,
     correlationAttributes: Map[AttributeKey[_], _],
-    collectedData:         ByteString) extends StreamState {
-    override def handle(event: StreamFrameEvent): StreamState = event match {
-      case DataFrame(streamId, endStream, payload) =>
-        val newData = collectedData ++ payload
-        if (endStream) {
-          dispatchSubstream(headers, Left(newData), correlationAttributes)
-          nextStateEmpty
-        } else if (newData.size >= settings.minCollectStrictEntitySize)
-          dispatchStream(streamId, headers, newData, correlationAttributes, nextStateStream)
-        else
-          copy(collectedData = newData)
+    collectedData:         ByteString,
+    extraInitialWindow:    Int) extends ReceivingData {
+
+    override protected def onDataFrame(dataFrame: DataFrame): StreamState = {
+      val newData = collectedData ++ dataFrame.payload
+
+      if (dataFrame.endStream) {
+        totalBufferedData -= newData.size
+        dispatchSubstream(headers, Left(newData), correlationAttributes)
+        HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow)
+      } else if (newData.size >= settings.minCollectStrictEntitySize)
+        dispatchStream(dataFrame.streamId, headers, newData, correlationAttributes, OpenReceivingDataFirst(_, extraInitialWindow))
+      else
+        copy(collectedData = newData)
     }
+
+    override protected def onTrailer(parsedHeadersFrame: ParsedHeadersFrame): StreamState = this // trailing headers not supported for requests right now
+    override protected def incrementWindow(delta: Int): StreamState = copy(extraInitialWindow = extraInitialWindow + delta)
+    override protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit = {} // nothing to do here
   }
-  case class OpenReceivingDataFirst(buffer: IncomingStreamBuffer, extraInitialWindow: Int = 0) extends ReceivingData(HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow)) {
+  case class OpenReceivingDataFirst(buffer: IncomingStreamBuffer, extraInitialWindow: Int = 0) extends ReceivingDataWithBuffer(HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow)) {
     override def handleOutgoingCreated(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]): StreamState = {
       outStream.increaseWindow(extraInitialWindow)
       Open(buffer, outStream)
     }
     override def handleOutgoingCreatedAndFinished(correlationAttributes: Map[AttributeKey[_], _]): StreamState = HalfClosedLocal(buffer)
     override def handleOutgoingEnded(): StreamState = Closed
-
-    override protected def onReset(streamId: Int): Unit = multiplexer.closeStream(streamId)
 
     override def incrementWindow(delta: Int): StreamState = copy(extraInitialWindow = extraInitialWindow + delta)
   }
@@ -377,42 +385,56 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         expectIncomingStream(event, Closed, HalfClosedLocal, correlationAttributes)
     }
   }
-  sealed abstract class ReceivingData(afterEndStreamReceived: StreamState) extends StreamState { _: Product =>
-    protected def buffer: IncomingStreamBuffer
+  sealed abstract class ReceivingData extends StreamState { _: Product =>
     def handle(event: StreamFrameEvent): StreamState = event match {
       case d: DataFrame =>
         outstandingConnectionLevelWindow -= d.sizeInWindow
         totalBufferedData += d.payload.size // padding can be seen as instantly discarded
 
         if (outstandingConnectionLevelWindow < 0) {
-          buffer.shutdown()
+          shutdown()
           pushGOAWAY(ErrorCode.FLOW_CONTROL_ERROR, "Received more data than connection-level window would allow")
           Closed
         } else {
+          val nextState = onDataFrame(d)
+
           val windowSizeIncrement = flowController.onConnectionDataReceived(outstandingConnectionLevelWindow, totalBufferedData)
           if (windowSizeIncrement > 0) {
             multiplexer.pushControlFrame(WindowUpdateFrame(Http2Protocol.NoStreamId, windowSizeIncrement))
             outstandingConnectionLevelWindow += windowSizeIncrement
           }
-
-          buffer.onDataFrame(d)
-          afterBufferEvent
+          nextState
         }
       case r: RstStreamFrame =>
-        buffer.onRstStreamFrame(r)
-        onReset(r.streamId)
+        onRstStreamFrame(r)
         Closed
 
       case h: ParsedHeadersFrame =>
-        buffer.onTrailingHeaders(h)
-        afterBufferEvent
+        onTrailer(h)
 
       case w: WindowUpdateFrame =>
         incrementWindow(w.windowSizeIncrement)
 
-      case other => receivedUnexpectedFrame(event)
+      case _ => receivedUnexpectedFrame(event)
     }
-    protected def onReset(streamId: Int): Unit
+    protected def onDataFrame(dataFrame: DataFrame): StreamState
+    protected def onTrailer(parsedHeadersFrame: ParsedHeadersFrame): StreamState
+    protected def incrementWindow(delta: Int): StreamState
+    protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit
+  }
+  sealed abstract class ReceivingDataWithBuffer(afterEndStreamReceived: StreamState) extends ReceivingData { _: Product =>
+    protected def buffer: IncomingStreamBuffer
+
+    override protected def onDataFrame(dataFrame: DataFrame): StreamState = {
+      buffer.onDataFrame(dataFrame)
+      afterBufferEvent
+    }
+    override protected def onTrailer(parsedHeadersFrame: ParsedHeadersFrame): StreamState = {
+      buffer.onTrailingHeaders(parsedHeadersFrame)
+      afterBufferEvent
+    }
+
+    override protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit = buffer.onRstStreamFrame(rstStreamFrame)
 
     override def incomingStreamPulled(): StreamState = {
       buffer.dispatchNextChunk()
@@ -430,14 +452,14 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   }
 
   // on the incoming side there's (almost) no difference between Open and HalfClosedLocal
-  case class Open(buffer: IncomingStreamBuffer, outStream: OutStream) extends ReceivingData(HalfClosedRemoteSendingData(outStream)) with Sending {
+  case class Open(buffer: IncomingStreamBuffer, outStream: OutStream) extends ReceivingDataWithBuffer(HalfClosedRemoteSendingData(outStream)) with Sending {
     override def handleOutgoingEnded(): StreamState = HalfClosedLocal(buffer)
 
-    override protected def onReset(streamId: Int): Unit = {
+    override protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit = {
+      super.onRstStreamFrame(rstStreamFrame)
       outStream.cancelStream()
-      multiplexer.closeStream(streamId)
+      multiplexer.closeStream(rstStreamFrame.streamId)
     }
-
     override def incrementWindow(delta: Int): StreamState = {
       outStream.increaseWindow(delta)
       this
@@ -446,11 +468,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   /**
    * We have closed the outgoing stream, but the incoming stream is still going.
    */
-  case class HalfClosedLocal(buffer: IncomingStreamBuffer) extends ReceivingData(Closed) {
-    override protected def onReset(streamId: Int): Unit = {
-      // nothing further to do as we're already half-closed
-    }
-
+  case class HalfClosedLocal(buffer: IncomingStreamBuffer) extends ReceivingDataWithBuffer(Closed) {
     override def incrementWindow(delta: Int): StreamState = this // no op, already finished sending
   }
 
