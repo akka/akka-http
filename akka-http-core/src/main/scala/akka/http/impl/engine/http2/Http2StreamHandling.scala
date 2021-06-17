@@ -52,7 +52,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
    */
   def tryPullSubStreams(): Unit
 
-  private val streamStates = new java.util.Hashtable[Int, StreamState]()
+  private val streamStates = new java.util.Hashtable[Int, StreamState](settings.maxConcurrentStreams)
   private var largestIncomingStreamId = 0
   private var outstandingConnectionLevelWindow = Http2Protocol.InitialWindowSize
   private var totalBufferedData = 0
