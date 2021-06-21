@@ -42,6 +42,7 @@ private[pool] sealed abstract class SlotState extends Product {
   def isIdle: Boolean
   def isConnected: Boolean
 
+  def idle(ctx: SlotContext): SlotState = SlotState.Idle(ctx.settings.keepAliveTimeout)
   def onPreConnect(ctx: SlotContext): SlotState = illegalState(ctx, "onPreConnect")
   def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = illegalState(ctx, "onConnectionAttemptSucceeded")
   def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onConnectionAttemptFailed")
@@ -191,10 +192,12 @@ private[pool] object SlotState {
   private[pool] case object ToBeClosed extends ShouldCloseConnectionState(None)
   private[pool] case class Failed(cause: Throwable) extends ShouldCloseConnectionState(Some(cause))
 
-  private[pool] case object Idle extends ConnectedState with IdleState {
+  private[pool] final case class Idle(keepAliveTimeout: Duration) extends ConnectedState with IdleState {
+    override def stateTimeout: Duration = keepAliveTimeout
     override def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState =
       PushingRequestToConnection(requestContext)
 
+    override def onTimeout(ctx: SlotContext): SlotState = ToBeClosed
     override def onConnectionCompleted(ctx: SlotContext): SlotState = ToBeClosed
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = ToBeClosed
   }
@@ -211,7 +214,7 @@ private[pool] object SlotState {
   private[pool] case object PreConnecting extends ConnectedState with IdleState {
     override def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = {
       ctx.debug("Slot connection was (pre-)established")
-      Idle
+      idle(ctx)
     }
     override def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState =
       Connecting(requestContext)
@@ -322,7 +325,7 @@ private[pool] object SlotState {
       else if (ctx.willCloseAfter(ongoingResponse) || ctx.isConnectionClosed)
         ToBeClosed // when would ctx.isConnectionClose be true? what that mean that the connection has already failed before? do we need that state at all?
       else
-        Idle
+        idle(ctx)
 
     override def onRequestEntityCompleted(ctx: SlotContext): SlotState = {
       require(waitingForEndOfRequestEntity)
@@ -334,10 +337,10 @@ private[pool] object SlotState {
 
     override def onRequestEntityCompleted(ctx: SlotContext): SlotState =
       if (ctx.isConnectionClosed) ToBeClosed
-      else Idle
+      else idle(ctx)
     override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState =
       if (ctx.isConnectionClosed) ToBeClosed // ignore error here
-      else Idle
+      else idle(ctx)
     override def onConnectionCompleted(ctx: SlotContext): SlotState = ToBeClosed
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = Failed(cause)
   }

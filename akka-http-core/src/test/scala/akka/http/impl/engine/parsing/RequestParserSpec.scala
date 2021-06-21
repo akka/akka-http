@@ -20,6 +20,7 @@ import akka.http.scaladsl.settings.{ ParserSettings, WebSocketSettings }
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.settings.WebSocketSettingsImpl
 import akka.http.impl.util._
+import akka.http.scaladsl.model.ContentTypes.{ NoContentType, `text/plain(UTF-8)` }
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.HttpProtocols._
@@ -29,6 +30,7 @@ import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.settings.ParserSettings.ConflictingContentTypeHeaderProcessingMode
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.testkit._
@@ -153,17 +155,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
 
-      "with a funky `Transfer-Encoding` header" in new Test {
-        """PUT / HTTP/1.1
-          |Transfer-Encoding: foo, chunked, bar
-          |Host: x
-          |
-          |""" should parseTo(HttpRequest(PUT, "/", List(`Transfer-Encoding`(
-          TransferEncodings.Extension("foo"),
-          TransferEncodings.chunked, TransferEncodings.Extension("bar")), Host("x"))))
-        closeAfterResponseCompletion shouldEqual Seq(false)
-      }
-
       "with several identical `Content-Type` headers" in new Test {
         """GET /data HTTP/1.1
           |Host: x
@@ -172,6 +163,45 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |Content-Length: 0
           |
           |""" should parseTo(HttpRequest(GET, "/data", List(Host("x")), HttpEntity.empty(`application/pdf`)))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "with several conflicting `Content-Type` headers with conflicting-content-type-header-processing-mode = first" in new Test {
+        override def parserSettings: ParserSettings =
+          super.parserSettings.withConflictingContentTypeHeaderProcessingMode(ConflictingContentTypeHeaderProcessingMode.First)
+        """GET /data HTTP/1.1
+          |Host: x
+          |Content-Type: application/pdf
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpRequest(GET, "/data", List(Host("x"), `Content-Type`(`text/plain(UTF-8)`)), HttpEntity.empty(`application/pdf`)))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "with several conflicting `Content-Type` headers with conflicting-content-type-header-processing-mode = last" in new Test {
+        override def parserSettings: ParserSettings =
+          super.parserSettings.withConflictingContentTypeHeaderProcessingMode(ConflictingContentTypeHeaderProcessingMode.Last)
+        """GET /data HTTP/1.1
+          |Host: x
+          |Content-Type: application/pdf
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpRequest(GET, "/data", List(Host("x"), `Content-Type`(`application/pdf`)), HttpEntity.empty(`text/plain(UTF-8)`)))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "with several conflicting `Content-Type` headers with conflicting-content-type-header-processing-mode = no-content-type" in new Test {
+        override def parserSettings: ParserSettings =
+          super.parserSettings.withConflictingContentTypeHeaderProcessingMode(ConflictingContentTypeHeaderProcessingMode.NoContentType)
+        """GET /data HTTP/1.1
+          |Host: x
+          |Content-Type: application/pdf
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpRequest(GET, "/data", List(Host("x"), `Content-Type`(`application/pdf`), `Content-Type`(`text/plain(UTF-8)`)), HttpEntity.empty(NoContentType)))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -298,17 +328,15 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
       }
     }
 
-    "properly parse a chunked request with additional transfer encodings" in new Test {
+    "properly parse a chunked transfer encoding request" in new Test {
       """PATCH /data HTTP/1.1
-        |Transfer-Encoding: fancy, chunked
+        |Transfer-Encoding: chunked
         |Content-Type: application/pdf
         |Host: ping
         |
         |0
         |
-        |""" should parseTo(HttpRequest(PATCH, "/data", List(
-        `Transfer-Encoding`(TransferEncodings.Extension("fancy")),
-        Host("ping")), HttpEntity.Chunked(`application/pdf`, source(LastChunk))))
+        |""" should parseTo(HttpRequest(PATCH, "/data", List(Host("ping")), HttpEntity.Chunked(`application/pdf`, source(LastChunk))))
       closeAfterResponseCompletion shouldEqual Seq(false)
     }
 
@@ -595,6 +623,16 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
       }
 
+      "with several conflicting `Content-Type` headers" in new Test {
+        """GET /data HTTP/1.1
+          |Host: x
+          |Content-Type: application/pdf
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 0
+          |
+          |""" should parseToError(400: StatusCode, ErrorInfo("HTTP message must not contain more than one Content-Type header"))
+      }
+
       "with an illegal entity using CONNECT" in new Test {
         """CONNECT /resource/yes HTTP/1.1
           |Transfer-Encoding: chunked
@@ -615,6 +653,63 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |Host: x
           |
           |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
+      }
+
+      "a request with an unsupported transfer encoding" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: fancy
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("Unsupported Transfer-Encoding 'fancy'"))
+      }
+
+      "a chunked request with additional transfer encodings" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: fancy, chunked
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
+      }
+
+      "a chunked request with additional transfer encodings after chunked in multiple headers" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: chunked
+          |Transfer-Encoding: fancy
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
+      }
+
+      "a chunked request with additional transfer encodings after chunked in one header" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: chunked, fancy
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("Multiple Transfer-Encoding entries not supported"))
+      }
+
+      "a chunked request with a content length" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: chunked
+          |Content-Type: application/pdf
+          |Content-Length: 7
+          |Host: ping
+          |
+          |0
+          |
+          |""" should parseToError(BadRequest, ErrorInfo("A chunked request must not contain a Content-Length header"))
       }
     }
   }

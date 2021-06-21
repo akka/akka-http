@@ -5,7 +5,6 @@
 package akka.http.impl.engine.http2
 
 import java.net.InetSocketAddress
-
 import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
@@ -17,6 +16,8 @@ import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.LogByteStringTools
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives
 import akka.http.scaladsl.model.headers.RawHeader
@@ -36,6 +37,7 @@ import akka.stream.testkit.TestSubscriber
 import akka.testkit._
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
+
 import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -237,6 +239,22 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         user.expectRequest().headers shouldBe expectedRequest.headers
       }
 
+      "allow trailing headers on strict responses" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        val streamId = 1
+        network.sendHEADERS(streamId, endStream = true, network.headersForRequest(Get("/")))
+        user.expectRequest()
+        val response =
+          HttpResponse(StatusCodes.OK, entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("Hello")))
+            .addAttribute(AttributeKeys.trailer, Trailer(RawHeader("Status", "grpc-status 10")))
+        user.emitResponse(streamId, response)
+
+        network.expectHeaderBlock(streamId, endStream = false)
+        network.expectDATA(streamId, endStream = false, ByteString("Hello"))
+        val trailingResponseHeaders = network.expectDecodedResponseHEADERSPairs(streamId)
+        trailingResponseHeaders.size should be(1)
+        trailingResponseHeaders.head should be(("Status", "grpc-status 10"))
+      }
+
       "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         network.sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, 8192)
         network.expectSettingsAck()
@@ -274,192 +292,317 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
-    abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes {
-      val TheStreamId = 1
-      protected def sendRequest(): Unit
+    def requestTests(minCollectStrictEntityBytes: Int) = {
+      abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMinCollectStrictEntitySize(minCollectStrictEntityBytes))
 
-      sendRequest()
-      val receivedRequest = user.expectRequest()
-      val entityDataIn = ByteStringSinkProbe()
-      receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
-      entityDataIn.ensureSubscription()
-    }
+        val TheStreamId = 1
+        protected def sendRequest(): Unit
 
-    abstract class WaitingForRequest(request: HttpRequest) extends RequestEntityTestSetup {
-      protected def sendRequest(): Unit = network.sendRequest(TheStreamId, request)
-    }
-    abstract class WaitingForRequestData extends RequestEntityTestSetup {
-      lazy val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
+        sendRequest()
 
-      protected def sendRequest(): Unit =
-        network.sendRequestHEADERS(TheStreamId, request, endStream = false)
-    }
-
-    "support stream for request entity data" should {
-      "send data frames to entity stream" inAssertAllStagesStopped new WaitingForRequestData {
-        val data1 = ByteString("abcdef")
-        network.sendDATA(TheStreamId, endStream = false, data1)
-        entityDataIn.expectBytes(data1)
-
-        val data2 = ByteString("zyxwvu")
-        network.sendDATA(TheStreamId, endStream = false, data2)
-        entityDataIn.expectBytes(data2)
-
-        val data3 = ByteString("mnopq")
-        network.sendDATA(TheStreamId, endStream = true, data3)
-        entityDataIn.expectBytes(data3)
-        entityDataIn.expectComplete()
-      }
-      "handle content-length and content-type of incoming request" inAssertAllStagesStopped new WaitingForRequest(
-        HttpRequest(
-          method = HttpMethods.POST,
-          uri = "https://example.com/upload",
-          entity = HttpEntity(ContentTypes.`application/json`, 1337, Source.repeat("x").take(1337).map(ByteString(_))),
-          protocol = HttpProtocols.`HTTP/2.0`)) {
-
-        receivedRequest.entity.contentType should ===(ContentTypes.`application/json`)
-        receivedRequest.entity.isIndefiniteLength should ===(false)
-        receivedRequest.entity.contentLengthOption should ===(Some(1337L))
-        entityDataIn.expectBytes(ByteString("x" * 1337))
-        entityDataIn.expectComplete()
-      }
-      "fail entity stream if peer sends RST_STREAM frame" inAssertAllStagesStopped new WaitingForRequestData {
-        val data1 = ByteString("abcdef")
-        network.sendDATA(TheStreamId, endStream = false, data1)
-        entityDataIn.expectBytes(data1)
-
-        network.sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
-        val error = entityDataIn.expectError()
-        error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
-      }
-
-      // Reproducing https://github.com/akka/akka-http/issues/2957
-      "close the stream when we receive a RST after we have half-closed ourselves as well" inAssertAllStagesStopped new WaitingForRequestData {
-        // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's what grpcurl does ;)
-        network.sendDATA(streamId = TheStreamId, endStream = false, ByteString(0, 0, 0, 0, 0x10, 0x22, 0x0e) ++ ByteString.fromString("GreeterService"))
-
-        // We emit a 404 response, half-closing the stream.
-        user.emitResponse(streamId = TheStreamId, HttpResponse(StatusCodes.NotFound))
-
-        // The client closes the stream with a protocol error. This is somewhat questionable but it's what grpc-go does
-        network.sendRST_STREAM(streamId = TheStreamId, ErrorCode.PROTOCOL_ERROR)
-        entityDataIn.expectError()
-        // Wait to give the warning (that we hope not to see) time to pop up.
-        Thread.sleep(100)
-      }
-      "not fail the whole connection when one stream is RST twice" inAssertAllStagesStopped new WaitingForRequestData {
-        network.sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
-        val error = entityDataIn.expectError()
-        error.getMessage shouldBe "Stream with ID [1] was closed by peer with code STREAM_CLOSED(0x05)"
-        network.expectNoBytes(100.millis)
-
-        // https://http2.github.io/http2-spec/#StreamStates
-        // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
-        network.sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
-        network.expectNoBytes(100.millis)
-      }
-      "not fail the whole connection when data frames are received after stream was cancelled" inAssertAllStagesStopped new WaitingForRequestData {
-        entityDataIn.cancel()
-        network.expectRST_STREAM(TheStreamId)
-        network.sendDATA(TheStreamId, endStream = false, ByteString("test"))
-        // should just be ignored, especially no GOAWAY frame should be sent in response
-        network.expectNoBytes(100.millis)
-      }
-      "send RST_STREAM if entity stream is canceled" inAssertAllStagesStopped new WaitingForRequestData {
-        val data1 = ByteString("abcdef")
-        network.sendDATA(TheStreamId, endStream = false, data1)
-        entityDataIn.expectBytes(data1)
-
-        network.pollForWindowUpdates(10.millis)
-
-        entityDataIn.cancel()
-        network.expectRST_STREAM(TheStreamId, ErrorCode.CANCEL)
-      }
-      "send out WINDOW_UPDATE frames when request data is read so that the stream doesn't stall" inAssertAllStagesStopped new WaitingForRequestData {
-        (1 to 10).foreach { _ =>
-          val bytesSent = network.sendWindowFullOfData(TheStreamId)
-          bytesSent should be > 0
-          entityDataIn.expectBytes(bytesSent)
-          network.pollForWindowUpdates(10.millis)
-          network.remainingWindowForIncomingData(TheStreamId) should be > 0
+        lazy val (receivedRequest, entityDataIn) = {
+          val receivedRequest = user.expectRequest()
+          val entityDataIn = ByteStringSinkProbe()
+          receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
+          entityDataIn.ensureSubscription()
+          (receivedRequest, entityDataIn)
         }
       }
-      "backpressure until request entity stream is read (don't send out unlimited WINDOW_UPDATE before)" inAssertAllStagesStopped new WaitingForRequestData {
-        var totallySentBytes = 0
-        // send data until we don't receive any window updates from the implementation any more
-        eventually(Timeout(1.second.dilated)) {
-          totallySentBytes += network.sendWindowFullOfData(TheStreamId)
-          // the implementation may choose to send a few window update until internal buffers are filled
+
+      abstract class WaitingForRequest(request: HttpRequest) extends RequestEntityTestSetup {
+        protected def sendRequest(): Unit = network.sendRequest(TheStreamId, request)
+      }
+      abstract class WaitingForRequestData extends RequestEntityTestSetup {
+        lazy val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
+
+        protected def sendRequest(): Unit =
+          network.sendRequestHEADERS(TheStreamId, request, endStream = false)
+      }
+      s"support stream for request entity data (min-collect-strict-entity-bytes = $minCollectStrictEntityBytes)" should {
+        "send data frames to entity stream" inAssertAllStagesStopped new WaitingForRequestData {
+          val data1 = ByteString("abcdef")
+          network.sendDATA(TheStreamId, endStream = false, data1)
+          entityDataIn.expectBytes(data1)
+
+          val data2 = ByteString("zyxwvu")
+          network.sendDATA(TheStreamId, endStream = false, data2)
+          entityDataIn.expectBytes(data2)
+
+          val data3 = ByteString("mnopq")
+          network.sendDATA(TheStreamId, endStream = true, data3)
+          entityDataIn.expectBytes(data3)
+          entityDataIn.expectComplete()
+        }
+        "handle content-length and content-type of incoming request" inAssertAllStagesStopped new WaitingForRequest(
+          HttpRequest(
+            method = HttpMethods.POST,
+            uri = "https://example.com/upload",
+            entity = HttpEntity(ContentTypes.`application/json`, 1337, Source.repeat("x").take(1337).map(ByteString(_))),
+            protocol = HttpProtocols.`HTTP/2.0`)) {
+
+          receivedRequest.entity.contentType should ===(ContentTypes.`application/json`)
+          // FIXME: contentLength is not reported in all cases with HTTP/2
+          // see https://github.com/akka/akka-http/issues/3843
+          // receivedRequest.entity.isIndefiniteLength should ===(false)
+          // receivedRequest.entity.contentLengthOption should ===(Some(1337L))
+          entityDataIn.expectBytes(ByteString("x" * 1337))
+          entityDataIn.expectComplete()
+        }
+        "fail entity stream if peer sends RST_STREAM frame" inAssertAllStagesStopped new WaitingForRequestData {
+          val data1 = ByteString("abcdef")
+          network.sendDATA(TheStreamId, endStream = false, data1)
+          entityDataIn.expectBytes(data1)
+
+          network.sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
+          val error = entityDataIn.expectError()
+          error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
+        }
+        if (minCollectStrictEntityBytes != 0)
+          "not dispatch request at all if RST is received before any data" inAssertAllStagesStopped new WaitingForRequestData {
+            network.sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
+            user.requestIn.ensureSubscription()
+            user.requestIn.expectNoMessage(100.millis)
+
+            // error is not surfaced anywhere
+          }
+
+        // Reproducing https://github.com/akka/akka-http/issues/2957
+        "close the stream when we receive a RST after we have half-closed ourselves as well" inAssertAllStagesStopped new WaitingForRequestData {
+          // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's what grpcurl does ;)
+          network.sendDATA(streamId = TheStreamId, endStream = false, ByteString(0, 0, 0, 0, 0x10, 0x22, 0x0e) ++ ByteString.fromString("GreeterService"))
+
+          // We emit a 404 response, half-closing the stream.
+          user.emitResponse(streamId = TheStreamId, HttpResponse(StatusCodes.NotFound))
+
+          // The client closes the stream with a protocol error. This is somewhat questionable but it's what grpc-go does
+          network.sendRST_STREAM(streamId = TheStreamId, ErrorCode.PROTOCOL_ERROR)
+          entityDataIn.expectError()
+          // Wait to give the warning (that we hope not to see) time to pop up.
+          Thread.sleep(100)
+        }
+        if (minCollectStrictEntityBytes == 0)
+          "not fail the whole connection when one stream is RST twice" inAssertAllStagesStopped new WaitingForRequestData {
+            network.sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
+            val error = entityDataIn.expectError()
+            error.getMessage shouldBe "Stream with ID [1] was closed by peer with code STREAM_CLOSED(0x05)"
+            network.expectNoBytes(100.millis)
+
+            // https://http2.github.io/http2-spec/#StreamStates
+            // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
+            network.sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
+            network.expectNoBytes(100.millis)
+          }
+
+        "not fail the whole connection when data frames are received after stream was cancelled" inAssertAllStagesStopped new WaitingForRequestData {
+          // send some initial data
+          val data1 = ByteString("abcdef")
+          network.sendDATA(TheStreamId, endStream = false, data1)
+          entityDataIn.expectBytes(data1)
           network.pollForWindowUpdates(10.millis)
-          network.remainingWindowForIncomingData(TheStreamId) shouldBe 0
+
+          // cancel stream
+          entityDataIn.cancel()
+          network.expectRST_STREAM(TheStreamId)
+
+          network.sendDATA(TheStreamId, endStream = false, ByteString("test"))
+          // should just be ignored, especially no GOAWAY frame should be sent in response
+          network.expectNoBytes(100.millis)
+        }
+        "send RST_STREAM if entity stream is canceled" inAssertAllStagesStopped new WaitingForRequestData {
+          val data1 = ByteString("abcdef")
+          network.sendDATA(TheStreamId, endStream = false, data1)
+          entityDataIn.expectBytes(data1)
+
+          network.pollForWindowUpdates(10.millis)
+
+          entityDataIn.cancel()
+          network.expectRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+        }
+        "send out WINDOW_UPDATE frames when request data is read so that the stream doesn't stall" inAssertAllStagesStopped new WaitingForRequestData {
+          (1 to 10).foreach { _ =>
+            val bytesSent = network.sendWindowFullOfData(TheStreamId)
+            bytesSent should be > 0
+            entityDataIn.expectBytes(bytesSent)
+            network.pollForWindowUpdates(10.millis)
+            network.remainingWindowForIncomingData(TheStreamId) should be > 0
+          }
+        }
+        "backpressure until request entity stream is read (don't send out unlimited WINDOW_UPDATE before)" inAssertAllStagesStopped new WaitingForRequestData {
+          var totallySentBytes = 0
+          // send data until we don't receive any window updates from the implementation any more
+          eventually(Timeout(1.second.dilated)) {
+            totallySentBytes += network.sendWindowFullOfData(TheStreamId)
+            // the implementation may choose to send a few window update until internal buffers are filled
+            network.pollForWindowUpdates(10.millis)
+            network.remainingWindowForIncomingData(TheStreamId) shouldBe 0
+          }
+
+          // now drain entity source
+          entityDataIn.expectBytes(totallySentBytes)
+
+          eventually(Timeout(1.second.dilated)) {
+            network.pollForWindowUpdates(10.millis)
+            network.remainingWindowForIncomingData(TheStreamId) should be > 0
+          }
+        }
+        "send data frames to entity stream and ignore trailing headers" inAssertAllStagesStopped new WaitingForRequestData {
+          val data1 = ByteString("abcdef")
+          network.sendDATA(TheStreamId, endStream = false, data1)
+          entityDataIn.expectBytes(data1)
+
+          network.sendHEADERS(TheStreamId, endStream = true, Seq(headers.`Cache-Control`(CacheDirectives.`no-cache`)))
+          entityDataIn.expectComplete()
         }
 
-        // now drain entity source
-        entityDataIn.expectBytes(totallySentBytes)
-
-        eventually(Timeout(1.second.dilated)) {
-          network.pollForWindowUpdates(10.millis)
-          network.remainingWindowForIncomingData(TheStreamId) should be > 0
+        "fail if more data is received than connection window allows" inAssertAllStagesStopped new WaitingForRequestData {
+          network.sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 100000)))
+          val (_, errorCode) = network.expectGOAWAY()
+          errorCode shouldEqual ErrorCode.FLOW_CONTROL_ERROR
         }
+        "fail if more data is received than stream-level window allows" inAssertAllStagesStopped new WaitingForRequestData {
+          // trigger a connection-level WINDOW_UPDATE
+          network.sendDATA(TheStreamId, endStream = false, ByteString("0000"))
+          entityDataIn.expectUtf8EncodedString("0000")
+          network.pollForWindowUpdates(500.millis) // window resize/update triggered
+
+          network.sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 512001))) // more than default `incoming-stream-level-buffer-size = 512kB`
+          network.expectRST_STREAM(TheStreamId, ErrorCode.FLOW_CONTROL_ERROR)
+        }
+        "fail stream if request entity is not fully pulled when connection dies" inAssertAllStagesStopped new WaitingForRequestData {
+          network.sendDATA(TheStreamId, endStream = false, ByteString("0000"))
+          entityDataIn.expectUtf8EncodedString("0000")
+          network.pollForWindowUpdates(500.millis)
+
+          val bigData = ByteString("1" * 100000) // more than configured request-entity-chunk-size, so that something is left in buffer
+          network.sendDATA(TheStreamId, endStream = false, bigData)
+          network.sendDATA(TheStreamId, endStream = true, ByteString.empty)
+
+          // DATA is left in IncomingStreamBuffer because we never pulled
+          network.toNet.cancel()
+          network.fromNet.sendError(new RuntimeException("connection crashed"))
+
+          // we have received all data for the stream, but the substream cannot push it any more because the owning stage is gone
+          entityDataIn.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
+        }
+        "fail if DATA frame arrives after incoming stream has already been closed (before response was sent)" inAssertAllStagesStopped new WaitingForRequestData {
+          network.sendDATA(TheStreamId, endStream = false, ByteString("0000"))
+          entityDataIn.expectUtf8EncodedString("0000")
+          network.pollForWindowUpdates(500.millis)
+
+          val bigData = ByteString("1" * 100000) // more than configured request-entity-chunk-size, so that something is left in buffer
+          network.sendDATA(TheStreamId, endStream = false, bigData)
+          network.sendDATA(TheStreamId, endStream = true, ByteString.empty) // close stream
+
+          // now send more DATA: checks that we have moved into a state where DATA is not expected any more
+          network.sendDATA(TheStreamId, endStream = false, ByteString("more data"))
+          val (_, errorCode) = network.expectGOAWAY()
+          errorCode shouldEqual ErrorCode.PROTOCOL_ERROR
+
+          // we have received all data for the stream, but the substream cannot push it any more because the owning stage is gone
+          entityDataIn.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
+        }
+        "fail entity stream if advertised content-length doesn't match" in pending
+
+        "collect Strict entity for single DATA frame" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+          override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMinCollectStrictEntitySize(1))
+          network.sendRequestHEADERS(1, HttpRequest(HttpMethods.POST, entity = HttpEntity("abcde")), endStream = false)
+          user.requestIn.ensureSubscription()
+          user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+          network.sendDATA(1, endStream = true, ByteString("abcde")) // send final frame
+          val receivedRequest = user.expectRequest()
+
+          receivedRequest.entity shouldBe Symbol("strict")
+          receivedRequest.entity.asInstanceOf[HttpEntity.Strict].data.utf8String shouldBe "abcde"
+        }
+        "collect Strict entity for multiple DATA frames if min-collect-strict-entity-size is set accordingly" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+          override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMinCollectStrictEntitySize(10))
+          network.sendRequestHEADERS(1, HttpRequest(HttpMethods.POST, entity = HttpEntity("abcde")), endStream = false)
+          user.requestIn.ensureSubscription()
+          user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+          network.sendDATA(1, endStream = false, ByteString("abcde")) // send final frame
+          user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+          network.sendDATA(1, endStream = true, ByteString("fghij")) // send fi
+          val receivedRequest = user.expectRequest()
+
+          receivedRequest.entity shouldBe Symbol("strict")
+          receivedRequest.entity.asInstanceOf[HttpEntity.Strict].data.utf8String shouldBe "abcdefghij"
+        }
+        "create streamed entity for multiple DATA frames if min-collect-strict-entity-size is too low" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+          override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMinCollectStrictEntitySize(10))
+          network.sendRequestHEADERS(1, HttpRequest(HttpMethods.POST, entity = HttpEntity("abcde")), endStream = false)
+          user.requestIn.ensureSubscription()
+          user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+          network.sendDATA(1, endStream = false, ByteString("abcde")) // send final frame
+          user.requestIn.expectNoMessage(100.millis) // don't expect request yet
+          network.sendDATA(1, endStream = false, ByteString("fghij")) // send fi
+          val receivedRequest = user.expectRequest()
+
+          receivedRequest.entity shouldNot be(Symbol("strict"))
+          val entityDataIn = ByteStringSinkProbe()
+          receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
+          entityDataIn.ensureSubscription()
+          entityDataIn.expectUtf8EncodedString("abcdefghij")
+
+          network.sendDATA(1, endStream = false, ByteString("klmnop")) // send fi
+          entityDataIn.expectUtf8EncodedString("klmnop")
+          network.sendDATA(1, endStream = true, ByteString.empty) // send fi
+          entityDataIn.expectComplete()
+        }
+        def sendOutConnectionLevelWindowUpdate(singleDataFrame: Boolean) =
+          s"eventually send out WINDOW_UPDATE for dispatched data (singleDataFrame = $singleDataFrame)" inAssertAllStagesStopped new WaitingForRequestData {
+            override def settings: ServerSettings =
+              super.settings.mapHttp2Settings(_.withIncomingConnectionLevelBufferSize(Http2Protocol.InitialWindowSize)) // set to initial size
+
+            val data = ByteString("x" * Http2Protocol.InitialWindowSize) // exactly fills window
+            network.sendDATA(TheStreamId, endStream = singleDataFrame, data)
+            if (!singleDataFrame) network.sendDATA(TheStreamId, endStream = true, ByteString.empty)
+
+            entityDataIn.expectBytes(data)
+            network.remainingWindowForIncomingDataOnConnection shouldEqual 0
+            network.expectWindowUpdate()
+            network.remainingWindowForIncomingDataOnConnection shouldEqual Http2Protocol.InitialWindowSize
+          }
+        sendOutConnectionLevelWindowUpdate(singleDataFrame = true) // to examine strict entity handling when minCollectStrictEntityBytes != 0
+        sendOutConnectionLevelWindowUpdate(singleDataFrame = false) // to examine what happens when entity is collected but then converted to stream
+
+        /** These cases are different when minCollectStrictEntityBytes = 1 because either a strict or a streamed request entity are then created  */
+        def handleEarlyWindowUpdateCorrectly(endStreamSeen: Boolean) =
+          s"handle WINDOW_UPDATE correctly when received before started sending out response and while receiving request data (seen endStream = $endStreamSeen)" inAssertAllStagesStopped new WaitingForRequestData {
+            val bytesToSend = 70000 // > Http2Protocol.InitialWindowSize
+            val missingWindow = bytesToSend - Http2Protocol.InitialWindowSize
+            require(missingWindow >= 0)
+            // add missing window space immediately to both connection- and stream-level window
+            network.sendWINDOW_UPDATE(0, missingWindow)
+            network.sendWINDOW_UPDATE(TheStreamId, missingWindow)
+
+            // this will create a streaming entity even when `minCollectStrictEntityBytes = 1` because endStream = false
+            val data1 = ByteString("abcdef")
+            network.sendDATA(TheStreamId, endStream = endStreamSeen, data1)
+            entityDataIn.expectBytes(data1)
+            if (endStreamSeen) entityDataIn.expectComplete()
+            network.pollForWindowUpdates(100.millis)
+
+            val entityDataOut = TestPublisher.probe[ByteString]()
+
+            val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
+            user.emitResponse(TheStreamId, response)
+            network.expectDecodedHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+            entityDataOut.sendNext(bytes(bytesToSend, 0x23))
+
+            network.expectDATA(TheStreamId, false, bytesToSend)
+
+            entityDataOut.sendComplete()
+            network.expectDATA(TheStreamId, true, 0)
+          }
+
+        handleEarlyWindowUpdateCorrectly(endStreamSeen = false)
+        handleEarlyWindowUpdateCorrectly(endStreamSeen = true)
       }
-      "send data frames to entity stream and ignore trailing headers" inAssertAllStagesStopped new WaitingForRequestData {
-        val data1 = ByteString("abcdef")
-        network.sendDATA(TheStreamId, endStream = false, data1)
-        entityDataIn.expectBytes(data1)
-
-        network.sendHEADERS(TheStreamId, endStream = true, Seq(headers.`Cache-Control`(CacheDirectives.`no-cache`)))
-        entityDataIn.expectComplete()
-      }
-
-      "fail if more data is received than connection window allows" inAssertAllStagesStopped new WaitingForRequestData {
-        network.sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 100000)))
-        val (_, errorCode) = network.expectGOAWAY()
-        errorCode shouldEqual ErrorCode.FLOW_CONTROL_ERROR
-      }
-      "fail if more data is received than stream-level window allows" inAssertAllStagesStopped new WaitingForRequestData {
-        // trigger a connection-level WINDOW_UPDATE
-        network.sendDATA(TheStreamId, endStream = false, ByteString("0000"))
-        entityDataIn.expectUtf8EncodedString("0000")
-        network.pollForWindowUpdates(500.millis) // window resize/update triggered
-
-        network.sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 512001))) // more than default `incoming-stream-level-buffer-size = 512kB`
-        network.expectRST_STREAM(TheStreamId, ErrorCode.FLOW_CONTROL_ERROR)
-      }
-      "fail stream if request entity is not fully pulled when connection dies" inAssertAllStagesStopped new WaitingForRequestData {
-        network.sendDATA(TheStreamId, endStream = false, ByteString("0000"))
-        entityDataIn.expectUtf8EncodedString("0000")
-        network.pollForWindowUpdates(500.millis)
-
-        val bigData = ByteString("1" * 100000) // more than configured request-entity-chunk-size, so that something is left in buffer
-        network.sendDATA(TheStreamId, endStream = false, bigData)
-        network.sendDATA(TheStreamId, endStream = true, ByteString.empty)
-
-        // DATA is left in IncomingStreamBuffer because we never pulled
-        network.toNet.cancel()
-        network.fromNet.sendError(new RuntimeException("connection crashed"))
-
-        // we have received all data for the stream, but the substream cannot push it any more because the owning stage is gone
-        entityDataIn.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
-      }
-      "fail if DATA frame arrives after incoming stream has already been closed (before response was sent)" inAssertAllStagesStopped new WaitingForRequestData {
-        network.sendDATA(TheStreamId, endStream = false, ByteString("0000"))
-        entityDataIn.expectUtf8EncodedString("0000")
-        network.pollForWindowUpdates(500.millis)
-
-        val bigData = ByteString("1" * 100000) // more than configured request-entity-chunk-size, so that something is left in buffer
-        network.sendDATA(TheStreamId, endStream = false, bigData)
-        network.sendDATA(TheStreamId, endStream = true, ByteString.empty) // close stream
-
-        // now send more DATA: checks that we have moved into a state where DATA is not expected any more
-        network.sendDATA(TheStreamId, endStream = false, ByteString("more data"))
-        val (_, errorCode) = network.expectGOAWAY()
-        errorCode shouldEqual ErrorCode.PROTOCOL_ERROR
-
-        // we have received all data for the stream, but the substream cannot push it any more because the owning stage is gone
-        entityDataIn.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
-      }
-      "fail entity stream if advertised content-length doesn't match" in pending
     }
+
+    requestTests(minCollectStrictEntityBytes = 0)
+    requestTests(minCollectStrictEntityBytes = 1)
 
     "support streaming for sending response entity data" should {
       abstract class WaitingForResponseSetup extends TestSetup with RequestResponseProbes {
@@ -521,27 +664,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         entityDataOut.expectCancellation()
         network.toNet.expectNoBytes(100.millis) // the whole stage failed with bug #2236
-      }
-
-      "handle WINDOW_UPDATE correctly when received before started sending out response and while receiving request data" inAssertAllStagesStopped new WaitingForRequestData {
-        val bytesToSend = 70000 // > Http2Protocol.InitialWindowSize
-        val missingWindow = bytesToSend - Http2Protocol.InitialWindowSize
-        require(missingWindow >= 0)
-        // add missing window space immediately to both connection- and stream-level window
-        network.sendWINDOW_UPDATE(0, missingWindow)
-        network.sendWINDOW_UPDATE(TheStreamId, missingWindow)
-
-        val entityDataOut = TestPublisher.probe[ByteString]()
-
-        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
-        user.emitResponse(TheStreamId, response)
-        network.expectDecodedHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
-        entityDataOut.sendNext(bytes(bytesToSend, 0x23))
-
-        network.expectDATA(TheStreamId, false, bytesToSend)
-
-        entityDataOut.sendComplete()
-        network.expectDATA(TheStreamId, true, 0)
       }
 
       "handle WINDOW_UPDATE correctly when received before started sending out response" inAssertAllStagesStopped new WaitingForResponseSetup {
@@ -962,8 +1084,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed" in pending
       "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed when window became negative through setting" in pending
 
-      "eventually send WINDOW_UPDATE frames for received data" in pending
-
       "reject WINDOW_UPDATE for connection with zero increment with PROTOCOL_ERROR" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         network.sendWINDOW_UPDATE(0, 0) // illegal
         val (_, errorCode) = network.expectGOAWAY()
@@ -1357,7 +1477,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     def settings: ServerSettings = ServerSettings(system).withServerHeader(None)
 
     final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
-      modifyServer(Http2Blueprint.serverStack(settings, system.log, telemetry = NoOpTelemetry))
+      modifyServer(Http2Blueprint.serverStack(settings, system.log, telemetry = NoOpTelemetry, dateHeaderRendering = Http().dateHeaderRendering))
         .atop(LogByteStringTools.logByteStringBidi("network-plain-text").addAttributes(Attributes(LogLevels(Logging.DebugLevel, Logging.DebugLevel, Logging.DebugLevel))))
 
     handlerFlow

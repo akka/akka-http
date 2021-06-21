@@ -5,22 +5,21 @@
 package akka.http.impl.engine.http2
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent.ParsedHeadersFrame
-import akka.http.impl.util.StringRendering
+import akka.http.impl.engine.rendering.DateHeaderRendering
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.Date
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ServerSettings
+import akka.util.OptionVal
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 
 /** INTERNAL API */
 @InternalApi
-private[http2] class ResponseRendering(settings: ServerSettings, val log: LoggingAdapter) extends MessageRendering[HttpResponse] {
+private[http2] class ResponseRendering(settings: ServerSettings, val log: LoggingAdapter, val dateHeaderRendering: DateHeaderRendering) extends MessageRendering[HttpResponse] {
 
   private def failBecauseOfMissingAttribute: Nothing =
     // attribute is missing, shutting down because we will most likely otherwise miss a response and leak a substream
@@ -58,6 +57,8 @@ private[http2] class RequestRendering(settings: ClientConnectionSettings, val lo
   }
 
   override lazy val peerIdHeader: Option[(String, String)] = settings.userAgentHeader.map(h => h.lowercaseName -> h.value)
+
+  override protected def dateHeaderRendering: DateHeaderRendering = DateHeaderRendering.Unavailable
 }
 
 /** INTERNAL API */
@@ -68,37 +69,29 @@ private[http2] sealed abstract class MessageRendering[R <: HttpMessage] extends 
   protected def nextStreamId(r: R): Int
   protected def initialHeaderPairs(r: R): VectorBuilder[(String, String)]
   protected def peerIdHeader: Option[(String, String)]
+  protected def dateHeaderRendering: DateHeaderRendering
 
   def apply(r: R): Http2SubStream = {
     val headerPairs = initialHeaderPairs(r)
 
     HttpMessageRendering.addContentHeaders(headerPairs, r.entity)
-    HttpMessageRendering.renderHeaders(r.headers, headerPairs, peerIdHeader, log, isServer = r.isResponse)
+    HttpMessageRendering.renderHeaders(r.headers, headerPairs, peerIdHeader, log, isServer = r.isResponse, shouldRenderAutoHeaders = true, dateHeaderRendering)
 
-    val headersFrame = ParsedHeadersFrame(nextStreamId(r), endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
+    val streamId = nextStreamId(r)
+    val headersFrame = ParsedHeadersFrame(streamId, endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
+    val trailingHeadersFrame =
+      r.attribute(AttributeKeys.trailer) match {
+        case Some(trailer) => OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, trailer.headers, None))
+        case None          => OptionVal.None
+      }
 
-    Http2SubStream(r.entity, headersFrame, r.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
+    Http2SubStream(r.entity, headersFrame, trailingHeadersFrame, r.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
   }
 }
 
 /** INTERNAL API */
 @InternalApi
 private[http2] object HttpMessageRendering {
-
-  @volatile
-  private var cachedDateHeader = (0L, ("", ""))
-
-  private def dateHeader(): (String, String) = {
-    val cachedSeconds = cachedDateHeader._1
-    val now = System.currentTimeMillis()
-    if (now / 1000 > cachedSeconds) {
-      val r = new StringRendering
-      DateTime(now).renderRfc1123DateTimeString(r)
-      cachedDateHeader = (now, Date.lowercaseName -> r.get)
-    }
-    cachedDateHeader._2
-  }
-
   /**
    * Mutates `headerPairs` adding headers related to content (type and length).
    */
@@ -109,12 +102,14 @@ private[http2] object HttpMessageRendering {
   }
 
   def renderHeaders(
-    headers:  immutable.Seq[HttpHeader],
-    log:      LoggingAdapter,
-    isServer: Boolean
+    headers:                 immutable.Seq[HttpHeader],
+    log:                     LoggingAdapter,
+    isServer:                Boolean,
+    shouldRenderAutoHeaders: Boolean,
+    dateHeaderRendering:     DateHeaderRendering
   ): Seq[(String, String)] = {
     val headerPairs = new VectorBuilder[(String, String)]()
-    renderHeaders(headers, headerPairs, None, log, isServer)
+    renderHeaders(headers, headerPairs, None, log, isServer, shouldRenderAutoHeaders, dateHeaderRendering)
     headerPairs.result()
   }
 
@@ -124,11 +119,13 @@ private[http2] object HttpMessageRendering {
    *                     peer. For example, a User-Agent on the client or a Server header on the server.
    */
   def renderHeaders(
-    headersSeq:   immutable.Seq[HttpHeader],
-    headerPairs:  VectorBuilder[(String, String)],
-    peerIdHeader: Option[(String, String)],
-    log:          LoggingAdapter,
-    isServer:     Boolean
+    headersSeq:              immutable.Seq[HttpHeader],
+    headerPairs:             VectorBuilder[(String, String)],
+    peerIdHeader:            Option[(String, String)],
+    log:                     LoggingAdapter,
+    isServer:                Boolean,
+    shouldRenderAutoHeaders: Boolean,
+    dateHeaderRendering:     DateHeaderRendering
   ): Unit = {
     def suppressionWarning(h: HttpHeader, msg: String): Unit =
       log.warning("Explicitly set HTTP header '{}' is ignored, {}", h, msg)
@@ -179,11 +176,11 @@ private[http2] object HttpMessageRendering {
       }
     }
 
-    if (!dateSeen && isServer) {
-      headerPairs += dateHeader()
+    if (shouldRenderAutoHeaders && !dateSeen && isServer) {
+      headerPairs += dateHeaderRendering.renderHeaderPair()
     }
 
-    if (!peerIdSeen) {
+    if (shouldRenderAutoHeaders && !peerIdSeen) {
       peerIdHeader match {
         case Some(peerIdTuple) => headerPairs += peerIdTuple
         case None              =>

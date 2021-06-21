@@ -7,10 +7,12 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.engine.server.HttpAttributes
+import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
 import akka.stream._
 import akka.stream.scaladsl.Flow
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+
 import javax.net.ssl.SSLException
 
 /** INTERNAL API */
@@ -67,8 +69,14 @@ private[http] object ProtocolSwitch {
 
             connect(serverDataIn, netOut)
 
+            val attrs =
+              Attributes(
+                // don't (re)set dispatcher attribute to avoid adding an explicit async boundary
+                // between low-level and high-level stages
+                inheritedAttributes.attributeList.filterNot(_.isInstanceOf[Dispatcher])
+              )
             serverImplementation
-              .addAttributes(inheritedAttributes) // propagate attributes to "real" server (such as HttpAttributes)
+              .addAttributes(attrs) // propagate attributes to "real" server (such as HttpAttributes)
               .join(networkSide)
               .run()(interpreter.subFusingMaterializer)
           }

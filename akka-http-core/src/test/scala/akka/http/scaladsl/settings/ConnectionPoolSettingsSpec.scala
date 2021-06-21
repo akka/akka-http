@@ -35,12 +35,9 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
     "allow max-open-requests = 1" in {
       config("akka.http.host-connection-pool.max-open-requests = 1").maxOpenRequests should be(1)
     }
-    "produce a nice error message when max-open-requests" in {
-      expectError("akka.http.host-connection-pool.max-open-requests = 10") should include("Perhaps try 8 or 16")
-      expectError("akka.http.host-connection-pool.max-open-requests = 100") should include("Perhaps try 64 or 128")
-      expectError("akka.http.host-connection-pool.max-open-requests = 1000") should include("Perhaps try 512 or 1024")
+    "allow max-open-requests = 42" in {
+      config("akka.http.host-connection-pool.max-open-requests = 42").maxOpenRequests should be(42)
     }
-
     "allow per host overrides" in {
 
       val settingsString =

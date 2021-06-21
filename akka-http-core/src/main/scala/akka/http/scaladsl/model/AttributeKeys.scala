@@ -10,5 +10,6 @@ object AttributeKeys {
   val remoteAddress = AttributeKey[RemoteAddress]("remote-address")
   val webSocketUpgrade = AttributeKey[WebSocketUpgrade](name = "upgrade-to-websocket")
   val sslSession = AttributeKey[SslSessionInfo](name = "ssl-session")
+  val trailer = AttributeKey[Trailer](name = "trailer")
 }
 

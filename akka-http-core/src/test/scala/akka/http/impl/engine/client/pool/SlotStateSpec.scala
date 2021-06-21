@@ -5,7 +5,6 @@
 package akka.http.impl.engine.client.pool
 
 import java.net.InetSocketAddress
-
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.client.PoolFlow
 import akka.http.impl.engine.client.PoolFlow.RequestContext
@@ -20,6 +19,7 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
 import scala.concurrent.Promise
+import scala.concurrent.duration.Duration
 import scala.util.Try
 
 class SlotStateSpec extends AkkaSpec {
@@ -53,7 +53,7 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onResponseDispatchable(context)
       state = state.onResponseEntitySubscribed(context)
       state = state.onResponseEntityCompleted(context)
-      state should be(Idle)
+      state should be(Idle(Duration.Inf))
 
       state = state.onConnectionCompleted(context)
       state should be(ToBeClosed)
@@ -79,7 +79,7 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onResponseDispatchable(context)
       state = state.onResponseEntitySubscribed(context)
       state = state.onResponseEntityCompleted(context)
-      state should be(Idle)
+      state should be(Idle(Duration.Inf))
     }
 
     "allow postponing completing the request until just after the response was dispatchable" in {
@@ -102,7 +102,7 @@ class SlotStateSpec extends AkkaSpec {
 
       state = state.onResponseEntitySubscribed(context)
       state = state.onResponseEntityCompleted(context)
-      state should be(Idle)
+      state should be(Idle(Duration.Inf))
     }
 
     "allow postponing completing the request until just after the response was subscribed" in {
@@ -125,7 +125,7 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onRequestEntityCompleted(context)
 
       state = state.onResponseEntityCompleted(context)
-      state should be(Idle)
+      state should be(Idle(Duration.Inf))
     }
 
     "consider a slot 'idle' only when the request has been successfully sent" in {

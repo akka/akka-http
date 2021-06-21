@@ -4,15 +4,14 @@
 
 package akka.http.impl.engine.http2
 
-import java.util.function.BiFunction
-import java.{ util => ju }
-
-import javax.net.ssl.SSLEngine
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.Http2AlpnSupport.{ H2, HTTP11 }
 import akka.http.impl.util.JavaVersion
 import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream.impl.io.TlsUtils
 
+import java.{ util => ju }
+import javax.net.ssl.SSLEngine
 import scala.util.Try
 
 /**
@@ -29,10 +28,14 @@ private[http] object Http2AlpnSupport {
    * Enables server-side Http/2 ALPN support for the given engine.
    */
   def enableForServer(engine: SSLEngine, setChosenProtocol: String => Unit): SSLEngine =
-    if (isAlpnSupportedByJDK) jdkAlpnSupport(engine, setChosenProtocol)
+    if (isAlpnSupportedByJDK) Http2JDKAlpnSupport.jdkAlpnSupport(engine, setChosenProtocol)
     else throw new RuntimeException(s"Need to run on a JVM >= 8u252 for ALPN support needed for HTTP/2. Running on ${sys.props("java.version")}")
 
-  def isAlpnSupportedByJDK: Boolean =
+  def clientSetApplicationProtocols(engine: SSLEngine, protocols: Array[String]): Unit =
+    if (isAlpnSupportedByJDK) Http2JDKAlpnSupport.clientSetApplicationProtocols(engine, protocols)
+    else throw new RuntimeException(s"Need to run on a JVM >= 8u252 for ALPN support needed for HTTP/2. Running on ${sys.props("java.version")}")
+
+  private def isAlpnSupportedByJDK: Boolean =
     // ALPN is supported starting with JDK 9
     JavaVersion.majorVersion >= 9 ||
       (classOf[SSLEngine].getMethods.exists(_.getName == "setHandshakeApplicationProtocolSelector")
@@ -44,12 +47,17 @@ private[http] object Http2AlpnSupport {
           if (jettyAlpnClassesAvailable) throw new RuntimeException("On JDK >= 8u252 you need to either remove jetty-alpn-agent or use version 2.0.10 (which is a noop)")
           else true
         })
+}
 
-  private type SSLEngineWithALPNSupport = {
-    def setHandshakeApplicationProtocolSelector(selector: BiFunction[SSLEngine, ju.List[String], String]): Unit
-  }
+/**
+ * INTERNAL API
+ *
+ * The actual implementation of ALPN support on supported JDKs. We rely on lazy class loading to not fail with class loading errors
+ * when ALPN support is missing.
+ */
+private[http] object Http2JDKAlpnSupport {
   def jdkAlpnSupport(engine: SSLEngine, setChosenProtocol: String => Unit): SSLEngine = {
-    engine.asInstanceOf[SSLEngineWithALPNSupport].setHandshakeApplicationProtocolSelector { (engine: SSLEngine, protocols: ju.List[String]) =>
+    engine.setHandshakeApplicationProtocolSelector { (engine: SSLEngine, protocols: ju.List[String]) =>
       val chosen = chooseProtocol(protocols)
       chosen.foreach(setChosenProtocol)
 
@@ -68,13 +76,9 @@ private[http] object Http2AlpnSupport {
 
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = TlsUtils.applySessionParameters(engine, sessionParameters)
 
-  private type SSLParametersWithALPNSupport = {
-    def setApplicationProtocols(protocols: Array[String]): Unit
-  }
   def clientSetApplicationProtocols(engine: SSLEngine, protocols: Array[String]): Unit = {
     val params = engine.getSSLParameters
-    params.asInstanceOf[SSLParametersWithALPNSupport].setApplicationProtocols(Array("h2"))
+    params.setApplicationProtocols(Array("h2"))
     engine.setSSLParameters(params)
   }
-
 }

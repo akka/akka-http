@@ -26,7 +26,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.StageLogging
 import akka.stream.stage.TimerGraphStageLogic
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
@@ -362,8 +362,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       //        keep the buffer limited to the number of concurrent streams as negotiated
       //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
-      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
-        bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
+      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Either[ByteString, Source[Any, Any]], correlationAttributes: Map[AttributeKey[_], _]): Unit =
+        bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, OptionVal.None, data, correlationAttributes))
 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
