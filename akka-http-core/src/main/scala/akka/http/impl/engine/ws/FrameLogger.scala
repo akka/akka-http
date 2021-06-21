@@ -51,7 +51,7 @@ private[ws] object FrameLogger {
         val lastPart = if (frameEvent.lastPart) "T" else "F"
         frameEvent match {
           case FrameStart(header, data) => displayLogEntry(header.opcode.toString.toUpperCase, header.length, lastPart, hex(data), flag(header.fin, "FIN"), flag(header.rsv1, "RSV1"), flag(header.rsv2, "RSV2"), flag(header.rsv3, "RSV3"))
-          case FrameData(data, _)       => displayLogEntry("FRAMEDATA", 0, lastPart, hex(data))
+          case FrameData(data, _)       => displayLogEntry("...", 0, lastPart, hex(data))
         }
       case FrameError(ex) =>
         f"${RED}Error: ${ex.getMessage}$RESET"
