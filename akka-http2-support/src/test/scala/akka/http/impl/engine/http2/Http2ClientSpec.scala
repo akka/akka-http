@@ -834,12 +834,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         // Completion doesn't happen until entities are consumed
         user.responseIn.expectComplete()
-
       }
 
-      "until in-flight streaming requests are fully sent (after response is already complete) (uncommon)" inAssertAllStagesStopped new TestSetup(
-        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
-      ) with NetProbes {
+      "until in-flight streaming requests are fully sent (after response is already complete) (uncommon)" inAssertAllStagesStopped new TestSetup with NetProbes {
         val requestStreamProbe = TestPublisher.probe[ByteString]()
         val requestEntity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStreamProbe))
 
