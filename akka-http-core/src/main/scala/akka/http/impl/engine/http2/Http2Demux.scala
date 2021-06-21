@@ -215,6 +215,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
     new TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
       logic =>
 
+      import Http2Demux.CompletionTimeout
+
       def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart] = stage.wrapTrailingHeaders(headers)
 
       override def isServer: Boolean = stage.isServer
@@ -222,8 +224,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       override def isUpgraded: Boolean = upgraded
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
-
-      case object CompletionTimeout
 
       def frameOutFinished(): Unit = {
         // make sure we clean up/fail substreams with a custom failure before stage is canceled
@@ -460,4 +460,12 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         shutdownStreamHandling()
       }
     }
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object Http2Demux {
+  case object CompletionTimeout
 }

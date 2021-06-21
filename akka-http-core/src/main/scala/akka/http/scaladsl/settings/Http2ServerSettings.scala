@@ -212,7 +212,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
     require(maxPersistentAttempts >= 0, "max-persistent-attempts must be >= 0")
-    require(completionTimeout > Duration.Zero)
+    require(completionTimeout > Duration.Zero, "completion-timeout must be > 0")
     Http2CommonSettings.validate(this)
   }
 

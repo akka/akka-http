@@ -75,9 +75,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     activeStreamCount() < maxConcurrentStreams
   }
 
-  /**
-   * Called when all streams in StreamHandling buffers are closed and the stage is [[completing]]
-   */
+  /** Called when all streams in StreamHandling buffers are closed and the stage is completing. */
   def onAllStreamsClosed(): Unit
 
   private def streamFor(streamId: Int): StreamState =
