@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import java.net.InetSocketAddress
 import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
@@ -29,25 +30,23 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.SourceQueueWithComplete
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestPublisher.ManualProbe
-import akka.stream.testkit.TestPublisher.Probe
-import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.TestPublisher.{ ManualProbe, Probe }
 import akka.stream.testkit.scaladsl.StreamTestKit
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit._
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
 
+import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import java.net.InetSocketAddress
-import javax.net.ssl.SSLContext
 import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 /**
  * This tests the http2 server protocol logic.
@@ -61,7 +60,6 @@ import scala.concurrent.duration._
 class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
     akka.http.server.http2.log-frames = on
-    akka.http.server.http2.completion-timeout = 500ms
   """)
   with WithInPendingUntilFixed with Eventually {
   override def failOnSevereMessages: Boolean = true
@@ -1119,9 +1117,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       "received non-zero length payload Settings with ACK flag (invalid 6.5)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         /*
-             Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
-             MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
-             */
+         Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
+         MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
+         */
         // we ACK the settings with an incorrect ACK (it must not have a payload)
         val ackFlag = new ByteFlag(0x1)
         val illegalPayload = hex"cafe babe"
