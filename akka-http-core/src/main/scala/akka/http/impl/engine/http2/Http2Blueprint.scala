@@ -59,7 +59,7 @@ private[http2] case class Http2SubStream(
           val chunkSource: Source[HttpEntity.ChunkStreamPart, Any] = data.map {
             case b: ByteString                 => HttpEntity.Chunk(b)
             case p: HttpEntity.ChunkStreamPart => p
-            case x                             => throw new IllegalStateException(s"Only ByteString or ChunkStreamPart expected but got ${x}")
+            case x                             => throw new IllegalStateException(s"Only ByteString or ChunkStreamPart expected but got $x")
           }
           HttpEntity.Chunked(contentType, chunkSource)
         }
