@@ -24,6 +24,9 @@ abstract class Message {
    */
   def isText: Boolean
 
+  /** Is this message a strict one? */
+  def isStrict: Boolean
+
   /**
    * Returns this TextMessage if it is a text message, throws otherwise.
    */
@@ -55,9 +58,6 @@ abstract class TextMessage extends Message {
    * Returns a source of the text message data.
    */
   def getStreamedText: Source[String, _]
-
-  /** Is this message a strict one? */
-  def isStrict: Boolean
 
   /**
    * Returns the strict message text if this message is strict, throws otherwise.
@@ -121,9 +121,6 @@ abstract class BinaryMessage extends Message {
    * Returns a source of the binary message data.
    */
   def getStreamedData: Source[ByteString, _]
-
-  /** Is this message a strict one? */
-  def isStrict: Boolean
 
   /**
    * Returns the strict message data if this message is strict, throws otherwise.
