@@ -34,8 +34,6 @@ private[http] trait Http2CommonSettings {
 
   def pingInterval: FiniteDuration
   def pingTimeout: FiniteDuration
-
-  def completionTimeout: FiniteDuration
 }
 
 /**
@@ -90,9 +88,6 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def pingTimeout: FiniteDuration
   def withPingTimeout(timeout: FiniteDuration): Http2ServerSettings = copy(pingTimeout = timeout)
 
-  def completionTimeout: FiniteDuration
-  def withCompletionTimeout(timeout: FiniteDuration): Http2ServerSettings = copy(completionTimeout = timeout)
-
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalServerSettings]
   @InternalApi
@@ -115,7 +110,6 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
-    completionTimeout:                 FiniteDuration,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -126,7 +120,6 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     require(minCollectStrictEntitySize <= incomingStreamLevelBufferSize, "min-collect-strict-entity-size <= incoming-stream-level-buffer-size")
     require(minCollectStrictEntitySize <= (incomingConnectionLevelBufferSize / maxConcurrentStreams), "min-collect-strict-entity-size <= incoming-connection-level-buffer-size / max-concurrent-streams")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
-    require(completionTimeout > Duration.Zero)
     Http2CommonSettings.validate(this)
   }
 
@@ -141,7 +134,6 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
-      completionTimeout = c.getFiniteDuration("completion-timeout"),
       None // no possibility to configure internal settings with config
     )
   }

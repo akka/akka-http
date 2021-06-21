@@ -15,7 +15,7 @@ import akka.http.scaladsl.model.AttributeKey
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpEntity.LastChunk
-import akka.http.scaladsl.settings.Http2CommonSettings
+import akka.http.scaladsl.settings.{ Http2ClientSettings, Http2CommonSettings, Http2ServerSettings }
 import akka.macros.LogHelper
 import akka.stream.Attributes
 import akka.stream.BidiShape
@@ -29,7 +29,6 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.StageLogging
 import akka.stream.stage.TimerGraphStageLogic
 import akka.util.{ ByteString, OptionVal }
-import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
@@ -41,7 +40,7 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi
-private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser)
+private[http2] class Http2ClientDemux(http2Settings: Http2ClientSettings, masterHttpHeaderParser: HttpHeaderParser)
   extends Http2Demux(http2Settings, initialRemoteSettings = Nil, upgraded = false, isServer = false) {
 
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = {
@@ -51,18 +50,19 @@ private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, master
     }.toList))
   }
 
+  override def completionTimeout: FiniteDuration = http2Settings.completionTimeout
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
+private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
   extends Http2Demux(http2Settings, initialRemoteSettings, upgraded, isServer = true) {
   // We don't provide access to incoming trailing request headers on the server side
-  @silent("not used")
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = None
 
+  def completionTimeout: FiniteDuration = throw new IllegalArgumentException("Completion timeout not supported for servers")
 }
 
 /**
@@ -209,6 +209,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
+  def completionTimeout: FiniteDuration
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
@@ -399,7 +400,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             super.onUpstreamFinish()
           else { // on the client side allow ongoing responses to be delivered for a while even if requests are done
             completeIfDone()
-            scheduleOnce(CompletionTimeout, settings.completionTimeout)
+            scheduleOnce(CompletionTimeout, completionTimeout)
           }
       })
 

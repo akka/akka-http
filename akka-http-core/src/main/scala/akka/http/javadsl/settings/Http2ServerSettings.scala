@@ -39,9 +39,6 @@ trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings =>
 
   def getPingTimeout: Duration = Duration.ofMillis(pingTimeout.toMillis)
   def withPingTimeout(timeout: Duration): Http2ServerSettings = withPingTimeout(timeout.toMillis.millis)
-
-  def getCompletionTimeout: Duration = Duration.ofMillis(completionTimeout.toMillis)
-  def withCompletionTimeout(timeout: Duration): Http2ServerSettings = withCompletionTimeout(timeout.toMillis.millis)
 }
 object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
   def create(config: Config): Http2ServerSettings = scaladsl.settings.Http2ServerSettings(config)
