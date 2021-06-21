@@ -11,8 +11,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.scaladsl.model.AttributeKey
-import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.{ AttributeKey, HttpEntity, HttpHeader }
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.settings.{ Http2ClientSettings, Http2CommonSettings, Http2ServerSettings }
@@ -46,7 +45,8 @@ private[http2] class Http2ClientDemux(http2Settings: Http2ClientSettings, master
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = {
     val headerParser = masterHttpHeaderParser.createShallowCopy()
     Some(LastChunk(extension = "", headers.keyValuePairs.map {
-      case (name, value) => parseHeaderPair(headerParser, name, value)
+      case (name, value: HttpHeader) => value
+      case (name, value)             => parseHeaderPair(headerParser, name, value.asInstanceOf[String])
     }.toList))
   }
 

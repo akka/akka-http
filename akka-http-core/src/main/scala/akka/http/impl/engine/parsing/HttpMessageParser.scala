@@ -108,11 +108,12 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     result eq null
   }
 
-  protected final def startNewMessage(input: ByteString, offset: Int): StateResult = {
-    if (offset < input.length) setCompletionHandling(CompletionIsMessageStartError)
-    try parseMessage(input, offset)
-    catch { case NotEnoughDataException => continue(input, offset)(startNewMessage) }
-  }
+  protected final def startNewMessage(input: ByteString, offset: Int): StateResult =
+    if (offset < input.length) {
+      setCompletionHandling(CompletionIsMessageStartError)
+      try parseMessage(input, offset)
+      catch { case NotEnoughDataException => continue(input, offset)(startNewMessage) }
+    } else continue(startNewMessage)
 
   protected final def parseProtocol(input: ByteString, cursor: Int): Int = {
     def c(ix: Int) = byteChar(input, cursor + ix)

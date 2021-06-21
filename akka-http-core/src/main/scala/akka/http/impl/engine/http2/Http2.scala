@@ -8,7 +8,7 @@ import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
+import akka.http.impl.engine.server.{ MasterServerTerminator, StandaloneTcp, UpgradeToOtherProtocolResponseHeader }
 import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
@@ -74,7 +74,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
 
     val masterTerminator = new MasterServerTerminator(log)
 
-    Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, Duration.Inf) // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
+    StandaloneTcp.bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, Duration.Inf) // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
       .via(if (telemetry == NoOpTelemetry) Flow[Tcp.IncomingConnection] else telemetry.serverBinding)
       .mapAsyncUnordered(settings.maxConnections) {
         incoming: Tcp.IncomingConnection =>

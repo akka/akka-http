@@ -92,7 +92,7 @@ object Dependencies {
   )
 
   lazy val httpCore = l ++= Seq(
-    hpack,
+    //hpack,
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest, Test.scalatestplusScalacheck, Test.scalatestplusJUnit, Test.junit
   )

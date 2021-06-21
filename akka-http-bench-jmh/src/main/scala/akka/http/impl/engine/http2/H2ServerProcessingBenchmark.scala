@@ -10,11 +10,13 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
+import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
@@ -41,11 +43,25 @@ class H2ServerProcessingBenchmark extends CommonBenchmark with H2RequestResponse
       requests
         .viaMat(httpFlow)(Keep.left)
         .toMat(Sink.foreach(res => {
+          //println(s"Got ${res.size}")
+          val reader = new ByteReader(res)
+          @tailrec def countFrames(): Unit = if (reader.hasRemaining) {
+            val len = (reader.readByte() << 16) | reader.readShortBE()
+            val tpe = reader.readByte()
+            val flags = reader.readByte()
+            //println(s"Found frame $len $tpe $flags rem: ${reader.remainingSize}")
+
+            if (tpe == 1 && (flags & 1) == 1) latch.countDown()
+
+            reader.skip(len + 4 /* unconsumed header bytes of 9 byte header */ )
+            countFrames()
+          }
+          countFrames()
           // Skip headers/settings frames etc
-          if (res.containsSlice(HPackSpecExamples.C61FirstResponseWithHuffman)
+          /*if (res.containsSlice(HPackSpecExamples.C61FirstResponseWithHuffman)
             || res.containsSlice(packedResponse)) {
             latch.countDown()
-          }
+          }*/
         }))(Keep.both)
         .run()
 

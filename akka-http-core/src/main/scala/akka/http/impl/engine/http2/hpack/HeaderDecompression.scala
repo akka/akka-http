@@ -6,18 +6,19 @@ package akka.http.impl.engine.http2.hpack
 
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2._
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
-import akka.util.ByteString
-import com.twitter.hpack.HeaderListener
+import akka.util.{ ByteString, Unsafe }
 
 import scala.collection.immutable.VectorBuilder
-
 import FrameEvent._
+import akka.http.impl.engine.http2.RequestParsing.{ checkNoRegularHeadersBeforePseudoHeader, checkUniquePseudoHeader, malformedRequest, parseHeaderPair }
+import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.scaladsl.model.{ ContentType, IllegalUriException, ParsingException, Uri }
+import akka.http.shaded.com.twitter.hpack.HeaderListener
 
 /**
  * INTERNAL API
@@ -25,8 +26,9 @@ import FrameEvent._
  * Can be used on server and client side.
  */
 @InternalApi
-private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
+private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val UTF8 = StandardCharsets.UTF_8
+  val US_ASCII = StandardCharsets.US_ASCII
 
   val eventsIn = Inlet[FrameEvent]("HeaderDecompression.eventsIn")
   val eventsOut = Outlet[FrameEvent]("HeaderDecompression.eventsOut")
@@ -34,7 +36,8 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
   val shape = FlowShape(eventsIn, eventsOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
-    val decoder = new com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
+    val httpHeaderParser = masterHeaderParser.createShallowCopy()
+    val decoder = new akka.http.shaded.com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
 
     become(Idle)
 
@@ -42,12 +45,55 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     // Idle: no ongoing HEADERS parsing
     // Receiving headers: waiting for CONTINUATION frame
 
+    private def byteArrayToAsciiString(bs: Array[Byte]): String =
+      new String(bs, 0, 0, bs.length)
+
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
-      val headers = new VectorBuilder[(String, String)]
+      val headers = new VectorBuilder[(String, AnyRef)]
       object Receiver extends HeaderListener {
-        def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
+        def addHeader(nameBytes: Array[Byte], valueBytes: Array[Byte], parsed: AnyRef, sensitive: Boolean): AnyRef = {
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += new String(name, UTF8) -> new String(value, UTF8)
+          val name = byteArrayToAsciiString(nameBytes)
+
+          if (parsed ne null) {
+            headers += name -> parsed
+            parsed
+          } else {
+            val value = byteArrayToAsciiString(valueBytes)
+            name match {
+              case "content-type" =>
+                val contentTypeValue = ContentType.parse(value).right.getOrElse(malformedRequest(s"Invalid content-type: '$value'"))
+                headers += name -> contentTypeValue
+                contentTypeValue
+              case ":authority" =>
+                val authority: Uri.Authority = try {
+                  Uri.parseHttp2AuthorityPseudoHeader(value /*FIXME: , mode = serverSettings.parserSettings.uriParsingMode*/ )
+                } catch {
+                  case IllegalUriException(info) => throw new ParsingException(info)
+                }
+                headers += name -> authority
+                authority
+              case ":path" =>
+                val newPathAndRawQuery: (Uri.Path, Option[String]) = try {
+                  Uri.parseHttp2PathPseudoHeader(value /* FIXME:, mode = serverSettings.parserSettings.uriParsingMode */ )
+                } catch {
+                  case IllegalUriException(info) => throw new ParsingException(info)
+                }
+                headers += name -> newPathAndRawQuery
+                newPathAndRawQuery
+              case "content-length" | "cookie" =>
+                headers += name -> value
+                value
+              case x if x(0) == ':' =>
+                headers += name -> value
+                value
+              case _ =>
+                val parsed = parseHeaderPair(httpHeaderParser, name, value)
+                headers += name -> parsed
+                parsed
+            }
+          }
+        }
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)
