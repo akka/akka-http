@@ -6,7 +6,6 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
-
 import javax.net.ssl._
 import akka.actor._
 import akka.annotation.DoNotInherit
@@ -17,6 +16,7 @@ import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.http2.Http2
 import akka.http.impl.engine.http2.OutgoingConnectionBuilderImpl
+import akka.http.impl.engine.rendering.DateHeaderRendering
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
@@ -92,6 +92,9 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   // ** SERVER ** //
 
   private[this] final val DefaultPortForProtocol = -1 // any negative value
+
+  // Date header rendering is shared across the system, so that date is only rendered once a second
+  private[http] val dateHeaderRendering = DateHeaderRendering()
 
   private type ServerLayerBidiFlow = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator]
   private type ServerLayerFlow = Flow[ByteString, ByteString, (Future[Done], ServerTerminator)]
@@ -181,7 +184,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
            settings:          ServerSettings    = ServerSettings(system),
            log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     if (settings.previewServerSettings.enableHttp2)
-      log.warning("Binding with a connection source not supported with HTTP/2. Falling back to HTTP/1.1.")
+      log.warning(s"Binding with a connection source not supported with HTTP/2. Falling back to HTTP/1.1 for port [$port]")
 
     val fullLayer: ServerLayerBidiFlow = fuseServerBidiFlow(settings, connectionContext, log)
 
@@ -230,7 +233,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:          ServerSettings    = ServerSettings(system),
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] = {
     if (settings.previewServerSettings.enableHttp2)
-      log.warning("Binding with a connection source not supported with HTTP/2. Falling back to HTTP/1.1.")
+      log.warning(s"Binding with a connection source not supported with HTTP/2. Falling back to HTTP/1.1 for port [$port].")
 
     val fullLayer: Flow[ByteString, ByteString, (Future[Done], ServerTerminator)] =
 
@@ -381,7 +384,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
     isSecureConnection: Boolean                   = false): ServerLayer = {
-    val server = HttpServerBluePrint(settings, log, isSecureConnection)
+    val server = HttpServerBluePrint(settings, log, isSecureConnection, dateHeaderRendering)
       .addAttributes(HttpAttributes.remoteAddress(remoteAddress))
       .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
 

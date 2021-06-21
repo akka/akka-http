@@ -1,5 +1,8 @@
 version: ~> 1.0
 
+os: linux
+dist: xenial
+
 language: scala
 
 scala:
@@ -11,16 +14,22 @@ git:
 before_install:
   # make comparing to origin/master work
   - git remote set-branches --add origin master && git fetch
-  # using jabba for custom jdk management
-  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.1/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install adopt@1.8-0
-  - jabba use "adopt@1.8-0"
+  - whereis java
   - java -version
+  # Initialize launcher from the correct URL so that later sbt runs work out of the box.
+  # Travis' default sbt launch script refers to `repo.scala-sbt.org` for downloading the launcher
+  # which currently doesn't work any more
+  - sbt -sbt-launch-repo https://repo1.maven.org/maven2 exit
 
 addons:
   apt:
+    sources:
+      # Official debian package for AdoptOpenJDK from https://adoptopenjdk.net/installation.html#linux-pkg
+      - sourceline: deb https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ xenial main
+        key_url: https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
     packages:
-    - graphviz
+      - graphviz
+      - adoptopenjdk-8-hotspot
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
@@ -29,9 +38,15 @@ before_cache:
 cache:
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
-    - $HOME/.jabba/jdk
+    - $HOME/.sbt
     - $HOME/.cache/coursier
+
+env:
+  global:
+    - JAVA_HOME=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64
+    - PATH=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64/bin:$PATH
+    # override default (release to maven central) to only close and go to staging repo
+    - CI_SONATYPE_RELEASE="; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
 
 script:
   - sbt -jvm-opts .jvmopts-travis "$CMD"
@@ -43,8 +58,8 @@ jobs:
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
     - stage: publish
-      env: CMD="+publish"
-      name: artifacts to bintray
+      env: CMD="ci-release"
+      name: artifacts to sonatype
     - script: eval "$(ssh-agent -s)" && echo $SCP_SECRET | base64 -d > /tmp/id_rsa && chmod 600 /tmp/id_rsa && ssh-add /tmp/id_rsa && sbt -jvm-opts .jvmopts-travis -Dakka.genjavadoc.enabled=true publishRsync
       name: paradox and api docs to gustav
 

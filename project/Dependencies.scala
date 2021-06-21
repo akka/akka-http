@@ -13,12 +13,12 @@ object Dependencies {
 
   val jacksonDatabindVersion = "2.10.5.1"
   val jacksonXmlVersion = "2.10.5"
-  val junitVersion = "4.13.1"
+  val junitVersion = "4.13.2"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
-  val silencerVersion = "1.7.1"
+  val silencerVersion = "1.7.3"
 
   val scalaTestVersion = "3.1.4"
   val specs2Version = "4.10.6"
@@ -26,8 +26,8 @@ object Dependencies {
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
-  val scala212Version = "2.12.12"
-  val scala213Version = "2.13.3"
+  val scala212Version = "2.12.13"
+  val scala213Version = "2.13.5"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala213Version, scala212Version),
@@ -54,7 +54,7 @@ object Dependencies {
 
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.8"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.9.0"
 
     val scalafix    = "ch.epfl.scala"                 %% "scalafix-core"               % Dependencies.scalafixVersion // grab from plugin
 

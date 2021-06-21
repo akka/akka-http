@@ -5,7 +5,6 @@
 package akka.http.impl.engine.server
 
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.{ Deadline, Duration, FiniteDuration }
 import scala.collection.immutable
@@ -26,7 +25,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.ResponseRenderingContext.CloseRequested
-import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
+import akka.http.impl.engine.rendering.{ DateHeaderRendering, HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
 import akka.http.impl.util._
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
 import akka.http.scaladsl.{ Http, TimeoutAccess }
@@ -61,12 +60,12 @@ import scala.util.Failure
  */
 @InternalApi
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
+  def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean, dateHeaderRendering: DateHeaderRendering): Http.ServerLayer =
     userHandlerGuard(settings.pipeliningLimit) atop
       requestTimeoutSupport(settings.timeouts.requestTimeout, log) atop
       requestPreparation(settings) atop
       controller(settings, log) atop
-      parsingRendering(settings, log, isSecureConnection) atop
+      parsingRendering(settings, log, isSecureConnection, dateHeaderRendering) atop
       websocketSupport(settings, log) atop
       tlsSupport atop
       logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
@@ -77,8 +76,8 @@ private[http] object HttpServerBluePrint {
   def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
-    BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log, isSecureConnection))
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean, dateHeaderRendering: DateHeaderRendering): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
+    BidiFlow.fromFlows(rendering(settings, log, dateHeaderRendering), parsing(settings, log, isSecureConnection))
 
   def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
     BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
@@ -251,10 +250,10 @@ private[http] object HttpServerBluePrint {
     Flow[SessionBytes].via(rootParser).map(establishAbsoluteUri)
   }
 
-  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = {
+  def rendering(settings: ServerSettings, log: LoggingAdapter, dateHeaderRendering: DateHeaderRendering): Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = {
     import settings._
 
-    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)
+    val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log, dateHeaderRendering)
 
     Flow[ResponseRenderingContext]
       .via(responseRendererFactory.renderer.named("renderer"))
@@ -410,8 +409,16 @@ private[http] object HttpServerBluePrint {
               openRequests = openRequests.enqueue(r)
               messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
               val rs = if (r.expect100Continue) {
-                oneHundredContinueResponsePending = true
-                r.copy(createEntity = with100ContinueTrigger(r.createEntity))
+                r.createEntity match {
+                  case StrictEntityCreator(HttpEntity.Strict(_, _)) =>
+                    // This covers two cases:
+                    // - Either: The strict entity got all its data send already, so no need to wait for more data
+                    // - Or: The strict entity contains no data (Content-Length header value was 0 or it did not exist), the client will not send any data
+                    r
+                  case _ =>
+                    oneHundredContinueResponsePending = true
+                    r.copy(createEntity = with100ContinueTrigger(r.createEntity))
+                }
               } else r
               push(requestPrepOut, rs)
             case MessageEnd =>

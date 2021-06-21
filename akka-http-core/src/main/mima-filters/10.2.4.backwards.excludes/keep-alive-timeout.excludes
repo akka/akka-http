@@ -1,0 +1,6 @@
+# Method added to class not meant for user extension:
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.keepAliveTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.withKeepAliveTimeout")
+
+ProblemFilters.exclude[Problem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.*")
+ProblemFilters.exclude[Problem]("akka.http.impl.engine.client.pool.SlotState*")

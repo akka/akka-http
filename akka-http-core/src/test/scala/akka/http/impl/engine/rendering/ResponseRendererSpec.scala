@@ -20,6 +20,7 @@ import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import HttpEntity._
 import akka.http.impl.engine.rendering.ResponseRenderingContext.CloseRequested
+import akka.http.impl.util.Rendering.CrLf
 import akka.testkit._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -600,8 +601,12 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
-  class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")))
-    extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging) {
+  class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0"))) {
+    private val rendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging, new DateHeaderRendering {
+      override def renderHeaderPair(): (String, String) = ???
+      override def renderHeaderBytes(): Array[Byte] = (Date(DateTime(currentTimeMillis())).render(new ByteArrayRendering(24)) ~~ CrLf).get // fake rendering
+      override def renderHeaderValue(): String = ???
+    })
 
     def awaitAtMost: FiniteDuration = 3.seconds.dilated
 
@@ -617,7 +622,7 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
           // depends on renderer being completed fused and synchronous and finished in less steps than the configured event horizon
           CollectorStage.resultAfterSourceElements(
             Source.single(ctx),
-            renderer.named("renderer")
+            rendererFactory.renderer.named("renderer")
               .map {
                 case ResponseRenderingOutput.HttpData(bytes)          => bytes
                 case _: ResponseRenderingOutput.SwitchToOtherProtocol => throw new IllegalStateException("Didn't expect protocol switch response")
@@ -629,7 +634,7 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
         }
       }
 
-    override def currentTimeMillis() = DateTime(2011, 8, 25, 9, 10, 29).clicks // provide a stable date for testing
+    def currentTimeMillis(): Long = DateTime(2011, 8, 25, 9, 10, 29).clicks /* provide a stable date for testing */
   }
 
   def source[T](elems: T*) = Source(elems.toList)

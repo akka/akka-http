@@ -6,11 +6,11 @@ package akka.http.impl.engine
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.CommonBenchmark
 import akka.http.impl.engine.server.HttpServerBluePrint
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpRequest
@@ -104,7 +104,7 @@ class StreamServerProcessingBenchmark extends CommonBenchmark {
 
     httpFlow =
       Flow[HttpRequest].map(_ => response) join
-        (HttpServerBluePrint(ServerSettings(system), NoLogging, false) atop
+        (HttpServerBluePrint(ServerSettings(system), NoLogging, false, Http().dateHeaderRendering) atop
           TLSPlacebo())
   }
 

@@ -26,6 +26,8 @@ private[http] trait Http2CommonSettings {
   def incomingConnectionLevelBufferSize: Int
   def incomingStreamLevelBufferSize: Int
 
+  def minCollectStrictEntitySize: Int
+
   def logFrames: Boolean
   def maxConcurrentStreams: Int
   def outgoingControlFrameBufferSize: Int
@@ -70,6 +72,9 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def incomingStreamLevelBufferSize: Int
   def withIncomingStreamLevelBufferSize(newValue: Int): Http2ServerSettings = copy(incomingStreamLevelBufferSize = newValue)
 
+  def minCollectStrictEntitySize: Int
+  def withMinCollectStrictEntitySize(newValue: Int): Http2ServerSettings = copy(minCollectStrictEntitySize = newValue)
+
   def maxConcurrentStreams: Int
   override def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings = copy(maxConcurrentStreams = newValue)
 
@@ -105,6 +110,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     requestEntityChunkSize:            Int,
     incomingConnectionLevelBufferSize: Int,
     incomingStreamLevelBufferSize:     Int,
+    minCollectStrictEntitySize:        Int,
     outgoingControlFrameBufferSize:    Int,
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
@@ -116,6 +122,9 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
+    require(minCollectStrictEntitySize >= 0, "min-collect-strict-entity-size must be >= 0")
+    require(minCollectStrictEntitySize <= incomingStreamLevelBufferSize, "min-collect-strict-entity-size <= incoming-stream-level-buffer-size")
+    require(minCollectStrictEntitySize <= (incomingConnectionLevelBufferSize / maxConcurrentStreams), "min-collect-strict-entity-size <= incoming-connection-level-buffer-size / max-concurrent-streams")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
     require(completionTimeout > Duration.Zero)
     Http2CommonSettings.validate(this)
@@ -127,6 +136,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
       incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
+      minCollectStrictEntitySize = c.getIntBytes("min-collect-strict-entity-size"),
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
@@ -155,6 +165,8 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
 
   def incomingStreamLevelBufferSize: Int
   override def withIncomingStreamLevelBufferSize(newValue: Int): Http2ClientSettings = copy(incomingStreamLevelBufferSize = newValue)
+
+  def minCollectStrictEntitySize: Int = 0 // not yet supported on client side
 
   def maxConcurrentStreams: Int
   override def withMaxConcurrentStreams(newValue: Int): Http2ClientSettings = copy(maxConcurrentStreams = newValue)

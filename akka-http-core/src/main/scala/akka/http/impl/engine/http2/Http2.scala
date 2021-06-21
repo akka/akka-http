@@ -70,7 +70,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       else settings.defaultHttpPort
 
     val http1 = Flow[HttpRequest].mapAsync(settings.pipeliningLimit)(handleUpgradeRequests(handler, settings, log)).join(http.serverLayer(settings, log = log))
-    val http2 = Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log, telemetry))
+    val http2 = Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log, telemetry, Http().dateHeaderRendering))
 
     val masterTerminator = new MasterServerTerminator(log)
 
@@ -141,7 +141,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
                 .prepend(injectedRequest)
                 .via(Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher))
                 // the settings from the header are injected into the blueprint as initial demuxer settings
-                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true, telemetry))(Keep.left))
+                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true, telemetry, Http().dateHeaderRendering))(Keep.left))
 
             Future.successful(
               HttpResponse(

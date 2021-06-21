@@ -12,7 +12,7 @@ import akka.actor.ActorSystem
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.Connection
+import akka.http.scaladsl.model.headers.{ Connection, HttpEncodings, `Content-Encoding` }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
@@ -195,7 +195,7 @@ class GracefulTerminationSpec
       Await.result(serverBinding.whenTerminated, 3.seconds)
     }
 
-    "in-flight request responses should include Connection: close and connection should be closed" in new TestSetup {
+    "in-flight request responses should include additional Connection: close header and connection should be closed" in new TestSetup {
       override val basePoolSettings: ConnectionPoolSettings =
         super.basePoolSettings
           .withTransport(new ClientTransport {
@@ -221,10 +221,11 @@ class GracefulTerminationSpec
       ensureServerDeliveredRequest(r1) // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
       Thread.sleep(time.toMillis / 2)
-      reply(_ => HttpResponse(StatusCodes.OK))
+      reply(_ => HttpResponse(StatusCodes.OK, List(Connection("keep-alive"), `Content-Encoding`(List(HttpEncodings.gzip)))))
 
       val response = r1.futureValue
       response.header[Connection] shouldBe Some(Connection("close"))
+      response.header[`Content-Encoding`] shouldBe Some(`Content-Encoding`(List(HttpEncodings.gzip)))
       response.status should ===(StatusCodes.OK)
 
       val r2 = makeRequest()

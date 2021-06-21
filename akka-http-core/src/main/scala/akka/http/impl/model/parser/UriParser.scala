@@ -24,7 +24,7 @@ private[http] final class UriParser(
   private[this] var _input: ParserInput,
   val uriParsingCharset:    Charset,
   val uriParsingMode:       Uri.ParsingMode,
-  val maxValueStackSize:    Int) extends Parser(maxValueStackSize)
+  val maxValueStackSize:    Int) extends Parser(maxValueStackSize = maxValueStackSize)
   with IpAddressParsing with StringBuilding {
   import CharacterClasses._
 

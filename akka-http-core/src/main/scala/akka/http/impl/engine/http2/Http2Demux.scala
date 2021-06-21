@@ -28,7 +28,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.StageLogging
 import akka.stream.stage.TimerGraphStageLogic
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
@@ -366,8 +366,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       // FIXME: What if user handler doesn't pull in new substreams? Should we reject them
       //        after a while or buffer only a limited amount?
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
-      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
-        bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
+      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Either[ByteString, Source[Any, Any]], correlationAttributes: Map[AttributeKey[_], _]): Unit =
+        bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, OptionVal.None, data, correlationAttributes))
 
       // -----------------------------------------------------------------
       override def onAllStreamsClosed(): Unit = completeIfDone()

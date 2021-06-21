@@ -26,6 +26,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   baseConnectionBackoff:             FiniteDuration,
   maxConnectionBackoff:              FiniteDuration,
   idleTimeout:                       Duration,
+  keepAliveTimeout:                  Duration,
   connectionSettings:                ClientConnectionSettings,
   responseEntitySubscriptionTimeout: Duration,
   hostOverrides:                     immutable.Seq[(Regex, ConnectionPoolSettings)])
@@ -35,8 +36,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require(minConnections >= 0, "min-connections must be >= 0")
   require(minConnections <= maxConnections, "min-connections must be <= max-connections")
   require(maxRetries >= 0, "max-retries must be >= 0")
-  require(maxOpenRequests > 0, "max-open-requests must be a power of 2 > 0.")
-  require((maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2. " + suggestPowerOfTwo(maxOpenRequests))
+  require(maxOpenRequests > 0, "max-open-requests must be > 0")
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
   require(maxConnectionLifetime > Duration.Zero, "max-connection-lifetime must be > 0")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
@@ -51,15 +51,6 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   def withUpdatedConnectionSettings(f: ClientConnectionSettings => ClientConnectionSettings): ConnectionPoolSettingsImpl =
     copy(connectionSettings = f(connectionSettings), hostOverrides = hostOverrides.map { case (k, v) => k -> v.withUpdatedConnectionSettings(f) })
 
-  private def suggestPowerOfTwo(around: Int): String = {
-    val firstBit = 31 - Integer.numberOfLeadingZeros(around)
-
-    val below = 1 << firstBit
-    val above = 1 << (firstBit + 1)
-
-    s"Perhaps try $below or $above."
-  }
-
   /** INTERNAL API */
   private[http] def copyDeep(
     mapHostOverrides:                  ConnectionPoolSettings => ConnectionPoolSettings,
@@ -72,6 +63,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
     baseConnectionBackoff:             FiniteDuration                                   = baseConnectionBackoff,
     maxConnectionBackoff:              FiniteDuration                                   = maxConnectionBackoff,
     idleTimeout:                       Duration                                         = idleTimeout,
+    keepAliveTimeout:                  Duration                                         = keepAliveTimeout,
     connectionSettings:                ClientConnectionSettings                         = connectionSettings,
     responseEntitySubscriptionTimeout: Duration                                         = responseEntitySubscriptionTimeout): ConnectionPoolSettings =
     copy(
@@ -84,6 +76,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
       baseConnectionBackoff,
       maxConnectionBackoff,
       idleTimeout,
+      keepAliveTimeout,
       connectionSettings,
       responseEntitySubscriptionTimeout,
       hostOverrides = hostOverrides.map { case (k, v) => k -> mapHostOverrides(v) })
@@ -105,6 +98,7 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
       c.getFiniteDuration("base-connection-backoff"),
       c.getFiniteDuration("max-connection-backoff"),
       c.getPotentiallyInfiniteDuration("idle-timeout"),
+      c.getPotentiallyInfiniteDuration("keep-alive-timeout"),
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
       List.empty

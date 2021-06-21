@@ -4,48 +4,49 @@
 
 package akka.http.impl.engine.http2
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.CommonBenchmark
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.settings.ServerSettings
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
 import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source }
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 
-class H2ServerProcessingBenchmark extends CommonBenchmark with H2RequestResponseBenchmark {
-
-  var httpFlow: Flow[ByteString, ByteString, Any] = _
+/**
+ * Test converting a HttpRequest to bytes at the client and back to a request at the server, and vice-versa
+ * for the response. Does not include the network.
+ */
+class H2ClientServerBenchmark extends CommonBenchmark with H2RequestResponseBenchmark {
+  var httpFlow: Flow[HttpRequest, HttpResponse, Any] = _
   implicit var system: ActorSystem = _
   implicit var mat: ActorMaterializer = _
 
-  val packedResponse = ByteString(1, 5, 0, 0) // a HEADERS frame with end_stream == true
-
-  val numRequests = 10000
+  val numRequests = 1000
 
   @Benchmark
-  @OperationsPerInvocation(10000) // should be same as numRequest
+  @OperationsPerInvocation(1000) // should be same as numRequest
   def benchRequestProcessing(): Unit = {
+    implicit val ec: ExecutionContext = system.dispatcher
+
     val latch = new CountDownLatch(numRequests)
 
     val requests =
-      Source(Http2Protocol.ClientConnectionPreface +: Range(0, numRequests).map(i => requestDataCreator(1 + 2 * i)))
+      Source.repeat(request).take(numRequests)
         .concatMat(Source.maybe)(Keep.right)
 
     val (in, done) =
       requests
         .viaMat(httpFlow)(Keep.left)
         .toMat(Sink.foreach(res => {
-          // Skip headers/settings frames etc
-          if (res.containsSlice(HPackSpecExamples.C61FirstResponseWithHuffman)
-            || res.containsSlice(packedResponse)) {
-            latch.countDown()
-          }
+          res.discardEntityBytes().future.onComplete(_ => latch.countDown())
         }))(Keep.both)
         .run()
 
@@ -72,7 +73,9 @@ class H2ServerProcessingBenchmark extends CommonBenchmark with H2RequestResponse
         req.discardEntityBytes().future.map(_ => response)
       })(system.dispatcher)
         .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))
-    httpFlow = Http2.priorKnowledge(http1, http2)
+    val server: Flow[ByteString, ByteString, NotUsed] = Http2.priorKnowledge(http1, http2)
+    val client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] = Http2Blueprint.clientStack(ClientConnectionSettings(system), log, NoOpTelemetry)
+    httpFlow = client.join(server)
   }
 
   @TearDown
