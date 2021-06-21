@@ -33,8 +33,8 @@ private[ws] object FrameLogger {
   def logEvent(frameEvent: FrameEventOrError): String = {
     import Console._
 
-    def displayLogEntry(frameType: String, length: Long, lastPart: String, data: String, flags: Option[String]*): String =
-      f"$GREEN$frameType%s $YELLOW$length%4d $RED${flags.flatten.mkString(" ")} $BLUE$lastPart%s $RESET$data"
+    def displayLogEntry(frameType: String, length: Long, data: String, lastPart: Boolean, flags: Option[String]*): String =
+      f"$GREEN$frameType%s $YELLOW$length%4d $RED${flags.flatten.mkString(" ")}$RESET $data${if (!lastPart) " ..." else ""}"
 
     def flag(value: Boolean, name: String): Option[String] = if (value) Some(name) else None
     def hex(bytes: ByteString): String = {
@@ -43,19 +43,14 @@ private[ws] object FrameLogger {
       val first = bytes.take(num)
       val h = first.map(_ formatted "%02x").mkString(" ")
       val ascii = first.map(LogByteStringTools.asASCII).mkString
-      s"$h | $ascii$ellipsis"
+      s"$WHITE$h$RESET | $WHITE$ascii$RESET$ellipsis"
     }
 
-    def entryForFrame(frameEvent: FrameEventOrError): String = frameEvent match {
-      case frameEvent: FrameEvent =>
-        val lastPart = if (frameEvent.lastPart) "T" else "F"
-        frameEvent match {
-          case FrameStart(header, data) => displayLogEntry(header.opcode.toString.toUpperCase, header.length, lastPart, hex(data), flag(header.fin, "FIN"), flag(header.rsv1, "RSV1"), flag(header.rsv2, "RSV2"), flag(header.rsv3, "RSV3"))
-          case FrameData(data, _)       => displayLogEntry("...", 0, lastPart, hex(data))
-        }
+    frameEvent match {
+      case FrameStart(header, data)  => displayLogEntry(header.opcode.toString.toUpperCase, header.length, hex(data), header.fin, flag(header.fin, "FIN"), flag(header.rsv1, "RSV1"), flag(header.rsv2, "RSV2"), flag(header.rsv3, "RSV3"))
+      case FrameData(data, lastPart) => displayLogEntry("...", 0, hex(data), lastPart)
       case FrameError(ex) =>
         f"${RED}Error: ${ex.getMessage}$RESET"
     }
-    entryForFrame(frameEvent)
   }
 }
