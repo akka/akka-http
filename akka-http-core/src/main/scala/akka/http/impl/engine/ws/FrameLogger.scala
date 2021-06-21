@@ -34,7 +34,7 @@ private[ws] object FrameLogger {
     import Console._
 
     def displayLogEntry(frameType: String, length: Long, data: String, lastPart: Boolean, flags: Option[String]*): String =
-      f"$GREEN$frameType%s $YELLOW$length%4d $RED${flags.flatten.mkString(" ")}$RESET $data${if (!lastPart) " ..." else ""}"
+      f"$GREEN$frameType%s $RED${flags.flatten.mkString(" ")} $YELLOW$length%4d bytes $RESET $data${if (!lastPart) " ..." else ""}"
 
     def flag(value: Boolean, name: String): Option[String] = if (value) Some(name) else None
     def hex(bytes: ByteString): String = {
@@ -47,8 +47,8 @@ private[ws] object FrameLogger {
     }
 
     frameEvent match {
-      case FrameStart(header, data)  => displayLogEntry(header.opcode.toString.toUpperCase, header.length, hex(data), header.fin, flag(header.fin, "FIN"), flag(header.rsv1, "RSV1"), flag(header.rsv2, "RSV2"), flag(header.rsv3, "RSV3"))
-      case FrameData(data, lastPart) => displayLogEntry("...", 0, hex(data), lastPart)
+      case f @ FrameStart(header, data) => displayLogEntry(header.opcode.short, header.length, hex(data), f.lastPart, flag(header.fin, "FIN"), flag(header.rsv1, "RSV1"), flag(header.rsv2, "RSV2"), flag(header.rsv3, "RSV3"))
+      case FrameData(data, lastPart)    => displayLogEntry("...", 0, hex(data), lastPart)
       case FrameError(ex) =>
         f"${RED}Error: ${ex.getMessage}$RESET"
     }
