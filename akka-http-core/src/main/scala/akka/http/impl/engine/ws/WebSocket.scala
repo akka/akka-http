@@ -40,6 +40,7 @@ private[http] object WebSocket {
     closeTimeout:      FiniteDuration    = 3.seconds, // TODO put close timeout into the settings?
     log:               LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, NotUsed] =
     masking(serverSide, websocketSettings.randomFactory) atop
+      FrameLogger.logFramesIfEnabled(websocketSettings.logFrames) atop
       frameHandling(serverSide, closeTimeout, log) atop
       periodicKeepAlive(websocketSettings) atop
       messageAPI(serverSide, closeTimeout)
