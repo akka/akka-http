@@ -1,0 +1,5 @@
+# Add setting to @DoNotInherit classes
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.completionTimeout")
+ProblemFilters.exclude[Problem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.*")
+

@@ -9,7 +9,9 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
-import akka.stream.stage.{ GraphStageLogic, OutHandler, StageLogging }
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
+import akka.stream.stage.StageLogging
 
 import scala.collection.immutable
 
@@ -34,6 +36,8 @@ private[http2] trait Http2Multiplexer {
   def reportTimings(): Unit
 
   def maxBytesToBufferPerSubstream: Int
+
+  def hasFlushedAllData: Boolean
 }
 
 @InternalApi
@@ -82,6 +86,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
   def pushFrameOut(event: FrameEvent): Unit
 
+  def onAllDataFlushed(): Unit
+
   def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogHelper { self =>
       def log: LoggingAdapter = logic.log
@@ -121,12 +127,16 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       private var _state: MultiplexerState = Idle
 
+      def hasFlushedAllData: Boolean = allDataFlushed(_state)
+      private def allDataFlushed(state: MultiplexerState): Boolean = (state == WaitingForData || state == Idle)
+
       private def updateState(transition: MultiplexerState => MultiplexerState): Unit = {
         val oldState = _state
         val newState = transition(_state)
         _state = newState
 
         if (newState.name != oldState.name) recordStateChange(oldState.name, newState.name)
+        if (allDataFlushed(newState)) onAllDataFlushed()
       }
 
       private[http2] sealed trait MultiplexerState extends Product {

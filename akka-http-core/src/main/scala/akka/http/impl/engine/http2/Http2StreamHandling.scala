@@ -56,7 +56,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private var largestIncomingStreamId = 0
   private var outstandingConnectionLevelWindow = Http2Protocol.InitialWindowSize
   private var totalBufferedData = 0
-
   /**
    * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
    *
@@ -75,6 +74,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     // of Open, HalfClosed) so using the `size` works fine to compute the capacity
     activeStreamCount() < maxConcurrentStreams
   }
+
+  /** Called when all streams in StreamHandling buffers are closed and the stage is completing. */
+  def onAllStreamsClosed(): Unit
 
   private def streamFor(streamId: Int): StreamState =
     streamStates.get(streamId) match {
@@ -154,6 +156,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     newState match {
       case Closed =>
         streamStates -= streamId
+        if (streamStates.isEmpty) onAllStreamsClosed()
         tryPullSubStreams()
       case newState => streamStates += streamId -> newState
     }

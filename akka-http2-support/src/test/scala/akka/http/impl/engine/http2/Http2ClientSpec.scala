@@ -12,28 +12,38 @@ import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
-import akka.http.scaladsl.client.RequestBuilding.{ Get, Post }
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
+import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.http.impl.util.LogByteStringTools
+import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.client.RequestBuilding.Post
+import akka.http.scaladsl.model.HttpEntity.Chunk
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.http.scaladsl.model.HttpEntity.Chunked
+import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.model.HttpMethods.GET
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control`, `Content-Length`, `Content-Type` }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
-import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
-import akka.stream.testkit.scaladsl.{ StreamTestKit, TestSink }
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.scaladsl.BidiFlow
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.StreamTestKit
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.EventFilter
 import akka.testkit.TestDuration
 import akka.util.ByteString
-
-import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import javax.net.ssl.SSLContext
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
@@ -48,6 +58,7 @@ import scala.concurrent.duration._
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.client.remote-address-header = on
     akka.http.client.http2.log-frames = on
+    akka.http.client.http2.completion-timeout = 500ms
   """)
   with WithInPendingUntilFixed with Eventually {
 
@@ -756,6 +767,155 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
     }
+
+    "delay stage completion" should {
+
+      "until in-flight responses are received" inAssertAllStagesStopped new TestSetup with NetProbes {
+        // Given an in-flight request...
+        user.emitRequest(HttpRequest(uri = "https://www.example.com/"))
+        network.expectDecodedResponseHEADERSPairs(1)
+        // ... and a completed user handler
+        user.requestOut.sendComplete()
+
+        network.sendFrame(
+          HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
+        )
+        // Then the user can still consume the response
+        user.expectResponse()
+        user.responseIn.expectComplete()
+      }
+
+      "until in-flight streaming responses are received" inAssertAllStagesStopped new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
+      ) with NetProbes {
+        // Given several in-flight requests...
+        val request = HttpRequest(uri = "https://www.example.com/")
+        user.emitRequest(request)
+        user.emitRequest(request)
+        user.emitRequest(request)
+        // ... and backpressured requests...
+        user.emitRequest(request) // this emit succeeds but is buffered
+
+        network.expect[HeadersFrame]().streamId shouldBe (1)
+        network.expect[HeadersFrame]().streamId shouldBe (3)
+        network.expect[HeadersFrame]().streamId shouldBe (5)
+        network.expectNoBytes(100.millis)
+
+        // ... and some request already got their response (canary round-trip)
+        network.sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        val resp1: HttpResponse = user.expectResponse()
+
+        // ... and a completed user handler.
+        user.requestOut.sendComplete()
+
+        // When the first few response-frames arrive...
+        network.sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        // Then the backpressured in-flight streams proceed (sending pending requests)...
+        network.expect[HeadersFrame]().streamId shouldBe (7)
+        network.sendFrame(HeadersFrame(streamId = 5, endStream = false, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        network.sendFrame(DataFrame(streamId = 5, endStream = true, ByteString("Hello World 5!")))
+        network.sendFrame(HeadersFrame(streamId = 7, endStream = false, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        network.sendFrame(DataFrame(streamId = 7, endStream = true, ByteString("Hello World 7!")))
+        //... and it is possible to consume all responses (from stream 1 to stream 7)
+        val resp3: HttpResponse = user.expectResponse()
+        val resp5: HttpResponse = user.expectResponse()
+        val resp7: HttpResponse = user.expectResponse()
+
+        private val eventualEntities: Seq[Future[HttpEntity.Strict]] =
+          Seq(resp1, resp3, resp5, resp7).map(_.entity.toStrict(100.millis))
+        private val entities: Seq[HttpEntity.Strict] = Future.sequence(eventualEntities).futureValue
+        // The complete entity of the responses is available
+        entities shouldBe Seq(
+          HttpEntity.Empty, // 1 has no data
+          HttpEntity.Empty, // 3 has no data
+          HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("Hello World 5!")),
+          HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("Hello World 7!"))
+        )
+
+        // Completion doesn't happen until entities are consumed
+        user.responseIn.expectComplete()
+      }
+
+      "until in-flight streaming requests are fully sent (after response is already complete) (uncommon)" inAssertAllStagesStopped new TestSetup with NetProbes {
+        val requestStreamProbe = TestPublisher.probe[ByteString]()
+        val requestEntity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStreamProbe))
+
+        // Given several in-flight requests...
+        val request = HttpRequest(method = HttpMethods.POST, uri = "https://www.example.com/", entity = requestEntity)
+        user.emitRequest(request)
+
+        network.expectDecodedResponseHEADERSPairs(1, endStream = false)
+
+        // ... and some request already got their response (canary round-trip)
+        network.sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        user.expectResponse()
+
+        requestStreamProbe.sendNext(ByteString("hello"))
+        network.expectDATA(1, endStream = false, ByteString("hello"))
+
+        // now closing user out
+        user.requestOut.sendComplete()
+
+        // stage needs to stay alive to send rest of request entity
+        requestStreamProbe.sendNext(ByteString("world"))
+        network.expectDATA(1, endStream = false, ByteString("world"))
+
+        // queueing more data in the multiplexer without immediately fetching it on the network
+        requestStreamProbe.sendNext(ByteString("almost"))
+        requestStreamProbe.sendNext(ByteString(" done"))
+        requestStreamProbe.sendComplete()
+        network.expectDATA(1, endStream = true, ByteString("almost done"))
+
+        // Completion doesn't happen until entities are sent
+        user.responseIn.expectComplete()
+        network.toNet.expectComplete()
+        network.fromNet.expectCancellation()
+      }
+
+      "until a timeout occurs" inAssertAllStagesStopped new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
+      ) with NetProbes {
+        // Given several in-flight requests...
+        val request = HttpRequest(uri = "https://www.example.com/")
+        user.emitRequest(request)
+        user.emitRequest(request)
+        network.expect[HeadersFrame]().streamId shouldBe (1)
+        network.expect[HeadersFrame]().streamId shouldBe (3)
+        // got a complete response for 1 but but not for 3
+        network.sendFrame(HeadersFrame(streamId = 1, endStream = false, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        network.sendFrame(DataFrame(streamId = 1, endStream = true, ByteString("Hello World 1!")))
+        user.expectResponse()
+
+        // Then the user handler completes
+        user.requestOut.sendComplete()
+
+        // The streams is on hold until stream '3' finishes...
+        // 400 millis is slightly less than the value of "akka.http.client.http2.completion-timeout"
+        user.responseIn.expectNoMessage(400.millis)
+
+        // Eventually, completion happens after a timeout
+        user.responseIn.expectComplete()
+      }
+
+      "actually complete as soon as required if there are no open (in-flight) streams" inAssertAllStagesStopped new TestSetup with NetProbes {
+        // Given a request...
+        user.emitRequest(HttpRequest(uri = "https://www.example.com/"))
+        network.expectDecodedResponseHEADERSPairs(1)
+        // ... and return response for that request (so there's nothing in-flight)
+        network.sendFrame(
+          HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
+        )
+        user.expectResponse()
+
+        // When the user completes the stream
+        user.requestOut.sendComplete()
+
+        // Then all stages are stopped
+        user.responseIn.expectComplete()
+      }
+
+    }
+
   }
 
   implicit class InWithStoppedStages(name: String) {
