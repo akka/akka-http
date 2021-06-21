@@ -25,7 +25,12 @@ import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Await
 
-class MessageSpec extends AkkaSpecWithMaterializer with Eventually {
+class MessageSpec extends AkkaSpecWithMaterializer(
+  """
+     akka.http.server.websocket.log-frames = on
+     akka.http.client.websocket.log-frames = on
+  """
+) with Eventually {
 
   import WSTestUtils._
 
