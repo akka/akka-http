@@ -233,11 +233,11 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override def pushFrameOut(event: FrameEvent): Unit = {
         pingState.onDataFrameSeen()
-        frameOut.push(event)
+        push(frameOut, event)
       }
 
       val multiplexer = createMultiplexer(StreamPrioritizer.first())
-      frameOut.setHandler(multiplexer)
+      setHandler(frameOut, multiplexer)
 
       val pingState = ConfigurablePing.PingState(http2Settings)
 
@@ -366,7 +366,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       // -----------------------------------------------------------------
       // FIXME: What if user handler doesn't pull in new substreams? Should we reject them
       //        after a while or buffer only a limited amount?
-      val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
+      val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](fromOutlet(substreamOut))
       override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Either[ByteString, Source[Any, Any]], correlationAttributes: Map[AttributeKey[_], _]): Unit =
         bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, OptionVal.None, data, correlationAttributes))
 

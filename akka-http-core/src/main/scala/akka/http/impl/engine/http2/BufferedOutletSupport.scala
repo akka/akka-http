@@ -99,7 +99,7 @@ private[http2] class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends
  */
 @InternalApi
 private[http2] trait GenericOutletSupport { logic: GraphStageLogic =>
-  implicit def fromSubSourceOutlet[T](subSourceOutlet: SubSourceOutlet[T]): GenericOutlet[T] =
+  def fromSubSourceOutlet[T](subSourceOutlet: SubSourceOutlet[T]): GenericOutlet[T] =
     new GenericOutlet[T] {
       def setHandler(handler: OutHandler): Unit = subSourceOutlet.setHandler(handler)
       def push(elem: T): Unit = subSourceOutlet.push(elem)
@@ -107,7 +107,7 @@ private[http2] trait GenericOutletSupport { logic: GraphStageLogic =>
       def fail(cause: Throwable): Unit = subSourceOutlet.fail(cause)
       def canBePushed: Boolean = subSourceOutlet.isAvailable
     }
-  implicit def fromOutlet[T](outlet: Outlet[T]): GenericOutlet[T] =
+  def fromOutlet[T](outlet: Outlet[T]): GenericOutlet[T] =
     new GenericOutlet[T] {
       def setHandler(handler: OutHandler): Unit = logic.setHandler(outlet, handler)
       def push(elem: T): Unit = logic.emit(outlet, elem)
