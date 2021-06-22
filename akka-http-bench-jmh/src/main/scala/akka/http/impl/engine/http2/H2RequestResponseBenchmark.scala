@@ -52,10 +52,10 @@ trait H2RequestResponseBenchmark {
     requestbody match {
       case "empty" =>
         requestDataCreator = requestWithoutBody _
-        request = HttpRequest(method = HttpMethods.POST, uri = "/")
+        request = HttpRequest(method = HttpMethods.POST, uri = "http://www.example.com/")
       case "singleframe" =>
         requestDataCreator = requestWithSingleFrameBody _
-        request = HttpRequest(method = HttpMethods.POST, uri = "/", entity = HttpEntity(requestBytes))
+        request = HttpRequest(method = HttpMethods.POST, uri = "http://www.example.com/", entity = HttpEntity(requestBytes))
     }
 
     val trailerHeader = RawHeader("grpc-status", "9")
