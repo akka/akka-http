@@ -1,0 +1,2 @@
+# move `isStrict` method to superclass
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws.Message.isStrict")
