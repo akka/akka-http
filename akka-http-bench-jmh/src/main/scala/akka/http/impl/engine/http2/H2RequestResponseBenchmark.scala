@@ -68,20 +68,21 @@ trait H2RequestResponseBenchmark extends HPackEncodingSupport {
 
     val trailerHeader = RawHeader("grpc-status", "9")
     val responseBody = ByteString("hello")
+    val baseResponse = HPackSpecExamples.FirstResponse.removeHeader("date")
     response = responsetype match {
       case "empty" =>
-        HPackSpecExamples.FirstResponse
+        baseResponse
           .withEntity(HttpEntity.Empty)
           .addAttribute(AttributeKeys.trailer, Trailer(trailerHeader :: Nil))
       case "closedelimited" =>
-        HPackSpecExamples.FirstResponse
+        baseResponse
           .withEntity(HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`, Source.single(responseBody)))
           .addAttribute(AttributeKeys.trailer, Trailer(trailerHeader :: Nil))
       case "chunked" =>
-        HPackSpecExamples.FirstResponse
+        baseResponse
           .withEntity(HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, Source(Chunk(responseBody) :: LastChunk(trailer = trailerHeader :: Nil) :: Nil)))
       case "strict" =>
-        HPackSpecExamples.FirstResponse
+        baseResponse
           .withEntity(HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, responseBody))
           .addAttribute(AttributeKeys.trailer, Trailer(trailerHeader :: Nil))
     }
