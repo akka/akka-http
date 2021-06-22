@@ -18,6 +18,9 @@ import scala.reflect.macros.blackbox
 @InternalApi
 private[akka] trait LogHelper {
   def log: LoggingAdapter
+  def isDebugEnabled: Boolean = log.isDebugEnabled
+  def isInfoEnabled: Boolean = log.isInfoEnabled
+  def isWarningEnabled: Boolean = log.isWarningEnabled
 
   /** Override to prefix every log message with a user-defined context string */
   def prefixString: String = ""
@@ -37,7 +40,7 @@ private[akka] object LogHelper {
       {
         val logHelper = ctx.prefix.splice
         val log = logHelper.log
-        if (log.isDebugEnabled)
+        if (logHelper.isDebugEnabled)
           log.debug(logHelper.prefixString + msg.splice)
       }
     }
@@ -46,7 +49,7 @@ private[akka] object LogHelper {
       {
         val logHelper = ctx.prefix.splice
         val log = logHelper.log
-        if (log.isInfoEnabled)
+        if (logHelper.isInfoEnabled)
           log.info(logHelper.prefixString + msg.splice)
       }
     }
@@ -55,7 +58,7 @@ private[akka] object LogHelper {
       {
         val logHelper = ctx.prefix.splice
         val log = logHelper.log
-        if (log.isWarningEnabled)
+        if (logHelper.isWarningEnabled)
           log.warning(logHelper.prefixString + msg.splice)
       }
     }
