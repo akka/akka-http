@@ -9,10 +9,10 @@ import java.nio.charset.StandardCharsets
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2._
+import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.util.ByteString
-import com.twitter.hpack.HeaderListener
 
 import scala.collection.immutable.VectorBuilder
 import FrameEvent._
@@ -33,7 +33,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
   val shape = FlowShape(eventsIn, eventsOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
-    val decoder = new com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
+    val decoder = new akka.http.shaded.com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
 
     become(Idle)
 

@@ -52,8 +52,6 @@ object Dependencies {
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
-    val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
-
     val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.9.0"
 
     val scalafix    = "ch.epfl.scala"                 %% "scalafix-core"               % Dependencies.scalafixVersion // grab from plugin
@@ -92,7 +90,6 @@ object Dependencies {
   )
 
   lazy val httpCore = l ++= Seq(
-    hpack,
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest, Test.scalatestplusScalacheck, Test.scalatestplusJUnit, Test.junit
   )
