@@ -1,0 +1,2 @@
+# Move `isStrict` method to superclass which does not support user extension
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws.Message.isStrict")

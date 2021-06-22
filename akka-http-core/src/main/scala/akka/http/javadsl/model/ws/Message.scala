@@ -6,6 +6,7 @@ package akka.http.javadsl.model.ws
 
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.DoNotInherit
 import akka.http.scaladsl.{ model => sm }
 import akka.stream.Materializer
 import akka.stream.javadsl.Source
@@ -17,12 +18,16 @@ import scala.compat.java8.FutureConverters._
 /**
  * Represents a WebSocket message. A message can either be a binary message or a text message.
  */
+@DoNotInherit
 abstract class Message {
   /**
    * Is this message a text message? If true, [[asTextMessage]] will return this
    * text message, if false, [[asBinaryMessage]] will return this binary message.
    */
   def isText: Boolean
+
+  /** Is this message a strict one? */
+  def isStrict: Boolean
 
   /**
    * Returns this TextMessage if it is a text message, throws otherwise.
@@ -55,9 +60,6 @@ abstract class TextMessage extends Message {
    * Returns a source of the text message data.
    */
   def getStreamedText: Source[String, _]
-
-  /** Is this message a strict one? */
-  def isStrict: Boolean
 
   /**
    * Returns the strict message text if this message is strict, throws otherwise.
@@ -121,9 +123,6 @@ abstract class BinaryMessage extends Message {
    * Returns a source of the binary message data.
    */
   def getStreamedData: Source[ByteString, _]
-
-  /** Is this message a strict one? */
-  def isStrict: Boolean
 
   /**
    * Returns the strict message data if this message is strict, throws otherwise.
