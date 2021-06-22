@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package akka.http.shaded.com.twitter.hpack;
 
 import java.io.ByteArrayOutputStream;
