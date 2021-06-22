@@ -18,6 +18,7 @@ import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2ClientSettings, Http2ServerSettings, ParserSettings, ServerSettings }
+import akka.stream.StreamTcpException
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.{ ByteString, OptionVal }
@@ -25,6 +26,7 @@ import akka.util.{ ByteString, OptionVal }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
+import scala.util.control.NonFatal
 
 /**
  * Represents one direction of an Http2 substream.
@@ -105,6 +107,7 @@ private[http] object Http2Blueprint {
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       framing(log) atop
+      errorHandling(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
 
@@ -122,6 +125,7 @@ private[http] object Http2Blueprint {
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       framingClient(log) atop
+      errorHandling(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
 
@@ -143,6 +147,22 @@ private[http] object Http2Blueprint {
       case f: FiniteDuration => HttpConnectionIdleTimeoutBidi(f, None)
       case _                 => BidiFlow.identity[ByteString, ByteString]
     }
+
+  def errorHandling(log: LoggingAdapter): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
+    BidiFlow.fromFlows(
+      StreamUtils.encodeErrorAndComplete {
+        case ex: Http2Compliance.Http2ProtocolException =>
+          // protocol errors are most likely provoked by peer, so we don't log them noisily
+          if (log.isDebugEnabled) log.debug(s"HTTP2 connection failed with error [${ex.getMessage}]. Sending ${ex.errorCode} and closing connection.")
+          FrameRenderer.render(GoAwayFrame(0, ex.errorCode))
+        case ex: StreamTcpException => throw ex // TCP connection is probably broken: just forward exception
+        case NonFatal(ex) =>
+          log.error(ex, s"HTTP2 connection failed with error [${ex.getMessage}]. Sending INTERNAL_ERROR and closing connection.")
+          FrameRenderer.render(GoAwayFrame(0, Http2Protocol.ErrorCode.INTERNAL_ERROR))
+      },
+      Flow[ByteString]
+    )
+  }
 
   def framing(log: LoggingAdapter): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(

@@ -22,6 +22,7 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -342,6 +343,15 @@ private[http] object StreamUtils {
   def handleIOResult(ioResult: IOResult): Future[IOResult] =
     if (ioResult.wasSuccessful) FastFuture.successful(ioResult)
     else FastFuture.failed(ioResult.getError)
+
+  def encodeErrorAndComplete[T](f: Throwable => T): Flow[T, T, NotUsed] =
+    Flow[T].recoverWithRetries(1, {
+      case t: Throwable =>
+        try Source.single(f(t))
+        catch {
+          case NonFatal(ex) => Source.failed(ex) // avoid logged errors here
+        }
+    })
 }
 
 /**
@@ -365,7 +375,9 @@ private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[B
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
     val f = functionConstructor(inheritedAttributes)
-    override def onPush(): Unit = push(out, f(grab(in)))
+    override def onPush(): Unit =
+      try push(out, f(grab(in)))
+      catch { case NonFatal(ex) => failStage(ex) }
     override def onPull(): Unit = pull(in)
 
     setHandlers(in, out, this)

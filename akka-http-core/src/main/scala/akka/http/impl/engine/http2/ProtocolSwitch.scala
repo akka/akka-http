@@ -86,17 +86,18 @@ private[http] object ProtocolSwitch {
             val propagatePull =
               new OutHandler {
                 override def onPull(): Unit = pull(in)
+                override def onDownstreamFinish(): Unit = cancel(in)
               }
 
             val firstHandler =
               initialElement match {
-                case Some(ele) if out.isAvailable =>
-                  out.push(ele)
+                case Some(initial) if out.isAvailable =>
+                  out.push(initial)
                   propagatePull
-                case Some(ele) =>
+                case Some(initial) =>
                   new OutHandler {
                     override def onPull(): Unit = {
-                      out.push(initialElement.get)
+                      out.push(initial)
                       out.setHandler(propagatePull)
                     }
                   }

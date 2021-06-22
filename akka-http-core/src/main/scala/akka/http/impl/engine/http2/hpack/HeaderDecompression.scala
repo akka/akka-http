@@ -6,7 +6,6 @@ package akka.http.impl.engine.http2.hpack
 
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2._
@@ -16,8 +15,8 @@ import akka.util.ByteString
 import com.twitter.hpack.HeaderListener
 
 import scala.collection.immutable.VectorBuilder
-
 import FrameEvent._
+import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 
 /**
  * INTERNAL API
@@ -91,6 +90,6 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       }
     }
 
-    def protocolError(msg: String): Unit = failStage(new RuntimeException(msg)) // TODO: replace with right exception type
+    def protocolError(msg: String): Unit = failStage(new Http2ProtocolException(msg))
   }
 }
