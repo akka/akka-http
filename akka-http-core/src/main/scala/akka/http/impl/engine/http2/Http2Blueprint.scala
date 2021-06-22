@@ -17,7 +17,7 @@ import akka.http.impl.engine.rendering.DateHeaderRendering
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2CommonSettings, ParserSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2ClientSettings, Http2ServerSettings, ParserSettings, ServerSettings }
 import akka.stream.StreamTcpException
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
@@ -57,17 +57,11 @@ private[http2] case class Http2SubStream(
         if (data == Source.empty || contentLength == 0 || !hasEntity) {
           if (contentTypeOption.isEmpty) HttpEntity.Empty
           else HttpEntity.Strict(contentType, ByteString.empty)
-        } else if (contentLength > 0) {
-          val byteSource: Source[ByteString, Any] = data.collect {
-            case b: ByteString             => b
-            case HttpEntity.Chunk(data, _) => data
-            // ignore: HttpEntity.LastChunk
-          }
-          HttpEntity.Default(contentType, contentLength, byteSource)
         } else {
           val chunkSource: Source[HttpEntity.ChunkStreamPart, Any] = data.map {
             case b: ByteString                 => HttpEntity.Chunk(b)
             case p: HttpEntity.ChunkStreamPart => p
+            case x                             => throw new IllegalStateException(s"Only ByteString or ChunkStreamPart expected but got $x")
           }
           HttpEntity.Chunked(contentType, chunkSource)
         }
@@ -198,14 +192,14 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def serverDemux(settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+  def serverDemux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
     BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded))
 
   /**
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def clientDemux(settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+  def clientDemux(settings: Http2ClientSettings, masterHttpHeaderParser: HttpHeaderParser): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
     BidiFlow.fromGraph(new Http2ClientDemux(settings, masterHttpHeaderParser))
 
   /**

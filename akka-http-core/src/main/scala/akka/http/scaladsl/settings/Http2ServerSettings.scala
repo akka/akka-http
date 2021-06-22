@@ -117,6 +117,8 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
     require(minCollectStrictEntitySize >= 0, "min-collect-strict-entity-size must be >= 0")
+    require(minCollectStrictEntitySize <= incomingStreamLevelBufferSize, "min-collect-strict-entity-size <= incoming-stream-level-buffer-size")
+    require(minCollectStrictEntitySize <= (incomingConnectionLevelBufferSize / maxConcurrentStreams), "min-collect-strict-entity-size <= incoming-connection-level-buffer-size / max-concurrent-streams")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
     Http2CommonSettings.validate(this)
   }
@@ -176,6 +178,9 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
   def maxPersistentAttempts: Int
   override def withMaxPersistentAttempts(max: Int): Http2ClientSettings = copy(maxPersistentAttempts = max)
 
+  def completionTimeout: FiniteDuration
+  def withCompletionTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(completionTimeout = timeout)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalClientSettings]
   @InternalApi
@@ -198,6 +203,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
     maxPersistentAttempts:             Int,
+    completionTimeout:                 FiniteDuration,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings with javadsl.settings.Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -206,6 +212,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
     require(maxPersistentAttempts >= 0, "max-persistent-attempts must be >= 0")
+    require(completionTimeout > Duration.Zero, "completion-timeout must be > 0")
     Http2CommonSettings.validate(this)
   }
 
@@ -220,6 +227,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
       maxPersistentAttempts = c.getInt("max-persistent-attempts"),
+      completionTimeout = c.getFiniteDuration("completion-timeout"),
       internalSettings = None // no possibility to configure internal settings with config
     )
   }

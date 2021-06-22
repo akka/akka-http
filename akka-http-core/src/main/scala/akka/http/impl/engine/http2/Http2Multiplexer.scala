@@ -9,7 +9,9 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
-import akka.stream.stage.{ GraphStageLogic, OutHandler, StageLogging }
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
+import akka.stream.stage.StageLogging
 
 import scala.collection.immutable
 
@@ -34,6 +36,8 @@ private[http2] trait Http2Multiplexer {
   def reportTimings(): Unit
 
   def maxBytesToBufferPerSubstream: Int
+
+  def hasFlushedAllData: Boolean
 }
 
 @InternalApi
@@ -82,6 +86,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
   def pushFrameOut(event: FrameEvent): Unit
 
+  def onAllDataFlushed(): Unit
+
   def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogHelper { self =>
       def log: LoggingAdapter = logic.log
@@ -121,12 +127,16 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       private var _state: MultiplexerState = Idle
 
+      def hasFlushedAllData: Boolean = allDataFlushed(_state)
+      private def allDataFlushed(state: MultiplexerState): Boolean = (state == WaitingForData || state == Idle)
+
       private def updateState(transition: MultiplexerState => MultiplexerState): Unit = {
         val oldState = _state
         val newState = transition(_state)
         _state = newState
 
         if (newState.name != oldState.name) recordStateChange(oldState.name, newState.name)
+        if (allDataFlushed(newState)) onAllDataFlushed()
       }
 
       private[http2] sealed trait MultiplexerState extends Product {
@@ -286,21 +296,21 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
     var timings = Map.empty[String, Long].withDefaultValue(0L)
     var lastTimestamp = System.nanoTime()
 
-    def recordStateChange(oldState: String, newState: String): Unit = {
+    def recordStateChange(oldState: String, newState: String): Unit = debug {
       val now = System.nanoTime()
       val lasted = now - lastTimestamp
       val name = oldState
       timings = timings.updated(name, timings(name) + lasted)
       lastTimestamp = now
-      debug(s"Changing state from $oldState to $newState")
+      s"Changing state from $oldState to $newState"
     }
 
     /** Logs DEBUG level timing data for the output side of the multiplexer*/
-    def reportTimings(): Unit = {
+    def reportTimings(): Unit = debug {
       val timingsReport = timings.toSeq.sortBy(_._1).map {
         case (name, nanos) => f"${nanos / 1000000}%5d ms $name"
       }.mkString("\n")
-      debug(s"Timing data for connection\n$timingsReport")
+      s"Timing data for connection\n$timingsReport"
     }
   }
 }

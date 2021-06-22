@@ -59,6 +59,7 @@ private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHand
 
     if (buffer.isEmpty && completed) outlet.complete()
   }
+
 }
 
 /**
