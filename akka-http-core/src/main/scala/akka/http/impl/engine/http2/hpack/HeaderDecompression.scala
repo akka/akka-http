@@ -11,7 +11,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2._
 import akka.http.impl.engine.http2.RequestParsing.{ checkNoRegularHeadersBeforePseudoHeader, checkUniquePseudoHeader, malformedRequest, parseHeaderPair }
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.scaladsl.model.{ ContentType, IllegalUriException, ParsingException, Uri }
+import akka.http.scaladsl.model.{ ContentType, HttpMethods, IllegalUriException, ParsingException, Uri }
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
@@ -20,6 +20,7 @@ import akka.util.ByteString
 import scala.collection.immutable.VectorBuilder
 import FrameEvent._
 import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
+import akka.http.scaladsl.settings.ParserSettings
 
 /**
  * INTERNAL API
@@ -27,7 +28,7 @@ import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
  * Can be used on server and client side.
  */
 @InternalApi
-private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
+private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser, parserSettings: ParserSettings) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val UTF8 = StandardCharsets.UTF_8
   val US_ASCII = StandardCharsets.US_ASCII
 
@@ -82,6 +83,12 @@ private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser) e
                 }
                 headers += name -> newPathAndRawQuery
                 newPathAndRawQuery
+              case ":method" =>
+                val m = HttpMethods.getForKey(value)
+                  .orElse(parserSettings.customMethods(value))
+                  .getOrElse(malformedRequest(s"Unknown HTTP method: '$value'"))
+                headers += name -> m
+                m
               case "content-length" | "cookie" =>
                 headers += name -> value
                 value

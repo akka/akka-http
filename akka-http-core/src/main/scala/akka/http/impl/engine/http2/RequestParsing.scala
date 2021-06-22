@@ -120,10 +120,15 @@ private[http2] object RequestParsing {
             case ":method" =>
               checkUniquePseudoHeader(":method", method)
               checkNoRegularHeadersBeforePseudoHeader(":method", seenRegularHeader)
-              val m = HttpMethods.getForKey(value.asInstanceOf[String])
-                .orElse(serverSettings.parserSettings.customMethods(value.asInstanceOf[String]))
-                .getOrElse(malformedRequest(s"Unknown HTTP method: '$value'"))
-              rec(incomingHeaders, offset + 1, m, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+              value match {
+                case newMethod: HttpMethod =>
+                  rec(incomingHeaders, offset + 1, newMethod, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+                case toParse: String =>
+                  val m = HttpMethods.getForKey(toParse)
+                    .orElse(serverSettings.parserSettings.customMethods(toParse))
+                    .getOrElse(malformedRequest(s"Unknown HTTP method: '$value'"))
+                  rec(incomingHeaders, offset + 1, m, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+              }
             case ":path" =>
               checkUniquePseudoHeader(":path", pathAndRawQuery)
               checkNoRegularHeadersBeforePseudoHeader(":path", seenRegularHeader)

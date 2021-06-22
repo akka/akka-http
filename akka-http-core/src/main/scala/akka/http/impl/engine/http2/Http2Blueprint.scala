@@ -106,7 +106,7 @@ private[http] object Http2Blueprint {
       httpLayer(settings, log, dateHeaderRendering) atop
       serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding(masterHttpHeaderParser) atop
+      hpackCoding(masterHttpHeaderParser, settings.parserSettings) atop
       framing(log) atop
       errorHandling(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
@@ -124,7 +124,7 @@ private[http] object Http2Blueprint {
       httpLayerClient(masterHttpHeaderParser, settings, log) atop
       clientDemux(settings.http2Settings, masterHttpHeaderParser) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding(masterHttpHeaderParser) atop
+      hpackCoding(masterHttpHeaderParser, settings.parserSettings) atop
       framingClient(log) atop
       errorHandling(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
@@ -183,10 +183,10 @@ private[http] object Http2Blueprint {
    * TODO: introduce another FrameEvent type that exclude HeadersFrame and ContinuationFrame from
    * reaching the higher-level.
    */
-  def hpackCoding(masterHttpHeaderParser: HttpHeaderParser): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
+  def hpackCoding(masterHttpHeaderParser: HttpHeaderParser, parserSettings: ParserSettings): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].via(HeaderCompression),
-      Flow[FrameEvent].via(new HeaderDecompression(masterHttpHeaderParser))
+      Flow[FrameEvent].via(new HeaderDecompression(masterHttpHeaderParser, parserSettings))
     )
 
   /**
