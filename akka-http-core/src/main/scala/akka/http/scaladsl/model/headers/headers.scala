@@ -62,7 +62,7 @@ sealed trait ModeledHeader extends HttpHeader with Serializable {
   def renderInRequests: Boolean = false // default implementation
   def renderInResponses: Boolean = false // default implementation
   def name: String = companion.name
-  private var _value: String = _
+  private[this] var _value: String = _
   def value: String = {
     if (_value eq null) _value = renderValue(new StringRendering).get
     _value
