@@ -82,9 +82,9 @@ private[http2] object RequestParsing {
         val (path, rawQueryString) = pathAndRawQuery
         val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority
         val uri = Uri(scheme, authorityOrDefault, path, rawQueryString)
-        val request = HttpRequest(
-          method, uri, headers.result(), entity, HttpProtocols.`HTTP/2.0`
-        ).addAttribute(Http2.streamId, subStream.streamId)
+        val request = new HttpRequest(
+          method, uri, headers.result(), Map(Http2.streamId -> subStream.streamId), entity, HttpProtocols.`HTTP/2.0` // FIXME supply all attributes in one go
+        )
         val requestWithSession = sslSessionAttribute match {
           case Some(sslSession) => request.addAttribute(AttributeKeys.sslSession, SslSessionInfo(sslSession))
           case None             => request
