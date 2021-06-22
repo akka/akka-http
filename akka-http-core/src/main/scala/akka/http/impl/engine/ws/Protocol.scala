@@ -27,6 +27,7 @@ private[http] object Protocol {
   sealed trait Opcode {
     def code: Byte
     def isControl: Boolean
+    def short: String
   }
   object Opcode {
     def forCode(code: Byte): Opcode = code match {
@@ -42,19 +43,19 @@ private[http] object Protocol {
       case _                    => throw new IllegalArgumentException(f"Opcode must be 4bit long but was 0x$code%02X")
     }
 
-    sealed abstract class AbstractOpcode private[Opcode] (val code: Byte) extends Opcode {
+    sealed abstract class AbstractOpcode private[Opcode] (val code: Byte, val short: String) extends Opcode {
       def isControl: Boolean = (code & 0x8) != 0
     }
 
-    case object Continuation extends AbstractOpcode(0x0)
-    case object Text extends AbstractOpcode(0x1)
-    case object Binary extends AbstractOpcode(0x2)
+    case object Continuation extends AbstractOpcode(0x0, "CONT")
+    case object Text extends AbstractOpcode(0x1, "TEXT")
+    case object Binary extends AbstractOpcode(0x2, "BINA")
 
-    case object Close extends AbstractOpcode(0x8)
-    case object Ping extends AbstractOpcode(0x9)
-    case object Pong extends AbstractOpcode(0xA)
+    case object Close extends AbstractOpcode(0x8, "CLOS")
+    case object Ping extends AbstractOpcode(0x9, "PING")
+    case object Pong extends AbstractOpcode(0xA, "PONG")
 
-    case class Other(override val code: Byte) extends AbstractOpcode(code)
+    case class Other(override val code: Byte) extends AbstractOpcode(code, code formatted "0x%02x")
   }
 
   /**

@@ -15,9 +15,10 @@ import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import org.scalatest.concurrent.Eventually
-import java.net.InetSocketAddress
 
+import java.net.InetSocketAddress
 import akka.Done
+import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.util.ByteString
@@ -26,10 +27,14 @@ import akka.testkit._
 
 import scala.util.{ Failure, Success }
 
-class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
-  with Eventually {
-
-  implicit val materializer = ActorMaterializer()
+class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
+  """
+     akka {
+       stream.materializer.debug.fuzzing-mode=off
+       http.server.websocket.log-frames = on
+       http.client.websocket.log-frames = on
+     }
+  """) with Eventually {
 
   "A WebSocket server" must {
 

@@ -67,9 +67,6 @@ private[akka] object LogByteStringTools {
 
     def formatBytes(bs: ByteString): Iterator[String] = {
       def asHex(b: Byte): String = b formatted "%02X"
-      def asASCII(b: Byte): Char =
-        if (b >= 0x20 && b < 0x7f) b.toChar
-        else '.'
 
       def formatLine(bs: ByteString): String = {
         val hex = bs.map(asHex).mkString(" ")
@@ -92,6 +89,9 @@ private[akka] object LogByteStringTools {
 
     formatBytes(bytes).mkString("")
   }
+  def asASCII(b: Byte): Char =
+    if (b >= 0x20 && b < 0x7f) b.toChar
+    else '.'
 
   def logTLSBidiBySetting(tag: String, maxBytesSetting: Option[Int]): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, Any] =
     maxBytesSetting

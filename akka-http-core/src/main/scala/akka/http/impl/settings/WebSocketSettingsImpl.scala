@@ -20,7 +20,8 @@ private[akka] final case class WebSocketSettingsImpl(
   randomFactory:            () => Random,
   periodicKeepAliveMode:    String,
   periodicKeepAliveMaxIdle: Duration,
-  periodicKeepAliveData:    () => ByteString)
+  periodicKeepAliveData:    () => ByteString,
+  logFrames:                Boolean)
   extends akka.http.scaladsl.settings.WebSocketSettings {
 
   require(
@@ -54,11 +55,12 @@ private[akka] object WebSocketSettingsImpl { // on purpose not extending Setting
 
   private def fromConfig(inner: Config): WebSocketSettingsImpl = {
     val c = inner
-    new WebSocketSettingsImpl(
+    WebSocketSettingsImpl(
       Randoms.SecureRandomInstances,
       c.getString("periodic-keep-alive-mode"), // mode could be extended to be a factory of pings, if we'd need control over the data field
       c.getPotentiallyInfiniteDuration("periodic-keep-alive-max-idle"),
-      NoPeriodicKeepAliveData
+      NoPeriodicKeepAliveData,
+      c.getBoolean("log-frames")
     )
   }
 
