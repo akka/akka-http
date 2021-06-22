@@ -6,6 +6,7 @@ package akka.http.javadsl.model.ws
 
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.DoNotInherit
 import akka.http.scaladsl.{ model => sm }
 import akka.stream.Materializer
 import akka.stream.javadsl.Source
@@ -17,6 +18,7 @@ import scala.compat.java8.FutureConverters._
 /**
  * Represents a WebSocket message. A message can either be a binary message or a text message.
  */
+@DoNotInherit
 abstract class Message {
   /**
    * Is this message a text message? If true, [[asTextMessage]] will return this
