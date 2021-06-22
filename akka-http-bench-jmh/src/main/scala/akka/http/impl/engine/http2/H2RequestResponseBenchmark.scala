@@ -14,7 +14,7 @@ import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations.Param
 
-trait H2RequestResponseBenchmark {
+trait H2RequestResponseBenchmark extends HPackEncodingSupport {
   @Param(Array("1"))
   var minStrictEntitySize: String = _
 
@@ -28,10 +28,17 @@ trait H2RequestResponseBenchmark {
 
   private val requestBytes = ByteString("abcde")
   private def requestWithoutBody(streamId: Int): ByteString =
-    FrameRenderer.render(HeadersFrame(streamId, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman, None))
+    FrameRenderer.render(HeadersFrame(streamId, endStream = true, endHeaders = true, headerBlock(streamId), None))
   private def requestWithSingleFrameBody(streamId: Int): ByteString =
-    FrameRenderer.render(HeadersFrame(streamId, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman, None)) ++
+    FrameRenderer.render(HeadersFrame(streamId, endStream = false, endHeaders = true, headerBlock(streamId), None)) ++
       FrameRenderer.render(DataFrame(streamId, endStream = true, requestBytes))
+
+  private var firstRequestHeaderBlock: ByteString = _
+  // use header compression for subsequent requests
+  private var subsequentRequestHeaderBlock: ByteString = _
+  private def headerBlock(streamId: Int): ByteString =
+    if (streamId == 1) firstRequestHeaderBlock
+    else subsequentRequestHeaderBlock
 
   protected var requestDataCreator: Int => ByteString = _
   protected var request: HttpRequest = _
@@ -51,12 +58,13 @@ trait H2RequestResponseBenchmark {
   def initRequestResponse(): Unit = {
     requestbody match {
       case "empty" =>
-        requestDataCreator = requestWithoutBody _
         request = HttpRequest(method = HttpMethods.POST, uri = "http://www.example.com/")
+        requestDataCreator = requestWithoutBody _
       case "singleframe" =>
-        requestDataCreator = requestWithSingleFrameBody _
         request = HttpRequest(method = HttpMethods.POST, uri = "http://www.example.com/", entity = HttpEntity(requestBytes))
+        requestDataCreator = requestWithSingleFrameBody _
     }
+    initRequestHeaderBlocks()
 
     val trailerHeader = RawHeader("grpc-status", "9")
     val responseBody = ByteString("hello")
@@ -78,4 +86,9 @@ trait H2RequestResponseBenchmark {
           .addAttribute(AttributeKeys.trailer, Trailer(trailerHeader :: Nil))
     }
   }
+  private def initRequestHeaderBlocks(): Unit = {
+    firstRequestHeaderBlock = encodeRequestHeaders(request)
+    subsequentRequestHeaderBlock = encodeRequestHeaders(request) // second invocation will lead to different result
+  }
+
 }
