@@ -96,7 +96,7 @@ private[http2] object HttpMessageRendering {
    * Mutates `headerPairs` adding headers related to content (type and length).
    */
   def addContentHeaders(headerPairs: VectorBuilder[(String, String)], entity: HttpEntity): Unit = {
-    if (entity.contentType != ContentTypes.NoContentType)
+    if (entity.contentType ne ContentTypes.NoContentType)
       headerPairs += "content-type" -> entity.contentType.toString
     entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
   }
