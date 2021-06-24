@@ -92,7 +92,11 @@ abstract class CustomHeader extends jm.headers.CustomHeader {
  */
 abstract class ModeledCustomHeaderCompanion[H <: ModeledCustomHeader[H]] {
   def name: String
-  def lowercaseName: String = name.toRootLowerCase
+  private var _lowercaseName: String = _
+  def lowercaseName: String = {
+    if (_lowercaseName eq null) _lowercaseName = name.toRootLowerCase
+    _lowercaseName
+  }
 
   def parse(value: String): Try[H]
 
@@ -121,7 +125,7 @@ abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHe
   def companion: ModeledCustomHeaderCompanion[H]
 
   final override def name = companion.name
-  final override def lowercaseName = name.toRootLowerCase
+  final override def lowercaseName = companion.lowercaseName
 }
 
 import akka.http.impl.util.JavaMapping.Implicits._
