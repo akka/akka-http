@@ -5,11 +5,13 @@
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.util._
-import java.net.InetAddress
 
+import java.net.InetAddress
 import akka.http.scaladsl.model.{ headers, _ }
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+
+import scala.util.{ Success, Try }
 
 class HeaderSpec extends AnyFreeSpec with Matchers {
   "ModeledCompanion should" - {
@@ -217,8 +219,40 @@ class HeaderSpec extends AnyFreeSpec with Matchers {
         RawHeader("foo", "bar").toString shouldEqual "foo: bar"
       }
       "failing parse run" in {
+        // no null values allowed
         an[IllegalArgumentException] should be thrownBy RawHeader(null, "bar")
         an[IllegalArgumentException] should be thrownBy RawHeader("foo", null)
+
+        // no CR or LF allowed
+        an[IllegalArgumentException] should be thrownBy RawHeader("foo", "bar\r")
+        an[IllegalArgumentException] should be thrownBy RawHeader("foo", "bar\n")
+        an[IllegalArgumentException] should be thrownBy RawHeader("foo", "b\rar\n")
+      }
+    }
+  }
+  "ModeledCustomHeader should" - {
+    case class MyCustomHeader(value: String) extends ModeledCustomHeader[MyCustomHeader] {
+      override def companion: ModeledCustomHeaderCompanion[MyCustomHeader] = MyCustomHeader
+      override def renderInRequests: Boolean = false
+      override def renderInResponses: Boolean = false
+    }
+    object MyCustomHeader extends ModeledCustomHeaderCompanion[MyCustomHeader] {
+      override def name: String = "X-Custom"
+      override def parse(value: String): Try[MyCustomHeader] = Success(new MyCustomHeader(value))
+    }
+
+    "check for valid arguments" - {
+      "successful parse run" in {
+        MyCustomHeader("bar").toString shouldEqual "X-Custom: bar"
+      }
+      "failing parse run" in {
+        // no null values allowed
+        an[IllegalArgumentException] should be thrownBy MyCustomHeader(null)
+
+        // no CR or LF allowed
+        an[IllegalArgumentException] should be thrownBy MyCustomHeader("bar\r")
+        an[IllegalArgumentException] should be thrownBy MyCustomHeader("bar\n")
+        an[IllegalArgumentException] should be thrownBy MyCustomHeader("b\rar\n")
       }
     }
   }

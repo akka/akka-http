@@ -82,6 +82,7 @@ private[headers] sealed trait SyntheticHeader extends ModeledHeader
  * as they allow the custom header to be matched from [[RawHeader]] and vice-versa.
  */
 abstract class CustomHeader extends jm.headers.CustomHeader {
+  HttpHeader.validateHeaderValue(value)
   def lowercaseName: String = name.toRootLowerCase
   final def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
 }
@@ -122,6 +123,7 @@ abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHe
 
   final override def name = companion.name
   final override def lowercaseName = name.toRootLowerCase
+
 }
 
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -773,7 +775,8 @@ final case class Range(rangeUnit: RangeUnit, ranges: immutable.Seq[ByteRange]) e
 
 final case class RawHeader(name: String, value: String) extends jm.headers.RawHeader {
   if (name == null) throw new IllegalArgumentException("name must not be null")
-  if (value == null) throw new IllegalArgumentException("value must not be null")
+  HttpHeader.validateHeaderValue(value)
+
   def renderInRequests = true
   def renderInResponses = true
   val lowercaseName = name.toRootLowerCase

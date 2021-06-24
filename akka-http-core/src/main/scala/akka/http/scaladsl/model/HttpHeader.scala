@@ -7,7 +7,7 @@ package akka.http.scaladsl.model
 import akka.annotation.InternalApi
 
 import scala.util.{ Failure, Success }
-import akka.parboiled2.ParseError
+import akka.parboiled2.{ CharPredicate, ParseError }
 import akka.http.impl.util.ToStringRenderable
 import akka.http.impl.model.parser.{ CharacterClasses, HeaderParser }
 import akka.http.javadsl.{ model => jm }
@@ -44,6 +44,9 @@ abstract class HttpHeader extends jm.HttpHeader with ToStringRenderable {
 }
 
 object HttpHeader {
+
+  private val CRLF = CharPredicate('\r', '\n')
+
   /**
    * Extract name and value from a header.
    * CAUTION: The name must be matched in *all-lowercase*!.
@@ -94,6 +97,13 @@ object HttpHeader {
           ParsingResult.Error(info.withSummaryPrepended(s"Illegal HTTP header value"))
       }
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
+
+  // https://tools.ietf.org/html/rfc7230#section-3.2.6
+  def validateHeaderValue(value: String): Unit =
+    if (value == null)
+      throw new IllegalArgumentException("value must not be null")
+    else if (CRLF.matchesAny(value))
+      throw new IllegalArgumentException("Value must not contain CR or LF characters")
 
   /** INTERNAL API */
   @InternalApi
