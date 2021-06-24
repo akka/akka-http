@@ -135,7 +135,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         val newState = transition(_state)
         _state = newState
 
-        if (newState.name != oldState.name) recordStateChange(oldState.name, newState.name)
+        if (isDebugEnabled && newState.name != oldState.name) recordStateChange(oldState.name, newState.name)
         if (allDataFlushed(newState)) onAllDataFlushed()
       }
 
