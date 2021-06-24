@@ -39,27 +39,24 @@ private[akka] object LogHelper {
     ctx.universe.reify {
       {
         val logHelper = ctx.prefix.splice
-        val log = logHelper.log
         if (logHelper.isDebugEnabled)
-          log.debug(logHelper.prefixString + msg.splice)
+          logHelper.log.debug(logHelper.prefixString + msg.splice)
       }
     }
   def infoMacro(ctx: LoggerContext)(msg: ctx.Expr[String]): ctx.Expr[Unit] =
     ctx.universe.reify {
       {
         val logHelper = ctx.prefix.splice
-        val log = logHelper.log
         if (logHelper.isInfoEnabled)
-          log.info(logHelper.prefixString + msg.splice)
+          logHelper.log.info(logHelper.prefixString + msg.splice)
       }
     }
   def warningMacro(ctx: LoggerContext)(msg: ctx.Expr[String]): ctx.Expr[Unit] =
     ctx.universe.reify {
       {
         val logHelper = ctx.prefix.splice
-        val log = logHelper.log
         if (logHelper.isWarningEnabled)
-          log.warning(logHelper.prefixString + msg.splice)
+          logHelper.log.warning(logHelper.prefixString + msg.splice)
       }
     }
 }
