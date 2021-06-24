@@ -1,0 +1,4 @@
+# Added a private[this] field to sealed trait / hierarchy
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.headers.ModeledHeader.akka$http$scaladsl$model$headers$ModeledHeader$$_value")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.headers.ModeledHeader.akka$http$scaladsl$model$headers$ModeledHeader$$_value_=")
+
