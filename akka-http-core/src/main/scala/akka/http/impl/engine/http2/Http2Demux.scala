@@ -224,6 +224,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       override def isUpgraded: Boolean = upgraded
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
+      // cache debug state at the beginning to avoid that this has to be queried all the time
+      override lazy val isDebugEnabled: Boolean = super.isDebugEnabled
 
       def frameOutFinished(): Unit = {
         // make sure we clean up/fail substreams with a custom failure before stage is canceled

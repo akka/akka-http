@@ -18,6 +18,9 @@ import scala.reflect.macros.blackbox
 @InternalApi
 private[akka] trait LogHelper {
   def log: LoggingAdapter
+  def isDebugEnabled: Boolean = log.isDebugEnabled
+  def isInfoEnabled: Boolean = log.isInfoEnabled
+  def isWarningEnabled: Boolean = log.isWarningEnabled
 
   /** Override to prefix every log message with a user-defined context string */
   def prefixString: String = ""
@@ -36,27 +39,24 @@ private[akka] object LogHelper {
     ctx.universe.reify {
       {
         val logHelper = ctx.prefix.splice
-        val log = logHelper.log
-        if (log.isDebugEnabled)
-          log.debug(logHelper.prefixString + msg.splice)
+        if (logHelper.isDebugEnabled)
+          logHelper.log.debug(logHelper.prefixString + msg.splice)
       }
     }
   def infoMacro(ctx: LoggerContext)(msg: ctx.Expr[String]): ctx.Expr[Unit] =
     ctx.universe.reify {
       {
         val logHelper = ctx.prefix.splice
-        val log = logHelper.log
-        if (log.isInfoEnabled)
-          log.info(logHelper.prefixString + msg.splice)
+        if (logHelper.isInfoEnabled)
+          logHelper.log.info(logHelper.prefixString + msg.splice)
       }
     }
   def warningMacro(ctx: LoggerContext)(msg: ctx.Expr[String]): ctx.Expr[Unit] =
     ctx.universe.reify {
       {
         val logHelper = ctx.prefix.splice
-        val log = logHelper.log
-        if (log.isWarningEnabled)
-          log.warning(logHelper.prefixString + msg.splice)
+        if (logHelper.isWarningEnabled)
+          logHelper.log.warning(logHelper.prefixString + msg.splice)
       }
     }
 }
