@@ -10,15 +10,24 @@ import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes }
 import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.stage.TimerGraphStageLogic
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.util.PrettyDuration
 
+import java.util.concurrent.ThreadLocalRandom
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.DurationLong
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 @InternalApi
 private[http2] object PersistentConnection {
+
+  private case class EmbargoEnded(connectsLeft: Option[Int], embargo: FiniteDuration)
+
   /**
    * Wraps a connection flow with transparent reconnection support.
    *
@@ -36,11 +45,11 @@ private[http2] object PersistentConnection {
    *  * generate error responses with 502 status code
    *  * custom attribute contains internal error information
    */
-  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Int): Flow[HttpRequest, HttpResponse, NotUsed] =
+  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Int, minBackoff: FiniteDuration, maxBackoff: FiniteDuration): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow.fromGraph(new Stage(connectionFlow, maxAttempts match {
       case 0 => None
       case n => Some(n)
-    }))
+    }, minBackoff, maxBackoff))
 
   private class AssociationTag extends RequestResponseAssociation
   private val associationTagKey = AttributeKey[AssociationTag]("PersistentConnection.associationTagKey")
@@ -49,30 +58,31 @@ private[http2] object PersistentConnection {
       StatusCodes.BadGateway,
       entity = "The server closed the connection before delivering a response.")
 
-  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Option[Int]) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
+  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Option[Int], baseEmbargo: FiniteDuration, _maxBackoff: FiniteDuration) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
     val requestIn = Inlet[HttpRequest]("PersistentConnection.requestIn")
     val responseOut = Outlet[HttpResponse]("PersistentConnection.responseOut")
+    val maxBaseEmbargo = _maxBackoff / 2 // because we'll add a random component of the same size to the base
 
     val shape: FlowShape[HttpRequest, HttpResponse] = FlowShape(requestIn, responseOut)
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with StageLogging {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with StageLogging {
       become(Unconnected)
 
       def become(state: State): Unit = setHandlers(requestIn, responseOut, state)
 
       trait State extends InHandler with OutHandler
       object Unconnected extends State {
-        override def onPush(): Unit = connect(maxAttempts)
+        override def onPush(): Unit = connect(maxAttempts, Duration.Zero)
         override def onPull(): Unit =
           if (!isAvailable(requestIn) && !hasBeenPulled(requestIn)) // requestIn might already have been pulled when we failed and went back to Unconnected
             pull(requestIn)
       }
 
-      def connect(connectsLeft: Option[Int]): Unit = {
+      def connect(connectsLeft: Option[Int], embargo: FiniteDuration): Unit = {
         val requestOut = new SubSourceOutlet[HttpRequest]("PersistentConnection.requestOut")
         val responseIn = new SubSinkInlet[HttpResponse]("PersistentConnection.responseIn")
         val connection = Promise[OutgoingConnection]()
 
-        become(new Connecting(connection.future, requestOut, responseIn, connectsLeft.map(_ - 1)))
+        become(new Connecting(connection.future, requestOut, responseIn, connectsLeft.map(_ - 1), embargo))
 
         connection.completeWith(Source.fromGraph(requestOut.source)
           .viaMat(connectionFlow)(Keep.right)
@@ -84,7 +94,8 @@ private[http2] object PersistentConnection {
         connected:    Future[OutgoingConnection],
         requestOut:   SubSourceOutlet[HttpRequest],
         responseIn:   SubSinkInlet[HttpResponse],
-        connectsLeft: Option[Int]
+        connectsLeft: Option[Int],
+        embargo:      FiniteDuration
       ) extends State {
         connected.onComplete({
           case Success(_) =>
@@ -128,9 +139,29 @@ private[http2] object PersistentConnection {
             failStage(new RuntimeException(s"Connection failed after $maxAttempts attempts", cause))
           } else {
             setHandler(requestIn, Unconnected)
-            log.info(s"Connection attempt failed: ${cause.getMessage}. Trying to connect again${connectsLeft.map(n => s" ($n attempts left)").getOrElse("")}.")
-            connect(connectsLeft)
+            val nextEmbargo = embargo match {
+              case Duration.Zero => baseEmbargo
+              case otherValue    => (otherValue * 2).min(maxBaseEmbargo)
+            }
+            if (nextEmbargo == Duration.Zero) {
+              log.info(s"Connection attempt failed: ${cause.getMessage}. Trying to connect again${connectsLeft.map(n => s" ($n attempts left)").getOrElse("")}.")
+              connect(connectsLeft, nextEmbargo)
+            } else {
+              // FIXME is it fine to just stay in Connecting state here while backing off?
+              val minMillis = nextEmbargo.toMillis
+              val maxMillis = minMillis * 2
+              val backoff = ThreadLocalRandom.current().nextLong(minMillis, maxMillis).millis
+              log.info(s"Connection attempt failed: ${cause.getMessage}. Trying to connect again after backoff ${PrettyDuration.format(backoff)} ${connectsLeft.map(n => s" ($n attempts left)").getOrElse("")}.")
+              scheduleOnce(EmbargoEnded(connectsLeft, nextEmbargo), backoff)
+            }
           }
+        }
+      }
+
+      override def onTimer(timerKey: Any): Unit = {
+        timerKey match {
+          case EmbargoEnded(connectsLeft, nextEmbargo) =>
+            connect(connectsLeft, nextEmbargo)
         }
       }
 

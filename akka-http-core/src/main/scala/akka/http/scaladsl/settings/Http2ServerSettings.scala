@@ -181,6 +181,12 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
   def completionTimeout: FiniteDuration
   def withCompletionTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(completionTimeout = timeout)
 
+  def baseConnectionBackoff: FiniteDuration
+  def withBaseConnectionBackoff(backoff: FiniteDuration): Http2ClientSettings = copy(baseConnectionBackoff = backoff)
+
+  def maxConnectionBackoff: FiniteDuration
+  def withMaxConnectionBackoff(backoff: FiniteDuration): Http2ClientSettings = copy(maxConnectionBackoff = backoff)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalClientSettings]
   @InternalApi
@@ -204,6 +210,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     pingTimeout:                       FiniteDuration,
     maxPersistentAttempts:             Int,
     completionTimeout:                 FiniteDuration,
+    baseConnectionBackoff:             FiniteDuration,
+    maxConnectionBackoff:              FiniteDuration,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings with javadsl.settings.Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -213,6 +221,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
     require(maxPersistentAttempts >= 0, "max-persistent-attempts must be >= 0")
     require(completionTimeout > Duration.Zero, "completion-timeout must be > 0")
+    require(baseConnectionBackoff <= maxConnectionBackoff, "base-connection-backoff must be <= max-connection-backoff")
     Http2CommonSettings.validate(this)
   }
 
@@ -228,6 +237,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       pingTimeout = c.getFiniteDuration("ping-timeout"),
       maxPersistentAttempts = c.getInt("max-persistent-attempts"),
       completionTimeout = c.getFiniteDuration("completion-timeout"),
+      baseConnectionBackoff = c.getFiniteDuration("base-connection-backoff"),
+      maxConnectionBackoff = c.getFiniteDuration("max-connection-backoff"),
       internalSettings = None // no possibility to configure internal settings with config
     )
   }
