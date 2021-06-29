@@ -78,12 +78,12 @@ private[http2] object PersistentConnection {
             pull(requestIn)
       }
 
-      def connect(connectsLeft: Option[Int], embargo: FiniteDuration): Unit = {
+      def connect(connectsLeft: Option[Int], lastEmbargo: FiniteDuration): Unit = {
         val requestOut = new SubSourceOutlet[HttpRequest]("PersistentConnection.requestOut")
         val responseIn = new SubSinkInlet[HttpResponse]("PersistentConnection.responseIn")
         val connection = Promise[OutgoingConnection]()
 
-        become(new Connecting(connection.future, requestOut, responseIn, connectsLeft.map(_ - 1), embargo))
+        become(new Connecting(connection.future, requestOut, responseIn, connectsLeft.map(_ - 1), lastEmbargo))
 
         connection.completeWith(Source.fromGraph(requestOut.source)
           .viaMat(connectionFlow)(Keep.right)
@@ -92,11 +92,11 @@ private[http2] object PersistentConnection {
       }
 
       class Connecting(
-        connected:    Future[OutgoingConnection],
-        requestOut:   SubSourceOutlet[HttpRequest],
-        responseIn:   SubSinkInlet[HttpResponse],
-        connectsLeft: Option[Int],
-        embargo:      FiniteDuration
+                        connected:    Future[OutgoingConnection],
+                        requestOut:   SubSourceOutlet[HttpRequest],
+                        responseIn:   SubSinkInlet[HttpResponse],
+                        connectsLeft: Option[Int],
+                        lastEmbargo:      FiniteDuration
       ) extends State {
         connected.onComplete({
           case Success(_) =>
@@ -140,20 +140,20 @@ private[http2] object PersistentConnection {
             failStage(new RuntimeException(s"Connection failed after $maxAttempts attempts", cause))
           } else {
             setHandler(requestIn, Unconnected)
-            val nextEmbargo = embargo match {
-              case Duration.Zero => baseEmbargo
-              case otherValue    => (otherValue * 2).min(maxBaseEmbargo)
-            }
-            if (nextEmbargo == Duration.Zero) {
+            if (baseEmbargo == Duration.Zero) {
               log.info(s"Connection attempt failed: ${cause.getMessage}. Trying to connect again${connectsLeft.map(n => s" ($n attempts left)").getOrElse("")}.")
-              connect(connectsLeft, nextEmbargo)
+              connect(connectsLeft, embargo)
             } else {
               // FIXME is it fine to just stay in Connecting state here while backing off?
-              val minMillis = nextEmbargo.toMillis
+              val embargo = lastEmbargo match {
+                case Duration.Zero => baseEmbargo
+                case otherValue    => (otherValue * 2).min(maxBaseEmbargo)
+              }
+              val minMillis = embargo.toMillis
               val maxMillis = minMillis * 2
               val backoff = ThreadLocalRandom.current().nextLong(minMillis, maxMillis).millis
               log.info(s"Connection attempt failed: ${cause.getMessage}. Trying to connect again after backoff ${PrettyDuration.format(backoff)} ${connectsLeft.map(n => s" ($n attempts left)").getOrElse("")}.")
-              scheduleOnce(EmbargoEnded(connectsLeft, nextEmbargo), backoff)
+              scheduleOnce(EmbargoEnded(connectsLeft, embargo), backoff)
             }
           }
         }
