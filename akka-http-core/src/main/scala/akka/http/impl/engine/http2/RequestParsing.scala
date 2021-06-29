@@ -115,33 +115,34 @@ private[http2] object RequestParsing {
       ): HttpRequest =
         if (offset == incomingHeaders.size) createRequest(method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, headers)
         else {
+          import hpack.Http2HeaderParsing._
           val (name, value) = incomingHeaders(offset)
           name match {
             case ":scheme" =>
               checkUniquePseudoHeader(":scheme", scheme)
               checkNoRegularHeadersBeforePseudoHeader(":scheme", seenRegularHeader)
-              rec(incomingHeaders, offset + 1, method, value.asInstanceOf[String], authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+              rec(incomingHeaders, offset + 1, method, Scheme.get(value), authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
 
             case ":method" =>
               checkUniquePseudoHeader(":method", method)
               checkNoRegularHeadersBeforePseudoHeader(":method", seenRegularHeader)
 
-              rec(incomingHeaders, offset + 1, value.asInstanceOf[HttpMethod], scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+              rec(incomingHeaders, offset + 1, Method.get(value), scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
 
             case ":path" =>
               checkUniquePseudoHeader(":path", pathAndRawQuery)
               checkNoRegularHeadersBeforePseudoHeader(":path", seenRegularHeader)
-              rec(incomingHeaders, offset + 1, method, scheme, authority, value.asInstanceOf[(Uri.Path, Option[String])], contentType, contentLength, cookies, seenRegularHeader, headers)
+              rec(incomingHeaders, offset + 1, method, scheme, authority, PathAndQuery.get(value), contentType, contentLength, cookies, seenRegularHeader, headers)
 
             case ":authority" =>
               checkUniquePseudoHeader(":authority", authority)
               checkNoRegularHeadersBeforePseudoHeader(":authority", seenRegularHeader)
 
-              rec(incomingHeaders, offset + 1, method, scheme, value.asInstanceOf[Uri.Authority], pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+              rec(incomingHeaders, offset + 1, method, scheme, Authority.get(value), pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
 
             case "content-type" =>
               if (contentType.isEmpty)
-                rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, OptionVal.Some(value.asInstanceOf[ContentType]), contentLength, cookies, true, headers)
+                rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, OptionVal.Some(ContentType.get(value)), contentLength, cookies, true, headers)
               else
                 malformedRequest("HTTP message must not contain more than one content-type header")
 
@@ -150,7 +151,7 @@ private[http2] object RequestParsing {
 
             case "content-length" =>
               if (contentLength == -1) {
-                val contentLengthValue = value.asInstanceOf[String].toLong
+                val contentLengthValue = ContentLength.get(value).toLong
                 if (contentLengthValue < 0) malformedRequest("HTTP message must not contain a negative content-length header")
                 rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLengthValue, cookies, true, headers)
               } else malformedRequest("HTTP message must not contain more than one content-length header")
@@ -162,11 +163,11 @@ private[http2] object RequestParsing {
               } else {
                 cookies.append("; ") // Append octets as required by the spec
               }
-              cookiesBuilder.append(value.asInstanceOf[String])
+              cookiesBuilder.append(Cookie.get(value))
               rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookiesBuilder, true, headers)
 
-            case name =>
-              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += value.asInstanceOf[HttpHeader])
+            case _ =>
+              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += OtherHeader.get(value))
           }
         }
 

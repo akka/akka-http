@@ -8,10 +8,9 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.RequestParsing.{ malformedRequest, parseHeaderPair }
+import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.http2._
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
@@ -55,43 +54,24 @@ private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser, p
             headers += name -> parsed
             parsed
           } else {
+            import Http2HeaderParsing._
+            def handle(parsed: AnyRef): AnyRef = {
+              headers += name -> parsed
+              parsed
+            }
+
             name match {
-              case "content-type" =>
-                val contentTypeValue = ContentType.parse(value).right.getOrElse(malformedRequest(s"Invalid content-type: '$value'"))
-                headers += name -> contentTypeValue
-                contentTypeValue
-              case ":authority" =>
-                val authority: Uri.Authority = try {
-                  Uri.parseHttp2AuthorityPseudoHeader(value /*FIXME: , mode = serverSettings.parserSettings.uriParsingMode*/ )
-                } catch {
-                  case IllegalUriException(info) => throw new ParsingException(info)
-                }
-                headers += name -> authority
-                authority
-              case ":path" =>
-                val newPathAndRawQuery: (Uri.Path, Option[String]) = try {
-                  Uri.parseHttp2PathPseudoHeader(value /* FIXME:, mode = serverSettings.parserSettings.uriParsingMode */ )
-                } catch {
-                  case IllegalUriException(info) => throw new ParsingException(info)
-                }
-                headers += name -> newPathAndRawQuery
-                newPathAndRawQuery
-              case ":method" =>
-                val m = HttpMethods.getForKey(value)
-                  .orElse(parserSettings.customMethods(value))
-                  .getOrElse(malformedRequest(s"Unknown HTTP method: '$value'"))
-                headers += name -> m
-                m
-              case "content-length" | "cookie" =>
-                headers += name -> value
-                value
-              case x if x(0) == ':' =>
-                headers += name -> value
-                value
+              case "content-type"   => handle(ContentType.parse(parserSettings, value))
+              case ":authority"     => handle(Authority.parse(parserSettings, value))
+              case ":path"          => handle(PathAndQuery.parse(parserSettings, value))
+              case ":method"        => handle(Method.parse(parserSettings, value))
+              case ":scheme"        => handle(Scheme.parse(parserSettings, value))
+              case "content-length" => handle(ContentLength.parse(parserSettings, value))
+              case "cookie"         => handle(Cookie.parse(parserSettings, value))
+              case x if x(0) == ':' => handle(value)
               case _ =>
-                val parsed = parseHeaderPair(httpHeaderParser, name, value)
-                headers += name -> parsed
-                parsed
+                // cannot use OtherHeader.parse because that doesn't has access to header parser
+                handle(parseHeaderPair(httpHeaderParser, name, value))
             }
           }
         }
