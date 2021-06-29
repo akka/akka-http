@@ -22,7 +22,7 @@ private[http2] object FrameRenderer {
     frame match {
       case GoAwayFrame(lastStreamId, errorCode, debug) =>
         Frame(
-          8 + debug.size,
+          8 + debug.length,
           Http2Protocol.FrameType.GOAWAY,
           Http2Protocol.Flags.NO_FLAGS,
           Http2Protocol.NoStreamId
@@ -36,7 +36,7 @@ private[http2] object FrameRenderer {
       case DataFrame(streamId, endStream, payload) =>
         // TODO: should padding be emitted? In which cases?
         Frame(
-          payload.size,
+          payload.length,
           Http2Protocol.FrameType.DATA,
           Http2Protocol.Flags.END_STREAM.ifSet(endStream),
           streamId
@@ -45,7 +45,7 @@ private[http2] object FrameRenderer {
           .build()
       case HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, prioInfo) =>
         Frame(
-          (if (prioInfo.isDefined) 5 else 0) + headerBlockFragment.size,
+          (if (prioInfo.isDefined) 5 else 0) + headerBlockFragment.length,
           Http2Protocol.FrameType.HEADERS,
           Http2Protocol.Flags.END_STREAM.ifSet(endStream) |
             Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders) |
@@ -68,7 +68,7 @@ private[http2] object FrameRenderer {
 
       case ContinuationFrame(streamId, endHeaders, payload) =>
         Frame(
-          payload.size,
+          payload.length,
           Http2Protocol.FrameType.CONTINUATION,
           Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
           streamId
@@ -78,7 +78,7 @@ private[http2] object FrameRenderer {
 
       case SettingsFrame(settings) =>
         val b = Frame(
-          settings.size * 6,
+          settings.length * 6,
           Http2Protocol.FrameType.SETTINGS,
           Http2Protocol.Flags.NO_FLAGS,
           Http2Protocol.NoStreamId
@@ -108,7 +108,7 @@ private[http2] object FrameRenderer {
 
       case PingFrame(ack, data) =>
         Frame(
-          data.size,
+          data.length,
           Http2Protocol.FrameType.PING,
           Http2Protocol.Flags.ACK.ifSet(ack),
           Http2Protocol.NoStreamId
@@ -128,7 +128,7 @@ private[http2] object FrameRenderer {
 
       case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) =>
         Frame(
-          4 + headerBlockFragment.size,
+          4 + headerBlockFragment.length,
           Http2Protocol.FrameType.PUSH_PROMISE,
           Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
           streamId
@@ -150,7 +150,7 @@ private[http2] object FrameRenderer {
     }
 
   def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString =
-    Frame(payload.size, tpe, flags, streamId)
+    Frame(payload.length, tpe, flags, streamId)
       .put(payload)
       .build()
 
@@ -208,7 +208,7 @@ private[http2] object FrameRenderer {
       if (bytes.isEmpty) this
       else {
         bytes.copyToArray(buffer, pos)
-        pos += bytes.size
+        pos += bytes.length
         this
       }
 

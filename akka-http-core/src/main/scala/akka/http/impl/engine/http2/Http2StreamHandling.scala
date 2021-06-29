@@ -304,10 +304,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       val newData = collectedData ++ dataFrame.payload
 
       if (dataFrame.endStream) {
-        totalBufferedData -= newData.size
+        totalBufferedData -= newData.length
         dispatchSubstream(headers, Left(newData), correlationAttributes)
         HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow)
-      } else if (newData.size >= settings.minCollectStrictEntitySize)
+      } else if (newData.length >= settings.minCollectStrictEntitySize)
         dispatchStream(dataFrame.streamId, headers, newData, correlationAttributes, OpenReceivingDataFirst(_, extraInitialWindow))
       else
         copy(collectedData = newData)
@@ -393,7 +393,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def handle(event: StreamFrameEvent): StreamState = event match {
       case d: DataFrame =>
         outstandingConnectionLevelWindow -= d.sizeInWindow
-        totalBufferedData += d.payload.size // padding can be seen as instantly discarded
+        totalBufferedData += d.payload.length // padding can be seen as instantly discarded
 
         if (outstandingConnectionLevelWindow < 0) {
           shutdown()
@@ -562,7 +562,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
           multiplexer.closeStream(streamId)
         } else {
           buffer ++= data.payload
-          debug(s"Received DATA ${data.sizeInWindow} for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
+          debug(s"Received DATA ${data.sizeInWindow} for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.length}")
           dispatchNextChunk()
         }
       }
@@ -583,13 +583,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
     def dispatchNextChunk(): Unit = {
       if (buffer.nonEmpty && outlet.isAvailable) {
-        val dataSize = buffer.size min settings.requestEntityChunkSize
+        val dataSize = buffer.length min settings.requestEntityChunkSize
         outlet.push(buffer.take(dataSize))
         buffer = buffer.drop(dataSize)
 
         totalBufferedData -= dataSize
 
-        debug(s"Dispatched chunk of $dataSize for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
+        debug(s"Dispatched chunk of $dataSize for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.length}")
         updateWindows()
       }
       if (buffer.isEmpty && wasClosed) {
@@ -610,7 +610,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     private def updateWindows(): Unit = {
       val IncomingFlowController.WindowIncrements(connectionLevel, streamLevel) = flowController.onStreamDataDispatched(
         outstandingConnectionLevelWindow, totalBufferedData,
-        outstandingStreamWindow, buffer.size)
+        outstandingStreamWindow, buffer.length)
 
       if (connectionLevel > 0) {
         multiplexer.pushControlFrame(WindowUpdateFrame(Http2Protocol.NoStreamId, connectionLevel))
@@ -623,7 +623,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
       debug(
         s"adjusting con-level window by $connectionLevel, stream-level window by $streamLevel, " +
-          s"remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}, " +
+          s"remaining window space now $outstandingStreamWindow, buffered: ${buffer.length}, " +
           s"remaining connection window space now $outstandingConnectionLevelWindow, total buffered: $totalBufferedData")
     }
 
@@ -684,7 +684,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
 
     def nextFrame(maxBytesToSend: Int): DataFrame = {
-      val toTake = maxBytesToSend min buffer.size min outboundWindowLeft
+      val toTake = maxBytesToSend min buffer.length min outboundWindowLeft
       val toSend = buffer.take(toTake)
       require(toSend.nonEmpty)
 
@@ -697,7 +697,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       } else
         maybePull()
 
-      debug(s"[$streamId] sending ${toSend.size} bytes, endStream = $endStream, remaining buffer [${buffer.size}], remaining stream-level WINDOW [$outboundWindowLeft]")
+      debug(s"[$streamId] sending ${toSend.length} bytes, endStream = $endStream, remaining buffer [${buffer.length}], remaining stream-level WINDOW [$outboundWindowLeft]")
 
       DataFrame(streamId, endStream, toSend)
     }
@@ -716,7 +716,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       // TODO: Check that buffer is not too much over the limit (which we might warn the user about)
       //       The problem here is that backpressure will only work properly if batch elements like
       //       ByteString have a reasonable size.
-      if (!upstreamClosed && buffer.size < multiplexer.maxBytesToBufferPerSubstream && !inlet.hasBeenPulled && !inlet.isClosed) inlet.pull()
+      if (!upstreamClosed && buffer.length < multiplexer.maxBytesToBufferPerSubstream && !inlet.hasBeenPulled && !inlet.isClosed) inlet.pull()
 
     /** Cleans up internal state (but not external) */
     private def cleanupStream(): Unit = {
@@ -730,7 +730,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
 
     def cancelStream(): Unit = cleanupStream()
-    def bufferedBytes: Int = buffer.size
+    def bufferedBytes: Int = buffer.length
 
     override def increaseWindow(increment: Int): Unit = {
       outboundWindowLeft += increment

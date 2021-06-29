@@ -153,7 +153,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           val result = pullNextFrame(streamId, maxBytesToSend)
           val frame = result.frame
           pushFrameOut(frame)
-          connectionWindowLeft -= frame.payload.size
+          connectionWindowLeft -= frame.payload.length
 
           result match {
             case PullFrameResult.SendFrame(_, hasMore) =>
@@ -204,7 +204,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def onPull(): MultiplexerState = controlFrameBuffer match {
           case first +: remaining =>
             pushFrameOut(first)
-            allowReadingIncomingFrames(remaining.size < settings.outgoingControlFrameBufferSize)
+            allowReadingIncomingFrames(remaining.length < settings.outgoingControlFrameBufferSize)
             if (remaining.isEmpty && sendableOutstreams.isEmpty) Idle
             else if (remaining.isEmpty) WaitingForNetworkToSendData(sendableOutstreams)
             else copy(remaining, sendableOutstreams)
