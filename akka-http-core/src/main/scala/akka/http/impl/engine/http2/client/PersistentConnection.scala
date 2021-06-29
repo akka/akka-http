@@ -144,7 +144,6 @@ private[http2] object PersistentConnection {
               log.info(s"Connection attempt failed: ${cause.getMessage}. Trying to connect again${connectsLeft.map(n => s" ($n attempts left)").getOrElse("")}.")
               connect(connectsLeft, embargo)
             } else {
-              // FIXME is it fine to just stay in Connecting state here while backing off?
               val embargo = lastEmbargo match {
                 case Duration.Zero => baseEmbargo
                 case otherValue    => (otherValue * 2).min(maxBaseEmbargo)
