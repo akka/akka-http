@@ -1,7 +1,7 @@
 Akka HTTP
 =========
 
-[![Latest version](https://index.scala-lang.org/akka/akka-http/akka-http-core/latest.svg)](https://index.scala-lang.org/akka/akka-http)
+[![akka-http-core Scala version support](https://index.scala-lang.org/akka/akka-http/akka-http-core/latest-by-scala-version.svg)](https://index.scala-lang.org/akka/akka-http/akka-http-core)
 
 The Akka HTTP modules implement a full server- and client-side HTTP stack on top
 of akka-actor and akka-stream. It's not a web-framework but rather a more
