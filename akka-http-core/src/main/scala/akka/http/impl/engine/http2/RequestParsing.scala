@@ -121,59 +121,27 @@ private[http2] object RequestParsing {
               checkUniquePseudoHeader(":scheme", scheme)
               checkNoRegularHeadersBeforePseudoHeader(":scheme", seenRegularHeader)
               rec(incomingHeaders, offset + 1, method, value.asInstanceOf[String], authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+
             case ":method" =>
               checkUniquePseudoHeader(":method", method)
               checkNoRegularHeadersBeforePseudoHeader(":method", seenRegularHeader)
-              value match {
-                case newMethod: HttpMethod =>
-                  rec(incomingHeaders, offset + 1, newMethod, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
-                case toParse: String =>
-                  val m = HttpMethods.getForKey(toParse)
-                    .orElse(serverSettings.parserSettings.customMethods(toParse))
-                    .getOrElse(malformedRequest(s"Unknown HTTP method: '$value'"))
-                  rec(incomingHeaders, offset + 1, m, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
-              }
+
+              rec(incomingHeaders, offset + 1, value.asInstanceOf[HttpMethod], scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+
             case ":path" =>
               checkUniquePseudoHeader(":path", pathAndRawQuery)
               checkNoRegularHeadersBeforePseudoHeader(":path", seenRegularHeader)
-              value match {
-                case newPathAndRawQuery: (Uri.Path, Option[String]) =>
-                  rec(incomingHeaders, offset + 1, method, scheme, authority, newPathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
-
-                case toParse: String =>
-                  val newPathAndRawQuery: (Uri.Path, Option[String]) = try {
-                    Uri.parseHttp2PathPseudoHeader(toParse, mode = serverSettings.parserSettings.uriParsingMode)
-                  } catch {
-                    case IllegalUriException(info) => throw new ParsingException(info)
-                  }
-                  rec(incomingHeaders, offset + 1, method, scheme, authority, newPathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
-              }
+              rec(incomingHeaders, offset + 1, method, scheme, authority, value.asInstanceOf[(Uri.Path, Option[String])], contentType, contentLength, cookies, seenRegularHeader, headers)
 
             case ":authority" =>
               checkUniquePseudoHeader(":authority", authority)
               checkNoRegularHeadersBeforePseudoHeader(":authority", seenRegularHeader)
 
-              value match {
-                case newAuthority: Uri.Authority =>
-                  rec(incomingHeaders, offset + 1, method, scheme, newAuthority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
-                case value: String =>
-                  val newAuthority: Uri.Authority = try {
-                    Uri.parseHttp2AuthorityPseudoHeader(value, mode = serverSettings.parserSettings.uriParsingMode)
-                  } catch {
-                    case IllegalUriException(info) => throw new ParsingException(info)
-                  }
-                  rec(incomingHeaders, offset + 1, method, scheme, newAuthority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
-              }
+              rec(incomingHeaders, offset + 1, method, scheme, value.asInstanceOf[Uri.Authority], pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
 
             case "content-type" =>
               if (contentType.isEmpty)
-                value match {
-                  case contentTypeValue: ContentType =>
-                    rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, OptionVal.Some(contentTypeValue), contentLength, cookies, true, headers)
-                  case ct: String =>
-                    val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
-                    rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, OptionVal.Some(contentTypeValue), contentLength, cookies, true, headers)
-                }
+                rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, OptionVal.Some(value.asInstanceOf[ContentType]), contentLength, cookies, true, headers)
               else
                 malformedRequest("HTTP message must not contain more than one content-type header")
 
@@ -198,15 +166,7 @@ private[http2] object RequestParsing {
               rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookiesBuilder, true, headers)
 
             case name =>
-              value match {
-                case httpHeader: HttpHeader =>
-                  // FIXME: move validation to HeaderDecompression validateHeader(httpHeader)
-                  rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += httpHeader)
-                case value: String =>
-                  val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
-                  validateHeader(httpHeader)
-                  rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += httpHeader)
-              }
+              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += value.asInstanceOf[HttpHeader])
           }
         }
 
