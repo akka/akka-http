@@ -79,188 +79,230 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       response.attribute(requestIdAttr).get.id shouldBe "request-1"
     }
 
-    (("with no backoff" -> ((settings: Http2ClientSettings) => settings.withBaseConnectionBackoff(Duration.Zero))) ::
-      ("with backoff" -> ((settings: Http2ClientSettings) => settings.withBaseConnectionBackoff(300.millis).withMaxConnectionBackoff(800.millis))) ::
-      Nil).foreach {
-        case (desc, changeSettings) =>
-          s"transparently reconnect when connection is closed ($desc)" should {
-            "when no requests are running" inAssertAllStagesStopped new TestSetup(tls) {
-              override def clientSettings: ClientConnectionSettings = super.clientSettings.mapHttp2Settings(changeSettings)
-              client.sendRequest(
-                HttpRequest(
-                  method = HttpMethods.POST,
-                  uri = "/ping1",
-                  entity = "ping",
-                  headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
-                )
-                  .addAttribute(requestIdAttr, RequestId("request-1"))
-              )
-              // need some demand on response side, otherwise, no requests will be pulled in
-              client.responsesIn.request(1)
+    def reconnectionTests(withBackoff: Boolean): Unit = {
+      val changeSettings: Http2ClientSettings => Http2ClientSettings =
+        if (withBackoff) s => s.withBaseConnectionBackoff(300.millis).withMaxConnectionBackoff(800.millis)
+        else s => s.withBaseConnectionBackoff(Duration.Zero)
 
-              val serverRequest = server.expectRequest()
-              serverRequest.request.attribute(Http2.streamId) should not be empty
-              serverRequest.request.method shouldBe HttpMethods.POST
-              serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
-              serverRequest.entityAsString shouldBe "ping"
-              val clientPort = serverRequest.clientPort
+      s"transparently reconnect when connection is closed (with backoff: ${withBackoff})" should {
+        "when no requests are running" inAssertAllStagesStopped new TestSetup(tls) {
+          override def clientSettings: ClientConnectionSettings = super.clientSettings.mapHttp2Settings(changeSettings)
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              uri = "/ping1",
+              entity = "ping",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-1"))
+          )
+          // need some demand on response side, otherwise, no requests will be pulled in
+          client.responsesIn.request(1)
 
-              // now respond
-              server.sendResponseFor(serverRequest, HttpResponse(entity = "pong"))
+          val serverRequest = server.expectRequest()
+          serverRequest.request.attribute(Http2.streamId) should not be empty
+          serverRequest.request.method shouldBe HttpMethods.POST
+          serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
+          serverRequest.entityAsString shouldBe "ping"
+          val clientPort = serverRequest.clientPort
 
-              val response = client.expectResponse()
-              Unmarshal(response.entity).to[String].futureValue shouldBe "pong"
-              response.attribute(requestIdAttr).get.id shouldBe "request-1"
+          // now respond
+          server.sendResponseFor(serverRequest, HttpResponse(entity = "pong"))
 
-              // now kill connection from outside
-              killConnection()
+          val response = client.expectResponse()
+          Unmarshal(response.entity).to[String].futureValue shouldBe "pong"
+          response.attribute(requestIdAttr).get.id shouldBe "request-1"
 
-              // wait a bit to avoid race condition
-              Thread.sleep(100)
+          // now kill connection from outside
+          killConnection()
 
-              // requests should now be handled on new connection
-              client.sendRequest(
-                HttpRequest(
-                  method = HttpMethods.POST,
-                  uri = "/ping2",
-                  entity = "ping2",
-                  headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
-                )
-                  .addAttribute(requestIdAttr, RequestId("request-2"))
-              )
-              client.responsesIn.request(1)
+          // wait a bit to avoid race condition
+          Thread.sleep(100)
 
-              val serverRequest2 = server.expectRequest()
-              serverRequest2.entityAsString shouldBe "ping2"
-              // request should have come in through another connection
-              serverRequest2.clientPort should not be (clientPort)
+          // requests should now be handled on new connection
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              uri = "/ping2",
+              entity = "ping2",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-2"))
+          )
+          client.responsesIn.request(1)
 
-              client.requestsOut.sendComplete()
-              server.sendResponseFor(serverRequest2, HttpResponse(entity = "pong2"))
-              val clientResponse2 = client.expectResponse()
-              Unmarshal(clientResponse2.entity).to[String].futureValue shouldBe "pong2"
-            }
+          val serverRequest2 = server.expectRequest()
+          serverRequest2.entityAsString shouldBe "ping2"
+          // request should have come in through another connection
+          serverRequest2.clientPort should not be (clientPort)
 
-            "when some requests are waiting for a response" inAssertAllStagesStopped new TestSetup(tls) {
-              override def clientSettings: ClientConnectionSettings = super.clientSettings.mapHttp2Settings(changeSettings)
-              client.sendRequest(
-                HttpRequest(
-                  method = HttpMethods.POST,
-                  uri = "/ping1",
-                  entity = "ping",
-                  headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
-                )
-                  .addAttribute(requestIdAttr, RequestId("request-1"))
-              )
-              client.responsesIn.request(1)
+          client.requestsOut.sendComplete()
+          server.sendResponseFor(serverRequest2, HttpResponse(entity = "pong2"))
+          val clientResponse2 = client.expectResponse()
+          Unmarshal(clientResponse2.entity).to[String].futureValue shouldBe "pong2"
+        }
 
-              val serverRequest = server.expectRequest()
-              val clientPort = serverRequest.clientPort
+        "when some requests are waiting for a response" inAssertAllStagesStopped new TestSetup(tls) {
+          override def clientSettings: ClientConnectionSettings = super.clientSettings.mapHttp2Settings(changeSettings)
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              uri = "/ping1",
+              entity = "ping",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-1"))
+          )
+          client.responsesIn.request(1)
 
-              client.sendRequest(
-                HttpRequest(
-                  method = HttpMethods.POST,
-                  uri = "/ping2",
-                  entity = "ping2",
-                  headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
-                )
-                  .addAttribute(requestIdAttr, RequestId("request-2"))
-              )
-              client.responsesIn.request(1)
+          val serverRequest = server.expectRequest()
+          val clientPort = serverRequest.clientPort
 
-              server.expectRequest()
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              uri = "/ping2",
+              entity = "ping2",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-2"))
+          )
+          client.responsesIn.request(1)
 
-              // now kill connection from outside. This will make some demux stages to start a
-              // timeout trigger and eventually complete
-              killConnection()
+          server.expectRequest()
 
-              // check that ongoing requests are properly dealt with
-              val response = client.expectResponse()
-              response.status shouldBe StatusCodes.BadGateway
-              response.attribute(requestIdAttr).get.id shouldBe "request-1"
-              Unmarshal(response.entity).to[String].futureValue shouldBe "The server closed the connection before delivering a response."
+          // now kill connection from outside. This will make some demux stages to start a
+          // timeout trigger and eventually complete
+          killConnection()
 
-              val response2 = client.expectResponse()
-              response2.status shouldBe StatusCodes.BadGateway
-              response2.attribute(requestIdAttr).get.id shouldBe "request-2"
-              Unmarshal(response2.entity).to[String].futureValue shouldBe "The server closed the connection before delivering a response."
+          // check that ongoing requests are properly dealt with
+          val response = client.expectResponse()
+          response.status shouldBe StatusCodes.BadGateway
+          response.attribute(requestIdAttr).get.id shouldBe "request-1"
+          Unmarshal(response.entity).to[String].futureValue shouldBe "The server closed the connection before delivering a response."
 
-              Thread.sleep(100)
+          val response2 = client.expectResponse()
+          response2.status shouldBe StatusCodes.BadGateway
+          response2.attribute(requestIdAttr).get.id shouldBe "request-2"
+          Unmarshal(response2.entity).to[String].futureValue shouldBe "The server closed the connection before delivering a response."
 
-              client.sendRequest(
-                HttpRequest(
-                  method = HttpMethods.POST,
-                  entity = "ping2",
-                  headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
-                )
-                  .addAttribute(requestIdAttr, RequestId("request-2"))
-              )
-              client.responsesIn.request(1)
+          Thread.sleep(100)
 
-              val serverRequest2 = server.expectRequest()
-              serverRequest2.entityAsString shouldBe "ping2"
-              // request should have come in through another connection
-              serverRequest2.clientPort should not be (clientPort)
-            }
-            "when the first connection fails to materialize" inAssertAllStagesStopped new TestSetup(tls) {
-              var first = true
-              override def clientSettings: ClientConnectionSettings = super.clientSettings.withTransport(ClientTransport.withCustomResolver((host, port) => {
-                if (first) {
-                  first = false
-                  // First request returns an address where we are not listening
-                  Future.successful(new InetSocketAddress("example.invalid", 80))
-                } else
-                  Future.successful(server.binding.localAddress)
-              })).mapHttp2Settings(changeSettings)
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              entity = "ping2",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-2"))
+          )
+          client.responsesIn.request(1)
 
-              client.sendRequest(
-                HttpRequest(
-                  method = HttpMethods.POST,
-                  entity = "ping",
-                  headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
-                )
-                  .addAttribute(requestIdAttr, RequestId("request-1"))
-              )
-              // need some demand on response side, otherwise, no requests will be pulled in
-              client.responsesIn.request(1)
-              client.requestsOut.ensureSubscription()
+          val serverRequest2 = server.expectRequest()
+          serverRequest2.entityAsString shouldBe "ping2"
+          // request should have come in through another connection
+          serverRequest2.clientPort should not be (clientPort)
+        }
+        "when the first connection fails to materialize" inAssertAllStagesStopped new TestSetup(tls) {
+          var first = true
+          override def clientSettings: ClientConnectionSettings = super.clientSettings.withTransport(ClientTransport.withCustomResolver((host, port) => {
+            if (first) {
+              first = false
+              // First request returns an address where we are not listening
+              Future.successful(new InetSocketAddress("example.invalid", 80))
+            } else
+              Future.successful(server.binding.localAddress)
+          })).mapHttp2Settings(changeSettings)
 
-              val serverRequest = server.expectRequest()
-              serverRequest.request.attribute(Http2.streamId) should not be empty
-              serverRequest.request.method shouldBe HttpMethods.POST
-              serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
-              serverRequest.entityAsString shouldBe "ping"
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              entity = "ping",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-1"))
+          )
+          // need some demand on response side, otherwise, no requests will be pulled in
+          client.responsesIn.request(1)
+          client.requestsOut.ensureSubscription()
 
-              // now respond
-              server.sendResponseFor(serverRequest, HttpResponse(entity = "pong"))
+          val serverRequest = server.expectRequest()
+          serverRequest.request.attribute(Http2.streamId) should not be empty
+          serverRequest.request.method shouldBe HttpMethods.POST
+          serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
+          serverRequest.entityAsString shouldBe "ping"
 
-              val response = client.expectResponse()
-              Unmarshal(response.entity).to[String].futureValue shouldBe "pong"
-              response.attribute(requestIdAttr).get.id shouldBe "request-1"
-            }
-          }
+          // now respond
+          server.sendResponseFor(serverRequest, HttpResponse(entity = "pong"))
 
-          s"eventually fail ($desc)" should {
-            "when connecting keeps failing" inAssertAllStagesStopped new TestSetup(tls) {
-              override def clientSettings = super.clientSettings
-                .withTransport(ClientTransport.withCustomResolver((_, _) => {
-                  Future.successful(new InetSocketAddress("example.invalid", 80))
-                })).mapHttp2Settings(changeSettings)
-
-              client.sendRequest(
-                HttpRequest(
-                  method = HttpMethods.POST,
-                  entity = "ping",
-                  headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
-                )
-                  .addAttribute(requestIdAttr, RequestId("request-1"))
-              )
-              // need some demand on response side, otherwise, no requests will be pulled in
-              client.responsesIn.request(1)
-              client.requestsOut.expectCancellation()
-            }
-          }
+          val response = client.expectResponse()
+          Unmarshal(response.entity).to[String].futureValue shouldBe "pong"
+          response.attribute(requestIdAttr).get.id shouldBe "request-1"
+        }
       }
+
+      s"eventually fail (with backoff: ${withBackoff})" should {
+        "when connecting keeps failing" inAssertAllStagesStopped new TestSetup(tls) {
+          override def clientSettings = super.clientSettings
+            .withTransport(ClientTransport.withCustomResolver((_, _) => {
+              Future.successful(new InetSocketAddress("example.invalid", 80))
+            })).mapHttp2Settings(changeSettings)
+
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              entity = "ping",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-1"))
+          )
+          // need some demand on response side, otherwise, no requests will be pulled in
+          client.responsesIn.request(1)
+          if (withBackoff) {
+            // not immediate when using backoff
+            client.responsesIn.expectNoMessage(clientSettings.http2Settings.baseConnectionBackoff / 2)
+          }
+          client.responsesIn.expectError()
+          client.requestsOut.expectCancellation()
+
+        }
+      }
+
+    }
+
+    reconnectionTests(false)
+    reconnectionTests(true)
+
+    "not hammer the service with reconnects when backoff is enabled" in new TestSetup(tls) {
+      val probe = TestProbe()
+      override def clientSettings: ClientConnectionSettings =
+        super.clientSettings.withTransport(ClientTransport.withCustomResolver { (_, _) =>
+          probe.ref ! "saw-reconnect"
+          Future.successful(new InetSocketAddress("example.invalid", 80))
+        }).mapHttp2Settings(_.withBaseConnectionBackoff(300.millis)
+          .withMaxConnectionBackoff(800.millis)
+          .withMaxPersistentAttempts(4)
+        )
+
+      client.sendRequest(HttpRequest(method = HttpMethods.POST, uri = "/ping1", entity = "ping")
+        .addAttribute(requestIdAttr, RequestId("request-1")))
+
+      // need some demand on response side, otherwise, no requests will be pulled in
+      client.responsesIn.request(1)
+
+      // first try is immedate
+      probe.expectMsg("saw-reconnect")
+      probe.expectNoMessage(100.millis)
+      probe.expectMsg("saw-reconnect")
+      probe.expectNoMessage(200.millis)
+      probe.expectMsg("saw-reconnect")
+      probe.expectNoMessage(500.millis)
+      probe.expectMsg("saw-reconnect")
+
+      // max 4 attempts, giving up after that
+      client.responsesIn.expectError()
+      client.requestsOut.expectCancellation()
+    }
 
     "not leak any stages if completed" should {
       "when waiting for a response" inAssertAllStagesStopped new TestSetup(tls) {
