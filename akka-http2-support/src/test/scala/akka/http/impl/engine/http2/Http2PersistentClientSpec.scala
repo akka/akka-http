@@ -377,7 +377,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
 
     def shutdown(): Unit = {
       client.requestsOut.sendComplete()
-      client.responsesIn.cancel()
+      // persistent connection should propagate close signal eventually
 
       server.binding.terminate(100.millis).futureValue
     }

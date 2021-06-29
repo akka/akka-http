@@ -164,10 +164,16 @@ private[http2] object PersistentConnection {
           emitMultiple[HttpResponse](responseOut, ongoingRequests.values.map(errorResponse.withAttributes(_)).toVector, () => setHandler(responseOut, Unconnected))
           responseIn.cancel()
           requestOut.fail(new RuntimeException("connection broken"))
-          // become(Unconnected) doesn't work because of using emit
-          // so we need to do it more carefully here
-          setHandler(requestIn, Unconnected)
-          if (isAvailable(responseOut) && !hasBeenPulled(requestIn)) pull(requestIn)
+
+          if (isClosed(requestIn)) {
+            // user closed PersistentConnection before and we were waiting for remaining responses
+            completeStage()
+          } else {
+            // become(Unconnected) doesn't work because of using emit
+            // so we need to do it more carefully here
+            setHandler(requestIn, Unconnected)
+            if (isAvailable(responseOut) && !hasBeenPulled(requestIn)) pull(requestIn)
+          }
         }
 
         def dispatchRequest(req: HttpRequest): Unit = {
@@ -180,17 +186,14 @@ private[http2] object PersistentConnection {
           requestOut.push(req.addAttribute(associationTagKey, tag))
         }
 
-        override def onPush(): Unit = {
-          dispatchRequest(grab(requestIn))
-        }
+        override def onPush(): Unit = dispatchRequest(grab(requestIn))
         override def onPull(): Unit = responseIn.pull()
 
         // onUpstreamFinish expects "reasonable behavior" from downstream stages, i.e. that
         // the downstream stage will eventually close all remaining inputs/outputs. Note
         // that the PersistentConnection is often used in combination with HTTP/2 connections
         // which to timeout if the stage completion stalls.
-        override def onUpstreamFinish(): Unit =
-          requestOut.complete()
+        override def onUpstreamFinish(): Unit = requestOut.complete()
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
           requestOut.fail(ex)
