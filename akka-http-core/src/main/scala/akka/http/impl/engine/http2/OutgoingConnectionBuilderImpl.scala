@@ -37,7 +37,6 @@ private[akka] object OutgoingConnectionBuilderImpl {
       host,
       None,
       clientConnectionSettings = ClientConnectionSettings(system),
-      http2Settings = Http2ClientSettings(system),
       connectionContext = None,
       log = system.classicSystem.log,
       system = system,
@@ -48,7 +47,6 @@ private[akka] object OutgoingConnectionBuilderImpl {
     host:                     String,
     port:                     Option[Int],
     clientConnectionSettings: ClientConnectionSettings,
-    http2Settings:            Http2ClientSettings,
     connectionContext:        Option[HttpsConnectionContext],
     log:                      LoggingAdapter,
     system:                   ClassicActorSystemProvider,
@@ -83,7 +81,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
     override def managedPersistentHttp2(): Flow[HttpRequest, HttpResponse, NotUsed] =
       PersistentConnection.managedConnection(
         http2(),
-        http2Settings)
+        clientConnectionSettings.http2Settings)
 
     override def http2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/2 prior knowledge plaintext
@@ -93,7 +91,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
     override def managedPersistentHttp2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, NotUsed] =
       PersistentConnection.managedConnection(
         http2WithPriorKnowledge(),
-        http2Settings)
+        clientConnectionSettings.http2Settings)
 
     override private[akka] def toJava: JOutgoingConnectionBuilder = new JavaAdapter(this)
   }
