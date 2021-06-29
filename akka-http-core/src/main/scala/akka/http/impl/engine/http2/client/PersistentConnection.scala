@@ -8,20 +8,20 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.model.{AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes}
+import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes }
 import akka.http.scaladsl.settings.Http2ClientSettings
-import akka.stream.scaladsl.{Flow, Keep, Source}
+import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.TimerGraphStageLogic
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging}
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.util.PrettyDuration
 
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.DurationLong
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 @InternalApi
@@ -92,11 +92,11 @@ private[http2] object PersistentConnection {
       }
 
       class Connecting(
-                        connected:    Future[OutgoingConnection],
-                        requestOut:   SubSourceOutlet[HttpRequest],
-                        responseIn:   SubSinkInlet[HttpResponse],
-                        connectsLeft: Option[Int],
-                        lastEmbargo:      FiniteDuration
+        connected:    Future[OutgoingConnection],
+        requestOut:   SubSourceOutlet[HttpRequest],
+        responseIn:   SubSinkInlet[HttpResponse],
+        connectsLeft: Option[Int],
+        lastEmbargo:  FiniteDuration
       ) extends State {
         connected.onComplete({
           case Success(_) =>
@@ -142,7 +142,7 @@ private[http2] object PersistentConnection {
             setHandler(requestIn, Unconnected)
             if (baseEmbargo == Duration.Zero) {
               log.info(s"Connection attempt failed: ${cause.getMessage}. Trying to connect again${connectsLeft.map(n => s" ($n attempts left)").getOrElse("")}.")
-              connect(connectsLeft, embargo)
+              connect(connectsLeft, Duration.Zero)
             } else {
               val embargo = lastEmbargo match {
                 case Duration.Zero => baseEmbargo
@@ -161,6 +161,7 @@ private[http2] object PersistentConnection {
       override def onTimer(timerKey: Any): Unit = {
         timerKey match {
           case EmbargoEnded(connectsLeft, nextEmbargo) =>
+            log.debug("Reconnecting after backoff")
             connect(connectsLeft, nextEmbargo)
         }
       }

@@ -1,0 +1,2 @@
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.baseConnectionBackoff")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.maxConnectionBackoff")
