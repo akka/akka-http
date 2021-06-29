@@ -4,24 +4,23 @@
 
 package akka.http.impl.engine.http2.hpack
 
-import java.io.IOException
-import java.nio.charset.StandardCharsets
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.FrameEvent._
+import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.RequestParsing.{ malformedRequest, parseHeaderPair }
 import akka.http.impl.engine.http2._
-import akka.http.impl.engine.http2.RequestParsing.{ checkNoRegularHeadersBeforePseudoHeader, checkUniquePseudoHeader, malformedRequest, parseHeaderPair }
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.impl.util._
-import akka.http.scaladsl.model.{ ContentType, HttpMethods, IllegalUriException, ParsingException, Uri }
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.util.ByteString
 
+import java.io.IOException
+import java.nio.charset.StandardCharsets
 import scala.collection.immutable.VectorBuilder
-import FrameEvent._
-import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
-import akka.http.scaladsl.settings.ParserSettings
 
 /**
  * INTERNAL API
@@ -51,15 +50,11 @@ private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser, p
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
       val headers = new VectorBuilder[(String, AnyRef)]
       object Receiver extends HeaderListener {
-        def addHeader(nameBytes: Array[Byte], valueBytes: Array[Byte], parsed: AnyRef, sensitive: Boolean): AnyRef = {
-          // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          val name = nameBytes.asciiString
-
+        def addHeader(name: String, value: String, parsed: AnyRef, sensitive: Boolean): AnyRef = {
           if (parsed ne null) {
             headers += name -> parsed
             parsed
           } else {
-            val value = valueBytes.asciiString
             name match {
               case "content-type" =>
                 val contentTypeValue = ContentType.parse(value).right.getOrElse(malformedRequest(s"Invalid content-type: '$value'"))

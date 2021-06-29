@@ -34,7 +34,7 @@ public final class Decoder {
   private static final IOException MAX_DYNAMIC_TABLE_SIZE_CHANGE_REQUIRED =
       new IOException("max dynamic table size change required");
 
-  private static final byte[] EMPTY = {};
+  private static final String EMPTY = "";
 
   private final DynamicTable dynamicTable;
 
@@ -51,7 +51,7 @@ public final class Decoder {
   private int skipLength;
   private int nameLength;
   private int valueLength;
-  private byte[] name;
+  private String name;
 
   private enum State {
     READ_HEADER_REPRESENTATION,
@@ -364,7 +364,7 @@ public final class Decoder {
           return;
         }
 
-        byte[] value = readStringLiteral(in, valueLength);
+        String value = readStringLiteral(in, valueLength);
         insertHeader(headerListener, name, value, indexType);
         state = State.READ_HEADER_REPRESENTATION;
         break;
@@ -475,7 +475,7 @@ public final class Decoder {
     }
   }
 
-  private void insertHeader(HeaderListener headerListener, byte[] name, byte[] value, IndexType indexType) {
+  private void insertHeader(HeaderListener headerListener, String name, String value, IndexType indexType) {
     Object parsedValue = addHeader(headerListener, name, value, null, indexType == IndexType.NEVER);
 
     switch (indexType) {
@@ -492,11 +492,11 @@ public final class Decoder {
     }
   }
 
-  private Object addHeader(HeaderListener headerListener, byte[] name, byte[] value, Object parsedValue, boolean sensitive) {
-    if (name.length == 0) {
+  private Object addHeader(HeaderListener headerListener, String name, String value, Object parsedValue, boolean sensitive) {
+    if (name.isEmpty()) {
       throw new AssertionError("name is empty");
     }
-    long newSize = headerSize + name.length + value.length;
+    long newSize = headerSize + name.length() + value.length();
     if (newSize <= maxHeaderSize) {
       parsedValue = headerListener.addHeader(name, value, parsedValue, sensitive);
       headerSize = (int) newSize;
@@ -518,17 +518,19 @@ public final class Decoder {
     return true;
   }
 
-  private byte[] readStringLiteral(InputStream in, int length) throws IOException {
+  private String readStringLiteral(InputStream in, int length) throws IOException {
     byte[] buf = new byte[length];
     if (in.read(buf) != length) {
       throw DECOMPRESSION_EXCEPTION;
     }
+    final byte[] result;
 
     if (huffmanEncoded) {
-      return Huffman.DECODER.decode(buf);
+      result = Huffman.DECODER.decode(buf);
     } else {
-      return buf;
+      result = buf;
     }
+    return new String(result, 0,0, result.length);
   }
 
   // Unsigned Little Endian Base 128 Variable-Length Integer Encoding

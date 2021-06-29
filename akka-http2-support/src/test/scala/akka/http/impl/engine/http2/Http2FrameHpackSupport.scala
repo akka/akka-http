@@ -86,7 +86,7 @@ trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSen
   def encodeHeaderPairs(headerPairs: Seq[(String, String)]): ByteString = {
     val bos = new ByteArrayOutputStream()
 
-    def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
+    def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name, value, false)
 
     headerPairs.foreach((encode _).tupled)
 
@@ -100,8 +100,8 @@ trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSen
     val hs = new VectorBuilder[(String, String)]()
 
     decoder.decode(bis, new HeaderListener {
-      def addHeader(name: Array[Byte], value: Array[Byte], parsedValue: AnyRef, sensitive: Boolean): AnyRef = {
-        hs += new String(name) -> new String(value)
+      def addHeader(name: String, value: String, parsedValue: AnyRef, sensitive: Boolean): AnyRef = {
+        hs += name -> value
         parsedValue
       }
     })

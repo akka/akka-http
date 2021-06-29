@@ -22,5 +22,5 @@ public interface HeaderListener {
    * emitHeader is called by the decoder during header field emission.
    * The name and value byte arrays must not be modified.
    */
-  public Object addHeader(byte[] name, byte[] value, Object parsed, boolean sensitive);
+  public Object addHeader(String name, String value, Object parsed, boolean sensitive);
 }
