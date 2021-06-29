@@ -5,6 +5,7 @@
 package akka.http.impl.util
 
 import akka.annotation.InternalApi
+import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
 
@@ -31,4 +32,8 @@ private[http] class EnhancedByteArray(val underlying: Array[Byte]) extends AnyVa
 
     other.length == underlying.length && xor() == 0
   }
+
+  @silent("deprecated")
+  def asciiString: String =
+    new String(underlying, 0, 0, underlying.length)
 }

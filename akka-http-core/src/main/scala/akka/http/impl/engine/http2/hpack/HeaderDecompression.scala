@@ -11,6 +11,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2._
 import akka.http.impl.engine.http2.RequestParsing.{ checkNoRegularHeadersBeforePseudoHeader, checkUniquePseudoHeader, malformedRequest, parseHeaderPair }
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.util._
 import akka.http.scaladsl.model.{ ContentType, HttpMethods, IllegalUriException, ParsingException, Uri }
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
@@ -47,21 +48,18 @@ private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser, p
     // Idle: no ongoing HEADERS parsing
     // Receiving headers: waiting for CONTINUATION frame
 
-    private def byteArrayToAsciiString(bs: Array[Byte]): String =
-      new String(bs, 0, 0, bs.length)
-
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
       val headers = new VectorBuilder[(String, AnyRef)]
       object Receiver extends HeaderListener {
         def addHeader(nameBytes: Array[Byte], valueBytes: Array[Byte], parsed: AnyRef, sensitive: Boolean): AnyRef = {
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          val name = byteArrayToAsciiString(nameBytes)
+          val name = nameBytes.asciiString
 
           if (parsed ne null) {
             headers += name -> parsed
             parsed
           } else {
-            val value = byteArrayToAsciiString(valueBytes)
+            val value = valueBytes.asciiString
             name match {
               case "content-type" =>
                 val contentTypeValue = ContentType.parse(value).right.getOrElse(malformedRequest(s"Invalid content-type: '$value'"))
