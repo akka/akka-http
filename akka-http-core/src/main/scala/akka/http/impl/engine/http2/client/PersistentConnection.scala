@@ -8,19 +8,20 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes }
-import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.http.scaladsl.model.{AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes}
+import akka.http.scaladsl.settings.Http2ClientSettings
+import akka.stream.scaladsl.{Flow, Keep, Source}
 import akka.stream.stage.TimerGraphStageLogic
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging}
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.util.PrettyDuration
 
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.DurationLong
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
-import scala.util.{ Failure, Success }
+import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success}
 
 /** INTERNAL API */
 @InternalApi
@@ -45,11 +46,11 @@ private[http2] object PersistentConnection {
    *  * generate error responses with 502 status code
    *  * custom attribute contains internal error information
    */
-  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Int, minBackoff: FiniteDuration, maxBackoff: FiniteDuration): Flow[HttpRequest, HttpResponse, NotUsed] =
-    Flow.fromGraph(new Stage(connectionFlow, maxAttempts match {
+  def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], settings: Http2ClientSettings): Flow[HttpRequest, HttpResponse, NotUsed] =
+    Flow.fromGraph(new Stage(connectionFlow, settings.maxPersistentAttempts match {
       case 0 => None
       case n => Some(n)
-    }, minBackoff, maxBackoff))
+    }, settings.baseConnectionBackoff, settings.maxConnectionBackoff))
 
   private class AssociationTag extends RequestResponseAssociation
   private val associationTagKey = AttributeKey[AssociationTag]("PersistentConnection.associationTagKey")

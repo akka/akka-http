@@ -83,9 +83,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
     override def managedPersistentHttp2(): Flow[HttpRequest, HttpResponse, NotUsed] =
       PersistentConnection.managedConnection(
         http2(),
-        http2Settings.maxPersistentAttempts,
-        http2Settings.baseConnectionBackoff,
-        http2Settings.maxConnectionBackoff)
+        http2Settings)
 
     override def http2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/2 prior knowledge plaintext
@@ -95,9 +93,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
     override def managedPersistentHttp2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, NotUsed] =
       PersistentConnection.managedConnection(
         http2WithPriorKnowledge(),
-        http2Settings.maxPersistentAttempts,
-        http2Settings.baseConnectionBackoff,
-        http2Settings.maxConnectionBackoff)
+        http2Settings)
 
     override private[akka] def toJava: JOutgoingConnectionBuilder = new JavaAdapter(this)
   }
