@@ -53,6 +53,19 @@ private[http2] object RequestParsing {
       else
         None
 
+    val baseAttributes = {
+      var map = Map.empty[AttributeKey[_], Any]
+      map = sslSessionAttribute match {
+        case Some(sslSession) => map.updated(AttributeKeys.sslSession, SslSessionInfo(sslSession))
+        case None             => map
+      }
+      map = remoteAddressAttribute match {
+        case Some(remoteAddress) => map.updated(AttributeKeys.remoteAddress, remoteAddress)
+        case None                => map
+      }
+      map
+    }
+
     { subStream =>
       def createRequest(
         method:          HttpMethod,
@@ -82,19 +95,7 @@ private[http2] object RequestParsing {
         val (path, rawQueryString) = pathAndRawQuery
         val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority
         val uri = Uri(scheme, authorityOrDefault, path, rawQueryString)
-        val attributes = {
-          var map = Map.empty[AttributeKey[_], Any]
-          map = map.updated(Http2.streamId, subStream.streamId)
-          map = sslSessionAttribute match {
-            case Some(sslSession) => map.updated(AttributeKeys.sslSession, SslSessionInfo(sslSession))
-            case None             => map
-          }
-          map = remoteAddressAttribute match {
-            case Some(remoteAddress) => map.updated(AttributeKeys.remoteAddress, remoteAddress)
-            case None                => map
-          }
-          map
-        }
+        val attributes = baseAttributes.updated(Http2.streamId, subStream.streamId)
 
         new HttpRequest(method, uri, headers.result(), attributes, entity, HttpProtocols.`HTTP/2.0`)
       }
