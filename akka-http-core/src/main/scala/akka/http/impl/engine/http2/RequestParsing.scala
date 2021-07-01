@@ -168,7 +168,9 @@ private[http2] object RequestParsing {
               rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookiesBuilder, true, headers)
 
             case _ =>
-              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += OtherHeader.get(value))
+              val header = OtherHeader.get(value)
+              validateHeader(header)
+              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += header)
           }
         }
 

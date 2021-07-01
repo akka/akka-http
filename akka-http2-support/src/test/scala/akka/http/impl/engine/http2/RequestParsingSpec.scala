@@ -14,12 +14,13 @@ import akka.testkit.AkkaSpec
 import akka.util.{ ByteString, OptionVal }
 import org.scalatest.{ Inside, Inspectors }
 import FrameEvent._
+import akka.http.impl.engine.http2.hpack.Http2HeaderParsing
 import akka.http.impl.engine.server.HttpAttributes
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
-class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
+class RequestParsingSpec extends AkkaSpec with Inside with Inspectors {
 
   "RequestParsing" should {
 
@@ -31,12 +32,14 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       uriParsingMode: Uri.ParsingMode         = Uri.ParsingMode.Relaxed,
       settings:       ServerSettings          = ServerSettings(system)
     ): HttpRequest = {
+      val preParsedKeyValuePairs = keyValuePairs.map((Http2HeaderParsing.parse(_, _, settings.parserSettings)).tupled)
+
       // Stream containing the request
       val subStream = Http2SubStream(
         initialHeaders = ParsedHeadersFrame(
           streamId = 1,
           endStream = data == Source.empty,
-          keyValuePairs = keyValuePairs,
+          keyValuePairs = preParsedKeyValuePairs,
           priorityInfo = None
         ),
         trailingHeaders = OptionVal.None,
@@ -447,16 +450,17 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       }
 
       "reject requests with more than one pseudo-header" in {
-        val pseudoHeaders = Seq(":method", ":scheme", ":path", ":authority")
-        forAll(pseudoHeaders) { name: String =>
-          val thrown = shouldThrowMalformedRequest(parse(
-            keyValuePairs = Vector(
-              ":scheme" -> "https",
-              ":method" -> "GET",
-              ":authority" -> "akka.io",
-              ":path" -> "/"
-            ) :+ (name -> "foo")))
-          thrown.getMessage should ===(s"Malformed request: Pseudo-header '$name' must not occur more than once")
+        val pseudoHeaders = Seq(":method" -> "POST", ":scheme" -> "http", ":path" -> "/other", ":authority" -> "example.org")
+        forAll(pseudoHeaders) {
+          case (name: String, alternative: String) =>
+            val thrown = shouldThrowMalformedRequest(parse(
+              keyValuePairs = Vector(
+                ":scheme" -> "https",
+                ":method" -> "GET",
+                ":authority" -> "akka.io",
+                ":path" -> "/"
+              ) :+ (name -> alternative)))
+            thrown.getMessage should ===(s"Malformed request: Pseudo-header '$name' must not occur more than once")
         }
       }
 

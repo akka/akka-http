@@ -61,13 +61,13 @@ private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser, p
             }
 
             name match {
-              case "content-type"   => handle(ContentType.parse(parserSettings, value))
-              case ":authority"     => handle(Authority.parse(parserSettings, value))
-              case ":path"          => handle(PathAndQuery.parse(parserSettings, value))
-              case ":method"        => handle(Method.parse(parserSettings, value))
-              case ":scheme"        => handle(Scheme.parse(parserSettings, value))
-              case "content-length" => handle(ContentLength.parse(parserSettings, value))
-              case "cookie"         => handle(Cookie.parse(parserSettings, value))
+              case "content-type"   => handle(ContentType.parse(name, value, parserSettings))
+              case ":authority"     => handle(Authority.parse(name, value, parserSettings))
+              case ":path"          => handle(PathAndQuery.parse(name, value, parserSettings))
+              case ":method"        => handle(Method.parse(name, value, parserSettings))
+              case ":scheme"        => handle(Scheme.parse(name, value, parserSettings))
+              case "content-length" => handle(ContentLength.parse(name, value, parserSettings))
+              case "cookie"         => handle(Cookie.parse(name, value, parserSettings))
               case x if x(0) == ':' => handle(value)
               case _ =>
                 // cannot use OtherHeader.parse because that doesn't has access to header parser
