@@ -41,8 +41,10 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
 
         case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) =>
           kvs.foreach {
+            case (key, value: String) =>
+              encoder.encodeHeader(os, key, value, false)
             case (key, value) =>
-              encoder.encodeHeader(os, key, value.asInstanceOf[String], false)
+              throw new IllegalStateException(s"Didn't expect key-value-pair [$key] -> [$value](${value.getClass}) here.")
           }
           val result = ByteString(os.toByteArray)
           os.reset()
