@@ -19,6 +19,7 @@ package akka.http.shaded.com.twitter.hpack;
 import java.io.IOException;
 import java.io.InputStream;
 
+import akka.http.impl.util.StringTools;
 import akka.http.shaded.com.twitter.hpack.HpackUtil.IndexType;
 
 import static akka.http.shaded.com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
@@ -530,7 +531,7 @@ public final class Decoder {
     } else {
       result = buf;
     }
-    return new String(result, 0,0, result.length);
+    return StringTools.asciiStringFromBytes(result);
   }
 
   // Unsigned Little Endian Base 128 Variable-Length Integer Encoding
