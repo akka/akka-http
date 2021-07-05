@@ -71,7 +71,9 @@ private[http2] class HeaderDecompression(masterHeaderParser: HttpHeaderParser, p
               case x if x(0) == ':' => handle(value)
               case _ =>
                 // cannot use OtherHeader.parse because that doesn't has access to header parser
-                handle(parseHeaderPair(httpHeaderParser, name, value))
+                val header = parseHeaderPair(httpHeaderParser, name, value)
+                RequestParsing.validateHeader(header)
+                handle(header)
             }
           }
         }
