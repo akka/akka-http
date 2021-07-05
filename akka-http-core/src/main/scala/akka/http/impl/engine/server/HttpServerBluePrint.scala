@@ -86,7 +86,7 @@ private[http] object HttpServerBluePrint {
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
 
   def requestTimeoutSupport(timeout: Duration, log: LoggingAdapter): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
-    if (timeout == Duration.Inf) BidiFlow.identity[HttpResponse, HttpRequest]
+    if (timeout == Duration.Zero) BidiFlow.identity[HttpResponse, HttpRequest]
     else BidiFlow.fromGraph(new RequestTimeoutSupport(timeout, log)).reversed
 
   /**

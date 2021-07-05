@@ -81,7 +81,6 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
     bindTimeout:    FiniteDuration,
     lingerTimeout:  Duration) extends ServerSettings.Timeouts {
     require(idleTimeout > Duration.Zero, "idleTimeout must be infinite or > 0")
-    require(requestTimeout > Duration.Zero, "requestTimeout must be infinite or > 0")
     require(bindTimeout > Duration.Zero, "bindTimeout must be > 0")
     require(lingerTimeout > Duration.Zero, "lingerTimeout must be infinite or > 0")
   }
@@ -93,7 +92,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
       PreviewServerSettingsImpl.fromSubConfig(root, c.getConfig("preview")),
       Timeouts(
         c.getPotentiallyInfiniteDuration("idle-timeout"),
-        c.getPotentiallyInfiniteDuration("request-timeout"),
+        if (c.getString("request-timeout") == "off") Duration.Zero else c.getPotentiallyInfiniteDuration("request-timeout"),
         c.getFiniteDuration("bind-timeout"),
         c.getPotentiallyInfiniteDuration("linger-timeout")),
       c.getInt("max-connections"),
