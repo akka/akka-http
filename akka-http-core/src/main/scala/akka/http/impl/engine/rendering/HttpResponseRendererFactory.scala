@@ -38,7 +38,7 @@ private[http] class HttpResponseRendererFactory(
   private val renderDefaultServerHeader: Rendering => Unit =
     serverHeader match {
       case Some(h) =>
-        val bytes = (new ByteArrayRendering(32) ~~ h ~~ CrLf).get
+        val bytes = (new ByteArrayRendering(128) ~~ h ~~ CrLf).get
         _ ~~ bytes
       case None => _ => ()
     }

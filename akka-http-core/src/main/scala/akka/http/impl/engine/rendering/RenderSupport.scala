@@ -33,7 +33,7 @@ private[http] object RenderSupport {
   val ContentLengthBytes = "Content-Length: ".asciiBytes
 
   private def preRenderContentType(ct: ContentType): Array[Byte] =
-    (new ByteArrayRendering(32) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get
+    (new ByteArrayRendering(64) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get
 
   private val ApplicationJsonContentType = preRenderContentType(`application/json`)
   private val TextPlainContentType = preRenderContentType(`text/plain(UTF-8)`)
