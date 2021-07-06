@@ -24,7 +24,7 @@ jobs:
         uses: coursier/cache-action@v5
 
       - name: Autoformat
-        run: sbt +headerCreate +test:headerCreate +scalariformFormat +test:scalariformFormat
+        run: sbt +headerCreateAll +scalariformFormat +test:scalariformFormat
 
       - name: Check for missing formatting
         run: git diff --exit-code --color || { echo "[error] Unformatted code found. Please run 'sbt +headerCreate +test:headerCreate +scalariformFormat +test:scalariformFormat' and commit the reformatted code."; false; }
@@ -62,6 +62,7 @@ jobs:
         run: sbt ++${{ matrix.SCALA_VERSION }} test:compile validatePullRequest
 
       - name: Fixup h2spec test result files
+        if: always()
         run: |-
           h2spec_junit_file='./akka-http2-support/target/test-reports/h2spec-junit.xml'
           sed -i 's/<failure /<skipped /g' $h2spec_junit_file || true
