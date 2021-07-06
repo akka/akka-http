@@ -48,7 +48,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          fetch-depth: 500
+          fetch-depth: 0
 
       - name: Set up JDK ${{ matrix.JABBA_JDK }}
         uses: olafurpg/setup-scala@v10
