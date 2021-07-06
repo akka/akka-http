@@ -1,0 +1,63 @@
+name: Validate and test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags-ignore: [ v.* ]
+
+jobs:
+  compile-and-test:
+    name: Compile and test
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - SCALA_VERSION: 2.12.13
+            JABBA_JDK: 1.8
+          - SCALA_VERSION: 2.12.13
+            JABBA_JDK: 1.11
+          - SCALA_VERSION: 2.13.5
+            JABBA_JDK: 1.8
+          - SCALA_VERSION: 2.13.5
+            JABBA_JDK: 1.11
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ matrix.JABBA_JDK }}
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@${{ matrix.JABBA_JDK }}
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v5
+
+      - name: Autoformat
+        run: sbt ++${{ matrix.SCALA_VERSION }} headerCreate test:headerCreate scalariformFormat test:scalariformFormat
+
+      - name: Check for missing formatting
+        run: git diff --exit-code --color || { echo "[error] Unformatted code found. Please run 'sbt +headerCreate +test:headerCreate +scalariformFormat +test:scalariformFormat' and commit the reformatted code."; false; }
+
+      - name: Validate pull request for JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}
+        run: sbt ++${{ matrix.SCALA_VERSION }} test:compile validatePullRequest
+
+      - name: Fixup h2spec test result files
+        run: |-
+          h2spec_junit_file='./akka-http2-support/target/test-reports/h2spec-junit.xml'
+          sed -i 's/<failure /<skipped /g' $h2spec_junit_file || true
+          sed -i 's|</failure>|</skipped>|g' $h2spec_junit_file || true
+          sed -i 's|skipped=|SKIPPPPPED=|g' $h2spec_junit_file || true
+          sed -i 's|failures=|skipped=|g' $h2spec_junit_file || true
+          sed -i 's|SKIPPPPPED=|failures=|g' $h2spec_junit_file || true
+          sed -i 's/name="/name="h2spec-/g' $h2spec_junit_file || true
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: ./**/target/test-reports/*.xml
