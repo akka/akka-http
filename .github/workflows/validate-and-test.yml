@@ -23,6 +23,12 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v5
 
+      - name: Cache Build Target
+        uses: actions/cache@v2
+        with:
+          path: project/**/target
+          key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
+
       - name: Autoformat
         run: sbt +headerCreateAll +scalariformFormat +test:scalariformFormat
 
@@ -57,6 +63,12 @@ jobs:
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v5
+
+      - name: Cache Build Target
+        uses: actions/cache@v2
+        with:
+          path: project/**/target
+          key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
 
       - name: Validate pull request for JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}
         run: sbt ++${{ matrix.SCALA_VERSION }} test:compile validatePullRequest
