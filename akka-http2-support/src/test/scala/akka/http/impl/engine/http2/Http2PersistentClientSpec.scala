@@ -280,7 +280,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
           probe.ref ! "saw-reconnect"
           Future.successful(new InetSocketAddress("example.invalid", 80))
         }).mapHttp2Settings(_.withBaseConnectionBackoff(300.millis)
-          .withMaxConnectionBackoff(800.millis)
+          .withMaxConnectionBackoff(1500.millis)
           .withMaxPersistentAttempts(4)
         )
 
@@ -290,13 +290,13 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       // need some demand on response side, otherwise, no requests will be pulled in
       client.responsesIn.request(1)
 
-      // first try is immedate
+      // first try is immediate
       probe.expectMsg("saw-reconnect")
-      probe.expectNoMessage(100.millis)
+      probe.expectNoMessage(250.millis) // 300 ms - 600 ms (using slightly lower values than expected to have some slack when expectation is run a little late)
       probe.expectMsg("saw-reconnect")
-      probe.expectNoMessage(200.millis)
+      probe.expectNoMessage(550.millis) // 600 ms - 1200 ms
       probe.expectMsg("saw-reconnect")
-      probe.expectNoMessage(500.millis)
+      probe.expectNoMessage(700.millis) // 750 ms - 1500 ms // (capped at 750ms (half of 1500 ms) - 1500ms)
       probe.expectMsg("saw-reconnect")
 
       // max 4 attempts, giving up after that
