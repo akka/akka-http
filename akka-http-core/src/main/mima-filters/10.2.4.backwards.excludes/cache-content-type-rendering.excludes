@@ -1,4 +1,4 @@
 # add private[this] var to trait with completely sealed class hierarchy
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ContentType.akka$http$scaladsl$model$ContentType$$super$value")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ContentType.akka$http$scaladsl$model$ContentType$$_value")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ContentType.akka$http$scaladsl$model$ContentType$$_value_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ContentType.akka$http$scaladsl$model$ContentType$$super$toString")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ContentType.akka$http$scaladsl$model$ContentType$$_toString")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ContentType.akka$http$scaladsl$model$ContentType$$_toString_=")
