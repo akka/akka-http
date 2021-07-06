@@ -4,20 +4,19 @@
 
 package akka.http.impl.engine.http2
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
-import akka.http.impl.util.StringRendering
-import akka.http.scaladsl.model.{ ContentType, HttpEntity, HttpHeader, HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model._
 import akka.http.shaded.com.twitter.hpack._
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
+import java.io.ByteArrayInputStream
 import scala.collection.immutable.VectorBuilder
 
 /** Helper that allows automatic HPACK encoding/decoding for wire sends / expectations */
-trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSending with ScalaFutures {
+trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSending with HPackEncodingSupport with ScalaFutures {
   def sendRequestHEADERS(streamId: Int, request: HttpRequest, endStream: Boolean): Unit =
     sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeRequestHeaders(request))
 
@@ -43,54 +42,6 @@ trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSen
     val headerBlockBytes = expectHeaderBlock(streamId, endStream)
     // filter date to make it easier to test
     decodeHeaders(headerBlockBytes).filter(_._1 != "date")
-  }
-
-  val encoder = new Encoder(Http2Protocol.InitialMaxHeaderTableSize)
-
-  def encodeRequestHeaders(request: HttpRequest): ByteString =
-    encodeHeaderPairs(headerPairsForRequest(request))
-
-  def encodeHeaders(headers: Seq[HttpHeader]): ByteString =
-    encodeHeaderPairs(headerPairsForHeaders(headers))
-
-  def headersForRequest(request: HttpRequest): Seq[HttpHeader] =
-    headerPairsForRequest(request).map {
-      case (name, value) =>
-        val header: HttpHeader = RawHeader(name, value)
-        header
-    }
-
-  def headersForResponse(response: HttpResponse): Seq[HttpHeader] =
-    Seq(
-      RawHeader(":status", response.status.intValue.toString),
-      RawHeader("content-type", response.entity.contentType.render(new StringRendering).get)
-    ) ++ response.headers.filter(_.renderInResponses)
-
-  def headerPairsForRequest(request: HttpRequest): Seq[(String, String)] =
-    Seq(
-      ":method" -> request.method.value,
-      ":scheme" -> request.uri.scheme.toString,
-      ":path" -> request.uri.path.toString,
-      ":authority" -> request.uri.authority.toString.drop(2),
-      "content-type" -> request.entity.contentType.render(new StringRendering).get
-    ) ++
-      request.entity.contentLengthOption.flatMap {
-        case len if len != 0 => Some("content-length" -> len.toString)
-        case _               => None
-      }.toSeq ++
-      headerPairsForHeaders(request.headers.filter(_.renderInRequests))
-
-  def headerPairsForHeaders(headers: Seq[HttpHeader]): Seq[(String, String)] =
-    headers.map(h => h.lowercaseName -> h.value)
-
-  def encodeHeaderPairs(headerPairs: Seq[(String, String)]): ByteString = {
-    val bos = new ByteArrayOutputStream()
-
-    def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
-
-    headerPairs.foreach((encode _).tupled)
-
-    ByteString(bos.toByteArray)
   }
 
   val decoder = new Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
