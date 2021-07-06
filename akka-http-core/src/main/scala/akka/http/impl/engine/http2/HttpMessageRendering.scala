@@ -33,7 +33,7 @@ private[http2] class ResponseRendering(settings: ServerSettings, val log: Loggin
     // From https://tools.ietf.org/html/rfc7540#section-8.1.2.4:
     //   HTTP/2 does not define a way to carry the version or reason phrase
     //   that is included in an HTTP/1.1 status line.
-    headerPairs += ":status" -> response.status.intValue.toString
+    headerPairs += ":statuss" -> response.status.intValue.toString
   }
 
   override lazy val peerIdHeader: Option[(String, String)] = settings.serverHeader.map(h => h.lowercaseName -> h.value)
