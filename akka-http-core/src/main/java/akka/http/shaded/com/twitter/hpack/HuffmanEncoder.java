@@ -38,39 +38,25 @@ final class HuffmanEncoder {
    * Compresses the input string literal using the Huffman coding.
    * @param  out  the output stream for the compressed data
    * @param  data the string literal to be Huffman encoded
-   * @throws IOException if an I/O error occurs.
-   * @see    HuffmanEncoder#encode(OutputStream, byte[], int, int)
-   */
-  public void encode(OutputStream out, byte[] data) throws IOException {
-    encode(out, data, 0, data.length);
-  }
-
-  /**
-   * Compresses the input string literal using the Huffman coding.
-   * @param  out  the output stream for the compressed data
-   * @param  data the string literal to be Huffman encoded
    * @param  off  the start offset in the data
    * @param  len  the number of bytes to encode
    * @throws IOException if an I/O error occurs. In particular,
    *         an <code>IOException</code> may be thrown if the
    *         output stream has been closed.
    */
-  public void encode(OutputStream out, byte[] data, int off, int len) throws IOException {
+  public void encode(OutputStream out, String string) throws IOException {
     if (out == null) {
       throw new NullPointerException("out");
-    } else if (data == null) {
-      throw new NullPointerException("data");
-    } else if (off < 0 || len < 0 || (off + len) < 0 || off > data.length || (off + len) > data.length) {
-      throw new IndexOutOfBoundsException();
-    } else if (len == 0) {
-      return;
+    } else if (string == null) {
+      throw new NullPointerException("string");
     }
 
     long current = 0;
     int n = 0;
+    int len = string.length();
 
     for (int i = 0; i < len; i++) {
-      int b = data[off + i] & 0xFF;
+      int b = string.charAt(i) & 0xFF;
       int code = codes[b];
       int nbits = lengths[b];
 
@@ -96,13 +82,13 @@ final class HuffmanEncoder {
    * @param  data the string literal to be Huffman encoded
    * @return the number of bytes required to Huffman encode <code>data</code>
    */
-  public int getEncodedLength(byte[] data) {
+  public int getEncodedLength(String data) {
     if (data == null) {
       throw new NullPointerException("data");
     }
     long len = 0;
-    for (byte b : data) {
-      len += lengths[b & 0xFF];
+    for (int i = 0; i < data.length(); i++) {
+      len += lengths[data.charAt(i) & 0xFF];
     }
     return (int)((len + 7) >> 3);
   }

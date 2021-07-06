@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+import akka.http.impl.util.StringTools;
 import akka.http.shaded.com.twitter.hpack.HpackUtil.IndexType;
-import akka.util.Unsafe;
 
 public final class Encoder {
 
@@ -173,15 +173,14 @@ public final class Encoder {
    * Encode string literal according to Section 5.2.
    */
   private void encodeStringLiteral(OutputStream out, String string) throws IOException {
-    byte[] stringBytes = new byte[string.length()];
-    Unsafe.copyUSAsciiStrToBytes(string, stringBytes);
-
-    int huffmanLength = Huffman.ENCODER.getEncodedLength(stringBytes);
-    if ((huffmanLength < stringBytes.length && !forceHuffmanOff) || forceHuffmanOn) {
+    int length = string.length();
+    int huffmanLength = Huffman.ENCODER.getEncodedLength(string);
+    if ((huffmanLength < length && !forceHuffmanOff) || forceHuffmanOn) {
       encodeInteger(out, 0x80, 7, huffmanLength);
-      Huffman.ENCODER.encode(out, stringBytes);
+      Huffman.ENCODER.encode(out, string);
     } else {
-      encodeInteger(out, 0x00, 7, stringBytes.length);
+      byte[] stringBytes = StringTools.asciiStringBytes(string);
+      encodeInteger(out, 0x00, 7, length);
       out.write(stringBytes, 0, stringBytes.length);
     }
   }
