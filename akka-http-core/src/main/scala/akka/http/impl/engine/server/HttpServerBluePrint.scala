@@ -86,7 +86,8 @@ private[http] object HttpServerBluePrint {
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
 
   def requestTimeoutSupport(timeout: Duration, log: LoggingAdapter): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
-    BidiFlow.fromGraph(new RequestTimeoutSupport(timeout, log)).reversed
+    if (timeout == Duration.Zero) BidiFlow.identity[HttpResponse, HttpRequest]
+    else BidiFlow.fromGraph(new RequestTimeoutSupport(timeout, log)).reversed
 
   /**
    * Two state stage, either transforms an incoming RequestOutput into a HttpRequest with strict entity and then pushes
