@@ -29,7 +29,7 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
     val currentMaxFrameSize = Http2Protocol.InitialMaxFrameSize
 
     val encoder = new akka.http.shaded.com.twitter.hpack.Encoder(Http2Protocol.InitialMaxHeaderTableSize)
-    val os = new ByteArrayOutputStream()
+    val os = new ByteArrayOutputStream(128)
 
     become(Idle)
 
@@ -46,7 +46,7 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
             case (key, value) =>
               throw new IllegalStateException(s"Didn't expect key-value-pair [$key] -> [$value](${value.getClass}) here.")
           }
-          val result = ByteString(os.toByteArray)
+          val result = ByteString.fromArrayUnsafe(os.toByteArray) // BAOS.toByteArray always creates a copy
           os.reset()
           if (result.size <= currentMaxFrameSize) push(eventsOut, HeadersFrame(streamId, endStream, endHeaders = true, result, prioInfo))
           else {
