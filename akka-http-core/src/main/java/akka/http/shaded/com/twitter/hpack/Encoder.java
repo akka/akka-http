@@ -89,34 +89,33 @@ public final class Encoder {
       return;
     }
 
-    int headerSize = HeaderField.sizeOf(name, value);
-
-    // If the headerSize is greater than the max table size then it must be encoded literally
-    if (headerSize > capacity) {
-      int nameIndex = getNameIndex(name);
-      encodeLiteral(out, name, value, IndexType.NONE, nameIndex);
-      return;
-    }
-
     HeaderEntry headerField = getEntry(name, value);
     if (headerField != null) {
       int index = getIndex(headerField.index) + StaticTable.length;
       // Section 6.1. Indexed Header Field Representation
       encodeInteger(out, 0x80, 7, index);
     } else {
-      int staticTableIndex = StaticTable.getIndex(name, value);
-      if (staticTableIndex != -1) {
-        // Section 6.1. Indexed Header Field Representation
-        encodeInteger(out, 0x80, 7, staticTableIndex);
-      } else {
+      int headerSize = HeaderField.sizeOf(name, value);
+
+      // If the headerSize is greater than the max table size then it must be encoded literally
+      if (headerSize > capacity) {
         int nameIndex = getNameIndex(name);
-        if (useIndexing) {
-          ensureCapacity(headerSize);
-        }
-        IndexType indexType = useIndexing ? IndexType.INCREMENTAL : IndexType.NONE;
-        encodeLiteral(out, name, value, indexType, nameIndex);
-        if (useIndexing) {
-          add(name, value);
+        encodeLiteral(out, name, value, IndexType.NONE, nameIndex);
+      } else {
+        int staticTableIndex = StaticTable.getIndex(name, value);
+        if (staticTableIndex != -1) {
+          // Section 6.1. Indexed Header Field Representation
+          encodeInteger(out, 0x80, 7, staticTableIndex);
+        } else {
+          int nameIndex = getNameIndex(name);
+          if (useIndexing) {
+            ensureCapacity(headerSize);
+          }
+          IndexType indexType = useIndexing ? IndexType.INCREMENTAL : IndexType.NONE;
+          encodeLiteral(out, name, value, indexType, nameIndex);
+          if (useIndexing) {
+            add(name, value);
+          }
         }
       }
     }
