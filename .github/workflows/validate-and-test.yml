@@ -8,9 +8,30 @@ on:
     tags-ignore: [ v.* ]
 
 jobs:
+  formatting-check:
+    name: Check for missing formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK ${{ matrix.JABBA_JDK }}
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@$1.8
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v5
+
+      - name: Autoformat
+        run: sbt +headerCreate +test:headerCreate +scalariformFormat +test:scalariformFormat
+
+      - name: Check for missing formatting
+        run: git diff --exit-code --color || { echo "[error] Unformatted code found. Please run 'sbt +headerCreate +test:headerCreate +scalariformFormat +test:scalariformFormat' and commit the reformatted code."; false; }
+
   compile-and-test:
     name: Compile and test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -27,7 +48,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0
+          fetch-depth: 500
 
       - name: Set up JDK ${{ matrix.JABBA_JDK }}
         uses: olafurpg/setup-scala@v10
@@ -36,12 +57,6 @@ jobs:
 
       - name: Cache Coursier cache
         uses: coursier/cache-action@v5
-
-      - name: Autoformat
-        run: sbt ++${{ matrix.SCALA_VERSION }} headerCreate test:headerCreate scalariformFormat test:scalariformFormat
-
-      - name: Check for missing formatting
-        run: git diff --exit-code --color || { echo "[error] Unformatted code found. Please run 'sbt +headerCreate +test:headerCreate +scalariformFormat +test:scalariformFormat' and commit the reformatted code."; false; }
 
       - name: Validate pull request for JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}
         run: sbt ++${{ matrix.SCALA_VERSION }} test:compile validatePullRequest
