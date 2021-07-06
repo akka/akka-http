@@ -9,19 +9,18 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Accept, Cookie, Host }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
-import akka.stream.scaladsl.Source
-import akka.testkit.AkkaSpec
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.{ ByteString, OptionVal }
 import org.scalatest.{ Inside, Inspectors }
 import FrameEvent._
-import akka.http.impl.engine.http2.hpack.Http2HeaderParsing
+import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.server.HttpAttributes
+import akka.http.impl.util.AkkaSpecWithMaterializer
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
-class RequestParsingSpec extends AkkaSpec with Inside with Inspectors {
-
+class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspectors {
   "RequestParsing" should {
 
     /** Helper to test parsing */
@@ -32,30 +31,33 @@ class RequestParsingSpec extends AkkaSpec with Inside with Inspectors {
       uriParsingMode: Uri.ParsingMode         = Uri.ParsingMode.Relaxed,
       settings:       ServerSettings          = ServerSettings(system)
     ): HttpRequest = {
-      val preParsedKeyValuePairs = keyValuePairs.map((Http2HeaderParsing.parse(_, _, settings.parserSettings)).tupled)
-
-      // Stream containing the request
-      val subStream = Http2SubStream(
-        initialHeaders = ParsedHeadersFrame(
-          streamId = 1,
-          endStream = data == Source.empty,
-          keyValuePairs = preParsedKeyValuePairs,
-          priorityInfo = None
-        ),
-        trailingHeaders = OptionVal.None,
-        data = Right(data),
-        correlationAttributes = Map.empty
-      )
-      // Create the parsing function
-      val parseRequest: Http2SubStream => HttpRequest = {
-        val (serverSettings, parserSettings) = {
-          val ps = settings.parserSettings.withUriParsingMode(uriParsingMode)
-          (settings.withParserSettings(ps), ps)
-        }
-        val headerParser = HttpHeaderParser(parserSettings, log)
-        RequestParsing.parseRequest(headerParser, serverSettings, attributes)
+      val (serverSettings, parserSettings) = {
+        val ps = settings.parserSettings.withUriParsingMode(uriParsingMode)
+        (settings.withParserSettings(ps), ps)
       }
-      parseRequest(subStream)
+      val headerParser = HttpHeaderParser(parserSettings, log)
+
+      val encoder = new HPackEncodingSupport {}
+      val frame = HeadersFrame(1, data == Source.empty, endHeaders = true, encoder.encodeHeaderPairs(keyValuePairs), None)
+
+      val parseRequest: Http2SubStream => HttpRequest =
+        RequestParsing.parseRequest(headerParser, serverSettings, attributes)
+
+      try Source.single(frame)
+        .via(new HeaderDecompression(headerParser, parserSettings))
+        .map { // emulate demux
+          case headers: ParsedHeadersFrame =>
+            Http2SubStream(
+              initialHeaders = headers,
+              trailingHeaders = OptionVal.None,
+              data = Right(data),
+              correlationAttributes = Map.empty
+            )
+        }
+        .map(parseRequest)
+        .runWith(Sink.head)
+        .futureValue
+      catch { case ex => throw ex.getCause } // unpack futureValue exceptions
     }
 
     def shouldThrowMalformedRequest[T](block: => T): Exception = {
