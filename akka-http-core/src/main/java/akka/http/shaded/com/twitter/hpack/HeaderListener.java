@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+/*
+ * Adapted from github.com/twitter/hpack with this license:
+ *
  * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,5 +28,5 @@ public interface HeaderListener {
    * emitHeader is called by the decoder during header field emission.
    * The name and value byte arrays must not be modified.
    */
-  public void addHeader(byte[] name, byte[] value, boolean sensitive);
+  public Object addHeader(String name, String value, Object parsed, boolean sensitive);
 }

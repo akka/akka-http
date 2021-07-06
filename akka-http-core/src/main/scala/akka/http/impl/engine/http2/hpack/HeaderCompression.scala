@@ -5,7 +5,6 @@
 package akka.http.impl.engine.http2.hpack
 
 import java.io.ByteArrayOutputStream
-
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2._
@@ -14,7 +13,6 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging
 import akka.util.ByteString
 
 import scala.collection.immutable
-
 import FrameEvent._
 
 /**
@@ -31,7 +29,7 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
     val currentMaxFrameSize = Http2Protocol.InitialMaxFrameSize
 
     val encoder = new akka.http.shaded.com.twitter.hpack.Encoder(Http2Protocol.InitialMaxHeaderTableSize)
-    val os = new ByteArrayOutputStream()
+    val os = new ByteArrayOutputStream(128)
 
     become(Idle)
 
@@ -43,10 +41,12 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
 
         case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) =>
           kvs.foreach {
+            case (key, value: String) =>
+              encoder.encodeHeader(os, key, value, false)
             case (key, value) =>
-              encoder.encodeHeader(os, key.getBytes(HeaderDecompression.UTF8), value.getBytes(HeaderDecompression.UTF8), false)
+              throw new IllegalStateException(s"Didn't expect key-value-pair [$key] -> [$value](${value.getClass}) here.")
           }
-          val result = ByteString(os.toByteArray)
+          val result = ByteString.fromArrayUnsafe(os.toByteArray) // BAOS.toByteArray always creates a copy
           os.reset()
           if (result.size <= currentMaxFrameSize) push(eventsOut, HeadersFrame(streamId, endStream, endHeaders = true, result, prioInfo))
           else {

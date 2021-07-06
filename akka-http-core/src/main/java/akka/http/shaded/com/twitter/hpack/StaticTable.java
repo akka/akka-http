@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+/*
+ * Adapted from github.com/twitter/hpack with this license:
+ *
  * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -111,8 +117,7 @@ final class StaticTable {
    * Returns the lowest index value for the given header field name in the static table.
    * Returns -1 if the header field name is not in the static table.
    */
-  static int getIndex(byte[] name) {
-    String nameString = new String(name, 0, name.length, ISO_8859_1);
+  static int getIndex(String nameString) {
     Integer index = STATIC_INDEX_BY_NAME.get(nameString);
     if (index == null) {
       return -1;
@@ -124,7 +129,7 @@ final class StaticTable {
    * Returns the index value for the given header field in the static table.
    * Returns -1 if the header field is not in the static table.
    */
-  static int getIndex(byte[] name, byte[] value) {
+  static int getIndex(String name, String value) {
     int index = getIndex(name);
     if (index == -1) {
       return -1;
@@ -133,10 +138,7 @@ final class StaticTable {
     // Note this assumes all entries for a given header field are sequential.
     while (index <= length) {
       HeaderField entry = getEntry(index);
-      if (!HpackUtil.equals(name, entry.name)) {
-        break;
-      }
-      if (HpackUtil.equals(value, entry.value)) {
+      if (name.equals(entry.name) && value.equals(entry.value)) {
         return index;
       }
       index++;
@@ -153,8 +155,7 @@ final class StaticTable {
     // save the smallest index for a given name in the map.
     for (int index = length; index > 0; index--) {
       HeaderField entry = getEntry(index);
-      String name = new String(entry.name, 0, entry.name.length, ISO_8859_1);
-      ret.put(name, index);
+      ret.put(entry.name, index);
     }
     return ret;
   }

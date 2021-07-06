@@ -55,7 +55,7 @@ trait HPackEncodingSupport {
   def encodeHeaderPairs(headerPairs: Seq[(String, String)]): ByteString = {
     val bos = new ByteArrayOutputStream()
 
-    def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
+    def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name, value, false)
 
     headerPairs.foreach((encode _).tupled)
 

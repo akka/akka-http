@@ -38,7 +38,7 @@ private[http2] object ResponseParsing {
 
     @tailrec
     def rec(
-      remainingHeaders:  Seq[(String, String)],
+      remainingHeaders:  Seq[(String, AnyRef)],
       status:            StatusCode                = null,
       contentType:       OptionVal[ContentType]    = OptionVal.None,
       contentLength:     Long                      = -1,
@@ -66,18 +66,24 @@ private[http2] object ResponseParsing {
         }
 
       } else remainingHeaders.head match {
-        case (":status", statusCodeValue) =>
+        case (":status", statusCodeValue: String) =>
           checkUniquePseudoHeader(":status", status)
           checkNoRegularHeadersBeforePseudoHeader(":status", seenRegularHeader)
           rec(remainingHeaders.tail, statusCodeValue.toInt, contentType, contentLength, seenRegularHeader, headers)
 
-        case ("content-type", ct) =>
+        case ("content-type", contentTypeValue: ContentType) =>
+          if (contentType.isEmpty)
+            rec(remainingHeaders.tail, status, OptionVal.Some(contentTypeValue), contentLength, seenRegularHeader, headers)
+          else
+            malformedRequest("HTTP message must not contain more than one content-type header")
+
+        case ("content-type", ct: String) =>
           if (contentType.isEmpty) {
             val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
             rec(remainingHeaders.tail, status, OptionVal.Some(contentTypeValue), contentLength, seenRegularHeader, headers)
           } else malformedRequest("HTTP message must not contain more than one content-type header")
 
-        case ("content-length", length) =>
+        case ("content-length", length: String) =>
           if (contentLength == -1) {
             val contentLengthValue = length.toLong
             if (contentLengthValue < 0) malformedRequest("HTTP message must not contain a negative content-length header")
@@ -87,7 +93,10 @@ private[http2] object ResponseParsing {
         case (name, _) if name.startsWith(":") =>
           malformedRequest(s"Unexpected pseudo-header '$name' in response")
 
-        case (name, value) =>
+        case (_, httpHeader: HttpHeader) =>
+          rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)
+
+        case (name, value: String) =>
           val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
           validateHeader(httpHeader)
           rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)

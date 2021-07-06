@@ -4,19 +4,22 @@
 
 package akka.http.impl.engine.http2.hpack
 
-import java.io.IOException
-import java.nio.charset.StandardCharsets
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.FrameEvent._
+import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.http2._
+import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.util.ByteString
 
+import java.io.IOException
+import java.nio.charset.StandardCharsets
 import scala.collection.immutable.VectorBuilder
-import FrameEvent._
-import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 
 /**
  * INTERNAL API
@@ -24,8 +27,9 @@ import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
  * Can be used on server and client side.
  */
 @InternalApi
-private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
+private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderParser, parserSettings: ParserSettings) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val UTF8 = StandardCharsets.UTF_8
+  val US_ASCII = StandardCharsets.US_ASCII
 
   val eventsIn = Inlet[FrameEvent]("HeaderDecompression.eventsIn")
   val eventsOut = Outlet[FrameEvent]("HeaderDecompression.eventsOut")
@@ -33,6 +37,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
   val shape = FlowShape(eventsIn, eventsOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
+    val httpHeaderParser = masterHeaderParser.createShallowCopy()
     val decoder = new akka.http.shaded.com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
 
     become(Idle)
@@ -42,11 +47,36 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     // Receiving headers: waiting for CONTINUATION frame
 
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
-      val headers = new VectorBuilder[(String, String)]
+      val headers = new VectorBuilder[(String, AnyRef)]
       object Receiver extends HeaderListener {
-        def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
-          // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += new String(name, UTF8) -> new String(value, UTF8)
+        def addHeader(name: String, value: String, parsed: AnyRef, sensitive: Boolean): AnyRef = {
+          if (parsed ne null) {
+            headers += name -> parsed
+            parsed
+          } else {
+            import Http2HeaderParsing._
+            def handle(parsed: AnyRef): AnyRef = {
+              headers += name -> parsed
+              parsed
+            }
+
+            name match {
+              case "content-type"   => handle(ContentType.parse(name, value, parserSettings))
+              case ":authority"     => handle(Authority.parse(name, value, parserSettings))
+              case ":path"          => handle(PathAndQuery.parse(name, value, parserSettings))
+              case ":method"        => handle(Method.parse(name, value, parserSettings))
+              case ":scheme"        => handle(Scheme.parse(name, value, parserSettings))
+              case "content-length" => handle(ContentLength.parse(name, value, parserSettings))
+              case "cookie"         => handle(Cookie.parse(name, value, parserSettings))
+              case x if x(0) == ':' => handle(value)
+              case _ =>
+                // cannot use OtherHeader.parse because that doesn't has access to header parser
+                val header = parseHeaderPair(httpHeaderParser, name, value)
+                RequestParsing.validateHeader(header)
+                handle(header)
+            }
+          }
+        }
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)

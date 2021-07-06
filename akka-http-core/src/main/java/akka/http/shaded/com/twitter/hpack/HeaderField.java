@@ -1,4 +1,10 @@
 /*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+/*
+ * Adapted from github.com/twitter/hpack with this license:
+ *
  * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +22,6 @@
 
 package akka.http.shaded.com.twitter.hpack;
 
-import static akka.http.shaded.com.twitter.hpack.HpackUtil.ISO_8859_1;
 import static akka.http.shaded.com.twitter.hpack.HpackUtil.requireNonNull;
 
 class HeaderField implements Comparable<HeaderField> {
@@ -26,25 +31,27 @@ class HeaderField implements Comparable<HeaderField> {
   // overhead associated with the structure.
   static final int HEADER_ENTRY_OVERHEAD = 32;
 
-  static int sizeOf(byte[] name, byte[] value) {
-    return name.length + value.length + HEADER_ENTRY_OVERHEAD;
+  static int sizeOf(String name, String value) {
+    return name.length() + value.length() + HEADER_ENTRY_OVERHEAD;
   }
 
-  final byte[] name;
-  final byte[] value;
+  final String name;
+  final String value;
+  Object parsedValue = null;
 
   // This constructor can only be used if name and value are ISO-8859-1 encoded.
   HeaderField(String name, String value) {
-    this(name.getBytes(ISO_8859_1), value.getBytes(ISO_8859_1));
-  }
-
-  HeaderField(byte[] name, byte[] value) {
     this.name = requireNonNull(name);
     this.value = requireNonNull(value);
   }
+  HeaderField(String name, String value, Object parsedValue) {
+    this.name = requireNonNull(name);
+    this.value = requireNonNull(value);
+    this.parsedValue = parsedValue;
+  }
 
   int size() {
-    return name.length + value.length + HEADER_ENTRY_OVERHEAD;
+    return name.length() + value.length() + HEADER_ENTRY_OVERHEAD;
   }
 
   @Override
@@ -56,21 +63,8 @@ class HeaderField implements Comparable<HeaderField> {
     return ret;
   }
 
-  private int compareTo(byte[] s1, byte[] s2) {
-    int len1 = s1.length;
-    int len2 = s2.length;
-    int lim = Math.min(len1, len2);
-
-    int k = 0;
-    while (k < lim) {
-      byte b1 = s1[k];
-      byte b2 = s2[k];
-      if (b1 != b2) {
-        return b1 - b2;
-      }
-      k++;
-    }
-    return len1 - len2;
+  private int compareTo(String s1, String s2) {
+    return s1.compareTo(s2);
   }
 
   @Override
@@ -82,15 +76,11 @@ class HeaderField implements Comparable<HeaderField> {
       return false;
     }
     HeaderField other = (HeaderField) obj;
-    boolean nameEquals = HpackUtil.equals(name, other.name);
-    boolean valueEquals = HpackUtil.equals(value, other.value);
-    return nameEquals && valueEquals;
+    return name.equals(other.name) && value.equals(other.value);
   }
 
   @Override
   public String toString() {
-    String nameString = new String(name);
-    String valueString = new String(value);
-    return nameString + ": " + valueString;
+    return name + ": " + value;
   }
 }
