@@ -91,6 +91,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
   def createMultiplexer(prioritizer: StreamPrioritizer): Http2Multiplexer with OutHandler =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogHelper { self =>
       def log: LoggingAdapter = logic.log
+      // cache debug state at the beginning to avoid that this has to be queried all the time
+      override lazy val isDebugEnabled: Boolean = super.isDebugEnabled
 
       private var _currentInitialWindow: Int = Http2Protocol.InitialWindowSize
       override def currentInitialWindow: Int = _currentInitialWindow
