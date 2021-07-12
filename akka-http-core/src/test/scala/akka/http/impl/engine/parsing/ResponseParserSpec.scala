@@ -8,16 +8,13 @@ import akka.NotUsed
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.TLSProtocol._
-import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.Matcher
 import akka.util.ByteString
-import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ ActorMaterializer, Attributes, FlowShape, Inlet, Outlet }
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
@@ -32,23 +29,19 @@ import akka.http.scaladsl.model.MediaType.WithOpenCharset
 import akka.http.scaladsl.settings.ParserSettings.ConflictingContentTypeHeaderProcessingMode
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.testkit._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
-  val testConf: Config = ConfigFactory.parseString("""
-    akka.event-handlers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = WARNING
-    akka.http.parsing.max-response-reason-length = 21""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+abstract class ResponseParserSpec(mode: String, newLine: String) extends AkkaSpecWithMaterializer(
+  """
+     akka.http.parsing.max-response-reason-length = 21
+  """
+) {
   import system.dispatcher
 
-  implicit val materializer = ActorMaterializer()
   val ServerOnTheMove = StatusCodes.custom(331, "Server on the move")
   val TotallyUnrecognized = StatusCodes.custom(456, "Totally unrecognized")
 
-  s"The response parsing logic should (mode: $mode)" - {
-    "properly parse" - {
+  s"The response parsing logic should (mode: $mode)" should {
+    "properly parse" should {
 
       // http://tools.ietf.org/html/rfc7230#section-3.3.3
       "a 200 response to a HEAD request" in new Test {
@@ -214,7 +207,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
       }
     }
 
-    "properly parse a chunked" - {
+    "properly parse a chunked" should {
       val start =
         """HTTP/1.1 200 OK
           |Transfer-Encoding: chunked
@@ -303,7 +296,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
       }
     }
 
-    "reject a response with" - {
+    "reject a response with" should {
       "HTTP version 1.2" in new Test {
         Seq(s"HTTP/1.2 200 OK${newLine}") should generalMultiParseTo(Left(MessageStartError(
           400: StatusCode, ErrorInfo("The server-side HTTP version is not supported"))))
@@ -352,8 +345,6 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
       }
     }
   }
-
-  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private class Test {
     def awaitAtMost: FiniteDuration = 3.seconds.dilated
