@@ -273,7 +273,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       nextStateStream(buffer)
     }
 
-    def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = throw new IllegalStateException(s"pullNextFrame not supported in state $stateName")
+    def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = (this, PullFrameResult.NothingToSend)
     def incomingStreamPulled(): StreamState = throw new IllegalStateException(s"incomingStreamPulled not supported in state $stateName")
 
     /** Called to cleanup any state when the connection is torn down */
