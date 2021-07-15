@@ -18,7 +18,7 @@ object Dependencies {
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
-  val silencerVersion = "1.7.3"
+  val silencerVersion = "1.7.5"
 
   val scalaTestVersion = "3.1.4"
   val specs2Version = "4.10.6"
@@ -26,8 +26,8 @@ object Dependencies {
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
-  val scala212Version = "2.12.13"
-  val scala213Version = "2.13.5"
+  val scala212Version = "2.12.14"
+  val scala213Version = "2.13.6"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala213Version, scala212Version),
@@ -52,13 +52,13 @@ object Dependencies {
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.9.0"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.9.2"
 
     val scalafix    = "ch.epfl.scala"                 %% "scalafix-core"               % Dependencies.scalafixVersion // grab from plugin
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.6"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.7"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion      % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.9.12"            % "test" // WTFPL
     }
