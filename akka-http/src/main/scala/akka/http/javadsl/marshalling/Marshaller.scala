@@ -4,8 +4,10 @@
 
 package akka.http.javadsl.marshalling
 
+import java.util.concurrent.CompletionStage
 import java.util.{ Optional, function }
 
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.model.{ ContentType, HttpHeader, HttpResponse, MediaType, RequestEntity, StatusCode }
@@ -17,6 +19,8 @@ import akka.util.ByteString
 
 import scala.concurrent.ExecutionContext
 import scala.annotation.unchecked.uncheckedVariance
+
+import scala.compat.java8.FutureConverters._
 
 object Marshaller {
 
@@ -193,4 +197,10 @@ class Marshaller[-A, +B] private (implicit val asScala: marshalling.Marshaller[A
   def map[C](f: function.Function[B @uncheckedVariance, C]): Marshaller[A, C] = fromScala(asScala.map(f.apply))
 
   def compose[C](f: function.Function[C, A @uncheckedVariance]): Marshaller[C, B] = fromScala(asScala.compose(f.apply))
+
+  def marshal(value: A, ec: ExecutionContext): CompletionStage[B @uncheckedVariance /* Java CompletionStage is covariant */ ] =
+    marshalling.Marshal(value).to[B](asScala, ec).toJava
+
+  def marshal(value: A, system: ClassicActorSystemProvider): CompletionStage[B @uncheckedVariance /* Java CompletionStage is covariant */ ] =
+    marshal(value, system.classicSystem.dispatcher)
 }
