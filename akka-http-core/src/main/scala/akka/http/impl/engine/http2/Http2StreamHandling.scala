@@ -653,7 +653,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       info
     }
   }
-  class OutStreamImpl(
+  final class OutStreamImpl(
     val streamId:           Int,
     private var maybeInlet: OptionVal[SubSinkInlet[_]],
     var outboundWindowLeft: Int,
@@ -732,7 +732,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def cancelStream(): Unit = cleanupStream()
     def bufferedBytes: Int = buffer.length
 
-    override def increaseWindow(increment: Int): Unit = {
+    override def increaseWindow(increment: Int): Unit = if (increment >= 0) {
       outboundWindowLeft += increment
       debug(s"Updating window for $streamId by $increment to $outboundWindowLeft buffered bytes: $bufferedBytes")
       if (canSend) multiplexer.enqueueOutStream(streamId)
