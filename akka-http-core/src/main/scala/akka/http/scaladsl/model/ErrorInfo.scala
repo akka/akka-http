@@ -7,6 +7,8 @@ package akka.http.scaladsl.model
 import StatusCodes.ClientError
 import akka.annotation.InternalApi
 
+import scala.runtime.AbstractFunction2
+
 /**
  * Two-level model of error information.
  * The summary should explain what is wrong with the request or response *without* directly
@@ -69,7 +71,7 @@ object ErrorInfo {
 }
 
 /** Marker for exceptions that provide an ErrorInfo */
-abstract class ExceptionWithErrorInfo(val info: ErrorInfo, cause: Throwable) extends RuntimeException(info.formatPretty, cause) {
+abstract class ExceptionWithErrorInfo(val info: ErrorInfo, cause: Throwable) extends RuntimeException(info.format(withDetail = true), cause) {
   def this(info: ErrorInfo) = this(info, null)
 }
 
@@ -118,16 +120,19 @@ object EntityStreamException {
  * The limit can also be configured in code, by calling [[HttpEntity#withSizeLimit]]
  * on the entity before materializing its `dataBytes` stream.
  */
-final case class EntityStreamSizeException(limit: Long, actualSize: Option[Long] = None) extends RuntimeException {
-
-  override def getMessage = toString
-
-  override def toString = {
-    s"EntityStreamSizeException: incoming entity size (${actualSize.getOrElse("while streaming")}) exceeded size limit ($limit bytes)! " +
-      "This may have been a parser limit (set via `akka.http.[server|client].parsing.max-content-length`), " +
-      "a decoder limit (set via `akka.http.routing.decode-max-size`), " +
-      "or a custom limit set with `withSizeLimit`."
-  }
+final case class EntityStreamSizeException(limit: Long, actualSize: Option[Long] = None)
+  extends ExceptionWithErrorInfo(EntityStreamSizeException.errorInfo(limit, actualSize)) {
+  override def getMessage: String = super.getMessage // for bin compat
+}
+object EntityStreamSizeException /* for bin compat */ extends AbstractFunction2[Long, Option[Long], EntityStreamSizeException] {
+  private[EntityStreamSizeException] def errorInfo(limit: Long, actualSize: Option[Long]): ErrorInfo =
+    ErrorInfo(
+      "The incoming entity size exceeded the size limit of the server.",
+      s"Incoming entity size (${actualSize.getOrElse("while streaming")}) exceeded size limit ($limit bytes)! " +
+        "This may have been a parser limit (set via `akka.http.[server|client].parsing.max-content-length`), " +
+        "a decoder limit (set via `akka.http.routing.decode-max-size`), " +
+        "or a custom limit set with `withSizeLimit`."
+    )
 }
 
 case class RequestTimeoutException(request: HttpRequest, message: String) extends RuntimeException(message)

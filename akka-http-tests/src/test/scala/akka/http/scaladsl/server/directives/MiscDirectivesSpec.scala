@@ -106,32 +106,36 @@ class MiscDirectivesSpec extends RoutingSpec {
 
       Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
         status shouldEqual StatusCodes.PayloadTooLarge
-        entityAs[String] should include("exceeded size limit")
+        entityAs[String] should include("exceeded the size limit")
       }
     }
 
-    "apply if form data is fully consumed into a map" in {
-      val route =
-        withSizeLimit(64) {
-          formFieldMap { _ =>
-            completeOk
+    def formTest(what: String, innerRoute: Route, prefix: String = "The request content was malformed:\n") =
+      s"apply $what" in {
+        val route =
+          withSizeLimit(64) {
+            innerRoute
           }
+
+        /*Post("/abc", formDataOfSize(32)) ~> route ~> check {
+          status shouldEqual StatusCodes.OK
+        }*/
+
+        Post("/abc", formDataOfSize(128)) ~> Route.seal(route) ~> check {
+          status shouldEqual StatusCodes.PayloadTooLarge
+          responseAs[String] shouldEqual s"${prefix}The incoming entity size exceeded the size limit of the server."
         }
-
-      Post("/abc", formDataOfSize(32)) ~> route ~> check {
-        status shouldEqual StatusCodes.OK
       }
 
-      Post("/abc", formDataOfSize(128)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.PayloadTooLarge
-        responseAs[String] shouldEqual "The request content was malformed:\n" +
-          "EntityStreamSizeException: incoming entity size (134) " +
-          "exceeded size limit (64 bytes)! " +
-          "This may have been a parser limit (set via `akka.http.[server|client].parsing.max-content-length`), " +
-          "a decoder limit (set via `akka.http.routing.decode-max-size`), " +
-          "or a custom limit set with `withSizeLimit`."
-      }
-    }
+    // These directives do not (yet?) use `toStrictEntity` so they fail only during unmarshalling and have their specialized
+    // exception handling that wrap the exception in a MalformedRequestContentRejection
+    formTest("if form data is fully consumed into a Map", formFieldMap(_ => completeOk))
+    formTest("if form data is fully consumed into a multi-Map", formFieldMultiMap(_ => completeOk))
+    formTest("if form data is fully consumed into a Seq", formFieldSeq(_ => completeOk))
+
+    // `formField` uses `toStrictEntity` which fails with an exception and the error response is produced by
+    // the main exception handler.
+    formTest("if form data is read from field", formField("field")(_ => completeOk), prefix = "")
 
     "properly handle nested directives by applying innermost `withSizeLimit` directive" in {
       val route =
@@ -149,7 +153,7 @@ class MiscDirectivesSpec extends RoutingSpec {
 
       Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
         status shouldEqual StatusCodes.PayloadTooLarge
-        entityAs[String] should include("exceeded size limit")
+        entityAs[String] should include("exceeded the size limit")
       }
 
       val route2 =
@@ -167,7 +171,7 @@ class MiscDirectivesSpec extends RoutingSpec {
 
       Post("/abc", entityOfSize(401)) ~> Route.seal(route2) ~> check {
         status shouldEqual StatusCodes.PayloadTooLarge
-        entityAs[String] should include("exceeded size limit")
+        entityAs[String] should include("exceeded the size limit")
       }
     }
   }

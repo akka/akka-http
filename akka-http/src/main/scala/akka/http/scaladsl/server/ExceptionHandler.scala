@@ -8,7 +8,6 @@ import scala.util.control.NonFatal
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.model._
 import StatusCodes._
-import scala.language.implicitConversions
 
 trait ExceptionHandler extends ExceptionHandler.PF {
 
@@ -53,9 +52,9 @@ object ExceptionHandler {
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
       case e: EntityStreamSizeException => ctx => {
-        ctx.log.error(e, ErrorMessageTemplate, e, PayloadTooLarge)
+        ctx.log.error(e, ErrorMessageTemplate, e.info.formatPretty, PayloadTooLarge)
         ctx.request.discardEntityBytes(ctx.materializer)
-        ctx.complete((PayloadTooLarge, e.getMessage))
+        ctx.complete((PayloadTooLarge, e.info.format(settings.verboseErrorMessages)))
       }
       case e: ExceptionWithErrorInfo => ctx => {
         ctx.log.error(e, ErrorMessageTemplate, e.info.formatPretty, InternalServerError)

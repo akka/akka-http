@@ -8,6 +8,7 @@ package directives
 import akka.annotation.InternalApi
 import akka.http.impl.util._
 import akka.http.scaladsl.common._
+import akka.http.scaladsl.model.ExceptionWithErrorInfo
 import akka.http.scaladsl.server.directives.RouteDirectives._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.util.FastFuture._
@@ -107,10 +108,14 @@ object FormFieldDirectives extends FormFieldDirectives {
         Future.sequence(fields)
       }
     }.flatMap { sequenceF =>
-      onComplete(sequenceF).flatMap {
-        case Success(x)                                  => provide(x)
-        case Failure(x: UnsupportedContentTypeException) => reject(UnsupportedRequestContentTypeRejection(x.supported, x.actualContentType))
-        case Failure(x)                                  => reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
+      extractSettings.flatMap { settings =>
+        onComplete(sequenceF).flatMap {
+          case Success(x)                                  => provide(x)
+          // override exception handling to wrap exceptions as we see fit
+          case Failure(x: UnsupportedContentTypeException) => reject(UnsupportedRequestContentTypeRejection(x.supported, x.actualContentType))
+          case Failure(x: ExceptionWithErrorInfo)          => reject(MalformedRequestContentRejection(x.info.format(settings.verboseErrorMessages), x))
+          case Failure(x)                                  => reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
+        }
       }
     }
   }
@@ -285,12 +290,19 @@ object FormFieldDirectives extends FormFieldDirectives {
     type SFU = FromEntityUnmarshaller[StrictForm]
     type FSFFOU[T] = Unmarshaller[Option[StrictForm.Field], T]
 
-    protected def handleFieldResult[T](fieldName: String, result: Future[T]): Directive1[T] = onComplete(result).flatMap {
-      case Success(x)                                  => provide(x)
-      case Failure(Unmarshaller.NoContentException)    => reject(MissingFormFieldRejection(fieldName))
-      case Failure(x: UnsupportedContentTypeException) => reject(UnsupportedRequestContentTypeRejection(x.supported, x.actualContentType))
-      case Failure(x)                                  => reject(MalformedFormFieldRejection(fieldName, x.getMessage.nullAsEmpty, Option(x.getCause)))
-    }
+    protected def handleFieldResult[T](fieldName: String, result: Future[T]): Directive1[T] =
+      extractSettings.flatMap { settings =>
+        onComplete(result).flatMap { res =>
+          res match {
+            case Success(x)                                  => provide(x)
+            // override exception handling to wrap exceptions to add information about which field failed to be read
+            case Failure(Unmarshaller.NoContentException)    => reject(MissingFormFieldRejection(fieldName))
+            case Failure(x: UnsupportedContentTypeException) => reject(UnsupportedRequestContentTypeRejection(x.supported, x.actualContentType))
+            case Failure(x: ExceptionWithErrorInfo)          => reject(MalformedFormFieldRejection(fieldName, x.info.format(settings.verboseErrorMessages), Option(x)))
+            case Failure(x)                                  => reject(MalformedFormFieldRejection(fieldName, x.getMessage.nullAsEmpty, Option(x)))
+          }
+        }
+      }
 
     private def strictFormUnmarshaller(ctx: RequestContext): SFU =
       StrictForm.unmarshaller(
