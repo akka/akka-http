@@ -307,4 +307,29 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
       }
     }
   }
+
+  "when extracting unused query parameters should" - {
+    val echoUnusedParameters = extractUnusedParameters { echoComplete }
+
+    "return unused" in {
+      def test() = parameter("age".as[Int] ? 30) { _ =>
+        concat(
+          (pathPrefix("person") & parameters("name", "surname") & parameter("hobby".repeated)) { (_, _, _) => echoUnusedParameters
+          },
+          echoUnusedParameters
+        )
+      }
+      Get("/person?age=19&hobby=cooking&hobby=reading&name=Parsons&surname=Ellen&other=a") ~> test() ~> check {
+        responseAs[String] shouldEqual "Set(other)"
+      }
+
+      Get("/?age=19") ~> test() ~> check {
+        responseAs[String] shouldEqual "Set()"
+      }
+
+      Get("/?hobby=cooking&hobby=reading") ~> test() ~> check {
+        responseAs[String] shouldEqual "Set(hobby)"
+      }
+    }
+  }
 }

@@ -25,7 +25,7 @@ import akka.http.scaladsl.server.{ Directives => D }
 import akka.http.scaladsl
 import akka.stream.Materializer
 import java.util.function.Supplier
-import java.util.{ List => JList }
+import java.util.{ List => JList, Set => JSet }
 
 import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.ResponseEntity
@@ -41,6 +41,7 @@ import akka.http.javadsl.server
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters._
 
 abstract class BasicDirectives {
   import akka.http.impl.util.JavaMapping.Implicits._
@@ -173,6 +174,15 @@ abstract class BasicDirectives {
   def extractMatchedPath(inner: JFunction[String, Route]) = RouteAdapter {
     D.extractMatchedPath { path =>
       inner.apply(path.toString).delegate
+    }
+  }
+
+  /**
+   * Extracts the yet unused query parameters from the RequestContext.
+   */
+  def extractUnusedParameters(inner: JFunction[JSet[String], Route]) = RouteAdapter {
+    D.extractUnusedParameters { parameters =>
+      inner.apply(parameters.asJava).delegate
     }
   }
 

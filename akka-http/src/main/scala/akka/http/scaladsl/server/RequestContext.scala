@@ -30,6 +30,11 @@ trait RequestContext {
   val unmatchedPath: Uri.Path
 
   /**
+   * The unused query parameter names of this context.
+   */
+  val unusedParameters: Set[String]
+
+  /**
    * The default ExecutionContext to be used for scheduling asynchronous logic related to this request.
    */
   implicit def executionContext: ExecutionContextExecutor
@@ -132,7 +137,18 @@ trait RequestContext {
   def mapUnmatchedPath(f: Uri.Path => Uri.Path): RequestContext
 
   /**
+   * Returns a copy of this context with the unused query parameters updated to the given one.
+   */
+  def withUnusedParameters(parameters: Set[String]): RequestContext
+
+  /**
+   * Returns a copy of this context with the unused query parameters transformed by the given function.
+   */
+  def mapUnusedParameters(f: Set[String] => Set[String]): RequestContext
+
+  /**
    * Removes a potentially existing Accept header from the request headers.
    */
   def withAcceptAll: RequestContext
+
 }
