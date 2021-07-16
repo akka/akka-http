@@ -866,6 +866,7 @@ object Uri {
   }
 
   private[http] def collapseDotSegments(path: Path): Path = {
+    import Path._
     @tailrec def hasDotOrDotDotSegment(p: Path): Boolean = p match {
       case Path.Empty => false
       case Path.Segment(".", _) | Path.Segment("..", _) => true
@@ -873,7 +874,6 @@ object Uri {
     }
     // http://tools.ietf.org/html/rfc3986#section-5.2.4
     @tailrec def process(input: Path, output: Path = Path.Empty): Path = {
-      import Path._
       input match {
         case Path.Empty                       => output.reverse
         case Segment("." | "..", Slash(tail)) => process(tail, output)
@@ -889,7 +889,9 @@ object Uri {
         case Segment(string, tail)     => process(tail, string :: output)
       }
     }
-    if (hasDotOrDotDotSegment(path)) process(path) else path
+    if (hasDotOrDotDotSegment(path))
+      if (path.startsWithSlash) process(path) else process(Slash(path)).tail
+    else path
   }
 
   private[http] def fail(summary: String, detail: String = "") = throw IllegalUriException(summary, detail)
