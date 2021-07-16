@@ -949,6 +949,30 @@ Host: example.com
       binding.unbind().futureValue
       Http().shutdownAllConnectionPools().futureValue
     }
+
+    "produce a useful error message when connecting to a HTTPS endpoint over HTTP" in Utils.assertAllStagesStopped {
+      // akka/akka-http#1219
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val request = HttpRequest(uri = s"http://$hostname:$port", headers = headers.Connection("close") :: Nil)
+
+      val serverBinding =
+        Http()
+          .newServerAt(hostname, port)
+          .enableHttps(ExampleHttpContexts.exampleServerContext)
+          .bind(_ => ???)
+          .futureValue
+
+      val failure = Http()
+        .singleRequest(request)
+        .failed
+        .futureValue
+
+      failure.getMessage should include("Connection reset by peer")
+
+      serverBinding.unbind().futureValue
+      Http().shutdownAllConnectionPools()
+    }
+
   }
 
   override def beforeTermination() = {
