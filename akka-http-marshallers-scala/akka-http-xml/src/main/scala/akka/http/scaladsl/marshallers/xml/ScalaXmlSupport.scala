@@ -14,6 +14,16 @@ import akka.http.scaladsl.model._
 import MediaTypes._
 
 trait ScalaXmlSupport {
+
+  /**
+   * The collection of MediaType for which xml marshalling/unmarshalling is supported
+   */
+  def nodeSeqMediaTypes: immutable.Seq[MediaType.NonBinary] =
+    List(`text/xml`, `application/xml`, `text/html`, `application/xhtml+xml`)
+
+  private def nodeSeqContentTypeRanges: immutable.Seq[ContentTypeRange] =
+    nodeSeqMediaTypes.map(ContentTypeRange(_))
+
   implicit def defaultNodeSeqMarshaller: ToEntityMarshaller[NodeSeq] =
     Marshaller.oneOf(ScalaXmlSupport.nodeSeqMediaTypes.map(nodeSeqMarshaller): _*)
 
@@ -38,8 +48,6 @@ trait ScalaXmlSupport {
   protected def createSAXParser(): SAXParser = ScalaXmlSupport.createSaferSAXParser()
 }
 object ScalaXmlSupport extends ScalaXmlSupport {
-  val nodeSeqMediaTypes: immutable.Seq[MediaType.NonBinary] = List(`text/xml`, `application/xml`, `text/html`, `application/xhtml+xml`)
-  val nodeSeqContentTypeRanges: immutable.Seq[ContentTypeRange] = nodeSeqMediaTypes.map(ContentTypeRange(_))
 
   /** Creates a safer SAXParser. */
   def createSaferSAXParser(): SAXParser = {
@@ -62,7 +70,7 @@ object ScalaXmlSupport extends ScalaXmlSupport {
     try {
       parser.setProperty("http://apache.org/xml/properties/locale", java.util.Locale.ROOT)
     } catch {
-      case e: org.xml.sax.SAXNotRecognizedException => // property is not needed
+      case _: org.xml.sax.SAXNotRecognizedException => // property is not needed
     }
     parser
   }
