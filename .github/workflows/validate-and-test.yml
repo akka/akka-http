@@ -21,7 +21,7 @@ jobs:
           java-version: adopt@1.8
 
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6.2
 
       - name: Cache Build Target
         uses: actions/cache@v2
@@ -41,15 +41,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - SCALA_VERSION: 2.12.13
-            JABBA_JDK: 1.8
-          #- SCALA_VERSION: 2.12.13
-          #  JABBA_JDK: 1.11
-          - SCALA_VERSION: 2.13.5
-            JABBA_JDK: 1.8
-          #- SCALA_VERSION: 2.13.5
-          #  JABBA_JDK: 1.11
+        SCALA_VERSION: [2.12.14, 2.13.6]
+        JAVVA_JDK: [1.8, 1.11]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -62,7 +55,7 @@ jobs:
           java-version: adopt@${{ matrix.JABBA_JDK }}
 
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6.2
 
       - name: Cache Build Target
         uses: actions/cache@v2
