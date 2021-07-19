@@ -1,0 +1,73 @@
+name: Validate and test
+
+on:
+  pull_request:
+  push:
+    branches: [ master ]
+    tags-ignore: [ v* ]
+
+jobs:
+  formatting-check:
+    name: Check for missing formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Cache Build Target
+        uses: actions/cache@v2
+        with:
+          path: project/**/target
+          key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
+
+      - name: Autoformat
+        run: sbt +headerCreateAll +scalariformFormat +test:scalariformFormat
+
+      - name: Check for missing formatting
+        run: git diff --exit-code --color || { echo "[error] Unformatted code found. Please run 'sbt +headerCreate +test:headerCreate +scalariformFormat +test:scalariformFormat' and commit the reformatted code."; false; }
+
+  compile-and-test:
+    name: Compile and test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        SCALA_VERSION: [2.12.14, 2.13.6]
+        JABBA_JDK: [1.8, 1.11]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ matrix.JABBA_JDK }}
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@${{ matrix.JABBA_JDK }}
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Cache Build Target
+        uses: actions/cache@v2
+        with:
+          path: project/**/target
+          key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
+
+      # Quick testing for PR validation
+      - name: Validate pull request for JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}
+        if: ${{ github.event_name == 'pull_request' }}
+        run: sbt ++${{ matrix.SCALA_VERSION }} Test/compile validatePullRequest
+
+      # Full testing for pushes
+      - name: Run all tests JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}
+        if: ${{ github.event_name == 'push' }}
+        run: sbt ++${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues Test/compile test
