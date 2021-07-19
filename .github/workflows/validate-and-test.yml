@@ -69,13 +69,14 @@ jobs:
       - name: Fixup h2spec test result files
         if: always()
         run: |-
-          h2spec_junit_file='./akka-http2-support/target/test-reports/h2spec-junit.xml'
+          h2spec_junit_file=./akka-http2-support/target/test-reports/h2spec-junit*.xml
           sed -i 's/<failure /<skipped /g' $h2spec_junit_file || true
           sed -i 's|</failure>|</skipped>|g' $h2spec_junit_file || true
           sed -i 's|skipped=|SKIPPPPPED=|g' $h2spec_junit_file || true
           sed -i 's|failures=|skipped=|g' $h2spec_junit_file || true
           sed -i 's|SKIPPPPPED=|failures=|g' $h2spec_junit_file || true
           sed -i 's/name="/name="h2spec-/g' $h2spec_junit_file || true
+          sed -i 's/s">/">"/g' $h2spec_junit_file || true
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
