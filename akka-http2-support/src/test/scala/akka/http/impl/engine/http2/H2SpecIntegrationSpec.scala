@@ -157,8 +157,8 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       val command = Seq( // need to use Seq[String] form for command because executable path may contain spaces
         executable,
         "-k", "-t",
-        "-p", port.toString,
-        "-j", junitOutput.getPath
+        "-p", port.toString//,
+        //"-j", junitOutput.getPath
       ) ++
         specSectionNumber.toList.flatMap(number => Seq("-s", number))
 
