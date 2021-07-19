@@ -1,0 +1,62 @@
+name: Publish
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ v* ]
+
+jobs:
+  publish-artifacts:
+    name: Publish artifacts to Sonatype
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Install graphviz
+        run: sudo apt-get install -y graphviz
+
+      - name: Publish Artifacts to Sonatype / Maven
+        run: sbt -jvm-opts .jvmopts-ghactions ci-release
+        env:
+          CI_SONATYPE_RELEASE: "; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+
+      - name: Update Whitesource Listing
+        run: sbt -jvm-opts .jvmopts-ghactions whitesourceUpdate
+        env:
+          WHITESOURCE_PASSWORD: ${{ secrets.WHITESOURCE_PASSWORD }}
+
+  publish-docs:
+    name: Publish documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Publish Documentation
+        run: eval "$(ssh-agent -s)" && echo $SCP_SECRET | base64 -d > /tmp/id_rsa && chmod 600 /tmp/id_rsa && ssh-add /tmp/id_rsa && sbt -jvm-opts .jvmopts-ghactions -Dakka.genjavadoc.enabled=true publishRsync
+        env:
+          SCP_SECRET: ${{ secrets.SCP_SECRET }}
