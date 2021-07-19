@@ -6,9 +6,8 @@ package akka.http.javadsl.server
 
 import java.net.InetSocketAddress
 import java.net.ServerSocket
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ TimeUnit, TimeoutException }
 import java.net.SocketException
-
 import akka.Done
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.javadsl.ServerBinding
@@ -92,7 +91,12 @@ class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eve
         res
       }(system.dispatchers.lookup("akka.actor.default-blocking-io-dispatcher"))
 
-      val binding = minimal.bindingPromise.get(5, TimeUnit.SECONDS)
+      val binding = try minimal.bindingPromise.get(2, TimeUnit.SECONDS)
+      catch {
+        case e: TimeoutException =>
+          java.lang.management.ManagementFactory.getThreadMXBean.dumpAllThreads(true, true).foreach(println)
+          throw e
+      }
 
       // Checking server is up and running
       callAndVerify(binding, "foo")
@@ -115,7 +119,12 @@ class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eve
         res
       }(system.dispatchers.lookup("akka.actor.default-blocking-io-dispatcher"))
 
-      val binding = minimal.bindingPromise.get(5, TimeUnit.SECONDS)
+      val binding = try minimal.bindingPromise.get(2, TimeUnit.SECONDS)
+      catch {
+        case e: TimeoutException =>
+          java.lang.management.ManagementFactory.getThreadMXBean.dumpAllThreads(true, true).foreach(println)
+          throw e
+      }
 
       // Checking server is up and running
       callAndVerify(binding, "foo")
