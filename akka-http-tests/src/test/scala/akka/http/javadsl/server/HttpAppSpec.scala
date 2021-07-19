@@ -86,8 +86,11 @@ class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eve
     "start providing an ActorSystem" in withMinimal { minimal =>
 
       val server = Future {
-        minimal.startServer("localhost", 0, system)
-      }
+        log.debug("Before startServer 1")
+        val res = minimal.startServer("localhost", 0, system)
+        log.debug("After startServer 1")
+        res
+      }(system.dispatchers.lookup("akka.actor.default-blocking-io-dispatcher"))
 
       val binding = minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
@@ -106,8 +109,11 @@ class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eve
     "start providing an ActorSystem and Settings" in withMinimal { minimal =>
 
       val server = Future {
-        minimal.startServer("localhost", 0, ServerSettings.create(system), system)
-      }
+        log.debug("Before startServer 2")
+        val res = minimal.startServer("localhost", 0, ServerSettings.create(system), system)
+        log.debug("After startServer 2")
+        res
+      }(system.dispatchers.lookup("akka.actor.default-blocking-io-dispatcher"))
 
       val binding = minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
