@@ -99,7 +99,7 @@ object ValidatePullRequest extends AutoPlugin {
   val additionalTasks = settingKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
   // The set of (top-level) files or directories to watch for build changes.
-  val BuildFilesAndDirectories = Set("project", "build.sbt")
+  val BuildFilesAndDirectories = Set("project", "build.sbt", ".github/workflows")
 
   def changedDirectoryIsDependency(changedDirs: Set[String], name: String, graphsToTest: Seq[(Configuration, ModuleGraph)])(log: Logger): Boolean = {
     val dirsOrExperimental = changedDirs.flatMap(dir => Set(dir, s"$dir-experimental"))
