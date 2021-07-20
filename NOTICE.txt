@@ -19,7 +19,7 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
 
-Also, please refer to each `license/LICENSE.<component>.txt` file for the license
+Also, please refer to each `licenses/LICENSE.<component>.txt` file for the license
 terms of the components that this product depends on.
 
 -------------------------------------------------------------------------------
@@ -27,6 +27,6 @@ This product contains a modified version of 'HPACK', a Java implementation of
 the HTTP/2 HPACK algorithm written by Twitter. It can be obtained at:
 
   * LICENSE:
-    * license/LICENSE.hpack.txt (Apache License 2.0)
+    * licenses/LICENSE.hpack.txt (Apache License 2.0)
   * HOMEPAGE:
     * https://github.com/twitter/hpack
