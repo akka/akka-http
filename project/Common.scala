@@ -47,7 +47,8 @@ object Common extends AutoPlugin {
     libraryDependencies ++= Seq(
       compilerPlugin("com.github.ghik" % "silencer-plugin" % Dependencies.silencerVersion cross CrossVersion.full),
       "com.github.ghik" % "silencer-lib" % Dependencies.silencerVersion % Provided cross CrossVersion.full
-    )
+    ),
+    Test / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"
   )
 
   val specificationVersion: String = sys.props("java.specification.version")
