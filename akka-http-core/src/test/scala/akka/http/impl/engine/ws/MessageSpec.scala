@@ -246,13 +246,17 @@ class MessageSpec extends AkkaSpecWithMaterializer with Eventually {
       "apply backpressure to the network if a message isn't read by the user" in new ServerTestSetup {
         val mask = Random.nextInt()
         val header = frameHeader(Opcode.Text, 65535, fin = false, mask = Some(mask))
+        val singleByte = ByteString("a")
 
         pushInput(header)
 
         // push single-byte ByteStrings without reading anything until it fails
         // this should be after the internal input buffers have filled up
         eventually(timeout(1.second.dilated), interval(10.millis)) {
-          an[AssertionError] should be thrownBy pushInput(ByteString("a"))
+          // netIn.within is needed to avoid the default dilated timeout in `pushInput`.
+          // This will make the eventually loop run fast enough to actually
+          // fill buffers and fail within the timeout.
+          an[AssertionError] should be thrownBy netIn.within(10.millis)(pushInput(singleByte))
         }
       }
     }
