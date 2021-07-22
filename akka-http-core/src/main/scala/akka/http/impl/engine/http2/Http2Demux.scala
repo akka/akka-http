@@ -238,7 +238,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         push(frameOut, event)
       }
 
-      val multiplexer = createMultiplexer(StreamPrioritizer.first())
+      val multiplexer = createMultiplexer(StreamPrioritizer.First)
       setHandler(frameOut, multiplexer)
 
       val pingState = ConfigurablePing.PingState(http2Settings)

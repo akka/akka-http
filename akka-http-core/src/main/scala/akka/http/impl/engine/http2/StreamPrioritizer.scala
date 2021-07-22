@@ -28,11 +28,10 @@ private[http2] trait StreamPrioritizer {
 @InternalApi
 private[http2] object StreamPrioritizer {
   /** A prioritizer that ignores priority information and just sends to the first stream */
-  def first(): StreamPrioritizer =
-    new StreamPrioritizer {
-      def updatePriority(priorityFrame: PriorityFrame): Unit = ()
-      def chooseSubstream(streams: Set[Int]): Int = streams.head
-    }
+  object First extends StreamPrioritizer {
+    def updatePriority(priorityFrame: PriorityFrame): Unit = ()
+    def chooseSubstream(streams: Set[Int]): Int = streams.head
+  }
 
   def usingPriorityTree(): StreamPrioritizer =
     new StreamPrioritizer {
