@@ -178,7 +178,10 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
               controlFrameBuffer += trailer
               WaitingForNetworkToSendControlFrames
             case PullFrameResult.NothingToSend =>
-              // we are pulled but the stream that wanted to send, now chose otherwise
+              // We are pulled but the stream that wanted to send, now chose otherwise.
+              // This can happen if either the stream got closed in the meantime, or if the stream was added to the queue
+              // multiple times, which can happen because `enqueueOutStream` is supposed to be idempotent but we don't check
+              // if we added an element several times to the queue (because it's inefficient).
               if (sendableOutstreams.isEmpty) WaitingForData
               else WaitingForNetworkToSendData.onPull()
           }
