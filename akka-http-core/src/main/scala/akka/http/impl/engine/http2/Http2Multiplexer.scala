@@ -241,7 +241,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         }
 
         def closeStream(streamId: Int): MultiplexerState = {
-          // leave stream in sendableOutstreams, to be skipped in sendNextFrame
+          // leave stream in sendableOutstreams, to be skipped in sendDataFrame
           this
         }
       }
@@ -260,7 +260,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           }
 
         def closeStream(streamId: Int): MultiplexerState =
-          // leave stream in sendableOutstreams, to be skipped in sendNextFrame
+          // leave stream in sendableOutstreams, to be skipped in sendDataFrame
           this
 
         def pulled: Boolean
