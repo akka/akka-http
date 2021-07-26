@@ -330,23 +330,24 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   trait Sending extends StreamState { _: Product =>
     protected def outStream: OutStream
 
-    override def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = {
-      val frame = outStream.nextFrame(maxSize)
+    override def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) =
+      if (outStream.canSend) {
+        val frame = outStream.nextFrame(maxSize)
 
-      val res =
-        outStream.endStreamIfPossible() match {
-          case Some(trailer) =>
-            PullFrameResult.SendFrameAndTrailer(frame, trailer)
-          case None =>
-            PullFrameResult.SendFrame(frame, outStream.canSend)
-        }
+        val res =
+          outStream.endStreamIfPossible() match {
+            case Some(trailer) =>
+              PullFrameResult.SendFrameAndTrailer(frame, trailer)
+            case None =>
+              PullFrameResult.SendFrame(frame, outStream.canSend)
+          }
 
-      val nextState =
-        if (outStream.isDone) handleOutgoingEnded()
-        else this
+        val nextState =
+          if (outStream.isDone) handleOutgoingEnded()
+          else this
 
-      (nextState, res)
-    }
+        (nextState, res)
+      } else (this, PullFrameResult.NothingToSend)
 
     def handleWindowUpdate(windowUpdate: WindowUpdateFrame): StreamState = increaseWindow(windowUpdate.windowSizeIncrement)
 
