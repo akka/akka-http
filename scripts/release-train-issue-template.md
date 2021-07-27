@@ -39,12 +39,10 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### Cutting the release
 
-- [ ] Wait until [master build finished](https://travis-ci.com/github/akka/akka-http/builds/) after merging the release notes (otherwise, the master
+- [ ] Wait until [master build finished](https://github.com/akka/akka-http/actions/workflows/publish.yml?query=event%3Apush) after merging the release notes (otherwise, the master
       build might pick up the tag and start publishing the release uhoh)
 - [ ] Create a tag for the release (e.g. `git tag -s -a v$VERSION$ -m "Release $VERSION$"`) and push it.
-- [ ] Check that the Travis CI [release build](https://travis-ci.com/github/akka/akka-http/branches) executes successfully
-- [ ] Go to the Maven Central tab and sync with Sonatype. You may need to log in and switch to the 'Old Look' for this.
-- [ ] Log in to Sonatype to Close the staging repository
+- [ ] Check that the Github Actions [release build](https://github.com/akka/akka-http/actions/workflows/publish.yml?query=event%3Apush) executes successfully
 - [ ] Notify Telemetry / Play team to check against staged artifacts
 - [ ] Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-quickstart-scala.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/staging"`
 - [ ] Release the staging repository to Maven Central.
@@ -82,7 +80,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 ### Announcements
 - [ ] Send a release notification to https://discuss.akka.io
 - [ ] Tweet using the akka account (or ask someone to) about the new release
-- [ ] Announce on Gitter at https://gitter.im/akka/akka
+- [ ] Announce on Gitter at https://gitter.im/akka/akka (e.g. `@/all we are happy to announce the latest Akka HTTP release $VERSION$, see https://akka.io/blog/news/XYZ for more information`)
 
 ### Afterwards
 - [ ] Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key *of all current compatible branches*.
