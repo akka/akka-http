@@ -54,7 +54,8 @@ object MiMa extends AutoPlugin {
     "10.2.1",
     "10.2.2",
     "10.2.3",
-    "10.2.4"
+    "10.2.4",
+    "10.2.5",
   )
 
   val post213Versions = `10.1-post-2.13-versions` ++ `10.2-versions`
