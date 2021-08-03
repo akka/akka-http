@@ -659,6 +659,21 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         entityDataOut.sendComplete()
         network.expectDATA(TheStreamId, endStream = true, ByteString.empty)
       }
+      "keep sending entity data when data is chunked into small bits" inAssertAllStagesStopped new WaitingForResponseDataSetup {
+        val data1 = ByteString("a")
+        val numChunks = 10000 // on my machine it crashed at ~1700
+        (1 to numChunks).foreach(_ => entityDataOut.sendNext(data1))
+
+        val (false, data) = network.expectDATAFrame(TheStreamId)
+        data shouldEqual ByteString("a" * numChunks)
+
+        // now don't fail if there's demand on the line
+        network.plainDataProbe.request(1)
+        network.expectNoBytes(100.millis)
+
+        entityDataOut.sendComplete()
+        network.expectDATA(TheStreamId, endStream = true, ByteString.empty)
+      }
 
       "parse priority frames" inAssertAllStagesStopped new WaitingForResponseDataSetup {
         network.sendPRIORITY(TheStreamId, true, 0, 5)
