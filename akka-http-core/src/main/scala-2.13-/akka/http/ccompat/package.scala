@@ -27,9 +27,8 @@ package object ccompat {
   type IterableOnce[+X] = c.TraversableOnce[X]
   val IterableOnce = c.TraversableOnce
 
-  // in 2.12.x there's no Queue.-=, when 2.12.x support is dropped, this can be
-  // changed to Queue.-=
   implicit class RichQueue[T](val queue: mutable.Queue[T]) extends AnyVal {
+    // missing in 2.12
     def -=(element: T): Unit = queue.dequeueAll(_ == element)
   }
 }
