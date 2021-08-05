@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.ccompat._
+
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent._
@@ -137,11 +139,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         if (isDebugEnabled) require(!sendableOutstreams.contains(streamId), s"Stream [$streamId] was enqueued multiple times.") // requires expensive scanning -> avoid in production
         sendableOutstreams.enqueue(streamId)
       }
-      def removeOutStream(streamId: Int): Unit = {
-        // in 2.12.x there's no Queue.-=, when 2.12.x support is dropped, this can be
-        // changed to Queue.-=
-        sendableOutstreams.dequeueAll(_ == streamId)
-      }
+      def removeOutStream(streamId: Int): Unit =
+        sendableOutstreams -= streamId
 
       private def updateState(transition: MultiplexerState => MultiplexerState): Unit = {
         val oldState = _state
