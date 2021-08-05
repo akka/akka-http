@@ -135,11 +135,11 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       private val controlFrameBuffer: mutable.Queue[FrameEvent] = new mutable.Queue[FrameEvent]
       private val sendableOutstreams: mutable.Queue[Int] = new mutable.Queue[Int]
-      def enqueueOutstream(streamId: Int): Unit = {
+      private def enqueueStream(streamId: Int): Unit = {
         if (isDebugEnabled) require(!sendableOutstreams.contains(streamId), s"Stream [$streamId] was enqueued multiple times.") // requires expensive scanning -> avoid in production
         sendableOutstreams.enqueue(streamId)
       }
-      def removeOutStream(streamId: Int): Unit =
+      private def dequeueStream(streamId: Int): Unit =
         sendableOutstreams -= streamId
 
       private def updateState(transition: MultiplexerState => MultiplexerState): Unit = {
@@ -174,7 +174,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             case PullFrameResult.SendFrame(frame, hasMore) =>
               send(frame)
               if (hasMore) {
-                enqueueOutstream(streamId)
+                enqueueStream(streamId)
                 WaitingForNetworkToSendData
               } else {
                 if (sendableOutstreams.isEmpty) Idle
@@ -203,7 +203,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         }
         def connectionWindowAvailable(): MultiplexerState = this
         def enqueueOutStream(streamId: Int): MultiplexerState = {
-          enqueueOutstream(streamId)
+          enqueueStream(streamId)
           WaitingForNetworkToSendData
         }
         def closeStream(streamId: Int): MultiplexerState = this
@@ -218,7 +218,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def connectionWindowAvailable(): MultiplexerState = this // nothing to do, as there is no data to send
         def enqueueOutStream(streamId: Int): MultiplexerState =
           if (connectionWindowLeft == 0) {
-            enqueueOutstream(streamId)
+            enqueueStream(streamId)
             WaitingForConnectionWindow
           } else sendDataFrame(streamId)
         def closeStream(streamId: Int): MultiplexerState = this
@@ -239,13 +239,13 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         }
         def connectionWindowAvailable(): MultiplexerState = this
         def enqueueOutStream(streamId: Int): MultiplexerState = {
-          enqueueOutstream(streamId)
+          enqueueStream(streamId)
           this
         }
 
         def closeStream(streamId: Int): MultiplexerState = {
           // expensive operation, but only called for cancelled streams
-          removeOutStream(streamId)
+          dequeueStream(streamId)
           this
         }
       }
@@ -257,13 +257,13 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           else {
             val chosenId = prioritizer.chooseSubstream(sendableOutstreams.toSet)
             // expensive operation, to be optimized when prioritizers can be configured
-            removeOutStream(chosenId)
+            dequeueStream(chosenId)
             sendDataFrame(chosenId)
           }
 
         def closeStream(streamId: Int): MultiplexerState = {
           // expensive operation, but only called for cancelled streams
-          removeOutStream(streamId)
+          dequeueStream(streamId)
           if (sendableOutstreams.nonEmpty) this
           else if (pulled) WaitingForData
           else Idle
@@ -284,7 +284,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         }
         def connectionWindowAvailable(): MultiplexerState = this
         def enqueueOutStream(streamId: Int): MultiplexerState = {
-          enqueueOutstream(streamId)
+          enqueueStream(streamId)
           this
         }
 
@@ -300,7 +300,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         }
         def connectionWindowAvailable(): MultiplexerState = sendNext()
         def enqueueOutStream(streamId: Int): MultiplexerState = {
-          enqueueOutstream(streamId)
+          enqueueStream(streamId)
           this
         }
 
