@@ -140,8 +140,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       def removeOutStream(streamId: Int): Unit = {
         // in 2.12.x there's no Queue.-=, when 2.12.x support is dropped, this can be
         // changed to Queue.-=
-        val idx = sendableOutstreams.indexOf(streamId)
-        if (idx >= 0) sendableOutstreams.remove(idx)
+        sendableOutstreams.dequeueAll(_ == streamId)
       }
 
       private def updateState(transition: MultiplexerState => MultiplexerState): Unit = {
