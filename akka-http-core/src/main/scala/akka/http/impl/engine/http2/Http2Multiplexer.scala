@@ -264,7 +264,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def closeStream(streamId: Int): MultiplexerState = {
           // expensive operation, but only called for cancelled streams
           removeOutStream(streamId)
-          if (pulled) WaitingForData else Idle
+          if (sendableOutstreams.nonEmpty) this
+          else if (pulled) WaitingForData
+          else Idle
         }
 
         def pulled: Boolean
