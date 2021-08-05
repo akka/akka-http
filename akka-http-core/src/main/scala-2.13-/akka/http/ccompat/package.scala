@@ -26,6 +26,11 @@ package object ccompat {
   // in scala-library so we can't add to it
   type IterableOnce[+X] = c.TraversableOnce[X]
   val IterableOnce = c.TraversableOnce
+
+  implicit class RichQueue[T](val queue: mutable.Queue[T]) extends AnyVal {
+    // missing in 2.12
+    def -=(element: T): Unit = queue.dequeueAll(_ == element)
+  }
 }
 
 /**

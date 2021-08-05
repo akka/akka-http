@@ -238,7 +238,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def receivedUnexpectedFrame(e: StreamFrameEvent): StreamState = {
       debug(s"Received unexpected frame of type ${e.frameTypeName} for stream ${e.streamId} in state $stateName")
       pushGOAWAY(ErrorCode.PROTOCOL_ERROR, s"Received unexpected frame of type ${e.frameTypeName} for stream ${e.streamId} in state $stateName")
-      multiplexer.closeStream(e.streamId)
+      shutdown()
       Closed
     }
 
@@ -273,7 +273,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       nextStateStream(buffer)
     }
 
-    def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = (this, PullFrameResult.NothingToSend)
+    def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = throw new IllegalStateException(s"pullNextFrame not supported in state $stateName")
     def incomingStreamPulled(): StreamState = throw new IllegalStateException(s"incomingStreamPulled not supported in state $stateName")
 
     /** Called to cleanup any state when the connection is torn down */
@@ -330,24 +330,23 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   trait Sending extends StreamState { _: Product =>
     protected def outStream: OutStream
 
-    override def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) =
-      if (outStream.canSend) {
-        val frame = outStream.nextFrame(maxSize)
+    override def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = {
+      val frame = outStream.nextFrame(maxSize)
 
-        val res =
-          outStream.endStreamIfPossible() match {
-            case Some(trailer) =>
-              PullFrameResult.SendFrameAndTrailer(frame, trailer)
-            case None =>
-              PullFrameResult.SendFrame(frame, outStream.canSend)
-          }
+      val res =
+        outStream.endStreamIfPossible() match {
+          case Some(trailer) =>
+            PullFrameResult.SendFrameAndTrailer(frame, trailer)
+          case None =>
+            PullFrameResult.SendFrame(frame, outStream.canSend)
+        }
 
-        val nextState =
-          if (outStream.isDone) handleOutgoingEnded()
-          else this
+      val nextState =
+        if (outStream.isDone) handleOutgoingEnded()
+        else this
 
-        (nextState, res)
-      } else (this, PullFrameResult.NothingToSend)
+      (nextState, res)
+    }
 
     def handleWindowUpdate(windowUpdate: WindowUpdateFrame): StreamState = increaseWindow(windowUpdate.windowSizeIncrement)
 
@@ -371,7 +370,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       case w: WindowUpdateFrame =>
         handleWindowUpdate(w)
       case r: RstStreamFrame =>
-        multiplexer.closeStream(r.streamId)
         outStream.cancelStream()
         Closed
       case _ =>
@@ -463,7 +461,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     override protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit = {
       super.onRstStreamFrame(rstStreamFrame)
       outStream.cancelStream()
-      multiplexer.closeStream(rstStreamFrame.streamId)
     }
     override def incrementWindow(delta: Int): StreamState = {
       outStream.increaseWindow(delta)
@@ -480,9 +477,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   case class HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow: Int) extends StreamState {
     // FIXME: DRY with below
     override def handle(event: StreamFrameEvent): StreamState = event match {
-      case r: RstStreamFrame =>
-        multiplexer.closeStream(r.streamId)
-        Closed
+      case r: RstStreamFrame    => Closed
       case w: WindowUpdateFrame => copy(extraInitialWindow = extraInitialWindow + w.windowSizeIncrement)
       case _                    => receivedUnexpectedFrame(event)
     }
@@ -500,7 +495,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def handle(event: StreamFrameEvent): StreamState = event match {
       case r: RstStreamFrame =>
         outStream.cancelStream()
-        multiplexer.closeStream(r.streamId)
         Closed
       case w: WindowUpdateFrame => handleWindowUpdate(w)
       case _                    => receivedUnexpectedFrame(event)
@@ -664,11 +658,18 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
     private var buffer: ByteString = ByteString.empty
     private var upstreamClosed: Boolean = false
+    private var isEnqueued: Boolean = false
     var endStreamSent: Boolean = false
 
     /** Designates whether nextFrame can be called to get the next frame. */
     def canSend: Boolean = buffer.nonEmpty && outboundWindowLeft > 0
     def isDone: Boolean = endStreamSent
+
+    def enqueueIfPossible(): Unit =
+      if (canSend && !isEnqueued) {
+        isEnqueued = true
+        multiplexer.enqueueOutStream(streamId)
+      }
 
     def registerIncomingData(inlet: SubSinkInlet[_]): Unit = {
       require(!maybeInlet.isDefined)
@@ -681,7 +682,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       require(buffer.isEmpty)
       buffer = data
       upstreamClosed = true
-      if (canSend) multiplexer.enqueueOutStream(streamId)
+      enqueueIfPossible()
     }
 
     def nextFrame(maxBytesToSend: Int): DataFrame = {
@@ -699,6 +700,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         maybePull()
 
       debug(s"[$streamId] sending ${toSend.length} bytes, endStream = $endStream, remaining buffer [${buffer.length}], remaining stream-level WINDOW [$outboundWindowLeft]")
+
+      // Multiplexer will enqueue for us if we report more data being available
+      // We cannot call `multiplexer.enqueueOutStream` from here because this is called from the multiplexer.
+      isEnqueued = !isDone && canSend
 
       DataFrame(streamId, endStream, toSend)
     }
@@ -730,13 +735,16 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       }
     }
 
-    def cancelStream(): Unit = cleanupStream()
+    def cancelStream(): Unit = {
+      cleanupStream()
+      if (isEnqueued) multiplexer.closeStream(streamId)
+    }
     def bufferedBytes: Int = buffer.length
 
     override def increaseWindow(increment: Int): Unit = if (increment >= 0) {
       outboundWindowLeft += increment
       debug(s"Updating window for $streamId by $increment to $outboundWindowLeft buffered bytes: $bufferedBytes")
-      if (canSend) multiplexer.enqueueOutStream(streamId)
+      enqueueIfPossible()
     }
 
     // external callbacks, need to make sure that potential stream state changing events are run through the state machine
@@ -753,7 +761,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       maybePull()
 
       // else wait for more data being drained
-      if (canSend) multiplexer.enqueueOutStream(streamId) // multiplexer might call pullNextFrame which goes through the state machine => OK
+      enqueueIfPossible() // multiplexer might call pullNextFrame which goes through the state machine => OK
     }
 
     override def onUpstreamFinish(): Unit = {
