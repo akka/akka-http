@@ -1076,6 +1076,54 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         // also complete stream 1
         sendDataAndExpectOnNet(entity1DataOut, 1, "", endStream = true)
       }
+      "receiving RST_STREAM for one of two sendable streams" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
+        network.sendRequest(1, theRequest)
+        user.expectRequest() shouldBe theRequest
+
+        val entity1DataOut = TestPublisher.probe[ByteString]()
+        val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity1DataOut)))
+        user.emitResponse(1, response1)
+        network.expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+
+        def sendDataAndExpectOnNet(outStream: TestPublisher.Probe[ByteString], streamId: Int, dataString: String, endStream: Boolean = false): Unit = {
+          val data = ByteString(dataString)
+          if (dataString.nonEmpty) outStream.sendNext(data)
+          if (endStream) outStream.sendComplete()
+          if (data.nonEmpty || endStream) network.expectDATA(streamId, endStream = endStream, data)
+        }
+
+        sendDataAndExpectOnNet(entity1DataOut, 1, "abc")
+
+        // send second request
+        network.sendRequest(3, theRequest)
+        user.expectRequest() shouldBe theRequest
+
+        val entity2DataOut = TestPublisher.probe[ByteString]()
+        val response2 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity2DataOut)))
+        user.emitResponse(3, response2)
+        network.expectDecodedHEADERS(streamId = 3, endStream = false) shouldBe response2.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+
+        // send again on stream 1
+        sendDataAndExpectOnNet(entity1DataOut, 1, "zyx")
+
+        // now send on stream 2
+        sendDataAndExpectOnNet(entity2DataOut, 3, "mnopq")
+
+        // now again on stream 1
+        sendDataAndExpectOnNet(entity1DataOut, 1, "jklm")
+
+        // send two data bits first but only pull and expect later
+        entity1DataOut.sendNext(ByteString("hihihi"))
+        entity2DataOut.sendNext(ByteString("hohoho"))
+
+        network.sendRST_STREAM(1, ErrorCode.CANCEL)
+
+        network.expectDATA(3, endStream = false, ByteString("hohoho"))
+
+        // last data of stream 2
+        sendDataAndExpectOnNet(entity2DataOut, 3, "uvwx", endStream = true)
+      }
       "close substreams when connection is shutting down" inAssertAllStagesStopped StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes {
         val requestEntity = HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`)
         val request = HttpRequest(entity = requestEntity)
