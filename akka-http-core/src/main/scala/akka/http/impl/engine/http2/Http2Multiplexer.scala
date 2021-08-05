@@ -137,10 +137,12 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         if (isDebugEnabled) require(!sendableOutstreams.contains(streamId), s"Stream [$streamId] was enqueued multiple times.") // requires expensive scanning -> avoid in production
         sendableOutstreams.enqueue(streamId)
       }
-      def removeOutStream(streamId: Int): Unit =
+      def removeOutStream(streamId: Int): Unit = {
         // in 2.12.x there's no Queue.-=, when 2.12.x support is dropped, this can be
         // changed to Queue.-=
-        sendableOutstreams.dequeueAll(_ == streamId)
+        val idx = sendableOutstreams.indexOf(streamId)
+        if (idx >= 0) sendableOutstreams.remove(idx)
+      }
 
       private def updateState(transition: MultiplexerState => MultiplexerState): Unit = {
         val oldState = _state

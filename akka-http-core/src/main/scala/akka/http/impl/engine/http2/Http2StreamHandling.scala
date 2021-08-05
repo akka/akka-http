@@ -238,7 +238,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def receivedUnexpectedFrame(e: StreamFrameEvent): StreamState = {
       debug(s"Received unexpected frame of type ${e.frameTypeName} for stream ${e.streamId} in state $stateName")
       pushGOAWAY(ErrorCode.PROTOCOL_ERROR, s"Received unexpected frame of type ${e.frameTypeName} for stream ${e.streamId} in state $stateName")
-      multiplexer.closeStream(e.streamId)
+      shutdown()
       Closed
     }
 
@@ -370,7 +370,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       case w: WindowUpdateFrame =>
         handleWindowUpdate(w)
       case r: RstStreamFrame =>
-        multiplexer.closeStream(r.streamId)
         outStream.cancelStream()
         Closed
       case _ =>
@@ -462,7 +461,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     override protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit = {
       super.onRstStreamFrame(rstStreamFrame)
       outStream.cancelStream()
-      multiplexer.closeStream(rstStreamFrame.streamId)
     }
     override def incrementWindow(delta: Int): StreamState = {
       outStream.increaseWindow(delta)
@@ -479,9 +477,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   case class HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow: Int) extends StreamState {
     // FIXME: DRY with below
     override def handle(event: StreamFrameEvent): StreamState = event match {
-      case r: RstStreamFrame =>
-        multiplexer.closeStream(r.streamId)
-        Closed
+      case r: RstStreamFrame    => Closed
       case w: WindowUpdateFrame => copy(extraInitialWindow = extraInitialWindow + w.windowSizeIncrement)
       case _                    => receivedUnexpectedFrame(event)
     }
@@ -499,7 +495,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def handle(event: StreamFrameEvent): StreamState = event match {
       case r: RstStreamFrame =>
         outStream.cancelStream()
-        multiplexer.closeStream(r.streamId)
         Closed
       case w: WindowUpdateFrame => handleWindowUpdate(w)
       case _                    => receivedUnexpectedFrame(event)
@@ -740,7 +735,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       }
     }
 
-    def cancelStream(): Unit = cleanupStream()
+    def cancelStream(): Unit = {
+      cleanupStream()
+      if (isEnqueued) multiplexer.closeStream(streamId)
+    }
     def bufferedBytes: Int = buffer.length
 
     override def increaseWindow(increment: Int): Unit = if (increment >= 0) {
