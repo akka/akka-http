@@ -7,7 +7,6 @@ package akka
 import scala.language.postfixOps
 import sbt.{Def, _}
 import Keys._
-import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
 /**
@@ -21,7 +20,6 @@ object NoPublish extends AutoPlugin {
     publishArtifact := false,
     publish := {},
     publishLocal := {},
-    whitesourceIgnore := true,
   )
 }
 
