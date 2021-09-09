@@ -37,40 +37,32 @@ trait DynamicRuleDispatchMacro { self: DynamicRuleDispatch.type =>
   def __create[P <: Parser: Type, L <: HList: Type](
       ruleNames: Expr[Seq[String]]
   )(using Quotes): Expr[(DynamicRuleDispatch[P, L], immutable.Seq[String])] = {
+    import quotes.reflect._
+
     val names: Seq[String] = ruleNames match {
       case Varargs(Exprs(args)) => args.sorted
     }
 
-    def dispatcher(handler: Expr[DynamicRuleHandler[P, L]], ruleName: Expr[String]): Expr[Any] = {
-      import quotes.reflect._
-      def ruleExpr(name: String): Expr[RuleN[L]] = Select.unique('{ $handler.parser }.asTerm, name).asExprOf[RuleN[L]]
-      def rec(start: Int, end: Int): Expr[Any] =
-        if (start <= end) {
-          val mid  = (start + end) >>> 1
-          val name = names(mid)
-
-          '{
-            val c = ${ Expr(name) } compare $ruleName
-            if (c < 0) ${ rec(mid + 1, end) }
-            else if (c > 0) ${ rec(start, mid - 1) }
-            else {
-              val p = $handler.parser
-              p.__run[L](${ ruleExpr(name) })($handler)
-            }
-          }
-        } else '{ $handler.ruleNotFound($ruleName) }
-
-      rec(0, names.length - 1)
+    def ruleEntry(name: String): Expr[(String, RuleRunner[P, L])] = '{
+      val runner = new RuleRunner[P, L] {
+        def apply(handler: DynamicRuleHandler[P, L]): handler.Result = {
+          val p = handler.parser
+          p.__run[L](${Select.unique('{ handler.parser }.asTerm, name).asExprOf[RuleN[L]]})(handler)
+        }
+      }
+      (${Expr(name)}, runner)
     }
+    val ruleEntries: Expr[Seq[(String, RuleRunner[P, L])]] = Expr.ofSeq(names.map(ruleEntry(_)))
 
     '{
-      val dispatch: DynamicRuleDispatch[P, L] =
-        new DynamicRuleDispatch[P, L] {
-          def apply(handler: DynamicRuleHandler[P, L], ruleName: String): handler.Result =
-            ${ dispatcher('handler, 'ruleName).asInstanceOf[Expr[handler.Result]] }
+      val map: Map[String, RuleRunner[P, L]] = Map($ruleEntries*)
+      val drd =
+        new akka.parboiled2.DynamicRuleDispatch[P, L] {
+          def lookup(ruleName: String): Option[RuleRunner[P, L]] =
+            map.get(ruleName)
         }
 
-      (dispatch, $ruleNames)
+      (drd, $ruleNames)
     }
   }
 }
