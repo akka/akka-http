@@ -34,7 +34,14 @@ trait DynamicRuleHandler[P <: Parser, L <: HList] extends Parser.DeliveryScheme[
  * The rule must have type `RuleN[L]`.
  */
 trait DynamicRuleDispatch[P <: Parser, L <: HList] {
-  def apply(handler: DynamicRuleHandler[P, L], ruleName: String): handler.Result
+  def apply(handler: DynamicRuleHandler[P, L], ruleName: String): handler.Result =
+    lookup(ruleName).map(_(handler)).getOrElse(handler.ruleNotFound(ruleName))
+
+  def lookup(ruleName: String): Option[RuleRunner[P, L]]
+}
+
+trait RuleRunner[P <: Parser, L <: HList] {
+  def apply(handler: DynamicRuleHandler[P, L]): handler.Result
 }
 
 object DynamicRuleDispatch extends DynamicRuleDispatchMacro

@@ -106,29 +106,19 @@ private[http] object HeaderParser {
   object EmptyCookieException extends SingletonException("Cookie header contained no parsable cookie values.")
 
   def lookupParser(headerName: String, settings: Settings = DefaultSettings): Option[String => HeaderParser#Result] =
-    // FIXME: allow early lookup again (needs changes in macros)
-    Some { (value: String) =>
+    dispatch.lookup(headerName).map { runner => (value: String) =>
       import akka.parboiled2.EOI
       val v = value + EOI // this makes sure the parser isn't broken even if there's no trailing garbage in this value
-      val handler = new DynamicRuleHandler[HeaderParser, HttpHeader :: HNil] {
-        override type Result = HeaderParser#Result
-
-        override def parser: HeaderParser = new HeaderParser(v, settings)
-        override def ruleNotFound(ruleName: String): HeaderParser.Result = RuleNotFound
-        override def success(result: HttpHeader :: HNil): HeaderParser.Result =
-          if (parser.cursor == v.length) Success(result.head)
-          else Failure(ErrorInfo(
+      val parser = new HeaderParser(v, settings)
+      runner(parser) match {
+        case r @ Success(_) if parser.cursor == v.length => r
+        case r @ Success(_) =>
+          Failure(ErrorInfo(
             "Header parsing error",
             s"Rule for $headerName accepted trailing garbage. Is the parser missing a trailing EOI?"))
-
-        override def parseError(e: ParseError): HeaderParser.Result =
-          Failure(e.copy(summary = e.summary.filterNot(_ == EOI), detail = e.detail.filterNot(_ == EOI)))
-
-        override def failure(error: Throwable): HeaderParser.Result =
-          throw error // FIXME: is there a better way here?
+        case Failure(e)   => Failure(e.copy(summary = e.summary.filterNot(_ == EOI), detail = e.detail.filterNot(_ == EOI)))
+        case RuleNotFound => RuleNotFound
       }
-
-      dispatch(handler, headerName)
     }
 
   def parseFull(headerName: String, value: String, settings: Settings = DefaultSettings): HeaderParser#Result =
