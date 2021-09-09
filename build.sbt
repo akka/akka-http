@@ -148,7 +148,7 @@ lazy val parsing = project("akka-parsing")
 lazy val httpCore = project("akka-http-core")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.core"))
-  .dependsOn(parsing, httpScalafixRules % ScalafixConfig)
+  .dependsOn(parsing/*, httpScalafixRules % ScalafixConfig*/)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
@@ -162,6 +162,7 @@ lazy val httpCore = project("akka-http-core")
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .disablePlugins(ScalafixPlugin)
 
 lazy val http = project("akka-http")
   .settings(commonSettings)

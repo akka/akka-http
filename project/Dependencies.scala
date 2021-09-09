@@ -19,9 +19,9 @@ object Dependencies {
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
 
-  val scalaTestVersion = "3.1.4"
+  val scalaTestVersion = "3.2.9"
   val specs2Version = "4.10.6"
-  val scalaCheckVersion = "1.14.3"
+  val scalaCheckVersion = "1.15.4"
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
@@ -46,7 +46,7 @@ object Dependencies {
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.3.0" // Scala License
 
     // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.6"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.6-SNAPSHOT"       // ApacheV2
 
     // For akka-http-jackson support
     val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind"            % jacksonDatabindVersion // ApacheV2
@@ -73,7 +73,7 @@ object Dependencies {
       val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.3"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
-      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
+      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-15" % (scalaTestVersion + ".0") % "test"
       val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
       // HTTP/2
