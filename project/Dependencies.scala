@@ -27,7 +27,8 @@ object Dependencies {
 
   val scala212Version = "2.12.15"
   val scala213Version = "2.13.8"
-  val allScalaVersions = Seq(scala213Version, scala212Version)
+  val scala3Version = "3.0.1"
+  val allScalaVersions = Seq(scala3Version, scala213Version, scala212Version)
 
   val Versions = Seq(
     crossScalaVersions := allScalaVersions,
@@ -36,7 +37,9 @@ object Dependencies {
   object Provided {
     val jsr305 = "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided" // ApacheV2
 
-    val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _ % "provided") // Scala License
+    val scalaReflect  = ScalaVersionDependentModuleID.fromPF {
+      case v if v startsWith "2." => "org.scala-lang" % "scala-reflect" % v % "provided" // Scala License
+    }
   }
 
   object Compile {
