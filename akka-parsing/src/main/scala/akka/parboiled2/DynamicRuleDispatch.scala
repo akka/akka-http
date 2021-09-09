@@ -35,7 +35,7 @@ trait DynamicRuleHandler[P <: Parser, L <: HList] extends Parser.DeliveryScheme[
  */
 trait DynamicRuleDispatch[P <: Parser, L <: HList] {
   def apply(handler: DynamicRuleHandler[P, L], ruleName: String): handler.Result =
-    lookup(ruleName).map(_(handler)).getOrElse(handler.ruleNotFound(ruleName))
+    lookup(ruleName).map(_(handler)).getOrElse(handler.ruleNotFound(ruleName)).asInstanceOf[handler.Result] // FIXME: something wrong with Scala 3 type inference
 
   def lookup(ruleName: String): Option[RuleRunner[P, L]]
 }
