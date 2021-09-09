@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,7 @@
 package akka.parboiled2
 
 import scala.annotation.tailrec
-import akka.shapeless._
+import akka.parboiled2.support.hlist._
 
 /**
  * A mutable untyped stack of values.
@@ -65,7 +65,7 @@ class ValueStack private[parboiled2] (initialSize: Int, maxSize: Int) extends It
    */
   @tailrec final def pushAll(hlist: HList): Unit =
     hlist match {
-      case akka.shapeless.::(head, tail) =>
+      case akka.parboiled2.support.hlist.::(head, tail) =>
         push(head)
         pushAll(tail)
       case HNil =>

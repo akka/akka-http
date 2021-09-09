@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package akka.shapeless
+package akka.parboiled2.support.hlist
 package syntax
+
+import akka.parboiled2.support.hlist.ops.hlist.Reverse
 
 /**
  * Carrier for `HList` operations.
@@ -25,13 +27,12 @@ package syntax
  *
  * @author Miles Sabin
  */
-final class HListOps[L <: HList](l: L) {
-  import ops.hlist._
+final class HListOps[L <: HList](l: L) extends Serializable {
 
   /**
    * Prepend the argument element to this `HList`.
    */
-  def ::[H](h: H): H :: L = akka.shapeless.::(h, l)
+  def ::[H](h: H): H :: L = akka.parboiled2.support.hlist.::(h, l)
 
   /**
    * Reverses this `HList`.

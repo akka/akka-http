@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package akka.shapeless
+package akka.parboiled2.support.hlist
 
 /**
  * `HList` ADT base trait.
  *
  * @author Miles Sabin
  */
-sealed trait HList
+sealed trait HList extends Product with Serializable
 
 /**
  * Non-empty `HList` element type.
@@ -29,7 +29,11 @@ sealed trait HList
  * @author Miles Sabin
  */
 final case class ::[+H, +T <: HList](head: H, tail: T) extends HList {
-  override def toString = head.toString + " :: " + tail.toString
+
+  override def toString: String = head match {
+    case _: ::[_, _] => s"($head) :: $tail"
+    case _           => s"$head :: $tail"
+  }
 }
 
 /**
@@ -38,7 +42,7 @@ final case class ::[+H, +T <: HList](head: H, tail: T) extends HList {
  * @author Miles Sabin
  */
 sealed trait HNil extends HList {
-  def ::[H](h: H) = akka.shapeless.::(h, this)
+  def ::[H](h: H): H :: HNil = new ::(h, this)
   override def toString = "HNil"
 }
 
@@ -50,9 +54,11 @@ sealed trait HNil extends HList {
 case object HNil extends HNil
 
 object HList {
-  import syntax.HListOps
+  import akka.parboiled2.support.hlist.syntax.HListOps
 
-  def apply() = HNil
+  def apply(): HNil.type = HNil
+
+  def apply[T](t: T): T :: HNil = t :: HNil
 
   implicit def hlistOps[L <: HList](l: L): HListOps[L] = new HListOps(l)
 
@@ -61,6 +67,6 @@ object HList {
    */
   object ListCompat {
     val :: = scala.collection.immutable.::
-    val #: = akka.shapeless.::
+    val #: = akka.parboiled2.support.hlist.::
   }
 }

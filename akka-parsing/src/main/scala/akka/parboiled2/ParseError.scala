@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,8 @@ package akka.parboiled2
 import scala.annotation.tailrec
 import scala.collection.immutable
 
-case class ParseError(
-  position:          Position,
-  principalPosition: Position,
-  traces:            immutable.Seq[RuleTrace]) extends RuntimeException {
+case class ParseError(position: Position, principalPosition: Position, traces: immutable.Seq[RuleTrace])
+  extends RuntimeException {
   require(principalPosition.index >= position.index, "principalPosition must be > position")
   def format(parser: Parser): String = format(parser.input)
   def format(parser: Parser, formatter: ErrorFormatter): String = format(parser.input, formatter)
@@ -49,6 +47,7 @@ case class ParseError(
 case class Position(index: Int, line: Int, column: Int)
 
 object Position {
+
   def apply(index: Int, input: ParserInput): Position = {
     @tailrec def rec(ix: Int, line: Int, col: Int): Position =
       if (ix >= index) Position(index, line, col)

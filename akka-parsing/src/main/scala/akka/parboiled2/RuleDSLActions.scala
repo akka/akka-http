@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,10 @@
 
 package akka.parboiled2
 
-import scala.reflect.internal.annotations.compileTimeOnly
-import akka.shapeless.ops.hlist.Prepend
+import scala.annotation.compileTimeOnly
+import akka.parboiled2.support.hlist.ops.hlist.Prepend
 import akka.parboiled2.support._
-import akka.shapeless._
+import akka.parboiled2.support.hlist._
 
 trait RuleDSLActions {
 
@@ -82,6 +82,7 @@ trait RuleDSLActions {
 
   @compileTimeOnly("Calls to `rule2ActionOperator` must be inside `rule` macro")
   implicit def rule2ActionOperator[I <: HList, O <: HList](r: Rule[I, O])(implicit ops: ActionOps[I, O]): ActionOperator[I, O, ops.Out] = `n/a`
+
   sealed trait ActionOperator[I <: HList, O <: HList, Ops] {
     def ~> : Ops
   }

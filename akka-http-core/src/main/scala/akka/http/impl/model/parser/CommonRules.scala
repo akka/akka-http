@@ -10,7 +10,7 @@ import scala.collection.immutable.TreeMap
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.parboiled2._
-import akka.shapeless._
+import akka.parboiled2.support.hlist._
 
 private[parser] trait CommonRules { this: HeaderParser with Parser with StringBuilding =>
   import CharacterClasses._
