@@ -328,7 +328,7 @@ private[client] object NewHostConnectionPool {
                     OptionVal.Some(Event.onResponseEntityCompleted)
                   case Unconnected if currentEmbargo != Duration.Zero =>
                     OptionVal.Some(Event.onNewConnectionEmbargo.preApply(currentEmbargo))
-                  case s if !s.isConnected && s.isIdle && numConnectedSlots < settings.minConnections =>
+                  case s if !s.isConnected && s.isIdle && settings.minConnections > 0 && numConnectedSlots < settings.minConnections =>
                     debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
                     OptionVal.Some(Event.onPreConnect)
                   case _ => OptionVal.None
