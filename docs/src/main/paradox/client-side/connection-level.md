@@ -1,7 +1,7 @@
 # Connection-Level Client-Side API
 
 The connection-level API is the lowest-level client-side API Akka HTTP provides. It gives you full control over when
-HTTP connections are opened and closed and how requests are to be send across which connection. As such it offers the
+HTTP connections are opened and closed and how requests are to be sent across which connection. As such it offers the
 highest flexibility at the cost of providing the least convenience.
 
 @@@ note
