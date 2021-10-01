@@ -45,7 +45,7 @@ requests targeting HTTP endpoints, but we have not yet found a proxy that in fac
 Instantiate the HTTP(S) proxy transport using `ClientTransport.httpsProxy(proxyAddress)`.
 
 The proxy transport can also be setup using `ClientTransport.httpsProxy()` or `ClientTransport.httpsProxy(basicHttpCredentials)`
-In order to defined the transport as such, you will need to set the proxy host / port in your `conf` file like the following.
+In order to define the transport as such, you will need to set the proxy host / port in your `conf` file like the following.
 
 ```
 akka.http.client.proxy {
