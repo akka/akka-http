@@ -168,7 +168,7 @@ demand with constant memory usage on the server. This can be seen using curl and
 
 Akka HTTP routes easily interact with actors. In this example one route allows for placing bids in a fire-and-forget
 style while the second route contains a request-response interaction with an actor. The resulting response is rendered
-as json and returned when the response arrives from the actor.
+as JSON and returned when the response arrives from the actor.
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerWithActorInteraction.scala)
