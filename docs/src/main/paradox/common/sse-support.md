@@ -37,7 +37,7 @@ In accordance to the SSE specification Akka HTTP also provides the @scala[`Last-
 
 ## Server-side usage: marshalling
 
-In order to respond to a HTTP request with an event stream, you have to
+In order to respond to an HTTP request with an event stream, you have to
 @scala[bring the implicit `ToResponseMarshaller[Source[ServerSentEvent, \_]]` defined by @apidoc[EventStreamMarshalling] into the scope defining the respective route]@java[use the `EventStreamMarshalling.toEventStream` marshaller]:
 
 Scala
