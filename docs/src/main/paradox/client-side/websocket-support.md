@@ -1,6 +1,6 @@
 # Client-Side WebSocket Support
 
-Client side WebSocket support is available through @scala[`Http().singleWebSocketRequest`]@java[`Http.get(system).singleWebSocketRequest`],
+Client-side WebSocket support is available through @scala[`Http().singleWebSocketRequest`]@java[`Http.get(system).singleWebSocketRequest`],
 @scala[`Http().webSocketClientFlow`]@java[`Http.get(system).webSocketClientFlow`] and @scala[`Http().webSocketClientLayer`]@java[`Http.get(system).webSocketClientLayer`].
 
 A WebSocket consists of two streams of messages, incoming messages (a @apidoc[Sink]) and outgoing messages
