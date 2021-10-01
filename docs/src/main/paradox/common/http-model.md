@@ -94,7 +94,7 @@ In order to work around these types of edge cases, Akka HTTP provides for the ab
 non-standard information to the request via synthetic headers. These headers are not passed to the client
 but are instead consumed by the request engine and used to override default behavior.
 
-For instance, in order to provide a raw request uri, bypassing the default url normalization, you could do the
+For instance, in order to provide a raw request URI, bypassing the default URL normalization, you could do the
 following:
 
 Scala
