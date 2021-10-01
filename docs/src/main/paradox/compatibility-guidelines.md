@@ -14,7 +14,7 @@ For more information and a detailed discussion of these rules and guarantees ple
 ### Components with no Binary Compatibility Guarantee
 
 The following components and modules don't have the previously mentioned binary compatibility guaranteed within minor or
-patch versions. However, binary compatibility will attempted to be kept as much as possible.
+patch versions. However, binary compatibility will be attempted to be kept as much as possible.
 
 #### akka-http
 
