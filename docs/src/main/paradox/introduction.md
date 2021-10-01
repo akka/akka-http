@@ -199,7 +199,7 @@ Read more details about the low level APIs in the section @ref[Core Server API](
 
 ## HTTP Client API
 
-The client APIs provide methods for calling a HTTP server using the same @apidoc[HttpRequest] and @apidoc[HttpResponse] abstractions
+The client APIs provide methods for calling an HTTP server using the same @apidoc[HttpRequest] and @apidoc[HttpResponse] abstractions
 that Akka HTTP server uses but adds the concept of connection pools to allow multiple requests to the same server to be
 handled more performantly by re-using TCP connections to the server.
 
