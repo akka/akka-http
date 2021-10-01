@@ -43,7 +43,7 @@ processing rate. This can have all kinds of causes (and hints for fixing them in
 The last point may need a bit more explanation. If some requests are much slower than others, e.g. if the request is
 a long-running Server Sent Events request than this will block one of the connections of the pool for a long time. If
 there are multiple such requests going on at the same time it will lead to starvation and other requests cannot make any
-progress any more. Make sure to run a long-running request on a dedicated connection (using the
+progress anymore. Make sure to run a long-running request on a dedicated connection (using the
 @ref[Connection-Level Client-Side API](connection-level.md)) to prevent such a situation.
 
 ## Why does this happen only with Akka Http and not with [insert other client]
