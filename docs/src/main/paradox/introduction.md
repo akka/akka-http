@@ -75,7 +75,7 @@ request.
 
 For example one route might start with matching the `path` of the request, only matching if it is "/hello", then
 narrowing it down to only handle HTTP `get` requests and then `complete` those with a string literal, which
-will be sent back as a HTTP OK with the string as response body.
+will be sent back as an HTTP OK with the string as response body.
 
 The
 @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]
