@@ -139,7 +139,7 @@ Similar to the @ref[server-side kee-alive Ping support](../server-side/websocket
 it is possible to configure the client-side to perform automatic keep-alive using Ping (or Pong) frames.
 
 This is supported in a transparent way via configuration by setting the: 
-`akka.http.client.websocket.periodic-keep-alive-max-idle = 1 second` to a specified max idle timeout. The keep alive triggers
+`akka.http.client.websocket.periodic-keep-alive-max-idle = 1 second` to a specified max idle timeout. The keep-alive triggers
 when no other messages are in-flight during the such configured period. Akka HTTP will then automatically send
 a [`Ping` frame](https://tools.ietf.org/html/rfc6455#section-5.5.2) for each of such idle intervals.
 
