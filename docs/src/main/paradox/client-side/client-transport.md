@@ -72,7 +72,7 @@ Java
 
 ### Use HTTP(S) proxy that requires authentication
 
-In order to use a HTTP(S) proxy that requires authentication, you need to provide @apidoc[HttpCredentials] that will be used
+In order to use an HTTP(S) proxy that requires authentication, you need to provide @apidoc[HttpCredentials] that will be used
 when making the CONNECT request to the proxy:
 
 
