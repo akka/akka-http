@@ -327,8 +327,7 @@ private[client] object NewHostConnectionPool {
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntityCompleted)
                   case Unconnected if currentEmbargo != Duration.Zero =>
-                    OptionVal.Some(Event.onNewConnectionEmbargo.preApply(currentEmbargo))
-                  
+                    OptionVal.Some(Event.onNewConnectionEmbargo.preApply(currentEmbargo))                 
                   // numConnectedSlots might be slow for big numbers of connections, so avoid calling if minConnections feature is disabled
                   case s if !s.isConnected && s.isIdle && settings.minConnections > 0 && numConnectedSlots < settings.minConnections =>
                     debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
