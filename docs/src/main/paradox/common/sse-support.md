@@ -1,7 +1,7 @@
 # Server-Sent Events Support
 
 Server-Sent Events (SSE) is a lightweight and [standardized](https://www.w3.org/TR/eventsource/)
-protocol for pushing notifications from a HTTP server to a client. In contrast to WebSocket, which
+protocol for pushing notifications from an HTTP server to a client. In contrast to WebSocket, which
 offers bi-directional communication, SSE only allows for one-way communication from the server to
 the client. If that's all you need, SSE has the advantages to be much simpler, to rely on HTTP only
 and to offer retry semantics on broken connections by the browser.
@@ -37,7 +37,7 @@ In accordance to the SSE specification Akka HTTP also provides the @scala[`Last-
 
 ## Server-side usage: marshalling
 
-In order to respond to a HTTP request with an event stream, you have to
+In order to respond to an HTTP request with an event stream, you have to
 @scala[bring the implicit `ToResponseMarshaller[Source[ServerSentEvent, \_]]` defined by @apidoc[EventStreamMarshalling] into the scope defining the respective route]@java[use the `EventStreamMarshalling.toEventStream` marshaller]:
 
 Scala

@@ -14,7 +14,7 @@ For more information and a detailed discussion of these rules and guarantees ple
 ### Components with no Binary Compatibility Guarantee
 
 The following components and modules don't have the previously mentioned binary compatibility guaranteed within minor or
-patch versions. However, binary compatibility will attempted to be kept as much as possible.
+patch versions. However, binary compatibility will be attempted to be kept as much as possible.
 
 #### akka-http
 
@@ -113,7 +113,7 @@ Java
 ## Versioning and Compatibility
 
 Starting from version 10.1.0, there will be two active release branches:
-- The "current" release line (in master), where we will basically continue to evolve Akka HTTP in the same way as currently. New features will introduced here incrementally.
+- The "current" release line (in master), where we will basically continue to evolve Akka HTTP in the same way as currently. New features will be introduced here incrementally.
 - The "previous" release line (in a release-10.x branch), where the focus is on stability. We will continue to maintain the previous release by fixing serious bugs but it will not see new features. Previous releases will see less frequent releases over time.
 
 It is planned to rotate versions in an annual fashion. Meaning a new minor version will be created every year.

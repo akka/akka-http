@@ -75,7 +75,7 @@ request.
 
 For example one route might start with matching the `path` of the request, only matching if it is "/hello", then
 narrowing it down to only handle HTTP `get` requests and then `complete` those with a string literal, which
-will be sent back as a HTTP OK with the string as response body.
+will be sent back as an HTTP OK with the string as response body.
 
 The
 @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]
@@ -129,8 +129,8 @@ for details):
 @@@
 
 A common use case is to reply to a request using a model object having the marshaller transform it into JSON. In
-this case shown by two separate routes. The first route queries an asynchronous database and marshalls the
-@scala[`Future[Option[Item]]`]@java[`CompletionStage<Optional<Item>>`] result into a JSON response. The second unmarshalls an `Order` from the incoming request,
+this case shown by two separate routes. The first route queries an asynchronous database and marshals the
+@scala[`Future[Option[Item]]`]@java[`CompletionStage<Optional<Item>>`] result into a JSON response. The second unmarshals an `Order` from the incoming request,
 saves it to the database and replies with an OK when done.
 
 Scala
@@ -168,7 +168,7 @@ demand with constant memory usage on the server. This can be seen using curl and
 
 Akka HTTP routes easily interact with actors. In this example one route allows for placing bids in a fire-and-forget
 style while the second route contains a request-response interaction with an actor. The resulting response is rendered
-as json and returned when the response arrives from the actor.
+as JSON and returned when the response arrives from the actor.
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpServerWithActorInteraction.scala)
@@ -199,7 +199,7 @@ Read more details about the low level APIs in the section @ref[Core Server API](
 
 ## HTTP Client API
 
-The client APIs provide methods for calling a HTTP server using the same @apidoc[HttpRequest] and @apidoc[HttpResponse] abstractions
+The client APIs provide methods for calling an HTTP server using the same @apidoc[HttpRequest] and @apidoc[HttpResponse] abstractions
 that Akka HTTP server uses but adds the concept of connection pools to allow multiple requests to the same server to be
 handled more performantly by re-using TCP connections to the server.
 

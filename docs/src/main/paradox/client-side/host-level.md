@@ -184,7 +184,7 @@ about what to do when requests fail because the queue overflowed (e.g. try again
 
 ### Using the host-level API in a streaming fashion
 
-Even better is it to use the streaming API directly. This will mostly prevent intermediate buffers as data can be
+It is even better to use the streaming API directly. This will mostly prevent intermediate buffers as data can be
 generated "on-the-fly" while streaming the requests. You supply the requests as a stream, i.e. as a @apidoc[Source[(HttpRequest, ...)]], and
 the pool will "pull out" single requests when capacity is available on one of the connections to the host.
 

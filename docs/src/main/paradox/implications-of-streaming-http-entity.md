@@ -7,7 +7,7 @@ and @apidoc[HttpResponse] and their @apidoc[HttpEntity] APIs.
 This has surprising implications if you are used to non-streaming / not-reactive HTTP clients.
 Specifically it means that: "*lack of consumption of the HTTP Entity, is signaled as back-pressure to the other
 side of the connection*". This is a feature, as it allows one only to consume the entity, and back-pressure servers/clients
-from overwhelming our application, possibly causing un-necessary buffering of the entity in memory.
+from overwhelming our application, possibly causing unnecessary buffering of the entity in memory.
 
 Put another way: Streaming *all the way through* is a feature of Akka HTTP that allows consuming 
 entities (and pulling them through the network) in a streaming fashion, and only *on demand* when the client is 

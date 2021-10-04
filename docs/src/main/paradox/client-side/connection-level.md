@@ -1,7 +1,7 @@
 # Connection-Level Client-Side API
 
 The connection-level API is the lowest-level client-side API Akka HTTP provides. It gives you full control over when
-HTTP connections are opened and closed and how requests are to be send across which connection. As such it offers the
+HTTP connections are opened and closed and how requests are to be sent across which connection. As such it offers the
 highest flexibility at the cost of providing the least convenience.
 
 @@@ note
@@ -73,7 +73,7 @@ Due to its Reactive-Streams-based nature the Akka HTTP layer is fully detachable
 interface. While in most applications this "feature" will not be crucial it can be useful in certain cases to be able
 to "run" the HTTP layer (and, potentially, higher-layers) against data that do not come from the network but rather
 some other source. Potential scenarios where this might be useful include tests, debugging or low-level event-sourcing
-(e.g by replaying network traffic).
+(e.g. by replaying network traffic).
 
 On the client-side the stand-alone HTTP layer forms a `BidiStage` stage that "upgrades" a potentially encrypted raw connection to the HTTP level.
 It is defined like this:

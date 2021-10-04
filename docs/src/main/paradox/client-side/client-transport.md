@@ -45,7 +45,7 @@ requests targeting HTTP endpoints, but we have not yet found a proxy that in fac
 Instantiate the HTTP(S) proxy transport using `ClientTransport.httpsProxy(proxyAddress)`.
 
 The proxy transport can also be setup using `ClientTransport.httpsProxy()` or `ClientTransport.httpsProxy(basicHttpCredentials)`
-In order to defined the transport as such, you will need to set the proxy host / port in your `conf` file like the following.
+In order to define the transport as such, you will need to set the proxy host / port in your `conf` file like the following.
 
 ```
 akka.http.client.proxy {
@@ -56,7 +56,7 @@ akka.http.client.proxy {
 }
 ```
 
-If host is left as `""` and you attempt to setup a httpsProxy transport, an exception will be thrown.
+If host is left as `""` and you attempt to setup an httpsProxy transport, an exception will be thrown.
 
 <a id="use-https-proxy-with-http-singlerequest"></a>
 ### Use HTTP(S) proxy with @scala[`Http().singleRequest`]@java[`Http.get(...).singleRequest`]
@@ -72,7 +72,7 @@ Java
 
 ### Use HTTP(S) proxy that requires authentication
 
-In order to use a HTTP(S) proxy that requires authentication, you need to provide @apidoc[HttpCredentials] that will be used
+In order to use an HTTP(S) proxy that requires authentication, you need to provide @apidoc[HttpCredentials] that will be used
 when making the CONNECT request to the proxy:
 
 

@@ -4,7 +4,7 @@
 Illegal request, responding with status '501 Not Implemented': Unsupported HTTP method: PRI
 ```
 
-This indicates that a HTTP/2 request was received, but the server was not
+This indicates that an HTTP/2 request was received, but the server was not
 correctly set up to handle those. You may have to:
 
 * Make sure the @ref[`akka.http.server.preview.enable-http2` option](../server-side/http2.md#enable-http-2-support) is enabled

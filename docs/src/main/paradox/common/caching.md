@@ -3,11 +3,11 @@
 Akka HTTP's caching support provides a lightweight and fast in-memory caching
 functionality based on futures. The primary use-case is the "wrapping" of an
 expensive operation with a caching layer that, based on a certain key of type
-`K`, runs the wrapped operation only once and returns the the cached value for
+`K`, runs the wrapped operation only once and returns the cached value for
 all future accesses for the same key (as long as the respective entry has not
 expired).
 
-Akka HTTP comes with one implementations of the @apidoc[Cache] API built on [Caffeine]
+Akka HTTP comes with one implementation of the @apidoc[Cache] API built on [Caffeine]
 featuring frequency-biased cache eviction semantics with support for
 time-based entry expiration.
 
