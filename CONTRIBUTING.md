@@ -16,7 +16,7 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – active development branch of akka-http 10.2.x
+* `main` – active development branch of akka-http 10.2.x
 * `release-10.1` – branch for fixes to akka-http 10.1.x
 
 ## Tags
@@ -64,7 +64,7 @@ You can read its full text here: [Lightbend Community Code of Conduct](https://w
 
 ## General Workflow
 
-The below steps are how to get a patch into a main development branch (e.g. `master`). 
+The below steps are how to get a patch into a `main` development branch.
 The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 
 1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka-http/issues) and [existing pull requests](https://github.com/akka/akka-http/pulls) for existing work.
@@ -114,14 +114,14 @@ To use the task simply type, and the output should include entries like shown be
 [info] Detected changes in directories: [docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
 ```
 
-By default changes are diffed with the `master` branch when working locally, if you want to validate against a different
+By default changes are diffed with the `main` branch when working locally, if you want to validate against a different
 target PR branch you can do so by setting the PR_TARGET_BRANCH environment variable for SBT:
 
 ```
 PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
-## Developing against Akka `master`
+## Developing against Akka `main`
 
 Since Akka HTTP is released separately to Akka "core" yet some features require changes in Akka itself, it is sometimes very useful
 to be able to develop Akka HTTP with Akka's sources used directly instead of the binary dependency. You can check out the Akka 
@@ -185,7 +185,7 @@ Some additional guidelines regarding source code are:
 - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html).
   - Contributors , each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc.
 
-If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
+If these requirements are not met then the code should **not** be merged into `main`, or even reviewed - regardless of how good or important it is. No exceptions.
 
 Whether or not a pull request (or parts of it) shall be back- or forward-ported will be discussed on the pull request discussion page, it shall therefore not be part of the commit messages. If desired the intent can be expressed in the pull request description.
 
@@ -307,7 +307,7 @@ There is a number of ways timeouts can be defined in Akka tests. The following w
 
 Special care should be given `expectNoMessage` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`.
 
-You can read up on remaining and friends in [TestKit.scala](https://github.com/akka/akka/blob/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala)
+You can read up on remaining and friends in [TestKit.scala](https://github.com/akka/akka/blob/main/akka-testkit/src/main/scala/akka/testkit/TestKit.scala)
 
 # Supporting infrastructure
 

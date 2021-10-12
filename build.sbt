@@ -155,7 +155,7 @@ lazy val httpCore = project("akka-http-core")
     "akka-stream-testkit",
     "test",
     akka =
-      if (System.getProperty("akka.http.test-against-akka-master", "false") == "true") AkkaDependency.masterSnapshot
+      if (System.getProperty("akka.http.test-against-akka-main", "false") == "true") AkkaDependency.masterSnapshot
       else AkkaDependency.default
   )
   .settings(Dependencies.httpCore)
