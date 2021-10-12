@@ -13,14 +13,14 @@ concurrency:
 
 jobs:
   formatting-check:
-    name: Check for missing formatting
+    name: Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up JDK 8
-        uses: olafurpg/setup-scala@v10
+      - name: Set up Scala on JDK 8
+        uses: olafurpg/setup-scala@v13
         with:
           java-version: adopt@1.8
 
