@@ -325,3 +325,42 @@ Snapshots are published to a snapshot repository. See the latest information abo
 * [Akka Contributor License Agreement](https://www.lightbend.com/contribute/cla)
 * [Akka HTTP Issue Tracker](https://github.com/akka/akka-http/issues)
 * [Scalariform](https://github.com/scala-ide/scalariform)
+
+# Development tools
+
+## HTTP/2
+
+A great tool to inspect HTTP/2 frames of real-world connections is
+[Wireshark](https://www.wireshark.org).
+
+### HTTPS
+
+When analyzing an HTTPS connection, you need a way to see the plaintext
+payloads. You can enable logging those on the Akka HTTP side with
+`akka.http.server.log-unencrypted-network-bytes = 100` or
+`akka.http.server.http2.log-frames = true` (same for client-side).
+
+To see the traffic in Wireshark, some clients can be configured to dump an
+`SSLKEYLOGFILE` that Wireshark
+[can use](https://wiki.wireshark.org/TLS#Using_the_.28Pre.29-Master-Secret)
+to decrypt the traffic.
+
+[mitmproxy](https://mitmproxy.org) is a nice tool to inspect HTTPS traffic,
+and supports dumping the SSLKEYLOGFILE. However, since it 'understands' HTTP,
+it might not be 'transparent' enough: especially when diagnosing protocol
+errors, adding this proxy might interfere with reproducing the problem.
+
+[sslsplit](https://www.roe.ch/SSLsplit) should be able to dump an intercepted
+stream to a pcap file directly, but currently its `https` proxy mode does not
+bridge the ALPN negotiation, so connections will downgrade to HTTP/1.1. This
+might be fixed when they [add HTTP/2 support](https://github.com/droe/sslsplit/issues/218)
+
+[alpnpass](https://github.com/VerSprite/alpnpass) can be used to intercept
+the plaintext traffic in Wireshark: you can set its `InterceptorPort` to
+the same value as the `ReturnPort` and then sniff the loopback interface and
+filter on that port.
+
+### golang
+
+When testing against a Go application, running with the environment variable
+`GODEBUG` set to `http2debug=2` enabled additional logging on the Go side
