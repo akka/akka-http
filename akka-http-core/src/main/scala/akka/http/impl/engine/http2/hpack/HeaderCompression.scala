@@ -32,7 +32,6 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
     val encoder = new akka.http.shaded.com.twitter.hpack.Encoder(Http2Protocol.InitialMaxHeaderTableSize)
     val os = new ByteArrayOutputStream(128)
 
-<<<<<<< HEAD
     def onPull(): Unit = pull(eventsIn)
     def onPush(): Unit = grab(eventsIn) match {
       case ack @ SettingsAckFrame(s) =>
