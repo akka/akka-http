@@ -37,7 +37,7 @@ jobs:
         run: sbt +headerCreateAll +scalariformFormat +test:scalariformFormat
 
       - name: Check for missing formatting
-        run: bash -c "git diff --exit-code --color || { echo \"[error] Unformatted code found. Please run 'sbt +headerCreate +test:headerCreate +scalariformFormat +test:scalariformFormat' and commit the reformatted code.\"; false; }"
+        run: git diff --exit-code --color
 
       - name: FOSSA policy check
         if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == 'akka/akka-http' }}
