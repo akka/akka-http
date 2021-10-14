@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.headers._
 import akka.parboiled2._
 import akka.shapeless._
 
-private[parser] trait CommonRules { this: Parser with StringBuilding =>
+private[parser] trait CommonRules { this: HeaderParser with Parser with StringBuilding =>
   import CharacterClasses._
 
   // ******************************************************************************************
@@ -49,14 +49,16 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
   def `quoted-pair` = rule { '\\' ~ (`quotable-base` | `obs-text`) ~ appendSB() }
 
   // builds a string via the StringBuilding StringBuilder
-  def comment: Rule0 = rule {
-    ws('(') ~ clearSB() ~ zeroOrMore(ctext | `quoted-cpair` | `nested-comment`) ~ ws(')')
+  def comment(maxNesting: Int = maxCommentParsingDepth): Rule0 = rule {
+    ws('(') ~ clearSB() ~ zeroOrMore(ctext | `quoted-cpair` | `nested-comment`(maxNesting)) ~ ws(')')
   }
 
-  def `nested-comment` = {
-    var saved: String = null
-    rule { &('(') ~ run { saved = sb.toString } ~ (comment ~ prependSB(saved + " (") ~ appendSB(')') | setSB(saved) ~ test(false)) }
-  }
+  def `nested-comment`(maxNesting: Int) =
+    if (maxNesting == 0) throw new ParsingException(ErrorInfo("Illegal header value", "Header comment nested too deeply"))
+    else {
+      var saved: String = null
+      rule { &('(') ~ run { saved = sb.toString } ~ (comment(maxNesting - 1) ~ prependSB(saved + " (") ~ appendSB(')') | setSB(saved) ~ test(false)) }
+    }
 
   def ctext = rule { (`ctext-base` | `obs-text`) ~ appendSB() }
 
@@ -394,9 +396,9 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
   def `product-version` = rule { token }
 
   def `product-or-comment` = rule(
-    product ~ comment ~> (ProductVersion(_, _, sb.toString))
+    product ~ comment() ~> (ProductVersion(_, _, sb.toString))
       | product ~> (ProductVersion(_, _))
-      | comment ~ push(ProductVersion("", "", sb.toString)))
+      | comment() ~ push(ProductVersion("", "", sb.toString)))
 
   def products = rule {
     `product-or-comment` ~ zeroOrMore(`product-or-comment`) ~> (_ +: _)

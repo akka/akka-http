@@ -27,6 +27,7 @@ private[akka] final case class ParserSettingsImpl(
   maxToStrictBytes:                           Long,
   maxChunkExtLength:                          Int,
   maxChunkSize:                               Int,
+  maxCommentParsingDepth:                     Int,
   uriParsingMode:                             Uri.ParsingMode,
   cookieParsingMode:                          CookieParsingMode,
   illegalHeaderWarnings:                      Boolean,
@@ -53,6 +54,7 @@ private[akka] final case class ParserSettingsImpl(
   require(maxContentLengthSetting.forall(_ > 0), "if set max-content-length must be > 0")
   require(maxChunkExtLength > 0, "max-chunk-ext-length must be > 0")
   require(maxChunkSize > 0, "max-chunk-size must be > 0")
+  require(maxCommentParsingDepth > 0, "max-comment-parsing-depth must be > 0")
 
   override val defaultHeaderValueCacheLimit: Int = headerValueCacheLimits("default")
 
@@ -92,6 +94,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
       c.getPossiblyInfiniteBytes("max-to-strict-bytes"),
       c.getIntBytes("max-chunk-ext-length"),
       c.getIntBytes("max-chunk-size"),
+      c.getInt("max-comment-parsing-depth"),
       Uri.ParsingMode(c.getString("uri-parsing-mode")),
       CookieParsingMode(c.getString("cookie-parsing-mode")),
       c.getBoolean("illegal-header-warnings"),

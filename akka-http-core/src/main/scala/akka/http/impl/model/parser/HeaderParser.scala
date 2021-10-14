@@ -42,6 +42,7 @@ private[http] class HeaderParser(
   import CharacterClasses._
 
   override def customMediaTypes = settings.customMediaTypes
+  protected def maxCommentParsingDepth: Int = settings.maxCommentParsingDepth
 
   // http://www.rfc-editor.org/errata_search.php?rfc=7230 errata id 4189
   def `header-field-value`: Rule1[String] = rule {
@@ -191,19 +192,22 @@ private[http] object HeaderParser {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
     def customMediaTypes: MediaTypes.FindCustom
+    def maxCommentParsingDepth: Int
     def illegalResponseHeaderNameProcessingMode: IllegalResponseHeaderNameProcessingMode
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
   }
   def Settings(
-    uriParsingMode:    Uri.ParsingMode                          = Uri.ParsingMode.Relaxed,
-    cookieParsingMode: ParserSettings.CookieParsingMode         = ParserSettings.CookieParsingMode.RFC6265,
-    customMediaTypes:  MediaTypes.FindCustom                    = ConstantFun.scalaAnyTwoToNone,
-    modeValue:         IllegalResponseHeaderValueProcessingMode = ParserSettings.IllegalResponseHeaderValueProcessingMode.Error,
-    modeName:          IllegalResponseHeaderNameProcessingMode  = ParserSettings.IllegalResponseHeaderNameProcessingMode.Error): Settings = {
+    uriParsingMode:         Uri.ParsingMode                          = Uri.ParsingMode.Relaxed,
+    cookieParsingMode:      ParserSettings.CookieParsingMode         = ParserSettings.CookieParsingMode.RFC6265,
+    customMediaTypes:       MediaTypes.FindCustom                    = ConstantFun.scalaAnyTwoToNone,
+    maxCommentParsingDepth: Int                                      = 5,
+    modeValue:              IllegalResponseHeaderValueProcessingMode = ParserSettings.IllegalResponseHeaderValueProcessingMode.Error,
+    modeName:               IllegalResponseHeaderNameProcessingMode  = ParserSettings.IllegalResponseHeaderNameProcessingMode.Error): Settings = {
 
     val _uriParsingMode = uriParsingMode
     val _cookieParsingMode = cookieParsingMode
     val _customMediaTypes = customMediaTypes
+    val _maxCommentParsingDepth = maxCommentParsingDepth
     val _illegalResponseHeaderValueProcessingMode = modeValue
     val _illegalResponseHeaderNameProcessingMode = modeName
 
@@ -211,6 +215,7 @@ private[http] object HeaderParser {
       def uriParsingMode: Uri.ParsingMode = _uriParsingMode
       def cookieParsingMode: CookieParsingMode = _cookieParsingMode
       def customMediaTypes: MediaTypes.FindCustom = _customMediaTypes
+      def maxCommentParsingDepth: Int = _maxCommentParsingDepth
 
       def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode =
         _illegalResponseHeaderValueProcessingMode
