@@ -38,32 +38,37 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
         applySettings(s)
         push(eventsOut, ack)
       case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) =>
-        kvs.foreach {
-          case (key, value: String) =>
-            encoder.encodeHeader(os, key, value, false)
-          case (key, value) =>
-            throw new IllegalStateException(s"Didn't expect key-value-pair [$key] -> [$value](${value.getClass}) here.")
-        }
-        val result = ByteString.fromArrayUnsafe(os.toByteArray) // BAOS.toByteArray always creates a copy
-        os.reset()
-        if (result.size <= currentMaxFrameSize) push(eventsOut, HeadersFrame(streamId, endStream, endHeaders = true, result, prioInfo))
+        // When ending the stream without any payload, use a DATA frame rather than
+        // a HEADERS frame to work around https://github.com/golang/go/issues/47851.
+        if (endStream && kvs.isEmpty) push(eventsOut, DataFrame(streamId, endStream, ByteString.empty))
         else {
-          val first = HeadersFrame(streamId, endStream, endHeaders = false, result.take(currentMaxFrameSize), prioInfo)
+          kvs.foreach {
+            case (key, value: String) =>
+              encoder.encodeHeader(os, key, value, false)
+            case (key, value) =>
+              throw new IllegalStateException(s"Didn't expect key-value-pair [$key] -> [$value](${value.getClass}) here.")
+          }
+          val result = ByteString.fromArrayUnsafe(os.toByteArray) // BAOS.toByteArray always creates a copy
+          os.reset()
+          if (result.size <= currentMaxFrameSize) push(eventsOut, HeadersFrame(streamId, endStream, endHeaders = true, result, prioInfo))
+          else {
+            val first = HeadersFrame(streamId, endStream, endHeaders = false, result.take(currentMaxFrameSize), prioInfo)
 
-          push(eventsOut, first)
-          setHandler(eventsOut, new OutHandler {
-            private var remainingData = result.drop(currentMaxFrameSize)
+            push(eventsOut, first)
+            setHandler(eventsOut, new OutHandler {
+              private var remainingData = result.drop(currentMaxFrameSize)
 
-            def onPull(): Unit = {
-              val thisFragment = remainingData.take(currentMaxFrameSize)
-              val rest = remainingData.drop(currentMaxFrameSize)
-              val last = rest.isEmpty
+              def onPull(): Unit = {
+                val thisFragment = remainingData.take(currentMaxFrameSize)
+                val rest = remainingData.drop(currentMaxFrameSize)
+                val last = rest.isEmpty
 
-              push(eventsOut, ContinuationFrame(streamId, endHeaders = last, thisFragment))
-              if (last) setHandler(eventsOut, logic)
-              else remainingData = rest
-            }
-          })
+                push(eventsOut, ContinuationFrame(streamId, endHeaders = last, thisFragment))
+                if (last) setHandler(eventsOut, logic)
+                else remainingData = rest
+              }
+            })
+          }
         }
       case x => push(eventsOut, x)
     }
