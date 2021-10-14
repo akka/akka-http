@@ -8,7 +8,7 @@ import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.impl.model.parser.HeaderParser.Settings
 import org.scalatest.matchers.{ MatchResult, Matcher }
 import akka.http.impl.util._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{ HttpHeader, _ }
 import headers._
 import CacheDirectives._
 import MediaTypes._
@@ -16,8 +16,8 @@ import MediaRanges._
 import HttpCharsets._
 import HttpEncodings._
 import HttpMethods._
-import java.net.InetAddress
 
+import java.net.InetAddress
 import akka.http.scaladsl.model.MediaType.WithOpenCharset
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.freespec.AnyFreeSpec
@@ -819,6 +819,10 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
 
       checkContentType("application/json", ContentType.WithMissingCharset(openJson))
       checkContentType("application/json; charset=UTF-8", ContentType(openJson, HttpCharsets.`UTF-8`))
+    }
+    "fail gracefully for deeply nested header comments" in {
+      parse("User-Agent", "(" * 10000).errors.head shouldEqual
+        ErrorInfo("Illegal HTTP header 'User-Agent': Illegal header value", "Header comment nested too deeply")
     }
   }
 

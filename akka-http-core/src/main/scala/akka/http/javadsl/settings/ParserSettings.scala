@@ -35,6 +35,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def getMaxToStrictBytes: Long
   def getMaxChunkExtLength: Int
   def getMaxChunkSize: Int
+  def getMaxCommentParsingDepth: Int
   def getUriParsingMode: Uri.ParsingMode
   def getCookieParsingMode: ParserSettings.CookieParsingMode
   def getIllegalHeaderWarnings: Boolean
@@ -64,6 +65,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withMaxToStrictBytes(newValue: Long): ParserSettings = self.copy(maxToStrictBytes = newValue)
   def withMaxChunkExtLength(newValue: Int): ParserSettings = self.copy(maxChunkExtLength = newValue)
   def withMaxChunkSize(newValue: Int): ParserSettings = self.copy(maxChunkSize = newValue)
+  def withMaxCommentParsingDepth(newValue: Int): ParserSettings = self.copy(maxCommentParsingDepth = newValue)
   def withUriParsingMode(newValue: Uri.ParsingMode): ParserSettings = self.copy(uriParsingMode = newValue.asScala)
   def withCookieParsingMode(newValue: ParserSettings.CookieParsingMode): ParserSettings = self.copy(cookieParsingMode = newValue.asScala)
   def withIllegalHeaderWarnings(newValue: Boolean): ParserSettings = self.copy(illegalHeaderWarnings = newValue)

@@ -1,0 +1,7 @@
+# Add new setting to @DoNotInherit classes
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getMaxCommentParsingDepth")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.maxCommentParsingDepth")
+
+# Changes to internal classes
+ProblemFilters.exclude[Problem]("akka.http.impl.model.parser.*")
+ProblemFilters.exclude[Problem]("akka.http.impl.settings.*")
