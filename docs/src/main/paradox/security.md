@@ -17,6 +17,10 @@ to ensure that a fix can be provided without delay.
 
 ## Fixed Security Vulnerabilities
 
+### Fixed in Akka HTTP 10.2.7
+
+* @ref:[CVE-2021-42697: Stack overflow while parsing User-Agent header with deeply nested comments](security/2021-CVE-2021-42697-stack-overflow-parsing-user-agent.md)
+
 ### Fixed in Akka HTTP 10.2.4 & 10.1.14
 
 * @ref:[Incorrect handling of Transfer-Encoding header](security/2021-02-24-incorrect-handling-of-Transfer-Encoding-header.md)
