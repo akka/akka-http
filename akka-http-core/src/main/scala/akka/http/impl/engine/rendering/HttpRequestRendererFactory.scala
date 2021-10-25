@@ -47,7 +47,7 @@ private[http] class HttpRequestRendererFactory(
       r ~~ ' ' ~~ protocol ~~ CrLf
     }
 
-    def render(h: HttpHeader) = r ~~ h ~~ CrLf
+    def render(h: HttpHeader) = r ~~ h
 
     @tailrec def renderHeaders(remaining: List[HttpHeader], hostHeaderSeen: Boolean = false,
                                userAgentSeen: Boolean = false, transferEncodingSeen: Boolean = false): Unit =
@@ -107,8 +107,8 @@ private[http] class HttpRequestRendererFactory(
         }
 
         case Nil =>
-          if (!hostHeaderSeen) r ~~ ctx.hostHeader ~~ CrLf
-          if (!userAgentSeen && userAgentHeader.isDefined) r ~~ userAgentHeader.get ~~ CrLf
+          if (!hostHeaderSeen) r ~~ ctx.hostHeader
+          if (!userAgentSeen && userAgentHeader.isDefined) r ~~ userAgentHeader.get
           if (entity.isChunked && !entity.isKnownEmpty && !transferEncodingSeen)
             r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
       }

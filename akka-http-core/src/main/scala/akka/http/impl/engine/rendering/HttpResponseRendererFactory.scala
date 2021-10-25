@@ -38,7 +38,7 @@ private[http] class HttpResponseRendererFactory(
   private val renderDefaultServerHeader: Rendering => Unit =
     serverHeader match {
       case Some(h) =>
-        val bytes = (new ByteArrayRendering(128) ~~ h ~~ CrLf).get
+        val bytes = (new ByteArrayRendering(128) ~~ h).get
         _ ~~ bytes
       case None => _ => ()
     }
@@ -142,7 +142,7 @@ private[http] class HttpResponseRendererFactory(
               case other      => throw new IllegalStateException(s"Unexpected protocol '$other'")
             }
 
-          def render(h: HttpHeader) = r ~~ h ~~ CrLf
+          def render(h: HttpHeader) = r ~~ h
 
           def mustRenderTransferEncodingChunkedHeader =
             entity.isChunked && (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD) && (ctx.requestProtocol == `HTTP/1.1`)
@@ -223,7 +223,7 @@ private[http] class HttpResponseRendererFactory(
             if (renderConnectionHeader)
               r ~~ Connection ~~ (if (close) CloseBytes else KeepAliveBytes) ~~ CrLf
             else if (connHeader != null && connHeader.hasUpgrade) {
-              r ~~ connHeader ~~ CrLf
+              r ~~ connHeader
               HttpHeader.fastFind(classOf[UpgradeToOtherProtocolResponseHeader], headers) match {
                 case OptionVal.Some(header) => closeMode = SwitchToOtherProtocol(header.handler)
                 case _                      => // nothing to do here...

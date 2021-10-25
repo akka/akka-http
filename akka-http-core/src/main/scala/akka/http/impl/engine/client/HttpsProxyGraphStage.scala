@@ -60,7 +60,7 @@ private final class HttpsProxyGraphStage(
     r ~~ "CONNECT " ~~ targetHostName ~~ ':' ~~ targetPort ~~ " HTTP/1.1" ~~ CrLf
     r ~~ "Host: " ~~ targetHostName ~~ CrLf
     proxyAuthorization.foreach { creds =>
-      r ~~ `Proxy-Authorization`(creds) ~~ CrLf
+      r ~~ `Proxy-Authorization`(creds)
     }
     r ~~ CrLf
     r.get
