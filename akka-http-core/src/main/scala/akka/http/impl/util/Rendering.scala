@@ -8,13 +8,13 @@ import java.nio.CharBuffer
 import java.nio.charset.Charset
 import java.text.{ DecimalFormat, DecimalFormatSymbols }
 import java.util.Locale
-
 import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
 import scala.collection.{ LinearSeq, immutable }
 import akka.parboiled2.{ CharPredicate, CharUtils }
 import akka.http.impl.model.parser.CharacterClasses
+import akka.http.scaladsl.model.HttpHeader
 import akka.util.{ ByteString, ByteStringBuilder }
 
 /**
@@ -191,6 +191,19 @@ private[http] trait Rendering {
     rec()
   }
 
+  protected def mark: Int
+  protected def check(mark: Int): Boolean
+  /**
+   * Renders a header safely, i.e. checking that it does not contain any CR of LF characters. If it does
+   * the header should be discarded.
+   */
+  def ~~(header: HttpHeader): this.type = {
+    val m = mark
+    header.render(this)
+    if (check(m)) this ~~ Rendering.CrLf
+    else this
+  }
+
   def ~~[T](value: T)(implicit ev: Renderer[T]): this.type = ev.render(this, value)
 
   /**
@@ -260,14 +273,33 @@ private[http] class StringRendering extends Rendering {
   }
   def ~~(bytes: ByteString): this.type = this ~~ bytes.toArray[Byte]
   def get: String = sb.toString
+
+  override protected def mark: Int = sb.length()
+  override protected def check(mark: Int): Boolean = {
+    val origMark = mark
+
+    @tailrec def rec(mark: Int): Boolean =
+      if (mark < sb.length()) {
+        val ch = sb.charAt(mark)
+        if (ch == '\r' || ch == '\n') {
+          sb.delete(origMark, sb.length())
+          false
+        } else rec(mark + 1)
+      } else true
+
+    rec(mark)
+  }
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
+private[http] class ByteArrayRendering(sizeHint: Int, logDiscardedHeader: String => Unit = _ => ()) extends Rendering {
+  def this(sizeHint: Int) = this(sizeHint, _ => ())
+
   private[this] var array = new Array[Byte](sizeHint)
+
   private[this] var size = 0
 
   def get: Array[Byte] =
@@ -312,13 +344,31 @@ private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
 
   def remainingCapacity: Int = array.length - size
   def asByteString: ByteString = ByteString.ByteString1(array, 0, size)
+
+  override protected def mark: Int = size
+  override protected def check(mark: Int): Boolean = {
+    val origMark = mark
+
+    @tailrec def rec(mark: Int): Boolean =
+      if (mark < size) {
+        if (array(mark) == '\r' || array(mark) == '\n') {
+          logDiscardedHeader("Invalid outgoing header was discarded. " + LogByteStringTools.printByteString(ByteString.fromArray(array, origMark, size - origMark)))
+          size = origMark
+          false
+        } else rec(mark + 1)
+      } else true
+
+    rec(mark)
+  }
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[http] class ByteStringRendering(sizeHint: Int) extends Rendering {
+private[http] class ByteStringRendering(sizeHint: Int, logDiscardedHeader: String => Unit = _ => ()) extends Rendering {
+  def this(sizeHint: Int) = this(sizeHint, _ => ())
+
   private[this] val builder = new ByteStringBuilder
   builder.sizeHint(sizeHint)
 
@@ -337,6 +387,25 @@ private[http] class ByteStringRendering(sizeHint: Int) extends Rendering {
   def ~~(bytes: ByteString): this.type = {
     if (bytes.length > 0) builder ++= bytes
     this
+  }
+
+  override protected def mark: Int = builder.length
+  override protected def check(mark: Int): Boolean = {
+    val origMark = mark
+    val contents = builder.result()
+
+    @tailrec def rec(mark: Int): Boolean =
+      if (mark < builder.length) {
+        val ch = contents(mark)
+        if (ch == '\r' || ch == '\n') {
+          logDiscardedHeader("Invalid outgoing header was discarded. " + LogByteStringTools.printByteString(contents.drop(origMark)))
+          builder.clear()
+          builder.append(contents.take(origMark))
+          false
+        } else rec(mark + 1)
+      } else true
+
+    rec(mark)
   }
 }
 
@@ -387,5 +456,28 @@ private[http] class CustomCharsetByteStringRendering(nioCharset: Charset, sizeHi
       builder.putByteArrayUnsafe(bytes)
     }
     charBuffer.clear()
+  }
+
+  override protected def mark: Int = {
+    flushCharBuffer()
+    builder.length
+  }
+  override protected def check(mark: Int): Boolean = {
+    flushCharBuffer()
+
+    val origMark = mark
+    val contents = builder.result()
+
+    @tailrec def rec(mark: Int): Boolean =
+      if (mark < builder.length) {
+        val ch = contents(mark)
+        if (ch == '\r' || ch == '\n') {
+          builder.clear()
+          builder.append(contents.take(origMark))
+          false
+        } else rec(mark + 1)
+      } else true
+
+    rec(mark)
   }
 }
