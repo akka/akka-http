@@ -9,6 +9,7 @@ import java.nio.charset.Charset
 import java.text.{ DecimalFormat, DecimalFormatSymbols }
 import java.util.Locale
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 
 import scala.annotation.tailrec
 import scala.collection.{ LinearSeq, immutable }
@@ -295,7 +296,7 @@ private[http] class StringRendering extends Rendering {
  * INTERNAL API
  */
 @InternalApi
-private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
+private[http] class ByteArrayRendering(sizeHint: Int, logDiscardedHeader: String => Unit = _ => ()) extends Rendering {
   private[this] var array = new Array[Byte](sizeHint)
   private[this] var size = 0
 
@@ -349,6 +350,7 @@ private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
     @tailrec def rec(mark: Int): Boolean =
       if (mark < size) {
         if (array(mark) == '\r' || array(mark) == '\n') {
+          logDiscardedHeader("Invalid outgoing header was discarded. " + LogByteStringTools.printByteString(ByteString.fromArray(array, origMark, size - origMark)))
           size = origMark
           false
         } else rec(mark + 1)
@@ -362,7 +364,7 @@ private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
  * INTERNAL API
  */
 @InternalApi
-private[http] class ByteStringRendering(sizeHint: Int) extends Rendering {
+private[http] class ByteStringRendering(sizeHint: Int, logDiscardedHeader: String => Unit = _ => ()) extends Rendering {
   private[this] val builder = new ByteStringBuilder
   builder.sizeHint(sizeHint)
 
@@ -392,6 +394,7 @@ private[http] class ByteStringRendering(sizeHint: Int) extends Rendering {
       if (mark < builder.length) {
         val ch = contents(mark)
         if (ch == '\r' || ch == '\n') {
+          logDiscardedHeader("Invalid outgoing header was discarded. " + LogByteStringTools.printByteString(contents.drop(origMark)))
           builder.clear()
           builder.append(contents.take(origMark))
           false

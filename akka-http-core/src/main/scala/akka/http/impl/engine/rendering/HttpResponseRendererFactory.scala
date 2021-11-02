@@ -130,7 +130,7 @@ private[http] class HttpResponseRendererFactory(
         }
 
         def render(ctx: ResponseRenderingContext): StrictOrStreamed = {
-          val r = new ByteArrayRendering(responseHeaderSizeHint)
+          val r = new ByteArrayRendering(responseHeaderSizeHint, log.warning)
 
           import ctx.response._
           val noEntity = entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD

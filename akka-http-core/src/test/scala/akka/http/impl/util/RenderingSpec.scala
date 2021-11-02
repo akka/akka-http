@@ -4,16 +4,18 @@
 
 package akka.http.impl.util
 
+import akka.event.Logging
 import akka.http.scaladsl.model.headers.RawHeader
-import org.scalatest.freespec.AnyFreeSpec
+import akka.testkit.EventFilter
 import org.scalatest.matchers.should.Matchers
 
 import java.nio.charset.Charset
 import scala.reflect.{ ClassTag, classTag }
 
-class RenderingSpec extends AnyFreeSpec with Matchers {
+class RenderingSpec extends AkkaSpecWithMaterializer with Matchers {
+  override protected def failOnSevereMessages: Boolean = true
 
-  "The StringRendering should" - {
+  "The StringRendering should" should {
     "correctly render Ints and Longs to decimal" in {
       (new StringRendering ~~ 0).get shouldEqual "0"
       (new StringRendering ~~ 123456789).get shouldEqual "123456789"
@@ -39,7 +41,7 @@ class RenderingSpec extends AnyFreeSpec with Matchers {
     }
   }
 
-  "Renderings should" - {
+  "Renderings" should {
     trait RenderingSetup {
       type R <: Rendering
       def create(): R
@@ -56,13 +58,13 @@ class RenderingSpec extends AnyFreeSpec with Matchers {
 
     val renderings: Seq[RenderingSetup] = Seq(
       setup(new StringRendering)(_.get),
-      setup(new ByteArrayRendering(1000))(r => new String(r.get)),
-      setup(new ByteStringRendering(1000))(_.get.utf8String),
+      setup(new ByteArrayRendering(1000, Logging(system, "test").warning))(r => new String(r.get)),
+      setup(new ByteStringRendering(1000, Logging(system, "test").warning))(_.get.utf8String),
       setup(new CustomCharsetByteStringRendering(Charset.forName("ISO-8859-1"), 1000))(_.get.utf8String)
     )
 
     renderings.foreach { setup =>
-      setup.tag - {
+      setup.tag should {
         "render correct headers correctly" in {
           val r = setup.create()
           val rendered = setup.result(r ~~ RawHeader("Test", "value"))
@@ -71,13 +73,19 @@ class RenderingSpec extends AnyFreeSpec with Matchers {
         }
         "do not render header with invalid name" in {
           val r = setup.create()
-          val rendered = setup.result(r ~~ RawHeader("X-Broken\r-Header", "value"))
+          val rendered =
+            EventFilter.warning(pattern = "Invalid outgoing header was discarded").intercept {
+              setup.result(r ~~ RawHeader("X-Broken\r-Header", "value"))
+            }
 
           rendered shouldBe ""
         }
         "do not render header with invalid value" in {
           val r = setup.create()
-          val rendered = setup.result(r ~~ RawHeader("Test", "broken\nvalue"))
+          val rendered =
+            EventFilter.warning(pattern = "Invalid outgoing header was discarded").intercept {
+              setup.result(r ~~ RawHeader("Test", "broken\nvalue"))
+            }
 
           rendered shouldBe ""
         }
