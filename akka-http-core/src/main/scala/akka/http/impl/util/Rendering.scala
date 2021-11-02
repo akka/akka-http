@@ -9,7 +9,6 @@ import java.nio.charset.Charset
 import java.text.{ DecimalFormat, DecimalFormatSymbols }
 import java.util.Locale
 import akka.annotation.InternalApi
-import akka.event.LoggingAdapter
 
 import scala.annotation.tailrec
 import scala.collection.{ LinearSeq, immutable }
@@ -297,7 +296,10 @@ private[http] class StringRendering extends Rendering {
  */
 @InternalApi
 private[http] class ByteArrayRendering(sizeHint: Int, logDiscardedHeader: String => Unit = _ => ()) extends Rendering {
+  def this(sizeHint: Int) = this(sizeHint, _ => ())
+
   private[this] var array = new Array[Byte](sizeHint)
+
   private[this] var size = 0
 
   def get: Array[Byte] =
@@ -365,6 +367,8 @@ private[http] class ByteArrayRendering(sizeHint: Int, logDiscardedHeader: String
  */
 @InternalApi
 private[http] class ByteStringRendering(sizeHint: Int, logDiscardedHeader: String => Unit = _ => ()) extends Rendering {
+  def this(sizeHint: Int) = this(sizeHint, _ => ())
+
   private[this] val builder = new ByteStringBuilder
   builder.sizeHint(sizeHint)
 
