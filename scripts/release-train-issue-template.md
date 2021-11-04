@@ -30,7 +30,6 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### Preparing release notes in the documentation / announcement
 
-- [ ] If this is a new minor (not patch) release, rename the 'akka-http-x.x-stable' reporting project in [WhiteSource](https://saas.whitesourcesoftware.com/) accordingly
 - [ ] Create a PR to add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone
 - [ ] Create a draft PR on https://github.com/akka/akka.io with a news item (using the milestones, release notes and `scripts/authors.scala previousVersion master`) and updating `_config.yml`
 - [ ] Release notes PR has been merged
