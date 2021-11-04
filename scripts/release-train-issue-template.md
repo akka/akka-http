@@ -85,4 +85,5 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 - [ ] Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key *of all current compatible branches*.
 - [ ] Forward port release notes from old releases to master
 - [ ] Update Akka HTTP reference in [lightbend-platform-docs](https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt#L149)
+- [ ] Update Akka HTTP reference in [akka-platform-dependencies](https://github.com/lightbend/akka-platform-dependencies/blob/main/project/Dependencies.scala)
 - Close this issue
