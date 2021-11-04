@@ -27,7 +27,6 @@ inThisBuild(Def.settings(
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
-  //  test in assembly := {},
   licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
   description := "Akka Http: Modern, fast, asynchronous, streaming-first HTTP server and client.",
   testOptions ++= Seq(
@@ -39,7 +38,7 @@ inThisBuild(Def.settings(
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
   concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
   onLoad in Global := {
-    sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion} on Scala ${(scalaVersion in httpCore).value}")
+    sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion} on Scala ${(httpCore / scalaVersion).value}")
     (onLoad in Global).value
   },
 
@@ -77,11 +76,11 @@ lazy val root = Project(
   .settings(
     // Unidoc doesn't like macro definitions
     unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench, httpScalafix, httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests),
-    // Support applying macros in unidoc:
+    // Support applying unidoc / macros:
     scalaMacroSupport,
-    unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
+    Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get,
     publishRsyncArtifacts := {
-      val unidocArtifacts = (unidoc in Compile).value
+      val unidocArtifacts = (Compile / unidoc).value
       // unidoc returns a Seq[File] which contains directories of generated API docs, one for
       // Java, one for Scala. It's not specified which is which, though.
       // We currently expect the java documentation at akka-http/target/javaunidoc, so
@@ -103,8 +102,8 @@ lazy val root = Project(
  * and a `src/.../scala-2.13-` source directory for Scala version older than 2.13
  */
 def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
-  unmanagedSourceDirectories in config += {
-    val sourceDir = (sourceDirectory in config).value
+  config / unmanagedSourceDirectories += {
+    val sourceDir = (config / sourceDirectory).value
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
       case _                       => sourceDir / "scala-2.13-"
@@ -171,7 +170,7 @@ lazy val http = project("akka-http")
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.http)
   .settings(
-    scalacOptions in Compile += "-language:_"
+    Compile / scalacOptions += "-language:_"
   )
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
@@ -194,22 +193,22 @@ lazy val http2Support = project("akka-http2-support")
   .settings(Dependencies.http2Support)
   .settings {
     lazy val h2specPath = Def.task {
-      (target in Test).value / h2specName / h2specExe
+      (Test / target).value / h2specName / h2specExe
     }
     Seq(
-      fork in run in Test := true,
-      fork in Test := true,
-      sbt.Keys.connectInput in run in Test := true,
-      javaOptions in Test += "-Dh2spec.path=" + h2specPath.value,
-      resourceGenerators in Test += Def.task {
+      Test / run / fork := true,
+      Test / fork := true,
+      Test / run / sbt.Keys.connectInput := true,
+      Test / javaOptions += "-Dh2spec.path=" + h2specPath.value,
+      Test / resourceGenerators += Def.task {
         val log = streams.value.log
         val h2spec = h2specPath.value
 
         if (!h2spec.exists) {
           log.info("Extracting h2spec to " + h2spec)
 
-          for (zip <- (update in Test).value.select(artifact = artifactFilter(name = h2specName, extension = "zip")))
-            IO.unzip(zip, (target in Test).value)
+          for (zip <- (Test / update).value.select(artifact = artifactFilter(name = h2specName, extension = "zip")))
+            IO.unzip(zip, (Test / target).value)
 
           // Set the executable bit on the expected path to fail if it doesn't exist
           for (view <- Option(Files.getFileAttributeView(h2spec.toPath, classOf[PosixFileAttributeView]))) {
@@ -236,8 +235,8 @@ lazy val httpTestkit = project("akka-http-testkit")
   .settings(
     // don't ignore Suites which is the default for the junit-interface
     testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
-    scalacOptions in Compile ++= Seq("-language:_"),
-    mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
+    Compile / scalacOptions ++= Seq("-language:_"),
+    Test / run / mainClass := Some("akka.http.javadsl.SimpleServerApp")
   )
   .enablePlugins(BootstrapGenjavadoc, MultiNodeScalaTest, ScaladocNoVerificationOfDiagrams)
   .enablePlugins(ReproducibleBuildsPlugin)
@@ -254,7 +253,7 @@ lazy val httpTests = project("akka-http-tests")
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
   .settings(headerSettings(MultiJvm))
-  .settings(additionalTasks in ValidatePR += headerCheck in MultiJvm)
+  .settings(ValidatePR / additionalTasks += MultiJvm / headerCheck)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
@@ -370,16 +369,16 @@ lazy val httpScalafixTests =
     .enablePlugins(NoPublish)
     .disablePlugins(MimaPlugin)
     .settings(
-      skip in publish := true,
+      publish / skip := true,
       libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % Dependencies.scalafixVersion % Test cross CrossVersion.full,
-      compile.in(Compile) :=
-        compile.in(Compile).dependsOn(compile.in(httpScalafixTestInput, Compile)).value,
+      Compile / compile :=
+        (Compile / compile).dependsOn(httpScalafixTestInput / Compile /compile).value,
       scalafixTestkitOutputSourceDirectories :=
-        sourceDirectories.in(httpScalafixTestOutput, Compile).value,
+        (httpScalafixTestOutput / Compile / sourceDirectories).value,
       scalafixTestkitInputSourceDirectories :=
-        sourceDirectories.in(httpScalafixTestInput, Compile).value,
+        (httpScalafixTestInput / Compile / sourceDirectories).value,
       scalafixTestkitInputClasspath :=
-        fullClasspath.in(httpScalafixTestInput, Compile).value,
+        (httpScalafixTestInput / Compile / fullClasspath).value,
     )
     .dependsOn(httpScalafixRules)
     .enablePlugins(ScalafixTestkitPlugin)
@@ -413,7 +412,7 @@ lazy val docs = project("docs")
       // Code after ??? can be considered 'dead',  but still useful for docs
       "-Ywarn-dead-code",
     ),
-    (paradoxProcessor in Compile) := {
+    (Compile / paradoxProcessor) := {
       import scala.concurrent.duration._
       import com.lightbend.paradox.ParadoxProcessor
       import com.lightbend.paradox.markdown.{ Reader, Writer }
@@ -423,7 +422,7 @@ lazy val docs = project("docs")
         writer = new Writer(serializerPlugins = Writer.defaultPlugins(paradoxDirectives.value)))
     },
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
-    paradoxProperties in Compile ++= Map(
+    Compile / paradoxProperties ++= Map(
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
       "akka.version" -> AkkaDependency.docs.version,
@@ -451,9 +450,9 @@ lazy val docs = project("docs")
     ),
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
-    additionalTasks in ValidatePR += paradox in Compile,
-    publishRsyncHost in ThisBuild := "akkarepo@gustav.akka.io",
-    publishRsyncArtifacts := List((paradox in Compile).value -> gustavDir("docs").value),
+    ValidatePR / additionalTasks += Compile / paradox,
+    ThisBuild / publishRsyncHost := "akkarepo@gustav.akka.io",
+    publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("docs").value),
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
@@ -465,11 +464,11 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided",
     ),
-    (dependencyClasspath in Test) := {
+    (Test / dependencyClasspath) := {
       // HACK: We'd like to use `dependsOn(http % "test->compile")` to upgrade the explicit dependency above to the
       //       current version but that fails. So, this is a manual `dependsOn` which works as expected.
-      (dependencyClasspath in Test).value.filterNot(_.data.getName contains "akka") ++
-      (fullClasspath in (httpTests, Test)).value
+      (Test / dependencyClasspath).value.filterNot(_.data.getName contains "akka") ++
+      (httpTests / Test / fullClasspath).value
     }
   )
 
