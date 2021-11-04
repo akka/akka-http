@@ -135,7 +135,7 @@ object ValidatePullRequest extends AutoPlugin {
       (localTargetBranch, jenkinsTargetBranch) match {
         case (Some(local), _)     => local // local override
         case (None, Some(branch)) => s"origin/$branch" // usually would be "main" or "release-10.1" etc
-        case (None, None)         => "origin/main" // defaulting to diffing with "master"
+        case (None, None)         => "origin/main" // defaulting to diffing with the main branch
       }
     },
 
