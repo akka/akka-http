@@ -31,8 +31,8 @@ object CopyrightHeader extends AutoPlugin {
     ValidatePR / additionalTasks += Test / headerCheck
   )
 
-  // We hard-code this so PR's year / created X will not suddenly X / fail+1.
-  // Of course we should remember to update it the / early year.
+  // We hard-code this so PR's created in year X will not suddenly in X+1.
+  // Of course we should remember to update it early in the year.
   val CurrentYear = "2021"
   val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
   val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*".r

@@ -76,7 +76,7 @@ lazy val root = Project(
   .settings(
     // Unidoc doesn't like macro definitions
     unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench, httpScalafix, httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests),
-    // Support applying unidoc / macros:
+    // Support applying macros in unidoc:
     scalaMacroSupport,
     Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get,
     publishRsyncArtifacts := {
