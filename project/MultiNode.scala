@@ -22,8 +22,8 @@ object MultiNode extends AutoPlugin {
     val targetDirName = seqWithProperty("akka.test.multi-node.targetDirName")
   }
 
-  val multiExecuteTests = CliOptions.multiNode.ifTrue(multiNodeExecuteTests in MultiJvm).getOrElse(executeTests in MultiJvm)
-  val multiTest = CliOptions.multiNode.ifTrue(multiNodeTest in MultiJvm).getOrElse(test in MultiJvm)
+  val multiExecuteTests = CliOptions.multiNode.ifTrue(MultiJvm / multiNodeExecuteTests).getOrElse(MultiJvm / executeTests)
+  val multiTest = CliOptions.multiNode.ifTrue(MultiJvm / multiNodeTest).getOrElse(MultiJvm / test)
 
   override def trigger = noTrigger
   override def requires = plugins.JvmPlugin
@@ -52,18 +52,18 @@ object MultiNode extends AutoPlugin {
     SbtMultiJvm.multiJvmSettings ++
     inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
     Seq(
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      compileInputs in (MultiJvm, compile) := ((compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
-      scalacOptions in MultiJvm := (scalacOptions in Test).value,
-      compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value
+      MultiJvm / jvmOptions := defaultMultiJvmOptions,
+      MultiJvm / compile / compileInputs := ((MultiJvm / compile / compileInputs) dependsOn (MultiJvm / ScalariformKeys.format)).value,
+      MultiJvm / scalacOptions := (Test / scalacOptions).value,
+      MultiJvm / compile := ((MultiJvm / compile) triggeredBy (Test / compile)).value
     ) ++
-    CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
-    CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
-    CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++
+    CliOptions.hostsFileName.map(MultiJvm / multiNodeHostsFileName := _) ++
+    CliOptions.javaName.map(MultiJvm / multiNodeJavaName := _) ++
+    CliOptions.targetDirName.map(MultiJvm / multiNodeTargetDirName := _) ++
     // make sure that MultiJvm tests are executed by the default test target,
     // and combine the results from ordinary test and multi-jvm tests
-    (executeTests in Test := {
-      val testResults = (executeTests in Test).value
+    (Test / executeTests := {
+      val testResults = (Test / executeTests).value
       val multiNodeResults = multiExecuteTests.value
       val overall =
         if (testResults.overall.id < multiNodeResults.overall.id)
@@ -92,11 +92,11 @@ object MultiNodeScalaTest extends AutoPlugin {
   override def requires = MultiNode
 
   override lazy val projectSettings = Seq(
-    extraOptions in MultiJvm := {
-      val src = (sourceDirectory in MultiJvm).value
+    MultiJvm / extraOptions := {
+      val src = (MultiJvm / sourceDirectory).value
       (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
     },
-    scalatestOptions in MultiJvm := {
+    MultiJvm / scalatestOptions := {
       Seq("-C", "org.scalatest.extra.QuietReporter")
     }
   )

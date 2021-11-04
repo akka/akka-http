@@ -32,12 +32,12 @@ object Scaladoc extends AutoPlugin {
 
   override lazy val projectSettings =
     inTask(doc)(Seq(
-      scalacOptions in Compile ++=
+      Compile / scalacOptions ++=
         scaladocOptions(
           scalaBinaryVersion.value,
           version.value,
           isSnapshot.value,
-          (baseDirectory in ThisBuild).value,
+          (ThisBuild / baseDirectory).value,
           libraryDependencies.value
             .filter(_.configurations.contains("plugin->default(compile)"))
             // Can we get the from the classpath somehow?
@@ -45,10 +45,10 @@ object Scaladoc extends AutoPlugin {
         ),
       autoAPIMappings := CliOptions.scaladocAutoAPI.get
     )) ++
-    Seq(validateDiagrams in Compile := true) ++
-    CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
-      val docs = (doc in Compile).value
-      if ((validateDiagrams in Compile).value)
+    Seq(Compile / validateDiagrams := true) ++
+    CliOptions.scaladocDiagramsEnabled.ifTrue(Compile / doc := {
+      val docs = (Compile / doc).value
+      if ((Compile / validateDiagrams).value)
         scaladocVerifier(docs)
       docs
     })
@@ -116,7 +116,7 @@ object ScaladocNoVerificationOfDiagrams extends AutoPlugin {
   override def requires = Scaladoc
 
   override lazy val projectSettings = Seq(
-    Scaladoc.validateDiagrams in Compile := false
+    Compile / Scaladoc.validateDiagrams := false
   )
 }
 
@@ -138,19 +138,19 @@ object UnidocRoot extends AutoPlugin {
   override def requires = ScalaUnidocPlugin && CliOptions.genjavadocEnabled.ifTrue(JavaUnidocPlugin).getOrElse(plugins.JvmPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
-    javacOptions in (JavaUnidoc, unidoc) ++= (
+    JavaUnidoc / unidoc / javacOptions ++= (
       if (isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--ignore-source-errors")),
     // genjavadoc needs to generate synthetic methods since the java code uses them
     // fails since 10.0.11 disabled to get the doc gen to pass, see #1584
     // scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
     // FIXME: see https://github.com/akka/akka-http/issues/230
-    sources in (JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
+    JavaUnidoc / unidoc / sources ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
   )).getOrElse(Nil)
 
   val settings = inTask(unidoc)(Seq(
-    unidocProjectFilter in ScalaUnidoc := inAnyProject -- inProjects(unidocProjectExcludes.value: _*),
-    unidocProjectFilter in JavaUnidoc := inAnyProject -- inProjects(unidocProjectExcludes.value: _*)
+    ScalaUnidoc / unidocProjectFilter := inAnyProject -- inProjects(unidocProjectExcludes.value: _*),
+    JavaUnidoc / unidocProjectFilter := inAnyProject -- inProjects(unidocProjectExcludes.value: _*)
   ))
 
   override lazy val projectSettings =
@@ -168,10 +168,10 @@ object BootstrapGenjavadoc extends AutoPlugin {
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
     Seq(
-      javacOptions in compile += "-Xdoclint:none",
-      javacOptions in test += "-Xdoclint:none",
-      javacOptions in doc += "-Xdoclint:none",
-      scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
+      compile / javacOptions += "-Xdoclint:none",
+      test / javacOptions += "-Xdoclint:none",
+      doc / javacOptions += "-Xdoclint:none",
+      Compile / scalacOptions += "-P:genjavadoc:fabricateParams=true",
       unidocGenjavadocVersion in Global := "0.18"
     )
   ).getOrElse(Seq.empty)

@@ -28,20 +28,20 @@ object Common extends AutoPlugin {
     ),
     // '-release' parameter is restricted to 'Compile, compile' scope because
     // otherwise `sbt akka-http-xml/compile:doc` fails with it on Scala 2.12.9
-    scalacOptions in (Compile, compile) ++=
+    Compile / compile / scalacOptions ++=
       onlyAfterScala212(onlyAfterJdk8("-release", "8")).value,
     javacOptions ++=
       Seq("-encoding", "UTF-8") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
     // restrict to 'compile' scope because otherwise it is also passed to
     // javadoc and -target is not valid there.
     // https://github.com/sbt/sbt/issues/1785
-    javacOptions in (Compile, compile) ++=
+    Compile / compile / javacOptions ++=
       // From jdk9 onwards this is covered by the '-release' flag above
       onlyOnJdk8("-target", "1.8"),
 
     // in test code we often use destructing assignment, which now produces an exhaustiveness warning
     // when the type is asserted
-    scalacOptions in (Test, compile) += "-P:silencer:globalFilters=match may not be exhaustive",
+    Test / compile / scalacOptions += "-P:silencer:globalFilters=match may not be exhaustive",
 
     mimaReportSignatureProblems := true,
     libraryDependencies ++= Seq(
