@@ -58,7 +58,7 @@ lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   httpSprayJson,
   httpXml,
   httpJackson,
-  httpScalafix,
+  httpScalafixRules, // don't aggregate tests for now as this will break with Scala compiler updates too easily
 )
 lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
   httpTests,
