@@ -83,7 +83,7 @@ object ValidatePullRequest extends AutoPlugin {
   val SourcePullIdJenkinsEnvVarName = "ghprbPullId" // used to obtain branch name in form of "pullreq/17397"
 
   val sourceBranch = settingKey[String]("Branch containing the changes of this PR")
-  val targetBranch = settingKey[String]("Target branch of this PR, defaults to `master`")
+  val targetBranch = settingKey[String]("Target branch of this PR, defaults to `main`")
 
   // asking github comments if this PR should be PLS BUILD ALL
   val gitHubEnforcedBuildAll = taskKey[Option[BuildMode]]("Checks via GitHub API if comments included the PLS BUILD ALL keyword")
@@ -134,8 +134,8 @@ object ValidatePullRequest extends AutoPlugin {
     targetBranch in Global in ValidatePR := {
       (localTargetBranch, jenkinsTargetBranch) match {
         case (Some(local), _)     => local // local override
-        case (None, Some(branch)) => s"origin/$branch" // usually would be "master" or "release-2.3" etc
-        case (None, None)         => "origin/master" // defaulting to diffing with "master"
+        case (None, Some(branch)) => s"origin/$branch" // usually would be "main" or "release-10.1" etc
+        case (None, None)         => "origin/main" // defaulting to diffing with the main branch
       }
     },
 
