@@ -18,7 +18,7 @@ object Dependencies {
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
-  val silencerVersion = "1.7.5"
+  val silencerVersion = "1.7.7"
 
   val scalaTestVersion = "3.1.4"
   val specs2Version = "4.10.6"
@@ -27,7 +27,7 @@ object Dependencies {
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
   val scala212Version = "2.12.14"
-  val scala213Version = "2.13.6"
+  val scala213Version = "2.13.7"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala213Version, scala212Version),
