@@ -12,8 +12,6 @@ import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.{ Directives, Route }
 import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
-import com.github.ghik.silencer.silent
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
 //#imports
 
 import docs.CompileOnlySpec

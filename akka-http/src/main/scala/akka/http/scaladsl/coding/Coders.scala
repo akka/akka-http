@@ -5,11 +5,11 @@
 package akka.http.scaladsl.coding
 
 import akka.http.scaladsl.model.HttpMessage
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.collection.immutable
 
-@silent("in package coding is deprecated")
+@nowarn("msg=in package coding is deprecated")
 object Coders {
   def Gzip: Coder = akka.http.scaladsl.coding.Gzip
   def Gzip(

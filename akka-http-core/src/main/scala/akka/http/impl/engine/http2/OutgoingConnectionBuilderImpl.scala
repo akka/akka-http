@@ -14,7 +14,7 @@ import akka.http.impl.engine.http2.client.PersistentConnection
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2ClientSettings }
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.Flow
 import akka.http.javadsl
 import akka.http.javadsl.{ OutgoingConnectionBuilder => JOutgoingConnectionBuilder }

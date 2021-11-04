@@ -13,7 +13,7 @@ import akka.http.scaladsl.model.{ HttpEntity, HttpRequest }
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers.{ HttpEncodings, `Content-Encoding` }
 import akka.testkit._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,7 +51,7 @@ class DeflateSpec extends CoderSpec {
   }
 
   private def encodeMessage(request: HttpRequest, compressionLevel: Int, noWrap: Boolean): HttpRequest = {
-    @silent("deprecated .* is internal API")
+    @nowarn("msg=deprecated .* is internal API")
     val deflaterWithoutWrapping = new Deflate(Encoder.DefaultFilter) {
       override def newCompressor = new DeflateCompressor(compressionLevel) {
         override lazy val deflater = new Deflater(compressionLevel, noWrap)

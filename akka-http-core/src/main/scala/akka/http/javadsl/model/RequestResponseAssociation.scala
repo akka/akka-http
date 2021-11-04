@@ -8,8 +8,6 @@ import java.util.concurrent.CompletableFuture
 
 import akka.annotation.ApiMayChange
 
-import scala.concurrent.Promise
-
 /**
  * A marker trait for attribute values that should be (automatically) carried over from request to response.
  */

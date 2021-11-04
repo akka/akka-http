@@ -17,7 +17,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.testkit.TestKit
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Millis, Seconds, Span }
@@ -27,7 +27,7 @@ import scala.collection.immutable
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-@silent("synchronous compression with `encode` is not supported in the future any more")
+@nowarn("msg=synchronous compression with `encode` is not supported in the future any more")
 class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with BeforeAndAfterAll with ScalaFutures {
 
   val maxContentLength = 800

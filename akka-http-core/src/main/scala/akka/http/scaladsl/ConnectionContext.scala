@@ -9,7 +9,7 @@ import java.util.{ Optional, Collection => JCollection }
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.TLSClientAuth
 import akka.stream.TLSProtocol._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import javax.net.ssl._
 
@@ -108,7 +108,7 @@ private[http] case class DeprecatedSslContextParameters(
  * This constructor is INTERNAL API, use ConnectionContext.https instead
  */
 @InternalApi
-@silent("since 10.2.0")
+@nowarn("msg=since 10.2.0")
 final class HttpsConnectionContext private[http] (private[http] val sslContextData: Either[DeprecatedSslContextParameters, Option[(String, Int)] => SSLEngine])
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
   protected[http] override final def defaultPort: Int = 443

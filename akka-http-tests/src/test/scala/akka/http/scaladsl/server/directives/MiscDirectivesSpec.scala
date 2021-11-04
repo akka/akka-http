@@ -14,9 +14,9 @@ import headers._
 import java.net.InetAddress
 
 import akka.http.scaladsl.server.util.VarArgsFunction1
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("use remote-address-attribute instead")
+@nowarn("msg=use remote-address-attribute instead")
 class MiscDirectivesSpec extends RoutingSpec {
 
   "the extractClientIP directive" should {

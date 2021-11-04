@@ -36,7 +36,7 @@ import akka.stream.testkit._
 import akka.stream._
 import akka.testkit._
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import javax.net.ssl.{ SSLContext, TrustManagerFactory }
@@ -175,9 +175,8 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
     // The Remote-Address header is deprecated, but we still want to test it works
     "Remote-Address header" should {
-      @silent("Remote-Address in package headers is deprecated")
       def handler(req: HttpRequest): HttpResponse = {
-        @silent("deprecated")
+        @nowarn("msg=deprecated")
         val entity = req.header[headers.`Remote-Address`].flatMap(_.address.toIP).flatMap(_.port).toString
         HttpResponse(entity = entity)
       }
@@ -719,7 +718,7 @@ Host: example.com
       }
 
       // This approach is deprecated, but we still want to check it works
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val clientConnectionContext = ConnectionContext.https(sslContext, Some(sslConfig))
 
       val request = HttpRequest(uri = s"https:/${serverBinding.localAddress}")

@@ -405,8 +405,6 @@ lazy val docs = project("docs")
       // In docs adding an unused variable can be helpful, for example
       // to show its type
       "-Xlint:-unused",
-      // Does not appear to lead to problems
-      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
     ),
     scalacOptions --= Seq(
       // Code after ??? can be considered 'dead',  but still useful for docs
@@ -478,8 +476,6 @@ lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-
   .settings(
     name := "akka-http-bom",
     bomIncludeProjects := userProjects,
-    // Remove the silencer dependency added by `Common`
-    libraryDependencies := Seq(),
   )
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0

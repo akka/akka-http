@@ -8,12 +8,12 @@ import scala.concurrent.ExecutionContext
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-@silent("will not be a runnable program")
+@nowarn("msg=will not be a runnable program")
 class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "manual-entity-consume-example-1" in compileOnlySpec {

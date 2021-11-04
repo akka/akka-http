@@ -16,7 +16,7 @@ import akka.stream.stage.GraphStage
 import akka.util.ByteString
 import headers._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 trait Encoder {
   def encoding: HttpEncoding
@@ -51,7 +51,7 @@ trait Encoder {
   def newEncodeTransformer(): GraphStage[FlowShape[ByteString, ByteString]] = singleUseEncoderFlow()
 
   private def singleUseEncoderFlow(): GraphStage[FlowShape[ByteString, ByteString]] = {
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     val compressor = newCompressor
 
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)

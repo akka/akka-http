@@ -35,7 +35,7 @@ import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.util.ManifestInfo
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
@@ -53,8 +53,7 @@ import scala.concurrent.duration._
  *
  * Use as `Http().bindAndHandle` etc. with an implicit [[ActorSystem]] in scope.
  */
-@silent("DefaultSSLContextCreation in package scaladsl is deprecated")
-@silent("defaultServerHttpContext")
+@nowarn("msg=DefaultSSLContextCreation in package scaladsl is deprecated")
 @DoNotInherit
 class HttpExt private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
@@ -179,6 +178,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   @deprecated("Use Http().newServerAt(...)...connectionSource() to create a source that can be materialized to a binding.", since = "10.2.0")
+  @nowarn("msg=deprecated")
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
@@ -207,7 +207,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   }
 
   // forwarder to allow internal code to call deprecated method without warning
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private[http] def bindImpl(interface: String, port: Int,
                              connectionContext: ConnectionContext,
                              settings:          ServerSettings,
@@ -226,6 +226,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   @deprecated("Use Http().newServerAt(...)...bindFlow() to create server bindings.", since = "10.2.0")
+  @nowarn("msg=deprecated")
   def bindAndHandle(
     handler:   Flow[HttpRequest, HttpResponse, Any],
     interface: String, port: Int = DefaultPortForProtocol,
@@ -288,7 +289,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   }
 
   // forwarder to allow internal code to call deprecated method without warning
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private[http] def bindAndHandleImpl(
     handler:   Flow[HttpRequest, HttpResponse, Any],
     interface: String, port: Int,
@@ -309,7 +310,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   @deprecated("Use Http().newServerAt(...)...bindSync() to create server bindings.", since = "10.2.0")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def bindAndHandleSync(
     handler:   HttpRequest => HttpResponse,
     interface: String, port: Int = DefaultPortForProtocol,
@@ -337,6 +338,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * Any other value for `parallelism` overrides the setting.
    */
   @deprecated("Use Http().newServerAt(...)...bind() to create server bindings.", since = "10.2.0")
+  @nowarn("msg=deprecated")
   def bindAndHandleAsync(
     handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
@@ -362,7 +364,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   }
 
   // forwarder to allow internal code to call deprecated method without warning
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private[http] def bindAndHandleAsyncImpl(
     handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int,
@@ -1108,7 +1110,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   def createExtension(system: ExtendedActorSystem): HttpExt =
     new HttpExt(system.settings.config getConfig "akka.http")(system)
 
-  @silent("use remote-address-attribute instead")
+  @nowarn("msg=use remote-address-attribute instead")
   @InternalApi
   private[akka] def prepareAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) =
     if (settings.remoteAddressHeader || settings.remoteAddressAttribute) HttpAttributes.remoteAddress(incoming.remoteAddress)

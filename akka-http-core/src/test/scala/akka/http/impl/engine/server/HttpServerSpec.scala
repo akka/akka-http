@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.server
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import java.net.{ InetAddress, InetSocketAddress }
 
@@ -698,7 +698,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |0123456789ABCDEF""")
 
-      val HttpRequest(POST, _, _, entity @ Strict(ContentType(`application/octet-stream`, None), data), _) = expectRequest()
+      val HttpRequest(POST, _, _, Strict(ContentType(`application/octet-stream`, None), data), _) = expectRequest()
       data shouldEqual ByteString("0123456789ABCDEF")
 
       responses.sendNext(HttpResponse(entity = "Yeah"))
@@ -724,7 +724,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
 
-      val HttpRequest(POST, _, _, entity @ Strict(ContentTypes.NoContentType, ByteString.empty), _) = expectRequest()
+      val HttpRequest(POST, _, _, Strict(ContentTypes.NoContentType, ByteString.empty), _) = expectRequest()
       responses.sendNext(HttpResponse(entity = "Yeah"))
 
       expectResponseWithWipedDate(
@@ -747,7 +747,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
 
-      val HttpRequest(POST, _, _, entity @ Strict(ContentTypes.NoContentType, ByteString.empty), _) = expectRequest()
+      val HttpRequest(POST, _, _, Strict(ContentTypes.NoContentType, ByteString.empty), _) = expectRequest()
       responses.sendNext(HttpResponse(entity = "Yeah"))
 
       expectResponseWithWipedDate(
@@ -1145,7 +1145,7 @@ class HttpServerSpec extends AkkaSpec(
 
       val request = expectRequest()
 
-      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080)))): @silent("Remote-Address in package headers is deprecated")
+      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080)))): @nowarn("msg=Remote-Address in package headers is deprecated")
 
       shutdownBlueprint()
     })
