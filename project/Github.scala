@@ -11,7 +11,7 @@ object GitHub {
       .ensuring(_ != null, "No PR_VALIDATOR_GH_TOKEN env var provided, unable to reach github!")
 
   def url(v: String, isSnapshot: Boolean): String = {
-    val branch = if (isSnapshot) "master" else "v" + v
+    val branch = if (isSnapshot) "main" else "v" + v
     "https://github.com/akka/akka-http/tree/" + branch
   }
 }
