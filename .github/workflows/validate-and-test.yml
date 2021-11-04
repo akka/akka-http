@@ -3,7 +3,7 @@ name: Validate and test
 on:
   pull_request:
   push:
-    branches: [ master main ]
+    branches: [ main ]
     tags-ignore: [ v* ]
 
 concurrency:
