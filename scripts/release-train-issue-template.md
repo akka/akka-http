@@ -31,14 +31,14 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 ### Preparing release notes in the documentation / announcement
 
 - [ ] Create a PR to add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone
-- [ ] Create a draft PR on https://github.com/akka/akka.io with a news item (using the milestones, release notes and `scripts/authors.scala previousVersion master`) and updating `_config.yml`
+- [ ] Create a draft PR on https://github.com/akka/akka.io with a news item (using the milestones, release notes and `scripts/authors.scala previousVersion origin/main`) and updating `_config.yml`
 - [ ] Release notes PR has been merged
 - [ ] Create a new milestone for the next version at https://github.com/akka/akka-http/milestones
 - [ ] Move all unclosed issues to the newly created milestone (or remove milestone) and close the version you're releasing
 
 ### Cutting the release
 
-- [ ] Wait until [master build finished](https://github.com/akka/akka-http/actions/workflows/publish.yml?query=event%3Apush) after merging the release notes (otherwise, the master
+- [ ] Wait until [main build finished](https://github.com/akka/akka-http/actions/workflows/publish.yml?query=event%3Apush) after merging the release notes (otherwise, the main
       build might pick up the tag and start publishing the release uhoh)
 - [ ] Create a tag for the release (e.g. `git tag -s -a v$VERSION$ -m "Release $VERSION$"`) and push it.
 - [ ] Check that the Github Actions [release build](https://github.com/akka/akka-http/actions/workflows/publish.yml?query=event%3Apush) executes successfully
@@ -83,7 +83,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### Afterwards
 - [ ] Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key *of all current compatible branches*.
-- [ ] Forward port release notes from old releases to master
+- [ ] Forward port release notes from old releases to main
 - [ ] Update Akka HTTP reference in [lightbend-platform-docs](https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt#L149)
 - [ ] Update Akka HTTP reference in [akka-platform-dependencies](https://github.com/lightbend/akka-platform-dependencies/blob/main/project/Dependencies.scala)
 - Close this issue
