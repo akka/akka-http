@@ -86,4 +86,5 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 - [ ] Forward port release notes from old releases to main
 - [ ] Update Akka HTTP reference in [lightbend-platform-docs](https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt#L149)
 - [ ] Update Akka HTTP reference in [akka-platform-dependencies](https://github.com/lightbend/akka-platform-dependencies/blob/main/project/Dependencies.scala)
+- [ ] Update Akka HTTP references everywhere in [akka-platform-guide](https://github.com/akka/akka-platform-guide)
 - Close this issue
