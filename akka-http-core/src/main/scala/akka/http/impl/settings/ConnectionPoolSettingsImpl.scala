@@ -24,6 +24,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   baseConnectionBackoff:             FiniteDuration,
   maxConnectionBackoff:              FiniteDuration,
   idleTimeout:                       Duration,
+  keepAliveTimeout:                  Duration,
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
   responseEntitySubscriptionTimeout: Duration)
@@ -75,6 +76,7 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
       c.getFiniteDuration("base-connection-backoff"),
       c.getFiniteDuration("max-connection-backoff"),
       c.getPotentiallyInfiniteDuration("idle-timeout"),
+      c.getPotentiallyInfiniteDuration("keep-alive-timeout"),
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c.getString("pool-implementation").toLowerCase match {
         case "legacy" => PoolImplementation.Legacy
