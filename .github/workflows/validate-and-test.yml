@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        SCALA_VERSION: [2.11.12, 2.12.15, 2.13.1]
+        SCALA_VERSION: [2.11.12, 2.12.15, 2.13.7]
         JABBA_JDK: [1.8, 1.11]
     steps:
       - name: Checkout

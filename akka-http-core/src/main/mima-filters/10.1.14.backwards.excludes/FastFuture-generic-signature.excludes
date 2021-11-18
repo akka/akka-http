@@ -1,0 +1,2 @@
+# Signature problems are unlikely binary compatibility problems, especially for Scala code
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.util.FastFuture.*")
