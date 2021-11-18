@@ -34,6 +34,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def baseConnectionBackoff: FiniteDuration
   def maxConnectionBackoff: FiniteDuration
   def idleTimeout: Duration
+  def keepAliveTimeout: Duration
   def connectionSettings: ClientConnectionSettings
   def maxConnectionLifetime: Duration
 
@@ -62,6 +63,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(maxConnectionBackoff = newValue)
 
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
+  override def withKeepAliveTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(keepAliveTimeout = newValue)
   override def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
 
   // overloads for idiomatic Scala use

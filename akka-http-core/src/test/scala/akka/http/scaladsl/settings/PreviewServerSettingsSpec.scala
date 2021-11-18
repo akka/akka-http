@@ -11,7 +11,7 @@ class PreviewServerSettingsSpec extends AkkaSpec {
   def compileOnlySpec(body: => Unit) = ()
 
   "PreviewServerSettings" should {
-    "compile when set programatically" in compileOnlySpec {
+    "compile when set programmatically" in compileOnlySpec {
       ServerSettings(system)
         .withPreviewServerSettings(PreviewServerSettings(system).withEnableHttp2(true))
         .withRemoteAddressHeader(true)
