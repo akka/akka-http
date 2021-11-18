@@ -1,0 +1,5 @@
+# Add new methods to @InternalApi Rendering trait
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.util.Rendering.mark")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.util.Rendering.check")
+# for Scala 2.11
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.util.Rendering.~~")

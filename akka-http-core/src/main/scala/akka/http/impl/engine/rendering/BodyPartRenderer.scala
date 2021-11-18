@@ -130,7 +130,7 @@ private[http] object BodyPartRenderer {
     case x: RawHeader if (x is "content-type") || (x is "content-length") =>
       suppressionWarning(log, x, "illegal RawHeader")
 
-    case x => r ~~ x ~~ CrLf
+    case x => r ~~ x
   }
 
   /**

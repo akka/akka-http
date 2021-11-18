@@ -22,6 +22,8 @@ import HttpEntity._
 import akka.http.impl.engine.rendering.ResponseRenderingContext.CloseRequested
 import akka.testkit._
 
+import scala.util.{ Success, Try }
+
 class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
@@ -456,6 +458,73 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             |
             |"""
         }
+      }
+    }
+    "render headers safely" - {
+      val defaultResponse =
+        """HTTP/1.1 200 OK
+          |Server: akka-http/1.0.0
+          |Date: Thu, 25 Aug 2011 09:10:29 GMT
+          |Content-Length: 0
+          |
+          |"""
+
+      "when Server header contains CRLF" in new TestSetup() {
+        HttpResponse(200, headers.Server(ProductVersion("abc\ndef")) :: Nil) should renderTo(
+          // no Server header rendered at all but still better than rendering a broken one
+          """HTTP/1.1 200 OK
+            |Date: Thu, 25 Aug 2011 09:10:29 GMT
+            |Content-Length: 0
+            |
+            |"""
+        )
+      }
+      "when RawHeader header name contains CRLF" in new TestSetup() {
+        HttpResponse(200, headers.RawHeader("Abc-\nDef", "test") :: Nil) should renderTo(defaultResponse)
+      }
+      "when RawHeader header value contains CRLF" in new TestSetup() {
+        HttpResponse(200, headers.RawHeader("Test", "abc\ndef") :: Nil) should renderTo(defaultResponse)
+      }
+
+      // unlikely case: companion defines a broken name
+      case class MyBrokenHeader(value: String) extends ModeledCustomHeader[MyBrokenHeader] {
+        override def companion = MyBrokenHeader
+        def renderInRequests = false
+        def renderInResponses = true
+      }
+      object MyBrokenHeader extends ModeledCustomHeaderCompanion[MyBrokenHeader] {
+        override def name: String = "X-My-Broken\nHeader"
+        override def parse(value: String): Try[MyBrokenHeader] = Success(new MyBrokenHeader(value))
+      }
+
+      "when CustomModeledHeader header name contains CRLF" in new TestSetup() {
+        HttpResponse(200, MyBrokenHeader("test") :: Nil) should renderTo(defaultResponse)
+      }
+
+      case class MyHeader(value: String) extends ModeledCustomHeader[MyHeader] {
+        override def companion = MyHeader
+        def renderInRequests = false
+        def renderInResponses = true
+      }
+      object MyHeader extends ModeledCustomHeaderCompanion[MyHeader] {
+        override def name: String = "X-My-Header"
+        override def parse(value: String): Try[MyHeader] = Success(new MyHeader(value))
+      }
+      "when CustomModeledHeader header value contains CRLF" in new TestSetup() {
+        HttpResponse(200, MyHeader("abc\ndef") :: Nil) should renderTo(defaultResponse)
+      }
+
+      case class MyCustomHeader(name: String, value: String) extends CustomHeader {
+        def renderInRequests = false
+        def renderInResponses = true
+      }
+
+      "when CustomHeader header name contains CRLF" in new TestSetup() {
+        HttpResponse(200, MyCustomHeader("X-Broken\n-Header", "test") :: Nil) should renderTo(defaultResponse)
+      }
+
+      "when CustomHeader header value contains CRLF" in new TestSetup() {
+        HttpResponse(200, MyCustomHeader("X-Broken-Header", "abc\ndef") :: Nil) should renderTo(defaultResponse)
       }
     }
 
