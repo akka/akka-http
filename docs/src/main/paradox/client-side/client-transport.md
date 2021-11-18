@@ -24,7 +24,7 @@ transport layer itself.
 A @apidoc[ClientTransport] can be configured in the @apidoc[ClientConnectionSettings]. Right now, this is not possible
 through config files but only by code. First, use `ClientConnectionSettings.withTransport` to configure a transport,
 then use `ConnectionPoolSettings.withConnectionSettings`. @apidoc[ClientConnectionSettings] can be passed to all
-client-side entry points in @scala[@apidoc[Http$]]@java[@apidoc[Http]].
+client-side entry points in `Http`.
 
 ## Predefined Transports
 
