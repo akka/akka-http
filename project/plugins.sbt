@@ -21,6 +21,7 @@ addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.32")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.4.0")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.7")
+addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
 libraryDependencies += "org.kohsuke" % "github-api" % "1.106"
