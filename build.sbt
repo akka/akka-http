@@ -42,7 +42,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, DeployRsync, AggregatePRValidation)
+  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation)
   .disablePlugins(MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
@@ -50,7 +50,7 @@ lazy val root = Project(
     // Support applying macros in unidoc:
     scalaMacroSupport,
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
-    deployRsyncArtifact := {
+    publishRsyncArtifacts := {
       val unidocArtifacts = (unidoc in Compile).value
       // unidoc returns a Seq[File] which contains directories of generated API docs, one for
       // Java, one for Scala. It's not specified which is which, though.
@@ -320,11 +320,10 @@ def httpMarshallersJavaSubproject(name: String) =
   .enablePlugins(BootstrapGenjavadoc)
 
 lazy val docs = project("docs")
-  .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
+  .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
   .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-actor-typed", "provided", includeIfScalaVersionMatches = _ != "2.11") // no akka-actor-typed in 2.11 any more
-
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
@@ -372,7 +371,8 @@ lazy val docs = project("docs")
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
-    deployRsyncArtifact := List((paradox in Compile).value -> gustavDir("docs").value),
+    publishRsyncHost in ThisBuild := "akkarepo@gustav.akka.io",
+    publishRsyncArtifacts := List((paradox in Compile).value -> gustavDir("docs").value),
     add212CrossDirs(Test)
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
