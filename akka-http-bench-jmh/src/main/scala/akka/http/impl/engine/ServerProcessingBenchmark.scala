@@ -20,7 +20,7 @@ import org.openjdk.jmh.annotations._
 
 class ServerProcessingBenchmark extends CommonBenchmark {
   val request = ByteString("GET / HTTP/1.1\r\nHost: localhost\r\nUser-Agent: test\r\n\r\n")
-  val response = HttpResponse(headers = headers.Server("akka-http-bench") :: Nil)
+  val response = HttpResponse()
 
   var httpFlow: Flow[ByteString, ByteString, Any] = _
   implicit var system: ActorSystem = _
@@ -45,6 +45,7 @@ class ServerProcessingBenchmark extends CommonBenchmark {
       ConfigFactory.parseString(
         """
            akka.actor.default-dispatcher.fork-join-executor.parallelism-max = 1
+           akka.http.server.server-header = "akka-http-bench"
         """)
         .withFallback(ConfigFactory.load())
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
