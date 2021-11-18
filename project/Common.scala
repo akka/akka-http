@@ -34,6 +34,7 @@ object Common extends AutoPlugin {
     javacOptions in (Compile, compile) ++=
       // From jdk9 onwards this is covered by the '-release' flag above
       onlyOnJdk8("-target", "1.8"),
+    Test / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"
   )
 
   val specificationVersion: String = sys.props("java.specification.version")

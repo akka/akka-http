@@ -78,7 +78,6 @@ object ValidatePullRequest extends AutoPlugin {
   val PullIdEnvVarName = "ghprbPullId" // Set by "GitHub pull request builder plugin"
 
   val TargetBranchEnvVarName = "PR_TARGET_BRANCH"
-  val TargetBranchJenkinsEnvVarName = "ghprbTargetBranch"
   val SourceBranchEnvVarName = "PR_SOURCE_BRANCH"
   val SourcePullIdJenkinsEnvVarName = "ghprbPullId" // used to obtain branch name in form of "pullreq/17397"
 
@@ -120,9 +119,9 @@ object ValidatePullRequest extends AutoPlugin {
   }
 
   def localTargetBranch: Option[String] = System.getenv.asScala.get("PR_TARGET_BRANCH")
-  def jenkinsTargetBranch: Option[String] = System.getenv.asScala.get("ghprbTargetBranch")
-  def runningOnJenkins: Boolean = jenkinsTargetBranch.isDefined
-  def runningLocally: Boolean = !runningOnJenkins
+  def githubActionsTargetBranch: Option[String] = System.getenv.asScala.get("GITHUB_BASE_REF")
+  def runningOnGithubActions: Boolean = githubActionsTargetBranch.isDefined
+  def runningLocally: Boolean = !runningOnGithubActions
 
   override lazy val buildSettings = Seq(
     sourceBranch in Global in ValidatePR := {
@@ -132,7 +131,7 @@ object ValidatePullRequest extends AutoPlugin {
     },
 
     targetBranch in Global in ValidatePR := {
-      (localTargetBranch, jenkinsTargetBranch) match {
+      (localTargetBranch, githubActionsTargetBranch) match {
         case (Some(local), _)     => local // local override
         case (None, Some(branch)) => s"origin/$branch" // usually would be "master" or "release-2.3" etc
         case (None, None)         => "origin/master" // defaulting to diffing with "master"
@@ -183,7 +182,7 @@ object ValidatePullRequest extends AutoPlugin {
           .toSet
 
       val dirtyModuleNames: Set[String] =
-        if (runningOnJenkins) Set.empty
+        if (runningOnGithubActions) Set.empty
         else {
           val statusOutput = s"git status --short".!!.split("\n")
           val dirtyDirectories = statusOutput
