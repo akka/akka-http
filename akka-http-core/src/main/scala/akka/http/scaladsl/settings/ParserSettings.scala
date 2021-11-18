@@ -34,6 +34,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def maxToStrictBytes: Long
   def maxChunkExtLength: Int
   def maxChunkSize: Int
+  def maxCommentParsingDepth: Int
   def uriParsingMode: Uri.ParsingMode
   def cookieParsingMode: ParserSettings.CookieParsingMode
   def illegalHeaderWarnings: Boolean
@@ -64,6 +65,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def getMaxResponseReasonLength = maxResponseReasonLength
   override def getMaxUriLength = maxUriLength
   override def getMaxMethodLength = maxMethodLength
+  override def getMaxCommentParsingDepth: Int = maxCommentParsingDepth
   override def getErrorLoggingVerbosity: js.ParserSettings.ErrorLoggingVerbosity = errorLoggingVerbosity
   override def getIllegalResponseHeaderValueProcessingMode = illegalResponseHeaderValueProcessingMode
 
@@ -90,6 +92,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def withMaxToStrictBytes(newValue: Long): ParserSettings = self.copy(maxToStrictBytes = newValue)
   override def withMaxChunkExtLength(newValue: Int): ParserSettings = self.copy(maxChunkExtLength = newValue)
   override def withMaxChunkSize(newValue: Int): ParserSettings = self.copy(maxChunkSize = newValue)
+  override def withMaxCommentParsingDepth(newValue: Int): ParserSettings = self.copy(maxCommentParsingDepth = newValue)
   override def withIllegalHeaderWarnings(newValue: Boolean): ParserSettings = self.copy(illegalHeaderWarnings = newValue)
   override def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
   override def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
