@@ -36,6 +36,9 @@ jobs:
 
   publish-docs:
     name: Publish documentation
+    # only publish when a tag is published (otherwise, snapshots of old branches will overwrite
+    # snapshot docs from main)
+    if: ${{ github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
