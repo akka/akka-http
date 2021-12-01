@@ -1,4 +1,0 @@
-# We now use Scala 2.13.7 to build Scala 2.13 artifacts, which sometimes
-# generates slightly different wildcards in generic signatures.
-# This is unlikely to be a problem:
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.util.FastFuture.*")
