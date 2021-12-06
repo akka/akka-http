@@ -11,3 +11,28 @@ Tags are published to Maven Central. The process is currently a two-step process
  * Github Actions uses sbt-ci-release to prepare the release and push it to Sonatype, closing the repository at the end.
  * At that point a staging repository has been created that can be used to validate artifacts.
  * When the release has been validated, the release person needs to manually release the artifacts from staging to Maven Central.
+
+### Releasing only updated docs
+
+It is possible to release a revised documentation to the already existing release.
+
+1. Create a new branch from a release tag. If a revised documentation is for the `v10.2.4` release, then the name of the new branch should be `docs/v10.2.4`:
+    ```
+    $ git checkout v10.2.4
+    $ git checkout -b docs/v10.2.4
+    ```
+1. Add and commit `version.sbt` file that pins the version to the one that is being revised. Also set `isSnapshot` to `false` for the stable documentation links. For example:
+    ```scala
+    ThisBuild / version := "10.2.4"
+    ThisBuild / isSnapshot := false
+    ```
+1. Make or cherry-pick updates to the docs
+1. Build documentation locally with:
+    ```sh
+    sbt akka-docs/paradoxBrowse
+    ```
+1. Don't forget to commit and push
+1. Upload the docs:
+    ```sh
+    sbt docs/publishRsync
+    ```
