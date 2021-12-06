@@ -16,14 +16,14 @@ Tags are published to Maven Central. The process is currently a two-step process
 
 It is possible to release a revised documentation to the already existing release.
 
-1. Create a new branch from a release tag. If a revised documentation is for the `v2.6.4` release, then the name of the new branch should be `docs/v2.6.4`:
+1. Create a new branch from a release tag. If a revised documentation is for the `v10.2.4` release, then the name of the new branch should be `docs/v10.2.4`:
     ```
-    $ git checkout v2.6.4
-    $ git checkout -b docs/v2.6.4
+    $ git checkout v10.2.4
+    $ git checkout -b docs/v10.2.4
     ```
 1. Add and commit `version.sbt` file that pins the version to the one that is being revised. Also set `isSnapshot` to `false` for the stable documentation links. For example:
     ```scala
-    ThisBuild / version := "2.6.4"
+    ThisBuild / version := "10.2.4"
     ThisBuild / isSnapshot := false
     ```
 1. Make or cherry-pick updates to the docs
