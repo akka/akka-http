@@ -8,6 +8,7 @@ import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
+import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
 import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.Http.OutgoingConnection
@@ -81,7 +82,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
           try {
             httpPlusSwitching(http1, http2).addAttributes(prepareServerAttributes(settings, incoming))
               .watchTermination()(Keep.right)
-              .join(incoming.flow)
+              .join(HttpConnectionIdleTimeoutBidi(settings.idleTimeout, Some(incoming.remoteAddress)) join incoming.flow)
               .addAttributes(Http.cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
               .run().recover {
                 // Ignore incoming errors from the connection as they will cancel the binding.
