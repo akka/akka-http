@@ -12,12 +12,17 @@ import akka.annotation.InternalApi
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NoStackTrace
 
 /** INTERNAL API */
 @InternalApi
 private[akka] object HttpConnectionIdleTimeoutBidi {
+  def apply(idleTimeout: Duration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
+    idleTimeout match {
+      case f: FiniteDuration => apply(f, remoteAddress)
+      case _                 => BidiFlow.identity
+    }
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {
       case Some(addr) => s" on connection to [$addr]"

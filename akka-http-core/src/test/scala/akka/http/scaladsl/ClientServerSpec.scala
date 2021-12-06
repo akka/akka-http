@@ -43,8 +43,14 @@ import javax.net.ssl.{ SSLContext, TrustManagerFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
 
-class ClientServerSpec extends AkkaSpecWithMaterializer(
-  """
+class ClientServerSpec extends ClientServerSpecBase(http2 = false)
+// Runs the same tests but with http2 enabled which makes sure the alternative server pipeline from Http2.scala
+// is tested as well.
+class ClientServerHttp2EnabledSpec extends ClientServerSpecBase(http2 = true)
+
+abstract class ClientServerSpecBase(http2: Boolean) extends AkkaSpecWithMaterializer(
+  s"""
+     akka.http.server.preview.enable-http2 = $http2
      akka.http.server.request-timeout = infinite
      akka.http.server.log-unencrypted-network-bytes = 200
      akka.http.client.log-unencrypted-network-bytes = 200
@@ -622,6 +628,10 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "complete a request/response when request has `Connection: close` set" in Utils.assertAllStagesStopped {
+      // FIXME: There seems to be a potential connection leak here in the ProtocolSwitch stage?
+      // https://github.com/akka/akka-http/issues/3963
+      if (http2) pending
+
       // In akka/akka#19542 / akka/akka-http#459 it was observed that when an akka-http closes the connection after
       // a request, the TCP connection is sometimes aborted. Aborting means that `socket.close` is called with SO_LINGER = 0
       // which removes the socket immediately from the OS network stack. This might happen with or without having sent
@@ -667,6 +677,11 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "complete a request/response when the request side immediately closes the connection after sending the request" in Utils.assertAllStagesStopped {
+      // FIXME: with HTTP/2 enabled the connection is closed directly after receiving closing from client (i.e. half-closed
+      // HTTP connections are not allowed (whether they should be is a completely different question))
+      // https://github.com/akka/akka-http/issues/3964
+      if (http2) pending
+
       val (hostname, port) = ("localhost", 8080)
       val responsePromise = Promise[HttpResponse]()
 
