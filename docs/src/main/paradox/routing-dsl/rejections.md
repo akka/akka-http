@@ -37,7 +37,7 @@ Unhandled rejections will simply continue to flow through the route structure.
 
 The default `RejectionHandler` applied by the top-level glue code that turns a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] into a
 @apidoc[Flow] or async handler function for the @ref[low-level API](../server-side/low-level-api.md)
-@scala[(via `Route.handlerFlow` or `Route.asyncHandler`)]
+@scala[(via `Route.toFlow` or `Route.toFunction`)]
 will handle *all* rejections that reach it.
 
 
