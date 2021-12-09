@@ -39,11 +39,11 @@ instances to convert rejections and exceptions into appropriate HTTP responses f
 @ref[Sealing a Route](#sealing-a-route) is described more in detail later. 
 
 
-Using `Route.handlerFlow` or `Route.asyncHandler` a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] can be lifted into a handler @apidoc[Flow] or async handler
+Using `Route.toFlow` or `Route.toFunction` a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] can be lifted into a handler @apidoc[Flow] or async handler
 function to be used with a `bindAndHandleXXX` call from the @ref[Core Server API](../server-side/low-level-api.md).
 
 Note: There is also an implicit conversion from @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] to @apidoc[Flow[HttpRequest, HttpResponse, Unit]] defined in the
-@apidoc[RouteResult] companion, which relies on `Route.handlerFlow`.
+@apidoc[RouteResult] companion, which relies on `Route.toFlow`.
 
 <a id="requestcontext"></a>
 ## RequestContext

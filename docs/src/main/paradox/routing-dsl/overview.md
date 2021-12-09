@@ -19,8 +19,8 @@ As an alternative Akka HTTP provides a flexible DSL for expressing your service 
 composable elements (called @ref[Directives](directives/index.md)) in a concise and readable way. Directives are assembled into a so called
 *route structure* which, at its top-level, can be used to create a handler @apidoc[Flow] or async handler function that
 can be directly supplied to a `bind` call. @scala[The conversion from @scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult]) to flow can either be invoked explicitly
-using `Route.handlerFlow` or, otherwise, the conversion is also provided implicitly by
-`RouteResult.route2HandlerFlow` <a id="^1" href="#1">[1]</a>.]
+using `Route.toFlow` or, otherwise, the conversion is also provided implicitly by
+`RouteResult.routeToFlow` <a id="^1" href="#1">[1]</a>.]
 
 Here's the complete example rewritten using the composable high-level API:
 
@@ -77,6 +77,6 @@ For learning how to work with the Routing DSL you should first understand the co
 type. However, as @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] is just a type alias for `RequestContext => Future[RouteResult]`, there's no
 companion object for @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)]. Fortunately, the [implicit scope](https://www.scala-lang.org/files/archive/spec/2.11/07-implicits.html#implicit-parameters) for finding an implicit conversion also
 includes all types that are "associated with any part" of the source type which in this case means that the
-implicit conversion will also be picked up from `RouteResult.route2HandlerFlow` automatically.
+implicit conversion will also be picked up from `RouteResult.routeToFlow` automatically.
 
 @@@
