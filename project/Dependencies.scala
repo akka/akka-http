@@ -28,15 +28,11 @@ object Dependencies {
 
   val scala212Version = "2.12.14"
   val scala213Version = "2.13.7"
+  val allScalaVersions = Seq(scala213Version, scala212Version)
 
   val Versions = Seq(
-    crossScalaVersions := Seq(scala213Version, scala212Version),
-    scalaVersion := (System.getProperty("akka.build.scalaVersion") match {
-      case "2.13" => scala213Version
-      case "2.12" => scala212Version
-      case null   => crossScalaVersions.value.head
-    })
-  )
+    crossScalaVersions := allScalaVersions,
+    scalaVersion := allScalaVersions.head)
 
   object Provided {
     val jsr305 = "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided" // ApacheV2
