@@ -21,15 +21,15 @@ object MyExplicitExceptionHandler {
   import akka.http.scaladsl.server._
   import Directives._
 
-  val myExceptionHandler = ExceptionHandler {
-    case _: ArithmeticException =>
-      extractUri { uri =>
-        println(s"Request to $uri could not be handled normally")
-        complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
-      }
-  }
-
   object MyApp extends App {
+
+    val myExceptionHandler = ExceptionHandler {
+      case _: ArithmeticException =>
+        extractUri { uri =>
+          println(s"Request to $uri could not be handled normally")
+          complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
+        }
+    }
 
     implicit val system = ActorSystem()
 
@@ -55,16 +55,16 @@ object MyImplicitExceptionHandler {
   import akka.http.scaladsl.server._
   import Directives._
 
-  implicit def myExceptionHandler: ExceptionHandler =
-    ExceptionHandler {
-      case _: ArithmeticException =>
-        extractUri { uri =>
-          println(s"Request to $uri could not be handled normally")
-          complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
-        }
-    }
-
   object MyApp extends App {
+
+    implicit def myExceptionHandler: ExceptionHandler =
+      ExceptionHandler {
+        case _: ArithmeticException =>
+          extractUri { uri =>
+            println(s"Request to $uri could not be handled normally")
+            complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
+          }
+      }
 
     implicit val system = ActorSystem()
 
@@ -135,14 +135,14 @@ object RespondWithHeaderExceptionHandlerExample {
     }
 
     val divideRoutes: Route = path("divide") {
-      complete((1 / 0).toString) //Will throw ArithmeticException
+      complete((1 / 0).toString) // Will throw ArithmeticException
     }
 
     val route: Route =
       respondWithHeader(RawHeader("X-Outer-Header", "outer")) { // will apply, since it gets the response from the handler
         handleExceptions(myExceptionHandler) {
           greetingRoutes ~ divideRoutes ~ respondWithHeader(RawHeader("X-Inner-Header", "inner")) {
-            throw new Exception("Boom!") //Will cause Internal server error,
+            throw new Exception("Boom!") // Will cause Internal server error,
             // only ArithmeticExceptions are handled by myExceptionHandler.
           }
         }
@@ -162,7 +162,7 @@ class ExceptionHandlerExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "test explicit example" in {
     // tests:
-    Get() ~> handleExceptions(MyExplicitExceptionHandler.myExceptionHandler) {
+    Get() ~> handleExceptions(MyExplicitExceptionHandler.MyApp.myExceptionHandler) {
       _.complete((1 / 0).toString)
     } ~> check {
       responseAs[String] shouldEqual "Bad numbers, bad result!!!"
@@ -170,7 +170,7 @@ class ExceptionHandlerExamplesSpec extends RoutingSpec with CompileOnlySpec {
   }
 
   "test implicit example" in {
-    import MyImplicitExceptionHandler.myExceptionHandler
+    import MyImplicitExceptionHandler.MyApp.myExceptionHandler
     import akka.http.scaladsl.server._
     // tests:
     Get() ~> Route.seal(ctx => ctx.complete((1 / 0).toString)) ~> check {
