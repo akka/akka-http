@@ -7,7 +7,7 @@ package docs.http.scaladsl.server
 import akka.http.scaladsl.server.ExceptionHandler
 import akka.http.scaladsl.server.RoutingSpec
 import docs.CompileOnlySpec
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 // format: OFF
 
@@ -78,7 +78,7 @@ object MyImplicitExceptionHandler {
   //#implicit-handler-example
 }
 
-@silent("Evaluation of a constant expression results in an arithmetic error")
+@nowarn("msg=Evaluation of a constant expression results in an arithmetic error")
 object ExceptionHandlerInSealExample {
   //#seal-handler-example
   import akka.http.scaladsl.model.HttpResponse
@@ -107,7 +107,7 @@ object ExceptionHandlerInSealExample {
   //#seal-handler-example
 }
 
-@silent("Evaluation of a constant expression results in an arithmetic error")
+@nowarn("msg=Evaluation of a constant expression results in an arithmetic error")
 object RespondWithHeaderExceptionHandlerExample {
   //#respond-with-header-exceptionhandler-example
   import akka.actor.ActorSystem
@@ -157,7 +157,7 @@ object RespondWithHeaderExceptionHandlerExample {
   //#respond-with-header-exceptionhandler-example
 }
 
-@silent("Evaluation of a constant expression results in an arithmetic error")
+@nowarn("msg=Evaluation of a constant expression results in an arithmetic error")
 class ExceptionHandlerExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "test explicit example" in {

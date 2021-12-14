@@ -8,10 +8,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.{ ActorMaterializer, Materializer }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("since 10.2.0")
-@silent("method apply in object ActorMaterializer is deprecated")
+@nowarn("msg=is deprecated")
 class AkkaHttp1020MigrationSpec {
   import akka.http.scaladsl.server.Directives._
 

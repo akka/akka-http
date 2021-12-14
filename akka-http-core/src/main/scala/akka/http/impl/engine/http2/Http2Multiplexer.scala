@@ -14,7 +14,7 @@ import akka.macros.LogHelper
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
 import akka.stream.stage.StageLogging
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.collection.mutable
 
@@ -156,7 +156,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def name: String = productPrefix
 
         def onPull(): MultiplexerState
-        @silent("references private")
+        @nowarn("msg=references private")
         def pushControlFrame(frame: FrameEvent): MultiplexerState
         def connectionWindowAvailable(): MultiplexerState
         def enqueueOutStream(streamId: Int): MultiplexerState

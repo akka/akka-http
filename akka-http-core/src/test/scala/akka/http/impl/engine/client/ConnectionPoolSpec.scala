@@ -497,7 +497,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
       Await.result(bytes, 3.seconds) should be(ByteString("lala"))
     }
 
-    /**
+    /*
      * Currently failing the 'outgoing request' part of the connection may also fail the 'incoming reply' part of the connection.
      * In the future we may want to disconnect those and allow the server we connect to to choose how to handle the failure
      * of the request entity.

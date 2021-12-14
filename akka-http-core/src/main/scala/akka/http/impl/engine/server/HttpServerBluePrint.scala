@@ -33,8 +33,8 @@ import akka.http.scaladsl.model.headers.`Timeout-Access`
 import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.impl.util.LogByteStringTools._
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
 import scala.util.Failure
 
 /**
@@ -136,7 +136,7 @@ private[http] object HttpServerBluePrint {
         case RequestStart(method, uri, protocol, attrs, hdrs, entityCreator, _, _) =>
           val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
 
-          @silent("use remote-address-attribute instead")
+          @nowarn("msg=use remote-address-attribute instead")
           val effectiveHeaders =
             if (settings.remoteAddressHeader && remoteAddressOpt.isDefined)
               headers.`Remote-Address`(RemoteAddress(remoteAddressOpt.get)) +: hdrs

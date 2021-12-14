@@ -23,10 +23,10 @@ import akka.http.scaladsl.model.{ HttpEntity, HttpRequest }
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.impl.util._
 import akka.testkit._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalatest.wordspec.AnyWordSpec
 
-@silent("deprecated .* is internal API")
+@nowarn("msg=deprecated .* is internal API")
 abstract class CoderSpec extends AnyWordSpec with CodecSpecSupport with Inspectors {
   protected def Coder: Coder
   protected def newDecodedInputStream(underlying: InputStream): InputStream

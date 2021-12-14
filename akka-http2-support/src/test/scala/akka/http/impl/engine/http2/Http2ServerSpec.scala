@@ -36,7 +36,7 @@ import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.testkit._
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
@@ -566,7 +566,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendOutConnectionLevelWindowUpdate(singleDataFrame = true) // to examine strict entity handling when minCollectStrictEntityBytes != 0
         sendOutConnectionLevelWindowUpdate(singleDataFrame = false) // to examine what happens when entity is collected but then converted to stream
 
-        /** These cases are different when minCollectStrictEntityBytes = 1 because either a strict or a streamed request entity are then created  */
+        /* These cases are different when minCollectStrictEntityBytes = 1 because either a strict or a streamed request entity are then created  */
         def handleEarlyWindowUpdateCorrectly(endStreamSeen: Boolean) =
           s"handle WINDOW_UPDATE correctly when received before started sending out response and while receiving request data (seen endStream = $endStreamSeen)" inAssertAllStagesStopped new WaitingForRequestData {
             val bytesToSend = 70000 // > Http2Protocol.InitialWindowSize
@@ -1443,7 +1443,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         user.requestIn.ensureSubscription()
 
         val request = user.expectRequestRaw()
-        @silent("deprecated")
+        @nowarn("msg=deprecated")
         val remoteAddressHeader = request.header[headers.`Remote-Address`].get
         remoteAddressHeader.address.getAddress.get().toString shouldBe ("/" + theAddress)
         remoteAddressHeader.address.getPort shouldBe thePort

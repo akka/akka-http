@@ -9,7 +9,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.testkit.TestActors
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import docs.CompileOnlySpec
 
 import scala.language.postfixOps
@@ -17,7 +17,7 @@ import scala.concurrent.{ Await, ExecutionContext, Future }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-@silent("will not be a runnable program")
+@nowarn("msg=will not be a runnable program")
 class HttpServerExampleSpec extends AnyWordSpec with Matchers
   with CompileOnlySpec {
 

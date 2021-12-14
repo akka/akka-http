@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.settings
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -28,7 +28,7 @@ class SettingsEqualitySpec extends AnyWordSpec with Matchers {
 
       s1 shouldBe s2
       s1.toString should startWith("ParserSettings(")
-    }: @silent("apply in object ParserSettings is deprecated")
+    }: @nowarn("msg=apply in object ParserSettings is deprecated")
 
     "hold for ClientConnectionSettings" in {
       val s1 = ClientConnectionSettings(config)

@@ -10,11 +10,11 @@ import akka.http.scaladsl.server.Directives.complete
 import akka.stream.{ Materializer, SystemMaterializer }
 import akka.stream.scaladsl.Flow
 import akka.testkit.TestKit
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-@silent("never used")
+@nowarn("msg=never used")
 class RouteResultSpec extends AnyWordSpec with Matchers {
   "RouteResult" should {
     val route: Route = complete(StatusCodes.OK)
@@ -30,7 +30,7 @@ class RouteResultSpec extends AnyWordSpec with Matchers {
       val system = ActorSystem("RouteResultSpec1")
       implicit val materializer: Materializer = SystemMaterializer(system).materializer
 
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val flow: Flow[HttpRequest, HttpResponse, Any] = route
 
       TestKit.shutdownActorSystem(system, verifySystemShutdown = true)

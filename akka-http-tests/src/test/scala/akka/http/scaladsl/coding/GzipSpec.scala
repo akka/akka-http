@@ -9,9 +9,9 @@ import java.util.zip.{ GZIPInputStream, GZIPOutputStream, ZipException }
 
 import akka.http.impl.util._
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("deprecated .* is internal API")
+@nowarn("msg=deprecated .* is internal API")
 class GzipSpec extends CoderSpec {
   protected def Coder: Coder = Coders.Gzip(compressionLevel = 9)
 

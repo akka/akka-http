@@ -8,7 +8,7 @@ import java.util.function.{ BiFunction, Function, Supplier }
 
 import akka.annotation.ApiMayChange
 import akka.http.javadsl.server.directives.FramedEntityStreamingDirectives
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.annotation.varargs
 
@@ -26,7 +26,7 @@ object Directives extends AllDirectives {
 
   @Deprecated
   @varargs
-  @silent("route in class RouteDirectives is deprecated")
+  @nowarn("msg=route in class RouteDirectives is deprecated")
   override def route(alternatives: Route*): Route =
     super.route(alternatives: _*)
 
