@@ -565,7 +565,8 @@ object MimaWithPrValidation extends AutoPlugin {
               (fullClasspath in mimaFindBinaryIssues).value,
               mimaCheckDirection.value,
               scalaVersion.value,
-              streams.value.log
+              streams.value.log,
+              Nil
             )
 
             val binary = mimaBinaryIssueFilters.value
