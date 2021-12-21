@@ -10,3 +10,5 @@ target
 .*.swp
 *.vim
 .ensime*
+.bsp
+.tool-versions
