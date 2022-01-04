@@ -107,7 +107,7 @@ private[http] object PoolInterface {
 
     val hcps = poolId.hcps
     val idleTimeout = hcps.setup.settings.idleTimeout
-
+    val requestTimeout = hcps.setup.settings.requestTimeout
     val shutdownPromise = Promise[ShutdownReason]()
     def shuttingDown: Boolean = shuttingDownReason.isDefined
     var shuttingDownReason: Option[ShutdownReason] = None
@@ -143,7 +143,13 @@ private[http] object PoolInterface {
             remainingRequested -= 1
             response0
         }
-      rc.responsePromise.complete(response1)
+      requestTimeout match {
+        case Some(_) => if (!rc.responsePromise.tryComplete(response1)) {
+          response1.foreach(_.discardEntityBytes()(materializer))
+        }
+        case None => rc.responsePromise.complete(response1)
+      }
+
       onResponseComplete(ctx)
       pull(responseIn)
 
@@ -167,6 +173,7 @@ private[http] object PoolInterface {
           val retries = if (request.method.isIdempotent) hcps.setup.settings.maxRetries else 0
           remainingRequested += 1
           resetIdleTimer()
+          scheduleRequestTimeoutIfRequested(request, responsePromise)
           push(requestOut, RequestContext(effectiveRequest, responsePromise, retries))
         } else {
           log.debug(s"Could not dispatch request [${request.debugString}] because buffer is full")
@@ -174,6 +181,12 @@ private[http] object PoolInterface {
         }
     }
     val shutdownCallback = getAsyncCallback[Unit] { _ => requestShutdown(ShutdownReason.ShutdownRequested) }
+
+    def scheduleRequestTimeoutIfRequested(request: HttpRequest, responsePromise: Promise[HttpResponse]): Unit = requestTimeout.foreach {
+      timeout =>
+        val cancelable = materializer.scheduleOnce(timeout, () => responsePromise.tryFailure(RequestTimeoutException(request, s"Failed with timeout: $requestTimeout.")))
+        responsePromise.future.onComplete(_ => cancelable.cancel())
+    }
 
     def afterRequestFinished(): Unit = {
       shutdownIfRequestedAndPossible()

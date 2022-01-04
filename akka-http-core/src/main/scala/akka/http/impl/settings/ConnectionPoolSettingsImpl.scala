@@ -27,6 +27,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxConnectionBackoff:              FiniteDuration,
   idleTimeout:                       Duration,
   keepAliveTimeout:                  Duration,
+  requestTimeout:                    Option[FiniteDuration],
   connectionSettings:                ClientConnectionSettings,
   responseEntitySubscriptionTimeout: Duration,
   hostOverrides:                     immutable.Seq[(Regex, ConnectionPoolSettings)])
@@ -64,6 +65,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
     maxConnectionBackoff:              FiniteDuration                                   = maxConnectionBackoff,
     idleTimeout:                       Duration                                         = idleTimeout,
     keepAliveTimeout:                  Duration                                         = keepAliveTimeout,
+    requestTimeout:                    Option[FiniteDuration]                           = requestTimeout,
     connectionSettings:                ClientConnectionSettings                         = connectionSettings,
     responseEntitySubscriptionTimeout: Duration                                         = responseEntitySubscriptionTimeout): ConnectionPoolSettings =
     copy(
@@ -77,6 +79,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
       maxConnectionBackoff,
       idleTimeout,
       keepAliveTimeout,
+      requestTimeout,
       connectionSettings,
       responseEntitySubscriptionTimeout,
       hostOverrides = hostOverrides.map { case (k, v) => k -> mapHostOverrides(v) })
@@ -99,6 +102,7 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
       c.getFiniteDuration("max-connection-backoff"),
       c.getPotentiallyInfiniteDuration("idle-timeout"),
       c.getPotentiallyInfiniteDuration("keep-alive-timeout"),
+      c.ifDefined("request-timeout", _.getFiniteDuration(_)),
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
       List.empty

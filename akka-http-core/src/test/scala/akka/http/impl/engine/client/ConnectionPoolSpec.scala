@@ -192,6 +192,41 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
       Await.result(idSum, 10.seconds.dilated) shouldEqual N * (N + 1) / 2
     }
 
+    "be able to handle request timeout against the test server" in new TestSetup {
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](requestTimeout = Some(200.millis))
+
+      requestIn.sendNext(HttpRequest(uri = "/") -> 42)
+      responseOutSub.request(1)
+      acceptIncomingConnection()
+
+      override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString = {
+        Thread.sleep(2000)
+        bytes
+      }
+
+      val (Failure(RequestTimeoutException(_, _)), 42) = responseOut.expectNext()
+    }
+
+    "surface request timeout errors" in new TestSetup(autoAccept = true) {
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](requestTimeout = Some(1000.millis))
+
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 41)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/c") -> 43)
+      responseOutSub.request(3)
+
+      override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
+        if (bytes.utf8String.contains("/b")) {
+          Thread.sleep(2000)
+          bytes
+        } else bytes
+
+      val responses = Seq(responseOut.expectNext(), responseOut.expectNext(), responseOut.expectNext())
+      responses mustContainLike { case (Success(x), 41) => requestUri(x) should endWith("/a") }
+      responses mustContainLike { case (Failure(RequestTimeoutException(_, _)), 42) => () }
+      responses mustContainLike { case (Success(x), 43) => requestUri(x) should endWith("/c") }
+    }
+
     "surface connection-level errors" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 0)
 
@@ -689,6 +724,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
       maxOpenRequests:       Int                      = 8,
       pipeliningLimit:       Int                      = 1,
       idleTimeout:           FiniteDuration           = 5.seconds,
+      requestTimeout:        Option[FiniteDuration]   = None,
       maxConnectionLifetime: Duration                 = Duration.Inf,
       ccSettings:            ClientConnectionSettings = ClientConnectionSettings(system)) = {
 
@@ -700,6 +736,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
           .withMaxOpenRequests(maxOpenRequests)
           .withPipeliningLimit(pipeliningLimit)
           .withIdleTimeout(idleTimeout.dilated)
+          .withRequestTimeout(requestTimeout)
           .withMaxConnectionLifetime(maxConnectionLifetime)
           .withConnectionSettings(ccSettings)
 
