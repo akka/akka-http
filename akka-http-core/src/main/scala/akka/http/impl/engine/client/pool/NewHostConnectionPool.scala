@@ -534,7 +534,10 @@ private[client] object NewHostConnectionPool {
           override def onDownstreamFinish(): Unit =
             withSlot { slot =>
               slot.debug("Connection cancelled")
-              slot.onConnectionFailed(new IllegalStateException("Connection was cancelled (caused by a failure of the underlying HTTP connection)"))
+              // Let's use StreamTcpException for now.
+              // FIXME: after moving to Akka 2.6.x only, we can use cancelation cause propagation which would probably also report
+              // a StreamTcpException here
+              slot.onConnectionFailed(new StreamTcpException("Connection was cancelled (caused by a failure of the underlying HTTP connection)"))
               responseIn.cancel()
             }
 
