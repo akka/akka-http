@@ -532,7 +532,11 @@ private[client] object NewHostConnectionPool {
           def onPull(): Unit = () // emitRequests makes sure not to push too early
 
           override def onDownstreamFinish(): Unit =
-            withSlot(_.debug("Connection cancelled"))
+            withSlot { slot =>
+              slot.debug("Connection cancelled")
+              slot.onConnectionFailed(new IllegalStateException("Connection was cancelled (caused by a failure of the underlying HTTP connection)"))
+              responseIn.cancel()
+            }
 
           /** Helper that makes sure requestOut is pulled before pushing */
           private def emitRequest(request: HttpRequest): Unit =
