@@ -256,6 +256,21 @@ lazy val httpTests = project("akka-http-tests")
   .settings(ValidatePR / additionalTasks += MultiJvm / headerCheck)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
+  .settings(
+    // Fix to reenable scala-steward, see https://gitter.im/scala-steward-org/scala-steward?at=6183bb66d78911028a1b7cd8
+    // Putting that jar file with the complicated name into the git tree directly breaks if something in the environment
+    // has unicode path names configured wrongly. So, we wrap it into an extra zip file which is extracted before
+    // tests are run.
+    Test / unmanagedJars += {
+      val targetDir = target.value / "extra-libs"
+      val targetFile = targetDir / "i have späces.jar"
+      if (!targetFile.exists) {
+        val zipFile = (Test / sourceDirectory).value / "extra-libs.zip"
+        IO.unzip(zipFile, targetDir)
+      }
+      targetFile
+    }
+  )
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .settings(commonSettings)
