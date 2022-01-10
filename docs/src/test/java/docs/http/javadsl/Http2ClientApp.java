@@ -39,7 +39,7 @@ public class Http2ClientApp {
         ConfigFactory.parseString(
             "#akka.loglevel = debug\n" +
                "akka.http.client.http2.log-frames = true\n" +
-               "akka.http.client.parsing.max-content-length = 20m"
+               "akka.http.client.parsing.max-content-length = 0"
         ).withFallback(ConfigFactory.load());
 
     ActorSystem system = ActorSystem.create("Http2ClientApp", config);

@@ -28,7 +28,7 @@ object Http2ClientApp extends App {
       """
          # akka.loglevel = debug
          akka.http.client.http2.log-frames = true
-         akka.http.client.parsing.max-content-length = 20m
+         akka.http.client.parsing.max-content-length = 0
       """
     ).withFallback(ConfigFactory.defaultApplication())
 

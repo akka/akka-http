@@ -43,7 +43,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
     akka.loglevel = WARNING
     akka.http.parsing.max-header-value-length = 32
     akka.http.parsing.max-uri-length = 40
-    akka.http.parsing.max-content-length = infinite""")
+    akka.http.parsing.max-content-length = 0""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
