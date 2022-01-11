@@ -71,7 +71,7 @@ object Dependencies {
       val junit        = Compile.junit                                             % "test" // Common Public License 1.0
       val specs2       = "org.specs2"     %% "specs2-core"     % specs2Version     % "test" // MIT
       val scalacheck   = "org.scalacheck" %% "scalacheck"      % scalaCheckVersion % "test" // New BSD
-      val junitIntf    = "com.novocode"    % "junit-interface" % "0.11"            % "test" // MIT
+      val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.2"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
       val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
