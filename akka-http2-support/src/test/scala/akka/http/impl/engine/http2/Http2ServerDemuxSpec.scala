@@ -12,6 +12,8 @@ import akka.stream.scaladsl.{ BidiFlow, Flow, Keep }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.util.{ ByteString, OptionVal }
 
+import scala.collection.immutable.Seq
+
 /**
  * low-level tests testing Http2ServerDemux in isolation
  */
