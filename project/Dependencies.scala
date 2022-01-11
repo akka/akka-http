@@ -55,13 +55,13 @@ object Dependencies {
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.9.2"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.9.3"
 
     val scalafix    = "ch.epfl.scala"                 %% "scalafix-core"               % Dependencies.scalafixVersion // grab from plugin
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.7"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.9"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion      % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.9.12"            % "test" // WTFPL
     }
@@ -71,7 +71,7 @@ object Dependencies {
       val junit        = Compile.junit                                             % "test" // Common Public License 1.0
       val specs2       = "org.specs2"     %% "specs2-core"     % specs2Version     % "test" // MIT
       val scalacheck   = "org.scalacheck" %% "scalacheck"      % scalaCheckVersion % "test" // New BSD
-      val junitIntf    = "com.novocode"    % "junit-interface" % "0.11"            % "test" // MIT
+      val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.2"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
       val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
