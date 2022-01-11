@@ -44,7 +44,7 @@ object Dependencies {
   }
 
   object Compile {
-    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.3.0" // Scala License
+    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "2.0.1" // Scala License
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.6"       // ApacheV2
