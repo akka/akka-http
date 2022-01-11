@@ -30,9 +30,17 @@ class H2cUpgradeSpec extends AkkaSpecWithMaterializer("""
     ).futureValue
 
     // https://tools.ietf.org/html/rfc7540#section-3.2
-    "respond with HTTP 101" in {
+    "respond with HTTP 101 and no initial settings" in {
       // Not the whole frame, but only the identifiers and values - so an empty string for 0 settings is valid:
-      val settings = ""
+      testWith("")
+    }
+
+    "respond with HTTP 101 and some initial settings" in {
+      // Not the whole frame, but only the identifiers and values - so an empty string for 0 settings is valid:
+      testWith("AAMAAABkAAQCAAAAAAIAAAAA")
+    }
+
+    def testWith(settings: String) {
       val upgradeRequest =
         s"""GET / HTTP/1.1
 Host: localhost
