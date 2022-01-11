@@ -20,7 +20,7 @@ object Dependencies {
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
 
   val scalaTestVersion = "3.1.4"
-  val specs2Version = "4.10.6"
+  val specs2Version = "4.13.1"
   val scalaCheckVersion = "1.14.3"
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
