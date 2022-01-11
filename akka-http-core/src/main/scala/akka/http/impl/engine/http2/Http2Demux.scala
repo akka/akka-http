@@ -255,10 +255,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         if (initialRemoteSettings.nonEmpty) {
           debug(s"Applying ${initialRemoteSettings.length} initial settings!")
           applyRemoteSettings(initialRemoteSettings)
+          // applyRemoteSettings may or may not have pulled `substreamIn`
+          tryPullSubStreams()
+        } else {
+          pull(substreamIn)
         }
 
         pullFrameIn()
-        pull(substreamIn)
 
         // both client and server must send a settings frame as first frame
         multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))
