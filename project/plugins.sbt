@@ -24,7 +24,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.29")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.7")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
-libraryDependencies += "org.kohsuke" % "github-api" % "1.131"
+libraryDependencies += "org.kohsuke" % "github-api" % "1.301"
 
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "3.1.15"
