@@ -20,7 +20,7 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.38")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.25")
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.29")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.33")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.7")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
