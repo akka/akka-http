@@ -258,7 +258,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         }
 
         pullFrameIn()
-        pull(substreamIn)
+        // applyRemoteSettings may or may not have pulled `substreamIn` already
+        tryPullSubStreams()
 
         // both client and server must send a settings frame as first frame
         multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))

@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier._
 import akka.http.impl.util._
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.HttpConnectionContext
@@ -30,9 +32,26 @@ class H2cUpgradeSpec extends AkkaSpecWithMaterializer("""
     ).futureValue
 
     // https://tools.ietf.org/html/rfc7540#section-3.2
-    "respond with HTTP 101" in {
-      // Not the whole frame, but only the identifiers and values - so an empty string for 0 settings is valid:
-      val settings = ""
+    "respond with HTTP 101 and no initial settings" in {
+      val settings = encode(Nil)
+      // Settings are placed directly in the HTTP header, without any framing,
+      // so 'no settings' just yields the empty string:
+      settings shouldBe ""
+      testWith(settings)
+    }
+
+    "respond with HTTP 101 and some initial settings" in {
+      // real-world settings example as used by curl
+      val settings = encode(Seq(
+        (SETTINGS_MAX_CONCURRENT_STREAMS, 100),
+        (SETTINGS_INITIAL_WINDOW_SIZE, 33554432),
+        (SETTINGS_ENABLE_PUSH, 0)
+      ))
+      settings shouldBe "AAMAAABkAAQCAAAAAAIAAAAA"
+      testWith(settings)
+    }
+
+    def testWith(settings: String) {
       val upgradeRequest =
         s"""GET / HTTP/1.1
 Host: localhost
@@ -59,5 +78,18 @@ HTTP2-Settings: $settings
       frameProbe.expectFrameFlagsStreamIdAndPayload(Http2Protocol.FrameType.SETTINGS)
       frameProbe.expectHeaderBlock(1, true)
     }
+  }
+
+  def encode(settings: Seq[(SettingIdentifier, Int)]): String = {
+    val bytes = settings.flatMap {
+      case (id, value) => Seq(
+        0.toByte,
+        id.id.toByte,
+        (value >> 24).toByte,
+        (value >> 16).toByte,
+        (value >> 8).toByte,
+        value.toByte)
+    }
+    ByteString.fromArrayUnsafe(bytes.toArray).encodeBase64.utf8String
   }
 }
