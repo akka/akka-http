@@ -22,7 +22,6 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
 import org.scalactic.Tolerance
 import org.scalatest.concurrent.Eventually
-import org.scalatest.Assertion
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -200,8 +199,8 @@ class GracefulTerminationSpec
 
   }
 
-  private def ensureConnectionIsClosed(r: Future[HttpResponse]): Assertion =
-    (the[StreamTcpException] thrownBy Await.result(r, 1.second)).getMessage should endWith("Connection refused")
+  private def ensureConnectionIsClosed(r: Future[HttpResponse]): StreamTcpException =
+    the[StreamTcpException] thrownBy Await.result(r, 1.second)
 
   class TestSetup(overrideResponse: Option[HttpResponse] = None) {
     val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
