@@ -164,18 +164,18 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
 
     // Shutdown a pool and signal its termination.
     case Shutdown(poolId, shutdownCompletedPromise) =>
-      statusById.get(poolId).foreach {
-        case PoolInterfaceRunning(pool) =>
+      statusById.get(poolId) match {
+        case Some(PoolInterfaceRunning(pool)) =>
           // Ask the pool to shutdown itself. Queued connections will be resent here
           // to this actor by the pool actor, they will be retried once the shutdown
           // has completed.
           val completed = pool.shutdown()(context.dispatcher)
           shutdownCompletedPromise.tryCompleteWith(completed.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext))
           statusById += poolId -> PoolInterfaceShuttingDown(shutdownCompletedPromise)
-        case PoolInterfaceShuttingDown(formerPromise) =>
+        case Some(PoolInterfaceShuttingDown(formerPromise)) =>
           // Pool is already shutting down, mirror the existing promise.
           shutdownCompletedPromise.tryCompleteWith(formerPromise.future)
-        case _ =>
+        case None =>
           // Pool does not exist, shutdown is not needed.
           shutdownCompletedPromise.trySuccess(Done)
       }

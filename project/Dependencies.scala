@@ -26,7 +26,7 @@ object Dependencies {
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
   val scala212Version = "2.12.15"
-  val scala213Version = "2.13.7"
+  val scala213Version = "2.13.8"
   val allScalaVersions = Seq(scala213Version, scala212Version)
 
   val Versions = Seq(
@@ -67,7 +67,7 @@ object Dependencies {
       val junit        = Compile.junit                                             % "test" // Common Public License 1.0
       val specs2       = "org.specs2"     %% "specs2-core"     % specs2Version     % "test" // MIT
       val scalacheck   = "org.scalacheck" %% "scalacheck"      % scalaCheckVersion % "test" // New BSD
-      val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.2"            % "test" // MIT
+      val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.3"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
       val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
