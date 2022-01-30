@@ -50,7 +50,7 @@ private[http2] object FrameLogger {
 
       bytes
         .take(num)
-        .map(_ formatted "%02x")
+        .map("%02x" format _)
         .mkString(" ") + ellipsis
     }
 

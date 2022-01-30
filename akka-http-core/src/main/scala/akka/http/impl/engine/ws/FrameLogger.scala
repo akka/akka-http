@@ -44,7 +44,7 @@ private[ws] object FrameLogger {
       val num = math.min(maxBytes, bytes.size)
       val ellipsis = if (num < bytes.size) s" [... ${bytes.size - num} more bytes]" else ""
       val first = bytes.take(num)
-      val h = first.map(_ formatted "%02x").mkString(" ")
+      val h = first.map("%02x" format _).mkString(" ")
       val ascii = first.map(LogByteStringTools.asASCII).mkString
       s"$WHITE$h$RESET | $WHITE$ascii$RESET$ellipsis"
     }

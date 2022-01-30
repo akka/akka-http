@@ -55,7 +55,7 @@ private[http] object Protocol {
     case object Ping extends AbstractOpcode(0x9, "PING")
     case object Pong extends AbstractOpcode(0xA, "PONG")
 
-    case class Other(override val code: Byte) extends AbstractOpcode(code, code formatted "0x%02x")
+    case class Other(override val code: Byte) extends AbstractOpcode(code, "0x%02x" format code)
   }
 
   /**
