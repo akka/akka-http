@@ -43,9 +43,11 @@ object MyRejectionHandler {
 
     implicit val system = ActorSystem()
 
-    val route: Route =
+    val route: Route = handleRejections(myRejectionHandler) {
       // ... some route structure
       null // #hide
+    }
+
 
     Http().newServerAt("localhost", 8080).bind(route)
   }
