@@ -5,7 +5,6 @@
 package akka.http.scaladsl.marshalling
 
 import scala.concurrent.{ ExecutionContext, Future }
-import akka.http.ccompat._
 import akka.http.scaladsl.server.ContentNegotiator
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._

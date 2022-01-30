@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.http2
 
-import akka.http.impl.engine.http2.FrameEvent.{ ParsedHeadersFrame, Setting, SettingsAckFrame, SettingsFrame, WindowUpdateFrame }
+import akka.http.impl.engine.http2.FrameEvent.{ ParsedHeadersFrame, Setting, SettingsFrame }
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.scaladsl.settings.Http2ServerSettings
