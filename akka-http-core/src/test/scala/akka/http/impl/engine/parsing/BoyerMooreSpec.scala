@@ -37,7 +37,7 @@ class BoyerMooreSpec extends AnyWordSpec with Matchers {
         val bmFinds = find(needle, haystack, skipFindsThatStartInFinds = true)
         val reFinds = findWithRegex(needle, haystack)
         if (bmFinds != reFinds) {
-          def showBytes(bs: Seq[Byte]): String = bs.map(b => (b & 0xff).formatted("%02x")).mkString(" ")
+          def showBytes(bs: Seq[Byte]): String = bs.map(b => "%02x".format(b & 0xff)).mkString(" ")
           def len(num: Int) = num * 2 + math.max(0, num - 1)
 
           def showFind(ix: Int): String = {
