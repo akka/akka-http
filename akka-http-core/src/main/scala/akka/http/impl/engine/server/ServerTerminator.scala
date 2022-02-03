@@ -29,7 +29,7 @@ import scala.util.{ Failure, Success }
  */
 // "Hasta la vista, baby."
 @InternalApi
-private[http] abstract class ServerTerminator {
+private[http] trait ServerTerminator {
   /**
    * Initiate the termination sequence of this server.
    */

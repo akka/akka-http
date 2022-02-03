@@ -11,6 +11,8 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.engine.server.ServerTerminator
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ AttributeKey, HttpEntity, HttpHeader }
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpEntity.LastChunk
@@ -22,14 +24,11 @@ import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Source
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.InHandler
-import akka.stream.stage.StageLogging
-import akka.stream.stage.TimerGraphStageLogic
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, StageLogging, TimerGraphStageLogic }
 import akka.util.{ ByteString, OptionVal }
 
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
@@ -197,7 +196,8 @@ private[http2] object ConfigurablePing {
  *                              on the server end of a connection.
  */
 @InternalApi
-private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean)
+  extends GraphStageWithMaterializedValue[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream], ServerTerminator] {
   stage =>
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
@@ -211,8 +211,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
   def completionTimeout: FiniteDuration
 
-  def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ServerTerminator) = {
+    object Logic extends TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper with ServerTerminator {
       logic =>
 
       import Http2Demux.CompletionTimeout
@@ -220,12 +220,35 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart] = stage.wrapTrailingHeaders(headers)
 
       override def isServer: Boolean = stage.isServer
+
       override def settings: Http2CommonSettings = http2Settings
+
       override def isUpgraded: Boolean = upgraded
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
+
       // cache debug state at the beginning to avoid that this has to be queried all the time
       override lazy val isDebugEnabled: Boolean = super.isDebugEnabled
+
+      private val terminationPromise = Promise[Http.HttpTerminated]()
+      private var terminating: Boolean = false
+      private var lastIdBeforeTermination: Int = 0
+      private val terminateCallback = getAsyncCallback[FiniteDuration](triggerTermination)
+      override def terminate(deadline: FiniteDuration)(implicit ex: ExecutionContext): Future[Http.HttpTerminated] = {
+        terminateCallback.invoke(deadline)
+        terminationPromise.future
+      }
+      private def triggerTermination(deadline: FiniteDuration): Unit = {
+        // check if we are already terminating, otherwise start termination
+        if (!terminating) {
+          log.debug("Termination now starting...")
+          terminating = true
+          pushGOAWAY(ErrorCode.NO_ERROR, "")
+          lastIdBeforeTermination = lastStreamId()
+          completeIfDone()
+          scheduleOnce(CompletionTimeout, deadline)
+        }
+      }
 
       def frameOutFinished(): Unit = {
         // make sure we clean up/fail substreams with a custom failure before stage is canceled
@@ -307,7 +330,14 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           frame match {
             case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ => multiplexer.updateConnectionLevelWindow(increment)
             case p: PriorityFrame => multiplexer.updatePriority(p)
-            case s: StreamFrameEvent => handleStreamEvent(s)
+            case s: StreamFrameEvent =>
+              if (!terminating)
+                handleStreamEvent(s)
+              else if (s.streamId <= lastIdBeforeTermination)
+                handleStreamEvent(s)
+              else
+                // make clear that we are not accepting any more data on other streams
+                multiplexer.pushControlFrame(RstStreamFrame(s.streamId, ErrorCode.REFUSED_STREAM))
 
             case SettingsFrame(settings) =>
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
@@ -378,14 +408,19 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       override def onAllDataFlushed(): Unit = completeIfDone()
 
       private def completeIfDone(): Unit = {
-        val noMoreOutgoingStreams = isClosed(substreamIn) && activeStreamCount() == 0
+        val noMoreOutgoingStreams = (terminating || isClosed(substreamIn)) && activeStreamCount() == 0
         def allOutgoingDataFlushed = isClosed(frameOut) || multiplexer.hasFlushedAllData
         if (noMoreOutgoingStreams && allOutgoingDataFlushed) {
-          cancel(frameIn)
-          complete(frameOut)
-          // Using complete here (instead of a simpler `completeStage`) will make sure the buffer can be
-          // drained by the user before completely shutting down the stage finally.
-          bufferedSubStreamOutput.complete()
+          if (isServer)
+            completeStage()
+          else {
+            cancel(frameIn)
+            complete(frameOut)
+
+            // Using complete here (instead of a simpler `completeStage`) will make sure the buffer can be
+            // drained by the user before completely shutting down the stage finally.
+            bufferedSubStreamOutput.complete()
+          }
         }
       }
 
@@ -456,13 +491,17 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           }
         case CompletionTimeout =>
           info("Timeout: Peer didn't finish in-flight requests. Closing pending HTTP/2 streams. Increase this timeout via the 'completion-timeout' setting.")
+
           completeStage()
       }
 
       override def postStop(): Unit = {
         shutdownStreamHandling()
+        terminationPromise.success(Http.HttpConnectionTerminated)
       }
     }
+    (Logic, Logic)
+  }
 }
 
 /**
