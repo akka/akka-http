@@ -112,7 +112,7 @@ private final class ServerSentEventParser(maxEventSize: Int) extends GraphStage[
         } else if (builder.size + line.length <= maxEventSize) {
           line match {
             case Id                                    => builder.setId("")
-            case Field(Data, data) if data.nonEmpty    => builder.appendData(data)
+            case Field(Data, data)                     => builder.appendData(data)
             case Field(EventType, t) if t.nonEmpty     => builder.setType(t)
             case Field(Id, id)                         => builder.setId(id)
             case Field(Retry, s @ PosInt(r)) if r >= 0 => builder.setRetry(r, s.length)

@@ -33,8 +33,10 @@ final class ServerSentEventParserSpec extends AsyncWordSpec with Matchers with B
                      |event
                      |:no data means event gets ignored
                      |
+                     |data:
+                     |
                      |data
-                     |:empty data means event gets ignored
+                     |:empty data is considered an event
                      |
                      |data:
                      |:empty data means event gets ignored
@@ -62,6 +64,8 @@ final class ServerSentEventParserSpec extends AsyncWordSpec with Matchers with B
           _ shouldBe Vector(
             ServerSentEvent("event 1 line 1\nevent 1 line 2"),
             ServerSentEvent("event 2", Some("event 2 event"), Some("42"), Some(512)),
+            ServerSentEvent.heartbeat,
+            ServerSentEvent.heartbeat,
             ServerSentEvent("event 3", None, Some("")),
             ServerSentEvent("event 4")
           )
