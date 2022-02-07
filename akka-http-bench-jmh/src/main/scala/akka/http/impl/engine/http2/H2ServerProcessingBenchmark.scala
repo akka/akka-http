@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
 import akka.http.CommonBenchmark
+import akka.http.impl.engine.server.ServerTerminator
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.ActorMaterializer
@@ -16,7 +17,7 @@ import org.openjdk.jmh.annotations._
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 
 class H2ServerProcessingBenchmark extends CommonBenchmark with H2RequestResponseBenchmark {
 
@@ -66,12 +67,14 @@ class H2ServerProcessingBenchmark extends CommonBenchmark with H2RequestResponse
     implicit val ec = system.dispatcher
     val http1 = Flow[SslTlsInbound].mapAsync(1)(_ => {
       Future.failed[SslTlsOutbound](new IllegalStateException("Failed h2 detection"))
+    }).mapMaterializedValue(_ => new ServerTerminator {
+      override def terminate(deadline: FiniteDuration)(implicit ex: ExecutionContext): Future[Http.HttpTerminated] = ???
     })
     val http2 =
       Http2Blueprint.handleWithStreamIdHeader(1)(req => {
         req.discardEntityBytes().future.map(_ => response)
       })(system.dispatcher)
-        .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))
+        .joinMat(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))(Keep.right)
     httpFlow = Http2.priorKnowledge(http1, http2)
   }
 

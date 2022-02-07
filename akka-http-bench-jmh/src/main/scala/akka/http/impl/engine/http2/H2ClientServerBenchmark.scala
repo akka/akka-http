@@ -7,6 +7,7 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.CommonBenchmark
+import akka.http.impl.engine.server.ServerTerminator
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
@@ -67,13 +68,15 @@ class H2ClientServerBenchmark extends CommonBenchmark with H2RequestResponseBenc
     implicit val ec = system.dispatcher
     val http1 = Flow[SslTlsInbound].mapAsync(1)(_ => {
       Future.failed[SslTlsOutbound](new IllegalStateException("Failed h2 detection"))
+    }).mapMaterializedValue(_ => new ServerTerminator {
+      override def terminate(deadline: FiniteDuration)(implicit ex: ExecutionContext): Future[Http.HttpTerminated] = ???
     })
     val http2 =
       Http2Blueprint.handleWithStreamIdHeader(1)(req => {
         req.discardEntityBytes().future.map(_ => response)
       })(system.dispatcher)
-        .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))
-    val server: Flow[ByteString, ByteString, NotUsed] = Http2.priorKnowledge(http1, http2)
+        .joinMat(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))(Keep.right)
+    val server: Flow[ByteString, ByteString, Any] = Http2.priorKnowledge(http1, http2)
     val client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] = Http2Blueprint.clientStack(ClientConnectionSettings(system), log, NoOpTelemetry)
     httpFlow = client.join(server)
   }
