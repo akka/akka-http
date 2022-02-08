@@ -6,7 +6,6 @@ package akka.http.impl.engine.http2
 
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import akka.Done
-import akka.NotUsed
 import akka.http.impl.engine.server.ServerTerminator
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
