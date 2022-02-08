@@ -19,12 +19,10 @@ import scala.concurrent.{ Future, Promise }
 /** INTERNAL API */
 @InternalApi
 private[http] object ProtocolSwitch {
-  type HttpServerFlow = Flow[SslTlsInbound, SslTlsOutbound, Future[ServerTerminator]]
-
   def apply(
     chosenProtocolAccessor: SessionBytes => String,
     http1Stack:             HttpImplementation,
-    http2Stack:             HttpImplementation): HttpServerFlow =
+    http2Stack:             HttpImplementation): Flow[SslTlsInbound, SslTlsOutbound, Future[ServerTerminator]] =
     Flow.fromGraph(
       new GraphStageWithMaterializedValue[FlowShape[SslTlsInbound, SslTlsOutbound], Future[ServerTerminator]] {
 
@@ -157,7 +155,7 @@ private[http] object ProtocolSwitch {
       }
     )
 
-  def byPreface(http1Stack: HttpImplementation, http2Stack: HttpImplementation): HttpServerFlow = {
+  def byPreface(http1Stack: HttpImplementation, http2Stack: HttpImplementation): Flow[SslTlsInbound, SslTlsOutbound, Future[ServerTerminator]] = {
     def chooseProtocol(sessionBytes: SessionBytes): String =
       if (sessionBytes.bytes.startsWith(Http2Protocol.ClientConnectionPreface)) "h2" else "http/1.1"
     ProtocolSwitch(chooseProtocol, http1Stack, http2Stack)
