@@ -416,9 +416,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           else {
             cancel(frameIn)
             complete(frameOut)
+            cancel(substreamIn)
 
             // Using complete here (instead of a simpler `completeStage`) will make sure the buffer can be
             // drained by the user before completely shutting down the stage finally.
+            // This is only relevant on the client side where `activeStreamCount` can already be 0 because
+            // from the HTTP/2 implementation side all streams have been handled, i.e. all responses have been
+            // dispatched. However, some of the dispatched responses might still be stuck in the buffer for the user
+            // to be fetched. To avoid losing them, we schedule completion here and rely on the final completion of the buffer
+            // to terminate the whole stage.
             bufferedSubStreamOutput.complete()
           }
         }
