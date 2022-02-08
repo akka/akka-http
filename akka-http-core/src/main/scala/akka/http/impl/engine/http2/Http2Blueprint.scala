@@ -158,7 +158,7 @@ private[http] object Http2Blueprint {
           FrameRenderer.render(GoAwayFrame(0, ex.errorCode))
         case ex: StreamTcpException => throw ex // TCP connection is probably broken: just forward exception
         case NonFatal(ex) =>
-          log.debug(s"HTTP2 connection failed with error [${ex.getMessage}]. Sending INTERNAL_ERROR and closing connection.")
+          log.error(s"HTTP2 connection failed with error [${ex.getMessage}]. Sending INTERNAL_ERROR and closing connection.")
           FrameRenderer.render(GoAwayFrame(0, Http2Protocol.ErrorCode.INTERNAL_ERROR))
       },
       Flow[ByteString]

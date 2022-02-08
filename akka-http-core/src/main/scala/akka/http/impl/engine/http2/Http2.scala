@@ -233,7 +233,6 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       TLS(createEngine _, closing = TLSClosing.eagerClose)
 
     stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
-      .addAttributes(Http.cancellationStrategyAttributeForDelay(clientConnectionSettings.streamCancellationDelay))
   }
 
   def outgoingConnectionPriorKnowledge(host: String, port: Int, clientConnectionSettings: ClientConnectionSettings, log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
