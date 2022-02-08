@@ -18,34 +18,6 @@ jobs:
         with:
           artifact: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}
           name: Test Results Details / Scala ${{ matrix.SCALA_VERSION }} on JDK ${{ matrix.JABBA_JDK }}
+          fail-on-error: 'false'
           path: '**/target/test-reports/*.xml'
           reporter: java-junit
-
-  publish-test-results-3:
-    name: "Publish results with EnricoMi reporter"
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-
-    steps:
-      - name: Download and Extract Artifacts
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        run: |
-          mkdir -p artifacts && cd artifacts
-
-          artifacts_url=${{ github.event.workflow_run.artifacts_url }}
-
-          gh api "$artifacts_url" -q '.artifacts[] | [.name, .archive_download_url] | @tsv' | while read artifact
-          do
-            IFS=$'\t' read name url <<< "$artifact"
-            gh api $url > "$name.zip"
-            unzip -d "$name" "$name.zip"
-          done
-
-      - run: find artifacts
-
-      - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v1
-        with:
-          files: artifacts/**/*.xml
