@@ -1,11 +1,12 @@
-name: 'Test Report'
+name: 'Publish Test Reports'
 on:
   workflow_run:
     workflows: ['Validate and test']                     # runs after CI workflow
     types:
       - completed
 jobs:
-  report:
+  publish-test-results-1:
+    name: "Publish details with dorny-test-reporter"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -19,3 +20,35 @@ jobs:
           name: Test Results
           path: '**/target/test-reports/*.xml'
           reporter: java-junit
+
+  publish-test-results-2:
+    name: "Publish summary with dorny-test-reporter"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        SCALA_VERSION: [ 2.12, 2.13 ]
+        JABBA_JDK: [ 1.8, 1.11 ]
+    steps:
+      - uses: dorny/test-reporter@v1
+        with:
+          artifact: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}
+          name: Test Results
+          path: '**/target/test-reports/*.xml'
+          reporter: java-junit
+          only-summary: true
+
+  publish-test-results-3:
+    name: "Publish results with EnricoMi reporter"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        with:
+          files: artifacts/**/*.xml
