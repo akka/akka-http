@@ -9,7 +9,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
-import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
+import akka.http.impl.engine.server.{ GracefulTerminatorStage, MasterServerTerminator, ServerTerminator, UpgradeToOtherProtocolResponseHeader }
 import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
@@ -26,7 +26,7 @@ import akka.stream.impl.io.TlsUtils
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
 import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
-import akka.{ Done, NotUsed }
+import akka.Done
 import com.typesafe.config.Config
 
 import javax.net.ssl.SSLEngine
@@ -70,8 +70,12 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       else if (connectionContext.isSecure) settings.defaultHttpsPort
       else settings.defaultHttpPort
 
-    val http1 = Flow[HttpRequest].mapAsync(settings.pipeliningLimit)(handleUpgradeRequests(handler, settings, log)).join(http.serverLayer(settings, log = log))
-    val http2 = Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log, telemetry, Http().dateHeaderRendering))
+    val http1: HttpImplementation =
+      Flow[HttpRequest].mapAsync(settings.pipeliningLimit)(handleUpgradeRequests(handler, settings, log))
+        .joinMat(GracefulTerminatorStage(system, settings) atop http.serverLayer(settings, log = log))(Keep.right)
+    val http2: HttpImplementation =
+      Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher)
+        .joinMat(Http2Blueprint.serverStackTls(settings, log, telemetry, Http().dateHeaderRendering))(Keep.right)
 
     val masterTerminator = new MasterServerTerminator(log)
 
@@ -81,8 +85,13 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
         incoming: Tcp.IncomingConnection =>
           try {
             httpPlusSwitching(http1, http2).addAttributes(prepareServerAttributes(settings, incoming))
-              .watchTermination()(Keep.right)
+              .watchTermination()(Keep.both)
               .join(HttpConnectionIdleTimeoutBidi(settings.idleTimeout, Some(incoming.remoteAddress)) join incoming.flow)
+              .mapMaterializedValue {
+                case (connectionTerminator, future) =>
+                  connectionTerminator.foreach(masterTerminator.registerConnection(_)(fm.executionContext))((fm.executionContext))
+                  future // drop the terminator matValue, we already registered is which is all we need to do here
+              }
               .addAttributes(Http.cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
               .run().recover {
                 // Ignore incoming errors from the connection as they will cancel the binding.
@@ -172,7 +181,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
   val ConnectionUpgradeHeader = Connection(List("upgrade"))
   val UpgradeHeader = Upgrade(List(UpgradeProtocol("h2c")))
 
-  def httpsWithAlpn(httpsContext: HttpsConnectionContext, fm: Materializer)(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] = {
+  def httpsWithAlpn(httpsContext: HttpsConnectionContext, fm: Materializer)(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, Future[ServerTerminator]] = {
     // Mutable cell to transport the chosen protocol from the SSLEngine to
     // the switch stage.
     // Doesn't need to be volatile because there's a happens-before relationship (enforced by memory barriers)
@@ -255,10 +264,11 @@ private[http] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvide
   def createExtension(system: ExtendedActorSystem): Http2Ext =
     new Http2Ext(system.settings.config getConfig "akka.http")(system)
 
-  private[http] type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
-  private[http] type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, NotUsed]
+  private[http] type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, ServerTerminator]
+  private[http] type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, Future[ServerTerminator]]
 
-  private[http] def priorKnowledge(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] =
-    TLSPlacebo().reversed join
+  private[http] def priorKnowledge(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, Future[ServerTerminator]] =
+    TLSPlacebo().reversed.joinMat(
       ProtocolSwitch.byPreface(http1, http2)
+    )(Keep.right)
 }

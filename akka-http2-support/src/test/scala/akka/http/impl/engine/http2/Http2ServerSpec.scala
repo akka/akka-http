@@ -12,7 +12,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
-import akka.http.impl.engine.server.HttpAttributes
+import akka.http.impl.engine.server.{ HttpAttributes, ServerTerminator }
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.LogByteStringTools
@@ -25,19 +25,15 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.BidiFlow
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.SourceQueueWithComplete
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source, SourceQueueWithComplete }
 import akka.stream.testkit.TestPublisher.{ ManualProbe, Probe }
 import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.testkit._
 import akka.util.ByteString
-import scala.annotation.nowarn
 
+import scala.annotation.nowarn
 import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -1433,7 +1429,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         lazy val theAddress = "127.0.0.1"
         lazy val thePort = 1337
-        override def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) =
+        override def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator]) =
           BidiFlow.fromGraph(server.withAttributes(
             HttpAttributes.remoteAddress(new InetSocketAddress(theAddress, thePort))
           ))
@@ -1454,7 +1450,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           super.settings.withParserSettings(super.settings.parserSettings.withIncludeTlsSessionInfoHeader(true))
 
         lazy val expectedSession = SSLContext.getDefault.createSSLEngine.getSession
-        override def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) =
+        override def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator]) =
           BidiFlow.fromGraph(server.withAttributes(
             HttpAttributes.tlsSessionInfo(expectedSession)
           ))
@@ -1528,6 +1524,131 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       })
 
     }
+    "support graceful shutdown" should {
+      "immediately shutdown when no requests are pending" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        val terminated = serverTerminator.terminate(1.minute)
+        network.expectGOAWAY()
+        network.expectComplete()
+        terminated.futureValue
+      }
+      "close after current requests have been processed (while request data was outstanding)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendRequestHEADERS(1, HttpRequest(), endStream = false)
+        val req = user.expectRequest()
+        val p = ByteStringSinkProbe(req.entity.dataBytes)
+        network.sendDATA(1, endStream = false, ByteString("abc"))
+        p.expectUtf8EncodedString("abc")
+
+        // now terminate
+        val terminated = serverTerminator.terminate(1.minute)
+        network.expectWindowUpdate()
+        network.expectWindowUpdate()
+        network.expectGOAWAY(1)
+        network.sendDATA(1, endStream = true, ByteString("def"))
+        p.expectUtf8EncodedString("def")
+        p.expectComplete()
+
+        user.emitResponse(1, HttpResponse())
+        network.expectDecodedHEADERS(1)
+
+        network.expectComplete()
+        terminated.futureValue
+      }
+      "close after current requests have been processed (when response was outstanding)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendRequest(1, HttpRequest())
+        user.expectRequest()
+        val terminated = serverTerminator.terminate(1.minute)
+        network.expectGOAWAY(1)
+        user.emitResponse(1, HttpResponse())
+        network.expectDecodedHEADERS(1)
+
+        network.expectComplete()
+        terminated.futureValue
+      }
+      "close after current requests have been processed (while response data was outstanding)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendRequest(1, HttpRequest())
+        user.expectRequest()
+
+        val dataStream = TestPublisher.probe[ByteString]()
+        user.emitResponse(1, HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(dataStream))))
+        network.expectDecodedHEADERS(1, endStream = false)
+        dataStream.sendNext(ByteString("abc"))
+        network.expectDATA(1, endStream = false, ByteString("abc"))
+
+        val terminated = serverTerminator.terminate(1.minute)
+        network.expectGOAWAY(1)
+        dataStream.sendNext(ByteString("def"))
+        network.expectDATA(1, endStream = false, ByteString("def"))
+        dataStream.sendComplete()
+        network.expectDATA(1, endStream = true, ByteString.empty)
+
+        network.expectComplete()
+        terminated.futureValue
+      }
+      "refuse late incoming requests" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendRequest(1, HttpRequest())
+        user.expectRequest()
+
+        // now terminate
+        val terminated = serverTerminator.terminate(1.minute)
+        network.expectGOAWAY(1)
+
+        // send another request
+        network.sendRequest(3, HttpRequest())
+        network.expectRST_STREAM(3, ErrorCode.REFUSED_STREAM)
+
+        // no complete work on connection
+        user.emitResponse(1, HttpResponse())
+        network.expectDecodedHEADERS(1)
+
+        network.expectComplete()
+        terminated.futureValue
+      }
+      "finally close after deadline" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendRequest(1, HttpRequest())
+        user.expectRequest()
+
+        // now terminate
+        val terminated = serverTerminator.terminate(10.millis)
+        network.expectGOAWAY(1)
+
+        network.expectComplete()
+        terminated.futureValue
+      }
+      "finally close after deadline (while closing request stream)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendRequestHEADERS(1, HttpRequest(), endStream = false)
+        val req = user.expectRequest()
+        val p = ByteStringSinkProbe(req.entity.dataBytes)
+        network.sendDATA(1, endStream = false, ByteString("abc"))
+        p.expectUtf8EncodedString("abc")
+
+        // now terminate
+        val terminated = serverTerminator.terminate(10.millis)
+        network.expectWindowUpdate()
+        network.expectWindowUpdate()
+        network.expectGOAWAY(1)
+
+        network.expectComplete()
+        p.expectError()
+        terminated.futureValue
+      }
+      "finally close after deadline (while cancelling response stream)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendRequest(1, HttpRequest())
+        user.expectRequest()
+
+        val dataStream = TestPublisher.probe[ByteString]()
+        user.emitResponse(1, HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(dataStream))))
+        network.expectDecodedHEADERS(1, endStream = false)
+        dataStream.sendNext(ByteString("abc"))
+        network.expectDATA(1, endStream = false, ByteString("abc"))
+
+        val terminated = serverTerminator.terminate(10.millis)
+        network.expectGOAWAY(1)
+
+        network.expectComplete()
+        dataStream.expectCancellation()
+        terminated.futureValue
+      }
+    }
   }
 
   implicit class InWithStoppedStages(name: String) {
@@ -1553,20 +1674,21 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed]
 
     // hook to modify server, for example add attributes
-    def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) = server
+    def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator]) = server
 
     // hook to modify server settings
     def settings: ServerSettings = ServerSettings(system).withServerHeader(None)
 
-    final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
+    final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator] =
       modifyServer(Http2Blueprint.serverStack(settings, system.log, telemetry = NoOpTelemetry, dateHeaderRendering = Http().dateHeaderRendering))
         .atop(LogByteStringTools.logByteStringBidi("network-plain-text").addAttributes(Attributes(LogLevels(Logging.DebugLevel, Logging.DebugLevel, Logging.DebugLevel))))
 
-    handlerFlow
-      .join(theServer)
-      .join(Flow.fromSinkAndSource(toNet.sink, Source.fromPublisher(fromNet)))
-      .withAttributes(Attributes.inputBuffer(1, 1))
-      .run()
+    val serverTerminator =
+      handlerFlow
+        .joinMat(theServer)(Keep.right)
+        .join(Flow.fromSinkAndSource(toNet.sink, Source.fromPublisher(fromNet)))
+        .withAttributes(Attributes.inputBuffer(1, 1))
+        .run()
 
     val network = new NetworkSide(fromNet, toNet, framesOut) with Http2FrameHpackSupport
   }

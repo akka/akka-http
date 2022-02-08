@@ -4,10 +4,10 @@
 
 package akka.http.impl.engine.http2
 
-import scala.concurrent.Promise
-
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import akka.Done
-import akka.NotUsed
+import akka.http.impl.engine.server.ServerTerminator
+import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.stream.OverflowStrategy
 import akka.stream.QueueOfferResult.Enqueued
@@ -18,10 +18,11 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.TLSPlacebo
 import akka.util.ByteString
-
 import akka.testkit.AkkaSpec
 import org.scalatest.exceptions.TestFailedException
-import org.scalatest.time.{ Span, Seconds, Milliseconds }
+import org.scalatest.time.{ Milliseconds, Seconds, Span }
+
+import scala.concurrent.duration.FiniteDuration
 
 class ProtocolSwitchSpec extends AkkaSpec {
   implicit val mat = ActorMaterializer()
@@ -37,10 +38,10 @@ class ProtocolSwitchSpec extends AkkaSpec {
         .viaMat(ProtocolSwitch.byPreface(
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
-            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); NotUsed }),
+            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); DummyTerminator }),
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
-            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); NotUsed })
+            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); DummyTerminator })
         ))(Keep.left)
         .toMat(Sink.queue())(Keep.both)
         .run()
@@ -65,10 +66,10 @@ class ProtocolSwitchSpec extends AkkaSpec {
         .viaMat(ProtocolSwitch.byPreface(
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
-            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); NotUsed }),
+            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); DummyTerminator }),
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
-            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); NotUsed })
+            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); DummyTerminator })
         ))(Keep.left)
         .toMat(Sink.queue())(Keep.both)
         .run()
@@ -91,10 +92,10 @@ class ProtocolSwitchSpec extends AkkaSpec {
         .viaMat(ProtocolSwitch.byPreface(
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
-            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); NotUsed }),
+            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); DummyTerminator }),
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
-            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); NotUsed })))(Keep.left)
+            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); DummyTerminator })))(Keep.left)
         .toMat(Sink.queue())(Keep.both)
         .run()
 
@@ -119,10 +120,10 @@ class ProtocolSwitchSpec extends AkkaSpec {
         .viaMat(ProtocolSwitch.byPreface(
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
-            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); NotUsed }),
+            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); DummyTerminator }),
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
-            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); NotUsed })))(Keep.left)
+            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); DummyTerminator })))(Keep.left)
         .toMat(Sink.queue())(Keep.both)
         .run()
 
@@ -134,5 +135,9 @@ class ProtocolSwitchSpec extends AkkaSpec {
       http1flowMaterialized.future.futureValue should be(Done)
       out.pull().futureValue should be(Some(SendBytes(payload)))
     }
+  }
+  object DummyTerminator extends ServerTerminator {
+    override def terminate(deadline: FiniteDuration)(implicit ex: ExecutionContext): Future[Http.HttpTerminated] =
+      ???
   }
 }

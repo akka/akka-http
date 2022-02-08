@@ -14,13 +14,14 @@ import akka.http.impl.engine.http2.framing.{ FrameRenderer, Http2FrameParsing }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.rendering.DateHeaderRendering
+import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2ClientSettings, Http2ServerSettings, ParserSettings, ServerSettings }
-import akka.stream.StreamTcpException
+import akka.stream.{ BidiShape, Graph, StreamTcpException }
 import akka.stream.TLSProtocol._
-import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Source }
 import akka.util.{ ByteString, OptionVal }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -88,7 +89,7 @@ private[http2] object Http2SubStream {
 @InternalApi
 private[http] object Http2Blueprint {
 
-  def serverStackTls(settings: ServerSettings, log: LoggingAdapter, telemetry: TelemetrySpi, dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+  def serverStackTls(settings: ServerSettings, log: LoggingAdapter, telemetry: TelemetrySpi, dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, ServerTerminator] =
     serverStack(settings, log, telemetry = telemetry, dateHeaderRendering = dateHeaderRendering) atop
       unwrapTls atop
       logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
@@ -100,10 +101,10 @@ private[http] object Http2Blueprint {
       initialDemuxerSettings: immutable.Seq[Setting] = Nil,
       upgraded: Boolean = false,
       telemetry: TelemetrySpi,
-    dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+    dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator] = {
     val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log) // FIXME: reuse for framing
     telemetry.serverConnection atop
-      httpLayer(settings, log, dateHeaderRendering) atop
+      httpLayer(settings, log, dateHeaderRendering) atopKeepRight
       serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding(masterHttpHeaderParser, settings.parserSettings) atop
@@ -130,7 +131,7 @@ private[http] object Http2Blueprint {
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
 
-  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] = {
+  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] =
     BidiFlow.fromFlows(
       Flow[HttpRequest].statefulMapConcat { () =>
         val renderer = new RequestRendering(settings, log)
@@ -141,7 +142,6 @@ private[http] object Http2Blueprint {
         stream => ResponseParsing.parseResponse(headerParser, settings.parserSettings, attrs)(stream)
       }
     )
-  }
 
   def idleTimeoutIfConfigured(timeout: Duration): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
     timeout match {
@@ -149,7 +149,7 @@ private[http] object Http2Blueprint {
       case _                 => BidiFlow.identity[ByteString, ByteString]
     }
 
-  def errorHandling(log: LoggingAdapter): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
+  def errorHandling(log: LoggingAdapter): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
     BidiFlow.fromFlows(
       StreamUtils.encodeErrorAndComplete {
         case ex: Http2Compliance.Http2ProtocolException =>
@@ -158,12 +158,11 @@ private[http] object Http2Blueprint {
           FrameRenderer.render(GoAwayFrame(0, ex.errorCode))
         case ex: StreamTcpException => throw ex // TCP connection is probably broken: just forward exception
         case NonFatal(ex) =>
-          log.error(ex, s"HTTP2 connection failed with error [${ex.getMessage}]. Sending INTERNAL_ERROR and closing connection.")
+          log.error(s"HTTP2 connection failed with error [${ex.getMessage}]. Sending INTERNAL_ERROR and closing connection.")
           FrameRenderer.render(GoAwayFrame(0, Http2Protocol.ErrorCode.INTERNAL_ERROR))
       },
       Flow[ByteString]
     )
-  }
 
   def framing(log: LoggingAdapter): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
@@ -193,14 +192,14 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def serverDemux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+  def serverDemux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, ServerTerminator] =
     BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded))
 
   /**
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def clientDemux(settings: Http2ClientSettings, masterHttpHeaderParser: HttpHeaderParser): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+  def clientDemux(settings: Http2ClientSettings, masterHttpHeaderParser: HttpHeaderParser): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, ServerTerminator] =
     BidiFlow.fromGraph(new Http2ClientDemux(settings, masterHttpHeaderParser))
 
   /**
@@ -257,4 +256,9 @@ private[http] object Http2Blueprint {
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
       case SessionBytes(_, bytes) => bytes
     })
+
+  implicit class BidiFlowExt[I1, O1, I2, O2, Mat](bidi: BidiFlow[I1, O1, I2, O2, Mat]) {
+    def atopKeepRight[OO1, II2, Mat2](other: Graph[BidiShape[O1, OO1, II2, I2], Mat2]): BidiFlow[I1, OO1, II2, O2, Mat2] =
+      bidi.atopMat(other)(Keep.right)
+  }
 }
