@@ -104,7 +104,7 @@ for JSON. An additional module provides JSON serialization using the spray-json 
 for details):
 
 @@dependency [sbt,Gradle,Maven] {
-  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-bom_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
+  bomGroup2="com.typesafe.akka" bomArtifact2="akka-http-spray-json_$scala.binary.version$" bomVersionSymbols2="AkkaHttpVersion"
   symbol="AkkaHttpVersion"
   value="$project.version$"
   group="com.typesafe.akka"
