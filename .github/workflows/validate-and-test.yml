@@ -85,7 +85,8 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 "+~ ${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues Test/compile test"
 
-      - uses: actions/upload-artifact@v2  # upload test results
+      - name: Upload test results
+        uses: actions/upload-artifact@v2  # upload test results
         if: success() || failure()        # run this step even if previous step failed
         with:
           name: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}

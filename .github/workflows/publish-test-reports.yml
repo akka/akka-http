@@ -17,7 +17,7 @@ jobs:
       - uses: dorny/test-reporter@v1
         with:
           artifact: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}
-          name: Test Results
+          name: Test Results Details
           path: '**/target/test-reports/*.xml'
           reporter: java-junit
 
@@ -33,7 +33,7 @@ jobs:
       - uses: dorny/test-reporter@v1
         with:
           artifact: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}
-          name: Test Results
+          name: Test Results Summary
           path: '**/target/test-reports/*.xml'
           reporter: java-junit
           only-summary: true
@@ -41,12 +41,20 @@ jobs:
   publish-test-results-3:
     name: "Publish results with EnricoMi reporter"
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        SCALA_VERSION: [ 2.12, 2.13 ]
+        JABBA_JDK: [ 1.8, 1.11 ]
 
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
+          name: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}
           path: artifacts
+
+      - run: find artifacts
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1
