@@ -241,12 +241,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       private def triggerTermination(deadline: FiniteDuration): Unit = {
         // check if we are already terminating, otherwise start termination
         if (!terminating) {
-          log.debug("Termination now starting...")
+          log.debug(s"Termination of this connection was triggered. Sending GOAWAY and waiting for open requests to complete for $CompletionTimeout.")
           terminating = true
           pushGOAWAY(ErrorCode.NO_ERROR, "")
           lastIdBeforeTermination = lastStreamId()
           completeIfDone()
-          scheduleOnce(CompletionTimeout, deadline)
+          if (!isClosed(frameOut))
+            scheduleOnce(CompletionTimeout, deadline)
         }
       }
 
