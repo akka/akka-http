@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.util.AsciiTreeLayout
+import akka.http.ccompat.imm._
 
 import scala.collection.immutable
 import scala.collection.immutable.{ TreeMap, TreeSet }
