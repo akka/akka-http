@@ -19,6 +19,7 @@ import akka.util.ConstantFun
 import akka.stream.Materializer
 import akka.stream.javadsl.{ Source => JSource }
 import akka.stream.scaladsl._
+import akka.http.ccompat._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
