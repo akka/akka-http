@@ -20,7 +20,7 @@ object MyRejectionHandler {
   import Directives._
 
   object MyApp extends App {
-    implicit def myRejectionHandler =
+    def myRejectionHandler =
       RejectionHandler.newBuilder()
         .handle {
           case MissingCookieRejection(cookieName) =>
@@ -43,9 +43,10 @@ object MyRejectionHandler {
 
     implicit val system = ActorSystem()
 
-    val route: Route =
+    val route: Route = handleRejections(myRejectionHandler) {
       // ... some route structure
       null // #hide
+    }
 
     Http().newServerAt("localhost", 8080).bind(route)
   }
