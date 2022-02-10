@@ -16,6 +16,7 @@ import akka.http.scaladsl.model.StatusCodes;
 import akka.japi.pf.PFBuilder;
 import akka.pattern.CircuitBreaker;
 import akka.testkit.javadsl.TestKit;
+import org.junit.Ignore;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -126,6 +127,9 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
         //#completeOrRecoverWith
     }
 
+    // The test has a race condition because CircuitBreakers do not guarantee certain happens-before relationships
+    // between triggering and reporting errors for ongoing calls. This test fails a lot so disabling for now.
+    @Ignore
     @Test
     public void testOnCompleteWithBreaker() throws InterruptedException {
         //#onCompleteWithBreaker
