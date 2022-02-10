@@ -411,6 +411,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         val noMoreOutgoingStreams = (terminating || isClosed(substreamIn)) && activeStreamCount() == 0
         def allOutgoingDataFlushed = isClosed(frameOut) || multiplexer.hasFlushedAllData
         if (noMoreOutgoingStreams && allOutgoingDataFlushed) {
+          log.debug("Closing connection after all streams are done and all data has been flushed.")
           if (isServer)
             completeStage()
           else {
