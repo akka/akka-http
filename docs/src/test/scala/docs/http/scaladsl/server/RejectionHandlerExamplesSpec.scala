@@ -48,7 +48,6 @@ object MyRejectionHandler {
       null // #hide
     }
 
-
     Http().newServerAt("localhost", 8080).bind(route)
   }
   //#custom-handler-example
