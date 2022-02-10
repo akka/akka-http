@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterAll
 import akka.util.ByteString
 import akka.actor.ActorSystem
+import akka.http.ccompat._
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
