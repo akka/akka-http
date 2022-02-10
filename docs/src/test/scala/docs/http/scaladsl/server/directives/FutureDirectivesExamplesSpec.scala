@@ -54,9 +54,9 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   }
 
   "onCompleteWithBreaker" in {
-    /*
-    The test has a race condition because CircuitBreakers do not guarantee certain happens-before relationships
-    between triggering and reporting errors for ongoing calls. This test fails a lot so disabling for now.
+    // The test has a race condition because CircuitBreakers do not guarantee certain happens-before relationships
+    // between triggering and reporting errors for ongoing calls. This test fails a lot so disabling for now.
+    pending
 
     //#onCompleteWithBreaker
     def divide(a: Int, b: Int): Future[Int] = Future {
@@ -106,7 +106,6 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#onCompleteWithBreaker
     }, 500.millis)
     // format: ON
-    */
   }
 
   "onSuccess" in {
