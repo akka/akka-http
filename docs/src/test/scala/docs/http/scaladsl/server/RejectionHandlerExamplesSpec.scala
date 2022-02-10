@@ -20,7 +20,7 @@ object MyRejectionHandler {
   import Directives._
 
   object MyApp extends App {
-    implicit def myRejectionHandler =
+    def myRejectionHandler =
       RejectionHandler.newBuilder()
         .handle {
           case MissingCookieRejection(cookieName) =>
