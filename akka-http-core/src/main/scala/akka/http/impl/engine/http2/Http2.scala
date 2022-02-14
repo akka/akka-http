@@ -27,7 +27,6 @@ import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
 import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
 import akka.Done
-import com.typesafe.config.Config
 
 import javax.net.ssl.SSLEngine
 import scala.collection.immutable
@@ -42,7 +41,7 @@ import scala.util.{ Failure, Success }
  * Internal entry points for Http/2 server
  */
 @InternalApi
-private[http] final class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
+private[http] final class Http2Ext(implicit val system: ActorSystem)
   extends akka.actor.Extension {
   // FIXME: won't having the same package as top-level break osgi?
 
@@ -62,7 +61,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
 
     val httpPlusSwitching: HttpPlusSwitching =
-      if (connectionContext.isSecure) httpsWithAlpn(connectionContext.asInstanceOf[HttpsConnectionContext], fm)
+      if (connectionContext.isSecure) httpsWithAlpn(connectionContext.asInstanceOf[HttpsConnectionContext])
       else priorKnowledge
 
     val effectivePort =
@@ -181,7 +180,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
   val ConnectionUpgradeHeader = Connection(List("upgrade"))
   val UpgradeHeader = Upgrade(List(UpgradeProtocol("h2c")))
 
-  def httpsWithAlpn(httpsContext: HttpsConnectionContext, fm: Materializer)(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, Future[ServerTerminator]] = {
+  def httpsWithAlpn(httpsContext: HttpsConnectionContext)(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, Future[ServerTerminator]] = {
     // Mutable cell to transport the chosen protocol from the SSLEngine to
     // the switch stage.
     // Doesn't need to be volatile because there's a happens-before relationship (enforced by memory barriers)
@@ -261,8 +260,7 @@ private[http] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvide
   def apply()(implicit system: ClassicActorSystemProvider): Http2Ext = super.apply(system)
   override def apply(system: ActorSystem): Http2Ext = super.apply(system)
   def lookup(): ExtensionId[_ <: Extension] = Http2
-  def createExtension(system: ExtendedActorSystem): Http2Ext =
-    new Http2Ext(system.settings.config getConfig "akka.http")(system)
+  def createExtension(system: ExtendedActorSystem): Http2Ext = new Http2Ext()(system)
 
   private[http] type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, ServerTerminator]
   private[http] type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, Future[ServerTerminator]]
