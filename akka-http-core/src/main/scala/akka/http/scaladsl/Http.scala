@@ -36,7 +36,6 @@ import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.util.ManifestInfo
 import scala.annotation.nowarn
-import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl.ConfigSSLContextBuilder
@@ -55,7 +54,7 @@ import scala.concurrent.duration._
  */
 @nowarn("msg=DefaultSSLContextCreation in package scaladsl is deprecated")
 @DoNotInherit
-class HttpExt private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
+class HttpExt private[http] ()(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
 
   akka.http.Version.check(system.settings.config)
@@ -1107,8 +1106,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   def lookup() = Http
 
-  def createExtension(system: ExtendedActorSystem): HttpExt =
-    new HttpExt(system.settings.config getConfig "akka.http")(system)
+  def createExtension(system: ExtendedActorSystem): HttpExt = new HttpExt()(system)
 
   @nowarn("msg=use remote-address-attribute instead")
   @InternalApi
