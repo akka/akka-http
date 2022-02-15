@@ -105,7 +105,7 @@ def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
   config / unmanagedSourceDirectories += {
     val sourceDir = (config / sourceDirectory).value
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+      case Some((e, n)) if e > 2 || (e == 2 && n >= 13) => sourceDir / "scala-2.13+"
       case _                       => sourceDir / "scala-2.13-"
     }
   }
