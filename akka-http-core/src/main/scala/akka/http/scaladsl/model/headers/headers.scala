@@ -136,9 +136,9 @@ import akka.http.impl.util.JavaMapping.Implicits._
 
 // https://tools.ietf.org/html/rfc7231#section-5.3.2
 object Accept extends ModeledCompanion[Accept] {
-  @pre213
+  /*@pre213
   def apply(mediaRanges: MediaRange*): Accept =
-    apply(immutable.Seq(mediaRanges: _*))
+    apply(immutable.Seq(mediaRanges: _*))*/
   @since213
   def apply(firstMediaRange: MediaRange, otherMediaRanges: MediaRange*): Accept =
     apply(firstMediaRange +: otherMediaRanges)
@@ -172,9 +172,9 @@ final case class `Accept-Charset`(charsetRanges: immutable.Seq[HttpCharsetRange]
 
 // https://tools.ietf.org/html/rfc7231#section-5.3.4
 object `Accept-Encoding` extends ModeledCompanion[`Accept-Encoding`] {
-  @pre213
+  /*@pre213
   def apply(encodings: HttpEncodingRange*): `Accept-Encoding` =
-    apply(immutable.Seq(encodings: _*))
+    apply(immutable.Seq(encodings: _*))*/
   @since213
   def apply(): `Accept-Encoding` =
     apply(immutable.Seq.empty)
@@ -211,9 +211,9 @@ final case class `Accept-Language`(languages: immutable.Seq[LanguageRange]) exte
 
 // https://tools.ietf.org/html/rfc7233#section-2.3
 object `Accept-Ranges` extends ModeledCompanion[`Accept-Ranges`] {
-  @pre213
+  /*@pre213
   def apply(rangeUnits: RangeUnit*): `Accept-Ranges` =
-    apply(immutable.Seq(rangeUnits: _*))
+    apply(immutable.Seq(rangeUnits: _*))*/
   @since213
   def apply(): `Accept-Ranges` =
     apply(immutable.Seq.empty)
@@ -242,9 +242,9 @@ final case class `Access-Control-Allow-Credentials`(allow: Boolean)
 
 // https://www.w3.org/TR/cors/#access-control-allow-headers-response-header
 object `Access-Control-Allow-Headers` extends ModeledCompanion[`Access-Control-Allow-Headers`] {
-  @pre213
+  /*@pre213
   def apply(headers: String*): `Access-Control-Allow-Headers` =
-    apply(immutable.Seq(headers: _*))
+    apply(immutable.Seq(headers: _*))*/
   @since213
   def apply(firstHeader: String, otherHeaders: String*): `Access-Control-Allow-Headers` =
     apply(firstHeader +: otherHeaders)
@@ -262,9 +262,9 @@ final case class `Access-Control-Allow-Headers`(headers: immutable.Seq[String])
 
 // https://www.w3.org/TR/cors/#access-control-allow-methods-response-header
 object `Access-Control-Allow-Methods` extends ModeledCompanion[`Access-Control-Allow-Methods`] {
-  @pre213
+  /*@pre213
   def apply(methods: HttpMethod*): `Access-Control-Allow-Methods` =
-    apply(immutable.Seq(methods: _*))
+    apply(immutable.Seq(methods: _*))*/
   @since213
   def apply(firstMethod: HttpMethod, otherMethods: HttpMethod*): `Access-Control-Allow-Methods` =
     apply(firstMethod +: otherMethods)
@@ -303,9 +303,9 @@ final case class `Access-Control-Allow-Origin` private (range: HttpOriginRange)
 
 // https://www.w3.org/TR/cors/#access-control-expose-headers-response-header
 object `Access-Control-Expose-Headers` extends ModeledCompanion[`Access-Control-Expose-Headers`] {
-  @pre213
+  /*@pre213
   def apply(headers: String*): `Access-Control-Expose-Headers` =
-    apply(immutable.Seq(headers: _*))
+    apply(immutable.Seq(headers: _*))*/
   @since213
   def apply(firstHeader: String, otherHeaders: String*): `Access-Control-Expose-Headers` =
     apply(firstHeader +: otherHeaders)
@@ -331,9 +331,9 @@ final case class `Access-Control-Max-Age`(deltaSeconds: Long) extends jm.headers
 
 // https://www.w3.org/TR/cors/#access-control-request-headers-request-header
 object `Access-Control-Request-Headers` extends ModeledCompanion[`Access-Control-Request-Headers`] {
-  @pre213
+  /*@pre213
   def apply(headers: String*): `Access-Control-Request-Headers` =
-    apply(immutable.Seq(headers: _*))
+    apply(immutable.Seq(headers: _*))*/
   @since213
   def apply(firstHeader: String, otherHeaders: String*): `Access-Control-Request-Headers` =
     apply(firstHeader +: otherHeaders)
@@ -366,9 +366,9 @@ final case class Age(deltaSeconds: Long) extends jm.headers.Age with ResponseHea
 
 // https://tools.ietf.org/html/rfc7231#section-7.4.1
 object Allow extends ModeledCompanion[Allow] {
-  @pre213
+  /*@pre213
   def apply(methods: HttpMethod*): Allow =
-    apply(immutable.Seq(methods: _*))
+    apply(immutable.Seq(methods: _*))*/
   @since213
   def apply(): `Allow` =
     apply(immutable.Seq.empty)
@@ -546,8 +546,8 @@ final case class `Content-Type` private[http] (contentType: ContentType) extends
 object Cookie extends ModeledCompanion[Cookie] {
   def apply(first: HttpCookiePair, more: HttpCookiePair*): Cookie = apply(immutable.Seq(first +: more: _*))
   def apply(name: String, value: String): Cookie = apply(HttpCookiePair(name, value))
-  @pre213
-  def apply(values: (String, String)*): Cookie = apply(values.map(HttpCookiePair(_)).toList)
+  /*@pre213
+  def apply(values: (String, String)*): Cookie = apply(values.map(HttpCookiePair(_)).toList)*/
   @since213
   def apply(first: (String, String), more: (String, String)*): Cookie = apply((first +: more).map(HttpCookiePair(_)))
   implicit val cookiePairsRenderer = Renderer.seqRenderer[HttpCookiePair](separator = "; ") // cache
@@ -695,8 +695,8 @@ final case class `Last-Modified`(date: DateTime) extends jm.headers.LastModified
 // https://tools.ietf.org/html/rfc5988#section-5
 object Link extends ModeledCompanion[Link] {
   def apply(uri: Uri, first: LinkParam, more: LinkParam*): Link = apply(immutable.Seq(LinkValue(uri, first +: more.toList)))
-  @pre213
-  def apply(values: LinkValue*): Link = apply(immutable.Seq(values: _*))
+  /*@pre213
+  def apply(values: LinkValue*): Link = apply(immutable.Seq(values: _*))*/
   @since213
   def apply(firstValue: LinkValue, otherValues: LinkValue*): Link = apply(firstValue +: otherValues)
 
@@ -723,8 +723,8 @@ final case class Location(uri: Uri) extends jm.headers.Location with ResponseHea
 
 // https://tools.ietf.org/html/rfc6454#section-7
 object Origin extends ModeledCompanion[Origin] {
-  @pre213
-  def apply(origins: HttpOrigin*): Origin = apply(immutable.Seq(origins: _*))
+  /*@pre213
+  def apply(origins: HttpOrigin*): Origin = apply(immutable.Seq(origins: _*))*/
   @since213
   def apply(firstOrigin: HttpOrigin, otherOrigins: HttpOrigin*): Origin = apply(firstOrigin +: otherOrigins)
 }
