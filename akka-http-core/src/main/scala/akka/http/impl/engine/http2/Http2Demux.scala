@@ -24,7 +24,7 @@ import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Source
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, StageLogging, TimerGraphStageLogic }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler, StageLogging, TimerGraphStageLogic }
 import akka.util.{ ByteString, OptionVal }
 
 import scala.collection.immutable
@@ -108,12 +108,12 @@ private[http2] object ConfigurablePing {
     def sendingPing(): Unit = ()
     def pingAckOverdue(): Boolean = false
   }
-  final class EnabledPingState(tickInterval: FiniteDuration, pingEveryNTickWithoutData: Long) extends PingState {
+  final class EnabledPingState(_tickInterval: FiniteDuration, pingEveryNTickWithoutData: Long) extends PingState {
     private var ticksWithoutData = 0L
     private var ticksSincePing = 0L
     private var pingInFlight = false
 
-    def tickInterval(): Option[FiniteDuration] = Some(tickInterval)
+    def tickInterval(): Option[FiniteDuration] = Some(_tickInterval)
 
     def onDataFrameSeen(): Unit = {
       ticksWithoutData = 0L
@@ -261,7 +261,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         push(frameOut, event)
       }
 
-      val multiplexer = createMultiplexer(StreamPrioritizer.First)
+      val multiplexer: Http2Multiplexer with OutHandler = createMultiplexer(StreamPrioritizer.First)
       setHandler(frameOut, multiplexer)
 
       val pingState = ConfigurablePing.PingState(http2Settings)

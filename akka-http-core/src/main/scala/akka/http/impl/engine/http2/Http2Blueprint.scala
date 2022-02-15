@@ -253,7 +253,7 @@ private[http] object Http2Blueprint {
     }
 
   private[http] val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
-    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes(_)), Flow[SslTlsInbound].collect {
       case SessionBytes(_, bytes) => bytes
     })
 

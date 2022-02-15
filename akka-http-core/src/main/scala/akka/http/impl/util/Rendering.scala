@@ -116,8 +116,10 @@ private[http] object Renderer {
         if (value.isEmpty) sRenderer.render(r, defaultValue) else tRenderer.render(r, value.get)
     }
 
-  def defaultSeqRenderer[T: Renderer] = genericSeqRenderer[Renderable, T](Rendering.`, `, Rendering.Empty)
-  def seqRenderer[T: Renderer](separator: String = ", ", empty: String = "") = genericSeqRenderer[String, T](separator, empty)
+  def defaultSeqRenderer[T: Renderer]: Renderer[immutable.Iterable[T]] =
+    genericSeqRenderer[Renderable, T](Rendering.`, `, Rendering.Empty)
+  def seqRenderer[T: Renderer](separator: String = ", ", empty: String = ""): Renderer[immutable.Iterable[T]] =
+    genericSeqRenderer[String, T](separator, empty)
   def genericSeqRenderer[S, T](separator: S, empty: S)(implicit sRenderer: Renderer[S], tRenderer: Renderer[T]): Renderer[immutable.Iterable[T]] =
     new Renderer[immutable.Iterable[T]] {
       def render[R <: Rendering](r: R, value: immutable.Iterable[T]): r.type = {

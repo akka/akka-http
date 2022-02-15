@@ -78,10 +78,10 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
 
     val masterTerminator = new MasterServerTerminator(log)
 
-    Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, Duration.Inf) // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
+    Tcp(system).bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, Duration.Inf) // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
       .via(if (telemetry == NoOpTelemetry) Flow[Tcp.IncomingConnection] else telemetry.serverBinding)
       .mapAsyncUnordered(settings.maxConnections) {
-        incoming: Tcp.IncomingConnection =>
+        (incoming: Tcp.IncomingConnection) =>
           try {
             httpPlusSwitching(http1, http2).addAttributes(prepareServerAttributes(settings, incoming))
               .watchTermination()(Keep.both)

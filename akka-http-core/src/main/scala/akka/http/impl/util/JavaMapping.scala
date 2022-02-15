@@ -213,7 +213,7 @@ private[http] object JavaMapping {
   implicit object InetSocketAddress extends Identity[java.net.InetSocketAddress]
   implicit object ByteString extends Identity[akka.util.ByteString]
 
-  implicit val AttributeKey = new Inherited[jm.AttributeKey[_], sm.AttributeKey[_]]
+  implicit val AttributeKey: Inherited[jm.AttributeKey[_], sm.AttributeKey[_]] = new Inherited[jm.AttributeKey[_], sm.AttributeKey[_]]
   implicit def attributeKey[T]: Inherited[jm.AttributeKey[T], sm.AttributeKey[T]] =
     AttributeKey.asInstanceOf[Inherited[jm.AttributeKey[T], sm.AttributeKey[T]]]
   implicit object ContentType extends Inherited[jm.ContentType, sm.ContentType]
