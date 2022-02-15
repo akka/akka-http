@@ -16,7 +16,7 @@
 
 package akka.parboiled2.support
 
-import akka.parboiled2.support.hlist._
+import hlist._
 
 trait HListable[T] {
   type Out <: HList
