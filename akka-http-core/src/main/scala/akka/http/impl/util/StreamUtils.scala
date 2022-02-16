@@ -260,7 +260,7 @@ private[http] object StreamUtils {
   def statefulAttrsMap[T, U](functionConstructor: Attributes => T => U): Flow[T, U, NotUsed] =
     Flow[T].via(ExposeAttributes[T, U](functionConstructor))
 
-  trait ScheduleSupport { self: GraphStageLogic =>
+  trait ScheduleSupport extends GraphStageLogic { self =>
     /**
      * Schedule a block to be run once after the given duration in the context of this graph stage.
      */

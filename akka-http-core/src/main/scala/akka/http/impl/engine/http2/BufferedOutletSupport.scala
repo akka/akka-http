@@ -98,7 +98,7 @@ private[http2] class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends
  * INTERNAL API
  */
 @InternalApi
-private[http2] trait GenericOutletSupport { logic: GraphStageLogic =>
+private[http2] trait GenericOutletSupport extends GraphStageLogic { logic =>
   def fromSubSourceOutlet[T](subSourceOutlet: SubSourceOutlet[T]): GenericOutlet[T] =
     new GenericOutlet[T] {
       def setHandler(handler: OutHandler): Unit = subSourceOutlet.setHandler(handler)

@@ -157,6 +157,9 @@ lazy val httpCore = project("akka-http-core")
       if (System.getProperty("akka.http.test-against-akka-main", "false") == "true") AkkaDependency.masterSnapshot
       else AkkaDependency.default
   )
+  .settings(
+    scalacOptions ++= Seq("-source", "3.0-migration"), // FIXME: only Scala 3
+  )
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
   .settings(scalaMacroSupport)

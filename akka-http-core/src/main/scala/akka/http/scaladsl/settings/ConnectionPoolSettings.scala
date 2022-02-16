@@ -53,7 +53,8 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   // ---
 
   @ApiMayChange
-  def withHostOverrides(hostOverrides: immutable.Seq[(String, ConnectionPoolSettings)]): ConnectionPoolSettings = self.copy(hostOverrides = self.hostOverrides.map { case (h, s) => ConnectionPoolSettingsImpl.hostRegex(h) -> s })
+  def withHostOverrides(hostOverrides: immutable.Seq[(String, ConnectionPoolSettings)]): ConnectionPoolSettings =
+    self.copy(hostOverrides = hostOverrides.map { case (h, s) => ConnectionPoolSettingsImpl.hostRegex(h) -> s })
 
   @ApiMayChange
   def appendHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = self.copy(hostOverrides = self.hostOverrides :+ (ConnectionPoolSettingsImpl.hostRegex(hostPattern) -> settings))

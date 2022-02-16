@@ -29,7 +29,7 @@ import scala.util.control.NoStackTrace
  * Mixed into the Http2ServerDemux graph logic.
  */
 @InternalApi
-private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper =>
+private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper { self =>
   // required API from demux
   def isServer: Boolean
   def multiplexer: Http2Multiplexer

@@ -12,7 +12,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 
 @DoNotInherit
-trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings =>
+trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings with akka.http.scaladsl.settings.Http2ServerSettings.Http2ServerSettingsImpl =>
   def getRequestEntityChunkSize: Int = requestEntityChunkSize
   def withRequestEntityChunkSize(newRequestEntityChunkSize: Int): Http2ServerSettings
 
