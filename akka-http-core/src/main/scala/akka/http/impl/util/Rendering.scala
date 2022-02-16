@@ -218,7 +218,7 @@ private[http] trait Rendering {
   /**
    * Renders the given string in double quotes.
    */
-  def ~~#!(s: String): this.type = ~~('"').putEscaped(s) ~~ '"'
+  def ~~#!(s: String): this.type = this.~~('"').putEscaped(s, Rendering.`\"`, '\\').~~('"')
 
   def putEscaped(s: String, escape: CharPredicate = Rendering.`\"`, escChar: Char = '\\'): this.type = {
     @tailrec def rec(ix: Int = 0): this.type =

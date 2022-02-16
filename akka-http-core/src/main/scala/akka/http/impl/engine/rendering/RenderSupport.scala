@@ -49,10 +49,13 @@ private[http] object RenderSupport {
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
   def CancelSecond[T, Mat](first: Source[T, Mat], second: Source[T, Any]): Source[T, Mat] = {
-    Source.fromGraph(GraphDSL.create(first) { implicit b => (frst: SourceShape[T]) =>
-      import GraphDSL.Implicits._
-      second ~> Sink.cancelled
-      SourceShape(frst.out)
+    Source.fromGraph(GraphDSL.create[SourceShape[T], Mat](first) { implicit b =>
+      {
+        case frst: SourceShape[T] =>
+          import GraphDSL.Implicits._
+          second ~> Sink.cancelled
+          SourceShape(frst.out)
+      }
     })
   }
 

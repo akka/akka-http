@@ -217,7 +217,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = withHeaders(this.headers ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
   /** Java API */
   def withHeaders(headers: JIterable[jm.HttpHeader]): Self =
-    withHeaders(headers.asScala.toVector.map(x => JavaMapping.toScala(x))
+    withHeaders(headers.asScala.toVector.map(x => JavaMapping.toScala(x)))
   /** Java API */
   def getAttribute[T](attributeKey: jm.AttributeKey[T]): Optional[T] =
     Util.convertOption(attribute(attributeKey))

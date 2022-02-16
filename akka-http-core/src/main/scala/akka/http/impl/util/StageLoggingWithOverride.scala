@@ -19,7 +19,7 @@ import akka.stream.ActorMaterializer
  * INTERNAL API
  */
 @InternalApi
-private[akka] trait StageLoggingWithOverride { self: GraphStageLogic =>
+private[akka] trait StageLoggingWithOverride extends GraphStageLogic {
   def logOverride: LoggingAdapter = DefaultNoLogging
 
   private var _log: LoggingAdapter = null
