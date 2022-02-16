@@ -11,7 +11,7 @@ import akka.actor._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.http2.Http2
@@ -35,6 +35,7 @@ import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.util.ManifestInfo
+
 import scala.annotation.nowarn
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
@@ -132,7 +133,7 @@ class HttpExt private[http] ()(implicit val system: ExtendedActorSystem) extends
     )
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
-    Tcp()
+    Tcp(system)
       .bind(
         interface,
         port,
@@ -1158,7 +1159,7 @@ trait DefaultSSLContextCreation {
   def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     val config = sslConfig.config
 
-    val log = Logging(system, getClass)
+    val log = Logging(system, getClass)(LogSource.fromClass)
     val mkLogger = new AkkaLoggerFactory(system)
 
     // initial ssl context!

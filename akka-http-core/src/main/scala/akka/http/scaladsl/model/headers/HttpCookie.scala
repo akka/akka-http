@@ -57,14 +57,14 @@ object HttpCookiePair {
  * http://tools.ietf.org/html/rfc6265
  */
 final class HttpCookie private[http] (
-  name:          String,
-  value:         String,
+  val name:      String,
+  val value:     String,
   val expires:   Option[DateTime],
   val maxAge:    Option[Long],
   val domain:    Option[String],
   val path:      Option[String],
-  secure:        Boolean,
-  httpOnly:      Boolean,
+  val secure:    Boolean,
+  val httpOnly:  Boolean,
   val extension: Option[String],
   val sameSite:  Option[SameSite]) extends jm.headers.HttpCookie with ToStringRenderable with Product with Serializable with Equals {
 
@@ -161,11 +161,6 @@ final class HttpCookie private[http] (
     if (sameSite.isDefined) r ~~ "; SameSite=" ~~ sameSite.get
     r
   }
-
-  override def name(): String = this.name
-  override def value(): String = this.value
-  override def secure(): Boolean = this.secure
-  override def httpOnly(): Boolean = this.httpOnly
 
   /** Java API */
   def getSameSite: Optional[jm.headers.SameSite] = sameSite.map(_.asJava).asJava
