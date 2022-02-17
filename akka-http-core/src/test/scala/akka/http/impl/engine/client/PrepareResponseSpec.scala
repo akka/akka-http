@@ -48,8 +48,6 @@ class PrepareResponseSpec extends AkkaSpec {
   "The PrepareRequest stage" should {
 
     "not lose demand that comes in while streaming entity" in {
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
@@ -93,8 +91,6 @@ class PrepareResponseSpec extends AkkaSpec {
     }
 
     "not lose demand that comes in while handling strict entity" in {
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
@@ -129,8 +125,6 @@ class PrepareResponseSpec extends AkkaSpec {
     "complete entity stream then complete stage when downstream cancels" in {
       // to make it possible to cancel a big file download for example
       // without downloading the entire response first
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
@@ -170,8 +164,6 @@ class PrepareResponseSpec extends AkkaSpec {
     }
 
     "complete stage when downstream cancels before end of strict request has arrived" in {
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
@@ -198,8 +190,6 @@ class PrepareResponseSpec extends AkkaSpec {
     }
 
     "cancel entire stage when the entity stream is canceled" in {
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 

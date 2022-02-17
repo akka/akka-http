@@ -24,8 +24,7 @@ class ClientSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = infinite""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 

@@ -29,10 +29,8 @@ class RequestRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfterA
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-
-  implicit val materializer = ActorMaterializer()
 
   "The request preparation logic should" - {
     "properly render an unchunked" - {

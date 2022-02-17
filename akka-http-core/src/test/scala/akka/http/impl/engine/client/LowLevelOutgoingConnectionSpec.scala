@@ -24,8 +24,6 @@ import akka.http.impl.util._
 import akka.testkit._
 
 class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Inside {
-  implicit val dispatcher = system.dispatcher
-
   "The connection-level client implementation" should {
 
     "handle a request/response round-trip" which {

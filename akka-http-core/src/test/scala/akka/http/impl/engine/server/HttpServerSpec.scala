@@ -5,9 +5,7 @@
 package akka.http.impl.engine.server
 
 import scala.annotation.nowarn
-
 import java.net.{ InetAddress, InetSocketAddress }
-
 import akka.event.LoggingAdapter
 import akka.http.ParsingErrorHandler
 import akka.http.impl.engine.ws.ByteStringSinkProbe
@@ -22,10 +20,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.stream.testkit._
-import akka.stream.ActorMaterializer
-import akka.stream.Attributes
-import akka.stream.Outlet
-import akka.stream.SourceShape
+import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape, SystemMaterializer }
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.testkit._
@@ -48,8 +43,6 @@ class HttpServerSpec extends AkkaSpec(
      akka.http.server.log-unencrypted-network-bytes = 100
      akka.http.server.request-timeout = infinite
   """) with Inside with WithLogCapturing { spec =>
-  implicit val materializer = ActorMaterializer()
-
   "The server implementation" should {
     "deliver an empty request as soon as all headers are received" in assertAllStagesStopped(new TestSetup {
       send("""GET / HTTP/1.1
@@ -1582,8 +1575,8 @@ class HttpServerSpec extends AkkaSpec(
     })
   }
   class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
-    implicit def system = spec.system
-    implicit def materializer = spec.materializer
+    def system = spec.system
+    def materializer = SystemMaterializer.get(system).materializer
 
     override def settings = {
       val s = super.settings

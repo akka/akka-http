@@ -31,10 +31,9 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
 
   val ServerOnTheMove = StatusCodes.custom(330, "Server on the move")
-  implicit val materializer = ActorMaterializer()
 
   "The response preparation logic should properly render" - {
     "a response with no body," - {

@@ -60,7 +60,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   extends TestKit(_system) with AnyWordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
   with TypeCheckedTripleEquals with ScalaFutures {
 
-  implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration)
+  implicit val patience: PatienceConfig = PatienceConfig(testKitSettings.DefaultTimeout.duration)
 
   def this(config: Config) = this(ActorSystem(
     AkkaSpec.getCallerName(getClass),

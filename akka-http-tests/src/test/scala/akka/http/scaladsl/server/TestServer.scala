@@ -26,9 +26,8 @@ object TestServer extends App {
     akka.stream.materializer.debug.fuzzing-mode = off
     """)
 
-  implicit val system = ActorSystem("ServerTest", testConf)
+  implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
   implicit val ec: ExecutionContext = system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   import spray.json.DefaultJsonProtocol._
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
