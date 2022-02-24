@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.impl.engine.HttpIdleTimeoutException
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
 import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
@@ -19,6 +20,7 @@ import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 
 class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
@@ -30,6 +32,8 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
      akka.http.client.log-unencrypted-network-bytes = 100
      akka.actor.serialize-messages = false
   """) with ScalaFutures {
+  override protected def failOnSevereMessages: Boolean = true
+
   case class RequestId(id: String) extends RequestResponseAssociation
   val requestIdAttr = AttributeKey[RequestId]("requestId")
 
@@ -87,6 +91,23 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       val response1 = expectClientResponse()
       response1.attribute(requestIdAttr).get.id shouldBe "request-1"
       Unmarshal(response1.entity).to[String].futureValue shouldBe "pong"
+    }
+    "support server-side idle-timeout" in new TestSetup {
+      override def serverSettings: ServerSettings = super.serverSettings.mapTimeouts(_.withIdleTimeout(100.millis))
+
+      clientResponsesIn.ensureSubscription()
+      Thread.sleep(500)
+      clientRequestsOut.expectCancellation()
+      clientResponsesIn.expectComplete()
+    }
+    "support client-side idle-timeout" in new TestSetup {
+      override def clientSettings: ClientConnectionSettings = super.clientSettings.withIdleTimeout(100.millis)
+
+      clientResponsesIn.ensureSubscription()
+      Thread.sleep(500)
+      clientRequestsOut.expectCancellation()
+      // expect idle timeout exception to propagate to user
+      clientResponsesIn.expectError() shouldBe a[HttpIdleTimeoutException]
     }
   }
 

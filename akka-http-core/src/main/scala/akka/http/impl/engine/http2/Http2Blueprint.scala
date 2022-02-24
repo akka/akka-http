@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
+import akka.http.impl.engine.{ HttpConnectionIdleTimeoutBidi, HttpIdleTimeoutException }
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.client.ResponseParsing
 import akka.http.impl.engine.http2.framing.{ FrameRenderer, Http2FrameParsing }
@@ -157,6 +157,9 @@ private[http] object Http2Blueprint {
           if (log.isDebugEnabled) log.debug(s"HTTP2 connection failed with error [${ex.getMessage}]. Sending ${ex.errorCode} and closing connection.")
           FrameRenderer.render(GoAwayFrame(0, ex.errorCode))
         case ex: StreamTcpException => throw ex // TCP connection is probably broken: just forward exception
+        case ex: HttpIdleTimeoutException =>
+          // idle timeout stage is propagating this error but since it is already coming back we just propagate without logging
+          throw ex
         case NonFatal(ex) =>
           log.error(s"HTTP2 connection failed with error [${ex.getMessage}]. Sending INTERNAL_ERROR and closing connection.")
           FrameRenderer.render(GoAwayFrame(0, Http2Protocol.ErrorCode.INTERNAL_ERROR))
