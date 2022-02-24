@@ -53,7 +53,7 @@ trait EventStreamUnmarshalling {
 
   @deprecated("Binary compatibility method. Invocations should have an implicit ActorSystem in scope to provide access to configuration", "10.1.8")
   final val fromEventStream: FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]] =
-    fromEventsStream(maxEventSize, maxLineSize)
+    fromEventsStream(maxEventSize, maxLineSize, emitEmptyEvents = false)
 
   /**
    * Lets an `HttpEntity` with a `text/event-stream` media type be unmarshalled to a source of `ServerSentEvent`s.
@@ -67,16 +67,17 @@ trait EventStreamUnmarshalling {
    * @param settings overrides the default unmarshalling behavior.
    */
   def fromEventsStream(settings: ServerSentEventSettings): FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]] = {
-    fromEventsStream(settings.maxLineSize, settings.maxEventSize)
+    fromEventsStream(settings.maxLineSize, settings.maxEventSize, settings.emitEmptyEvents)
   }
 
-  private final def fromEventsStream(maxLineSize: Int, maxEventSize: Int): FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]] = {
-    val eventStreamParser = EventStreamParser(maxLineSize, maxEventSize)
+  private final def fromEventsStream(maxLineSize: Int, maxEventSize: Int, emitEmptyEvents: Boolean): FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]] = {
+    val eventStreamParser = EventStreamParser(maxLineSize, maxEventSize, emitEmptyEvents)
     def unmarshal(entity: HttpEntity) =
       entity
         .withoutSizeLimit // Because of streaming: the server keeps the response open and potentially streams huge amounts of data
         .dataBytes
         .viaMat(eventStreamParser)(Keep.none)
+
     Unmarshaller.strict(unmarshal).forContentTypes(`text/event-stream`)
   }
 }
