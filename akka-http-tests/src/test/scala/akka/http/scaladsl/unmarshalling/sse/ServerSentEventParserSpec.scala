@@ -58,7 +58,7 @@ final class ServerSentEventParserSpec extends AsyncWordSpec with Matchers with B
                      |data: incomplete
                      |""".stripMargin
       Source(input.split(f"%n").toVector)
-        .via(new ServerSentEventParser(1048576))
+        .via(new ServerSentEventParser(1048576, emitEmptyEvents = false))
         .runWith(Sink.seq)
         .map(
           _ shouldBe Vector(

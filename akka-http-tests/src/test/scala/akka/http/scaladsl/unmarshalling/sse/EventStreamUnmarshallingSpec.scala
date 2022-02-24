@@ -11,7 +11,9 @@ import akka.NotUsed
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.settings.ServerSentEventSettings
 import akka.stream.scaladsl.{ Sink, Source }
+
 import java.util.{ List => JList }
 import scala.collection.JavaConverters
 import scala.collection.immutable.Seq
@@ -30,7 +32,9 @@ object EventStreamUnmarshallingSpec {
   }
 
   // Also used by EventStreamUnmarshallingTest.java
-  val entity: HttpEntity =
+  val entity: HttpEntity = streamEntity(events)
+
+  def streamEntity(events: Seq[ServerSentEvent]): HttpEntity =
     HttpEntity(`text/event-stream`, Source(events).map(_.encode))
 }
 
@@ -44,6 +48,20 @@ final class EventStreamUnmarshallingSpec extends AsyncWordSpec with Matchers wit
         .to[Source[ServerSentEvent, NotUsed]]
         .flatMap(_.runWith(Sink.seq))
         .map(_ shouldBe events)
+    }
+    "not receive any empty events by default" in {
+      Unmarshal(streamEntity(ServerSentEvent.heartbeat +: events :+ ServerSentEvent.heartbeat))
+        .to[Source[ServerSentEvent, NotUsed]]
+        .flatMap(_.runWith(Sink.seq))
+        .map(_ shouldBe events)
+    }
+    "receive empty events when enabled" in {
+      val allEvents = ServerSentEvent.heartbeat +: events :+ ServerSentEvent.heartbeat
+      implicit val fromEventsStream = EventStreamUnmarshalling.fromEventsStream(ServerSentEventSettings(system).withEmitEmptyEvents(true))
+      Unmarshal(streamEntity(allEvents))
+        .to[Source[ServerSentEvent, NotUsed]]
+        .flatMap(_.runWith(Sink.seq))
+        .map(_ shouldBe allEvents)
     }
   }
 }

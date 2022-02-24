@@ -24,7 +24,7 @@ abstract class ServerSentEventSettings private[akka] () extends akka.http.javads
 
   override def withMaxEventSize(newValue: Int): ServerSentEventSettings = self.copy(maxEventSize = newValue)
   override def withLineLength(newValue: Int): ServerSentEventSettings = self.copy(maxLineSize = newValue)
-
+  override def withEmitEmptyEvents(newValue: Boolean): ServerSentEventSettings = self.copy(emitEmptyEvents = newValue)
 }
 
 object ServerSentEventSettings extends SettingsCompanion[ServerSentEventSettings] {
