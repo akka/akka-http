@@ -17,24 +17,19 @@ trait MdcLoggingDirectives {
 
   import MdcLoggingDirectives.extractDiagnosticMarkerLog
 
-  def withMdcLogging: Directive0 = extractDiagnosticMarkerLog
-    .flatMap { dmbla: DiagnosticMarkerBusLoggingAdapter =>
-      mapRequestContext { ctx =>
-        ctx.withLog(dmbla)
+  def withMdcLogging: Directive0 =
+    extractDiagnosticMarkerLog
+      .flatMap { dmbla: DiagnosticMarkerBusLoggingAdapter =>
+        mapRequestContext { ctx =>
+          ctx.withLog(dmbla)
+        }
       }
-    }
 
   def extractMarkerLog: Directive1[MarkerLoggingAdapter] =
-    withMdcLogging.tflatMap { _ =>
-      extractDiagnosticMarkerLog
-        .map(identity[MarkerLoggingAdapter])
-    }
+    (withMdcLogging & extractDiagnosticMarkerLog).map(identity[MarkerLoggingAdapter])
 
   def withMdcEntries(entries: (String, Any)*): Directive0 =
-    withMdcLogging.tflatMap { _ =>
-      extractDiagnosticMarkerLog
-        .map(log => log.mdc(log.mdc ++ entries.toMap))
-    }
+    (withMdcLogging & extractDiagnosticMarkerLog).map(log => log.mdc(log.mdc ++ entries.toMap))
 
   def withMdcEntry(key: String, value: Any): Directive0 =
     withMdcEntries((key, value))
