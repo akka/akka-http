@@ -11,4 +11,3 @@ target
 *.vim
 .ensime*
 .bsp
-.tool-versions
