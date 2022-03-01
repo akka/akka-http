@@ -84,13 +84,15 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
         incoming: Tcp.IncomingConnection =>
           try {
             httpPlusSwitching(http1, http2).addAttributes(prepareServerAttributes(settings, incoming))
-              .watchTermination()(Keep.both)
-              .join(HttpConnectionIdleTimeoutBidi(settings.idleTimeout, Some(incoming.remoteAddress)) join incoming.flow)
-              .mapMaterializedValue {
-                case (connectionTerminator, future) =>
-                  connectionTerminator.foreach(masterTerminator.registerConnection(_)(fm.executionContext))((fm.executionContext))
+              .watchTermination() {
+                case (connectionTerminatorF, future) =>
+                  connectionTerminatorF.foreach { connectionTerminator =>
+                    masterTerminator.registerConnection(connectionTerminator)(fm.executionContext)
+                    future.onComplete(_ => masterTerminator.removeConnection(connectionTerminator))(fm.executionContext)
+                  }(fm.executionContext)
                   future // drop the terminator matValue, we already registered is which is all we need to do here
               }
+              .join(HttpConnectionIdleTimeoutBidi(settings.idleTimeout, Some(incoming.remoteAddress)) join incoming.flow)
               .addAttributes(Http.cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
               .run().recover {
                 // Ignore incoming errors from the connection as they will cancel the binding.
