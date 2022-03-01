@@ -1,0 +1,49 @@
+name: Nightly Builds
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  compile-and-test:
+    name: Compile and test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        SCALA_VERSION: [2.12, 2.13]
+        JABBA_JDK: [8, 11, 17]
+        AKKA_VERSION: [master, default]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ matrix.JABBA_JDK }}
+        uses: olafurpg/setup-scala@v10
+        env:
+          JABBA_INDEX: 'https://github.com/typelevel/jdk-index/raw/main/index.json'
+        with:
+          java-version: temurin@${{ matrix.JABBA_JDK }}
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Cache Build Target
+        uses: actions/cache@v2
+        with:
+          path: project/**/target
+          key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
+
+      - name: Run all tests JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}, Akka ${{ matrix.AKKA_VERSION }}
+        if: ${{ github.event_name == 'push' }}
+        run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }}"+~ ${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues Test/compile test"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v2  # upload test results
+        if: success() || failure()        # run this step even if previous step failed
+        with:
+          name: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}-${{ matrix.AKKA_VERSION }}
+          path: '**/target/test-reports/*.xml'
