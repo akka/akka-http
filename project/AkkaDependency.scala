@@ -78,7 +78,7 @@ object AkkaDependency {
               else
                 "com.typesafe.akka" %% module % akkaVersion % config
             },
-            resolvers ++= (if (akkaSnapshot) Seq("Akka Snapshots" at "https://repo.akka.io/snapshots") else Nil)
+            resolvers ++= (if (akkaSnapshot) Seq("Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots") else Nil)
           )
       }
   }
@@ -90,7 +90,7 @@ object AkkaDependency {
     import scala.concurrent.duration._
 
     // akka-cluster-sharding-typed_2.13 seems to be the last nightly published by `akka-publish-nightly` so if that's there then it's likely the rest also made it
-    val body = Await.result(http.run(url("https://repo.akka.io/snapshots/com/typesafe/akka/akka-cluster-sharding-typed_2.13/")), 10.seconds).bodyAsString
-    """href="([^?/].*?)/"""".r.findAllMatchIn(body).map(_.group(1)).filter(_.startsWith(prefix)).toList.last
+    val body = Await.result(http.run(url("https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/akka-cluster-sharding-typed_2.13/")), 10.seconds).bodyAsString
+    """href=".*/([^?/].*?)/"""".r.findAllMatchIn(body).map(_.group(1)).filter(_.startsWith(prefix)).toList.last
   }
 }
