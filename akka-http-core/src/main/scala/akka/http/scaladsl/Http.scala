@@ -8,8 +8,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
 import javax.net.ssl._
 import akka.actor._
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
@@ -35,7 +34,9 @@ import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.util.ManifestInfo
+
 import scala.annotation.nowarn
+import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl.ConfigSSLContextBuilder
@@ -54,7 +55,7 @@ import scala.concurrent.duration._
  */
 @nowarn("msg=DefaultSSLContextCreation in package scaladsl is deprecated")
 @DoNotInherit
-class HttpExt private[http] ()(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
+class HttpExt @InternalStableApi /* constructor signature is hardcoded in Telemetry */ private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
 
   akka.http.Version.check(system.settings.config)
@@ -1106,7 +1107,8 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   def lookup() = Http
 
-  def createExtension(system: ExtendedActorSystem): HttpExt = new HttpExt()(system)
+  def createExtension(system: ExtendedActorSystem): HttpExt =
+    new HttpExt(system.settings.config getConfig "akka.http")(system)
 
   @nowarn("msg=use remote-address-attribute instead")
   @InternalApi
