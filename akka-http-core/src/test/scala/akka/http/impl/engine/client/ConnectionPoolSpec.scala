@@ -89,15 +89,29 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
     }
 
     "open a second connection if the first one is loaded" in new TestSetup {
+
+      case class Request(request: HttpRequest, connNo: Int, promise: Promise[HttpResponse]) {
+        def handle(): Unit = promise.success(testServerHandler(connNo)(request))
+      }
+      override def asyncTestServerHandler(connNr: Int): HttpRequest => Future[HttpResponse] = { req =>
+        val p = Promise[HttpResponse]()
+        testActor ! Request(req, connNr, p)
+        p.future
+      }
+
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
+
+      responseOutSub.request(2)
 
       requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
 
-      responseOutSub.request(2)
       acceptIncomingConnection()
+      acceptIncomingConnection()
+
+      expectMsgType[Request].handle()
       val r1 = responseOut.expectNext()
-      acceptIncomingConnection()
+      expectMsgType[Request].handle()
       val r2 = responseOut.expectNext()
 
       Seq(r1, r2) foreach {
