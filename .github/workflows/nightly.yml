@@ -15,6 +15,10 @@ jobs:
         SCALA_VERSION: [2.12, 2.13]
         JABBA_JDK: [8, 11, 17]
         AKKA_VERSION: [master, default, 2.6.18]
+        exclude:
+          # 2.5 is not compatible with JDK 17
+          - JABBA_JDK: 17
+            AKKA_VERSION: default
     steps:
       - name: Checkout
         uses: actions/checkout@v2
