@@ -363,8 +363,8 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
 
           val lasted = System.nanoTime() - receivedFirstResponse
 
-          lasted.nanos should be >= 800.millis
-          lasted.nanos should be < 1500.millis
+          lasted.nanos should be >= 800.millis // = keep-alive-timeout
+          lasted.nanos should be < 2500.millis // eventually it should be done, even with a bit of slack it shouldn't be too late
 
           pushRequest(HttpRequest(uri = "/next"))
           val conn2 = expectNextConnection()
