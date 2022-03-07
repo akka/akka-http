@@ -13,7 +13,7 @@ import akka.http.scaladsl.settings.Http2ClientSettings
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.TimerGraphStageLogic
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet, StreamTcpException }
 import akka.util.PrettyDuration
 
 import java.util.concurrent.ThreadLocalRandom
@@ -133,8 +133,10 @@ private[http2] object PersistentConnection {
           }
         }
         val onFailed = getAsyncCallback[Throwable] { cause =>
+          // If the materialized value is failed, then the stream should be broken by design.
+          // Nevertheless also kick our ends of the stream.
           responseIn.cancel()
-          requestOut.fail(new RuntimeException("connection broken", cause))
+          requestOut.fail(new StreamTcpException("connection broken"))
 
           if (connectsLeft.contains(0)) {
             failStage(new RuntimeException(s"Connection failed after $maxAttempts attempts", cause))
