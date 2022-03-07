@@ -17,6 +17,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.typesafe.config.ConfigFactory
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -66,6 +67,9 @@ object Http2ClientApp extends App {
     .flatMap(_.toStrict(1.second))
     .onComplete(res => println(s"[4] Got favicon: $res"))
 
+  // OverflowStrategy.dropNew has been deprecated in latest Akka versions
+  // FIXME: replace with 2.6 queue when 2.5 support is dropped
+  @nowarn("msg=Use Source.queue") //
   //#response-future-association
   def singleRequest(connection: Flow[HttpRequest, HttpResponse, Any], bufferSize: Int = 100): HttpRequest => Future[HttpResponse] = {
     val queue =

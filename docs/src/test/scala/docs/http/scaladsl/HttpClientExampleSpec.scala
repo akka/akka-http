@@ -13,7 +13,10 @@ import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-@nowarn("msg=will not be a runnable program")
+@nowarn("msg=will not be a runnable program") //
+// OverflowStrategy.dropNew has been deprecated in latest Akka versions
+// FIXME: replace with 2.6 queue when 2.5 support is dropped
+@nowarn("msg=Use Source.queue")
 class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "manual-entity-consume-example-1" in compileOnlySpec {
