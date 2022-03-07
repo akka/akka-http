@@ -68,7 +68,7 @@ object Http2ClientApp extends App {
     .onComplete(res => println(s"[4] Got favicon: $res"))
 
   // OverflowStrategy.dropNew has been deprecated in latest Akka versions
-  // FIXME: replace with 2.6 queue when 2.5 support is dropped
+  // FIXME: replace with 2.6 queue when 2.5 support is dropped, see #3069
   @nowarn("msg=Use Source.queue") //
   //#response-future-association
   def singleRequest(connection: Flow[HttpRequest, HttpResponse, Any], bufferSize: Int = 100): HttpRequest => Future[HttpResponse] = {
