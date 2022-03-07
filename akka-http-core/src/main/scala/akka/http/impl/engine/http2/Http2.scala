@@ -234,6 +234,7 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
       TLS(createEngine _, closing = TLSClosing.eagerClose)
 
     stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
+      .addAttributes(Http.cancellationStrategyAttributeForDelay(clientConnectionSettings.streamCancellationDelay))
   }
 
   def outgoingConnectionPriorKnowledge(host: String, port: Int, clientConnectionSettings: ClientConnectionSettings, log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
@@ -243,6 +244,7 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
       TLSPlacebo()
 
     stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
+      .addAttributes(Http.cancellationStrategyAttributeForDelay(clientConnectionSettings.streamCancellationDelay))
   }
 
   private def prepareClientAttributes(serverHost: String, port: Int): Attributes =

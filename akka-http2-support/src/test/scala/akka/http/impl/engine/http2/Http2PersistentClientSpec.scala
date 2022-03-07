@@ -15,7 +15,7 @@ import akka.http.scaladsl.settings.Http2ClientSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{ ClientTransport, Http }
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.{ KillSwitches, UniqueKillSwitch }
+import akka.stream.{ KillSwitches, StreamTcpException, UniqueKillSwitch }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
@@ -364,7 +364,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       })
 
     val killProbe = TestProbe()
-    def killConnection(): Unit = killProbe.expectMsgType[UniqueKillSwitch].abort(new RuntimeException("connection was killed"))
+    def killConnection(): Unit = killProbe.expectMsgType[UniqueKillSwitch].abort(new StreamTcpException("connection was killed"))
 
     object server {
       private lazy val requestProbe = TestProbe()

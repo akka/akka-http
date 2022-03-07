@@ -13,6 +13,7 @@ import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.settings.ServerSettings
+import akka.stream.StreamTcpException
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.TestProbe
@@ -98,7 +99,8 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       clientResponsesIn.ensureSubscription()
       Thread.sleep(500)
       clientRequestsOut.expectCancellation()
-      clientResponsesIn.expectComplete()
+      // expect idle timeout connection abort exception to propagate to user
+      clientResponsesIn.expectError() shouldBe a[StreamTcpException]
     }
     "support client-side idle-timeout" in new TestSetup {
       override def clientSettings: ClientConnectionSettings = super.clientSettings.withIdleTimeout(100.millis)
