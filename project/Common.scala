@@ -43,7 +43,7 @@ object Common extends AutoPlugin {
     Test / compile / scalacOptions += "-Wconf:msg=match may not be exhaustive:s",
 
     mimaReportSignatureProblems := true,
-    Test / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"
+    Global / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"
   )
 
   val specificationVersion: String = sys.props("java.specification.version")
