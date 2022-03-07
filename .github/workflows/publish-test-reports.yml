@@ -15,9 +15,11 @@ jobs:
         JABBA_JDK: [ 1.8, 1.11 ]
     steps:
       - uses: dorny/test-reporter@v1
+        # avoid excessive notification spam, fail-on-error seems broken https://github.com/dorny/test-reporter/issues/161
+        continue-on-error: true
         with:
           artifact: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}
           name: Test Results Details / Scala ${{ matrix.SCALA_VERSION }} on JDK ${{ matrix.JABBA_JDK }}
-          fail-on-error: 'false'
+          fail-on-error: false
           path: '**/target/test-reports/*.xml'
           reporter: java-junit
