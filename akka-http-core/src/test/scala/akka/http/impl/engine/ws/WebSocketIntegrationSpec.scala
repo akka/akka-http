@@ -197,23 +197,30 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
       val handler = Flow[Message]
         .watchTermination()(Keep.right)
         .mapMaterializedValue(handlerTermination.completeWith(_))
-        .map(m => TextMessage.Strict(s"Echo [$m]"))
+        .map(m => TextMessage.Strict(s"Echo [${m.asTextMessage.getStrictText}]"))
 
       val bindingFuture = Http().newServerAt("localhost", 0).bindSync(_.attribute(webSocketUpgrade).get.handleMessages(handler, None))
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
-      val ((switch, connection), completion) =
-        Source.maybe
+      val clientMessageOut = TestPublisher.probe[Message]()
+      val clientMessageIn = TestSubscriber.probe[Message]()
+
+      val switch =
+        Source.fromPublisher(clientMessageOut)
           .viaMat {
             Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
               .atop(TLSPlacebo())
               .atopMat(KillSwitches.singleBidi[ByteString, ByteString])(Keep.right)
-              .joinMat(Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))(Keep.both)
+              .join(Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))
           }(Keep.right)
-          .toMat(Sink.ignore)(Keep.both)
+          .toMat(Sink.fromSubscriber(clientMessageIn))(Keep.left)
           .run()
-      connection.futureValue
+
+      // simulate message exchange to make sure handler has been installed
+      clientMessageOut.sendNext(TextMessage("Test"))
+      clientMessageIn.requestNext(TextMessage("Echo [Test]"))
+
       switch.abort(new IllegalStateException("Connection aborted"))
 
       // Should fail, not complete:
