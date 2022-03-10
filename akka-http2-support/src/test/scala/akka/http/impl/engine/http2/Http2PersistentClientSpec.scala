@@ -44,10 +44,11 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
      akka.http.client.http2.completion-timeout=100ms
   """) with ScalaFutures {
   override def failOnSevereMessages: Boolean = true
+  private val notSevere = Set("ChannelReadable", "WriteAck")
   override protected def isSevere(event: Logging.LogEvent): Boolean =
     event.level <= Logging.WarningLevel &&
       // fix for https://github.com/akka/akka-http/issues/3732 / https://github.com/akka/akka/issues/29330
-      !event.message.toString.contains("ChannelReadable")
+      !notSevere.exists(cand => event.message.toString.contains(cand))
 
   case class RequestId(id: String) extends RequestResponseAssociation
   val requestIdAttr = AttributeKey[RequestId]("requestId")
