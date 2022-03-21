@@ -71,8 +71,8 @@ object TailSwitch {
       }
   }
 
-  type Aux[L <: HList, LI <: HList, T <: HList, TI <: HList, R <: HList, RI <: HList, Out <: HList] =
-    TailSwitch[L, T, R] { type Out = TailSwitch0[L, L, T, T, R, HNil] }
+  type Aux[L <: HList, LI <: HList, T <: HList, TI <: HList, R <: HList, RI <: HList, Out0] =
+    TailSwitch[L, T, R] { type Out = Out0 }
 
   implicit def tailSwitch[L <: HList, T <: HList, R <: HList]
       : TailSwitch[L, T, R] { type Out = TailSwitch0[L, L, T, T, R, HNil] } = `n/a`
