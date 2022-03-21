@@ -40,12 +40,12 @@ private[parser] trait Base64Parsing { this: Parser =>
   def rfc2045Block: Rule1[Array[Byte]] = base64StringOrBlock(rfc2045Alphabet, rfc2045BlockDecoder)
 
   /**
-   * Parses a org.parboiled2.util.Base64.custom()-encoded string and decodes it onto the value stack.
+   * Parses a akka.parboiled2.util.Base64.custom()-encoded string and decodes it onto the value stack.
    */
   def base64CustomString: Rule1[Array[Byte]] = base64StringOrBlock(customAlphabet, customStringDecoder)
 
   /**
-   * Parses a org.parboiled2.util.Base64.custom()-encoded string potentially containing newlines
+   * Parses a akka.parboiled2.util.Base64.custom()-encoded string potentially containing newlines
    * and decodes it onto the value stack.
    */
   def base64CustomBlock: Rule1[Array[Byte]] = base64StringOrBlock(customAlphabet, customBlockDecoder)

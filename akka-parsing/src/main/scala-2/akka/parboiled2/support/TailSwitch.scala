@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,17 +17,17 @@
 package akka.parboiled2.support
 
 import scala.annotation.implicitNotFound
-import akka.shapeless._
-import akka.shapeless.ops.hlist.ReversePrepend
+import akka.parboiled2.support.hlist._
+import akka.parboiled2.support.hlist.ops.hlist.ReversePrepend
 
 // format: OFF
 
 /**
- * type-level implementation of this logic:
- *   Out =
- *     R                      if T has a tail of type L
- *     (L dropRight T) ::: R  if L has a tail of type T
- */
+  * type-level implementation of this logic:
+  *   Out =
+  *     R                      if T has a tail of type L
+  *     (L dropRight T) ::: R  if L has a tail of type T
+  */
 @implicitNotFound("Illegal rule composition")
 sealed trait TailSwitch[L <: HList, T <: HList, R <: HList] {
   type Out <: HList
@@ -42,7 +42,7 @@ object TailSwitch {
   //     else if (LI <: T) RI.reverse ::: R
   //     else if (LI <: HNil) rec(L, HNil, T, TI.tail, R, RI)
   //     else if (TI <: HNil) rec(L, LI.tail, T, HNil, R, LI.head :: RI)
-  //     rec(L, LI.tail, T, TI.tail, R, LI.head :: RI)
+  //     else rec(L, LI.tail, T, TI.tail, R, LI.head :: RI)
   //   rec(L, L, T, T, R, HNil)
   sealed trait Aux[L <: HList, LI <: HList, T <: HList, TI <: HList, R <: HList, RI <: HList, Out <: HList]
 
@@ -52,13 +52,13 @@ object TailSwitch {
     Aux[L, LI, T, TI, R, RI, R] = `n/a`
   }
 
-  private[parboiled2] abstract class Aux1 extends Aux2 {
+  abstract private[parboiled2] class Aux1 extends Aux2 {
     // if LI <: T then Out = RI.reverse ::: R
     implicit def terminate2[T <: HList, TI <: HList, L <: HList, LI <: T, R <: HList, RI <: HList, Out <: HList]
     (implicit rp: ReversePrepend.Aux[RI, R, Out]): Aux[L, LI, T, TI, R, RI, Out] = `n/a`
   }
 
-  private[parboiled2] abstract class Aux2 {
+  abstract private[parboiled2] class Aux2 {
     implicit def iter1[L <: HList, T <: HList, TH, TT <: HList, R <: HList, RI <: HList, Out <: HList]
     (implicit next: Aux[L, HNil, T, TT, R, RI, Out]): Aux[L, HNil, T, TH :: TT, R, RI, Out] = `n/a`
 
