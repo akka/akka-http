@@ -634,12 +634,12 @@ object HttpEntity {
     override val shape = FlowShape.of(in, out)
     override protected val initialAttributes: Attributes = Limitable.limitableDefaults
 
-    override def createLogic(attributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+    override def createLogic(_attributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
       private var maxBytes = -1L
       private var bytesLeft = Long.MaxValue
 
       override def preStart(): Unit = {
-        attributes.getFirst[SizeLimit] match {
+        _attributes.getFirst[SizeLimit] match {
           case Some(limit: SizeLimit) if limit.isDisabled =>
           // "no limit"
           case Some(SizeLimit(bytes, cl @ Some(contentLength))) =>
