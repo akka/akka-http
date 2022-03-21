@@ -184,6 +184,7 @@ lazy val http = project("akka-http")
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .enablePlugins(NoScala3) // FIXME
 
 def gustavDir(kind: String) = Def.task {
   val ver =
@@ -233,6 +234,7 @@ lazy val http2Support = project("akka-http2-support")
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
   .disablePlugins(MimaPlugin) // experimental module still
+  .enablePlugins(NoScala3) // FIXME
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(commonSettings)
@@ -250,6 +252,7 @@ lazy val httpTestkit = project("akka-http-testkit")
   .enablePlugins(BootstrapGenjavadoc, MultiNodeScalaTest, ScaladocNoVerificationOfDiagrams)
   .enablePlugins(ReproducibleBuildsPlugin)
   .disablePlugins(MimaPlugin) // testkit, no bin compat guaranteed
+  .enablePlugins(NoScala3) // FIXME
 
 lazy val httpTests = project("akka-http-tests")
   .settings(commonSettings)
@@ -280,6 +283,7 @@ lazy val httpTests = project("akka-http-tests")
       targetFile
     }
   )
+  .enablePlugins(NoScala3) // FIXME
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .settings(commonSettings)
@@ -288,6 +292,7 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
   .enablePlugins(JmhPlugin)
   .enablePlugins(NoPublish) // don't release benchs
   .disablePlugins(MimaPlugin)
+  .enablePlugins(NoScala3) // FIXME
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .settings(commonSettings)
@@ -300,12 +305,14 @@ lazy val httpXml =
     .settings(AutomaticModuleName.settings("akka.http.marshallers.scalaxml"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpXml)
+    .enablePlugins(NoScala3) // FIXME
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
     .settings(AutomaticModuleName.settings("akka.http.marshallers.sprayjson"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpSprayJson)
+    .enablePlugins(NoScala3) // FIXME
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .settings(commonSettings)
@@ -321,6 +328,7 @@ lazy val httpJackson =
     .dependsOn(httpTestkit % "test")
     .settings(Dependencies.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
+    .enablePlugins(NoScala3) // FIXME
 
 lazy val httpCaching = project("akka-http-caching")
   .settings(commonSettings)
@@ -330,6 +338,7 @@ lazy val httpCaching = project("akka-http-caching")
   .settings(Dependencies.httpCaching)
   .dependsOn(http, httpCore, httpTestkit % "test")
   .enablePlugins(BootstrapGenjavadoc)
+  .enablePlugins(NoScala3) // FIXME
 
 def project(name: String) =
   Project(id = name, base = file(name))
@@ -410,6 +419,7 @@ lazy val httpScalafixTests =
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
+  .enablePlugins(NoScala3) // FIXME
   .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-typed", "provided", AkkaDependency.docs)
