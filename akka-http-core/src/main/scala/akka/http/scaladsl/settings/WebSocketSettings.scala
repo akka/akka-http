@@ -41,4 +41,6 @@ abstract class WebSocketSettings extends akka.http.javadsl.settings.WebSocketSet
 
   def logFrames: Boolean
   override def withLogFrames(shouldLog: Boolean): WebSocketSettings = copy(logFrames = shouldLog)
+
+  def connectionIdleTimout: Duration
 }

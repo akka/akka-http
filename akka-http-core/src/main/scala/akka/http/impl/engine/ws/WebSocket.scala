@@ -41,6 +41,7 @@ private[http] object WebSocket {
     log:               LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, NotUsed] =
     masking(serverSide, websocketSettings.randomFactory) atop
       FrameLogger.logFramesIfEnabled(websocketSettings.logFrames) atop
+      connectionIdeTimout(websocketSettings.connectionIdleTimout) atop
       frameHandling(serverSide, closeTimeout, log) atop
       periodicKeepAlive(websocketSettings) atop
       messageAPI(serverSide, closeTimeout)
@@ -56,6 +57,14 @@ private[http] object WebSocket {
   def masking(serverSide: Boolean, maskingRandomFactory: () => Random): BidiFlow[FrameEvent, FrameEventOrError, FrameEvent, FrameEvent, NotUsed] =
     Masking(serverSide, maskingRandomFactory)
       .named("ws-masking")
+
+  /** That layer that handle connection idle timeout  */
+  def connectionIdeTimout(connectionIdleTimout: Duration): BidiFlow[FrameEventOrError, FrameEventOrError, FrameEvent, FrameEvent, NotUsed] = {
+    connectionIdleTimout match {
+      case _: Duration.Infinite           => BidiFlow.identity
+      case finiteDuration: FiniteDuration => BidiFlow.bidirectionalIdleTimeout[FrameEventOrError, FrameEvent](finiteDuration)
+    }
+  }
 
   /** The layer that transparently injects (if enabled) keepAlive Ping or Pong messages when connection is idle */
   def periodicKeepAlive(settings: WebSocketSettings): BidiFlow[FrameHandler.Output, FrameHandler.Output, FrameOutHandler.Input, FrameOutHandler.Input, NotUsed] = {

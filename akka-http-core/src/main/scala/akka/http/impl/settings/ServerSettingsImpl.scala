@@ -113,7 +113,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
             val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")
             throw new ConfigurationException(info.formatPretty)
         },
-      WebSocketSettingsImpl.server(c.getConfig("websocket")),
+      WebSocketSettingsImpl.server(c),
       parserSettings,
       Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")),
       c.getInt("default-http-port"),

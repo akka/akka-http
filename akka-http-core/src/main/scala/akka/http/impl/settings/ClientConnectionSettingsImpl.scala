@@ -60,7 +60,7 @@ private[akka] object ClientConnectionSettingsImpl extends SettingsCompanionImpl[
       idleTimeout = c.getPotentiallyInfiniteDuration("idle-timeout"),
       requestHeaderSizeHint = c.getIntBytes("request-header-size-hint"),
       logUnencryptedNetworkBytes = LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
-      websocketSettings = WebSocketSettingsImpl.client(c.getConfig("websocket")),
+      websocketSettings = WebSocketSettingsImpl.client(c),
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
       parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
       streamCancellationDelay = c.getFiniteDuration("stream-cancellation-delay"),
