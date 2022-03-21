@@ -105,7 +105,7 @@ def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
   config / unmanagedSourceDirectories += {
     val sourceDir = (config / sourceDirectory).value
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+      case Some((e, n)) if e > 2 || (e == 2 && n >= 13) => sourceDir / "scala-2.13+"
       case _                       => sourceDir / "scala-2.13-"
     }
   }
@@ -148,7 +148,7 @@ lazy val parsing = project("akka-parsing")
 lazy val httpCore = project("akka-http-core")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.core"))
-  .dependsOn(parsing, httpScalafixRules % ScalafixConfig)
+  .dependsOn(parsing/*, httpScalafixRules % ScalafixConfig*/)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
@@ -157,11 +157,20 @@ lazy val httpCore = project("akka-http-core")
       if (System.getProperty("akka.http.test-against-akka-main", "false") == "true") AkkaDependency.masterSnapshot
       else AkkaDependency.default
   )
+  .settings(
+    scalacOptions ++= {
+      if (scalaVersion.value startsWith "3")
+        Seq("-source", "3.0-migration")
+      else
+        Nil
+    },
+  )
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .disablePlugins(ScalafixPlugin)
 
 lazy val http = project("akka-http")
   .settings(commonSettings)
@@ -346,22 +355,23 @@ def httpMarshallersJavaSubproject(name: String) =
   .enablePlugins(ReproducibleBuildsPlugin)
 
 lazy val httpScalafix = project("akka-http-scalafix")
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish, NoScala3)
   .disablePlugins(MimaPlugin)
   .aggregate(httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests)
 
 lazy val httpScalafixRules =
   Project(id = "akka-http-scalafix-rules", base = file("akka-http-scalafix/scalafix-rules"))
     .settings(
-      libraryDependencies += Dependencies.Compile.scalafix
+      libraryDependencies += Dependencies.Compile.scalafix,
     )
+    .enablePlugins(NoScala3)
     .disablePlugins(MimaPlugin) // tooling, no bin compat guaranteed
 
 lazy val httpScalafixTestInput =
   Project(id = "akka-http-scalafix-test-input", base = file("akka-http-scalafix/scalafix-test-input"))
     .dependsOn(http)
     .addAkkaModuleDependency("akka-stream")
-    .enablePlugins(NoPublish)
+    .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
     .settings(
       addCompilerPlugin(scalafixSemanticdb),
@@ -376,12 +386,12 @@ lazy val httpScalafixTestOutput =
   Project(id = "akka-http-scalafix-test-output", base = file("akka-http-scalafix/scalafix-test-output"))
     .dependsOn(http)
     .addAkkaModuleDependency("akka-stream")
-    .enablePlugins(NoPublish)
+    .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
 
 lazy val httpScalafixTests =
   Project(id = "akka-http-scalafix-tests", base = file("akka-http-scalafix/scalafix-tests"))
-    .enablePlugins(NoPublish)
+    .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin)
     .settings(
       publish / skip := true,
@@ -472,7 +482,7 @@ lazy val docs = project("docs")
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
 lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akka-http-compatibility-tests"))
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish, NoScala3)
   .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(
@@ -484,7 +494,7 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
       //       current version but that fails. So, this is a manual `dependsOn` which works as expected.
       (Test / dependencyClasspath).value.filterNot(_.data.getName contains "akka") ++
       (httpTests / Test / fullClasspath).value
-    }
+    },
   )
 
 lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-materials"))
