@@ -64,18 +64,18 @@ private[akka] object OutgoingConnectionBuilderImpl {
 
     override def http(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/1.1 plaintext
-      Http(system).outgoingConnectionUsingContext(host, port.getOrElse(80), ConnectionContext.noEncryption(), clientConnectionSettings, log)
+      Http(system.classicSystem).outgoingConnectionUsingContext(host, port.getOrElse(80), ConnectionContext.noEncryption(), clientConnectionSettings, log)
     }
 
     override def https(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/1.1 tls
-      Http(system).outgoingConnectionHttps(host, port.getOrElse(443), connectionContext.getOrElse(Http(system).defaultClientHttpsContext), None, clientConnectionSettings, log)
+      Http(system.classicSystem).outgoingConnectionHttps(host, port.getOrElse(443), connectionContext.getOrElse(Http(system.classicSystem).defaultClientHttpsContext), None, clientConnectionSettings, log)
     }
 
     override def http2(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/2 tls
       val port = this.port.getOrElse(443)
-      Http2(system).outgoingConnection(host, port, connectionContext.getOrElse(Http(system).defaultClientHttpsContext), clientConnectionSettings, log)
+      Http2(system.classicSystem).outgoingConnection(host, port, connectionContext.getOrElse(Http(system.classicSystem).defaultClientHttpsContext), clientConnectionSettings, log)
     }
 
     override def managedPersistentHttp2(): Flow[HttpRequest, HttpResponse, NotUsed] =
@@ -85,7 +85,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
 
     override def http2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/2 prior knowledge plaintext
-      Http2(system).outgoingConnectionPriorKnowledge(host, port.getOrElse(80), clientConnectionSettings, log)
+      Http2(system.classicSystem).outgoingConnectionPriorKnowledge(host, port.getOrElse(80), clientConnectionSettings, log)
     }
 
     override def managedPersistentHttp2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, NotUsed] =

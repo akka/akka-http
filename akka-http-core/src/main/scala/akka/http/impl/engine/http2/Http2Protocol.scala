@@ -339,7 +339,7 @@ private[http] object Http2Protocol {
      */
     case object HTTP_1_1_REQUIRED extends ErrorCode(0xd)
 
-    case class Unknown private (override val id: Int) extends ErrorCode(id)
+    case class Unknown private[ErrorCode] (override val id: Int) extends ErrorCode(id)
 
     val All =
       Array( // must start with id = 0 and don't have holes between ids
