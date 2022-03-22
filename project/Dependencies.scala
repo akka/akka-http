@@ -51,7 +51,7 @@ object Dependencies {
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.9.3"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "3.0.6"
 
     val scalafix    = "ch.epfl.scala"                 %% "scalafix-core"               % Dependencies.scalafixVersion // grab from plugin
 
