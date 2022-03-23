@@ -33,5 +33,6 @@ final private[http] case class JavaQuery(query: sm.Uri.Query) extends jm.Query {
   override def withParam(key: String, value: String): jm.Query = jm.Query.create(query.map(_.asJava) :+ Pair(key, value): _*)
   override def render(charset: HttpCharset): String =
     UriRendering.renderQuery(new StringRendering, query, charset.nioCharset, CharacterClasses.unreserved).get
-  override def render(charset: HttpCharset, keep: CharPredicate): String = render(charset, keep)
+  override def render(charset: HttpCharset, keep: CharPredicate): String =
+    UriRendering.renderQuery(new StringRendering, query, charset.nioCharset, keep).get
 }
