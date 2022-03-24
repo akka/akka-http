@@ -149,7 +149,11 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private def updateState(streamId: Int, handle: StreamState => StreamState, event: String, eventArg: AnyRef = null): Unit =
     updateStateAndReturn(streamId, x => (handle(x), ()), event, eventArg)
 
+  private var stateMachineRunning = false
   private def updateStateAndReturn[R](streamId: Int, handle: StreamState => (StreamState, R), event: String, eventArg: AnyRef = null): R = {
+    require(!stateMachineRunning, "State machine already running")
+    stateMachineRunning = true
+
     val oldState = streamFor(streamId)
 
     val (newState, ret) = handle(oldState)
@@ -162,6 +166,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
 
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName} after handling [$event${if (eventArg ne null) s"($eventArg)" else ""}]")
+
+    stateMachineRunning = false
     ret
   }
   /** Called to cleanup any state when the connection is torn down */
