@@ -171,7 +171,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
   // A function for the logging of Time
   public static Optional<LogEntry> printResponseTime(HttpRequest request, HttpResponse response, Long requestTime) {
     if (response.status().isSuccess()) {
-      Long elapsedTime = (requestTime - System.nanoTime()) / 1000000;
+      Long elapsedTime = (System.nanoTime() - requestTime) / 1000000;
       return Optional.of(
         LogEntry.create(
           "Logged Request:" + request.method().name() + ":" + request.getUri() + ":" + response.status() + ":" + elapsedTime,
