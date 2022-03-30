@@ -11,7 +11,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonDatabindVersion = "2.10.5.1"
+  val jacksonDatabindVersion = "2.13.2.2"
   val jacksonXmlVersion = "2.10.5"
   val junitVersion = "4.13.2"
   val h2specVersion = "1.5.0"
