@@ -250,7 +250,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeWithFuture(value: CompletionStage[HttpResponse]) = RouteAdapter {
-    D.complete(value.asScala.fast.map(_.asScala).recover(unwrapCompletionException))
+    D.complete(value.asScala.fast.map((h: HttpResponse) => h.asScala).recover(unwrapCompletionException))
   }
 
   /**
@@ -258,7 +258,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeOKWithFuture(value: CompletionStage[RequestEntity]) = RouteAdapter {
-    D.complete(value.asScala.fast.map(_.asScala).recover(unwrapCompletionException))
+    D.complete(value.asScala.fast.map((r: RequestEntity) => r.asScala).recover(unwrapCompletionException))
   }
 
   /**
@@ -274,7 +274,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeWithFutureStatus(status: CompletionStage[StatusCode]): Route = RouteAdapter {
-    D.complete(status.asScala.fast.map(_.asScala).recover(unwrapCompletionException))
+    D.complete(status.asScala.fast.map((s: StatusCode) => s.asScala).recover(unwrapCompletionException))
   }
 
   /**
@@ -298,7 +298,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   def handle(handler: akka.japi.function.Function[HttpRequest, CompletionStage[HttpResponse]]): Route = {
     import akka.http.impl.util.JavaMapping._
-    RouteAdapter { ctx => handler(ctx.request).asScala.fast.map(response => RouteResult.Complete(response.asScala)) }
+    RouteAdapter { ctx => handler(ctx.request).asScala.fast.map((response: HttpResponse) => RouteResult.Complete(response.asScala)) }
   }
 
   /**

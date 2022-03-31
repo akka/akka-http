@@ -184,7 +184,6 @@ lazy val http = project("akka-http")
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
   .enablePlugins(ReproducibleBuildsPlugin)
-  .settings(scala3MigrationModeOption)
 
 def gustavDir(kind: String) = Def.task {
   val ver =
