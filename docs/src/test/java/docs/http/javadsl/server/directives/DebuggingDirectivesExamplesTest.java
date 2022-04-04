@@ -134,18 +134,21 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
     //#logResult
   }
 
+  //#logRequestResultWithResponseTime
+  // using logRequestResultOptional for generating Response Time
+  // handle request to optionally generate a log entry
+  BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>> requestMethodAsInfo() {
+    Long requestTime = System.nanoTime();
+    return new BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>>() {
+      @Override
+      public Optional<LogEntry> apply(HttpRequest request, HttpResponse response) {
+        return printResponseTime(request, response, requestTime);
+      }
+    };
+  }
+
   @Test
   public void testLogRequestResultWithResponseTime() {
-    //#logRequestResultWithResponseTime
-    // using logRequestResultOptional for generating Response Time
-    // handle request to optionally generate a log entry
-
-    BiFunction<HttpRequest, HttpResponse, Optional<LogEntry>> requestMethodAsInfo =
-      (request, response) -> {
-        Long requestTime = System.nanoTime();
-        return printResponseTime(request, response, requestTime);
-      };
-
     // handle rejections to optionally generate a log entry
     BiFunction<HttpRequest, List<Rejection>, Optional<LogEntry>> rejectionsAsInfo =
       (request, rejections) ->
@@ -160,7 +163,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
           : Optional.empty(); // no rejections
 
     final Route route = get(() -> logRequestResultOptional(
-      requestMethodAsInfo,
+      requestMethodAsInfo(),
       rejectionsAsInfo,
       () -> complete("logged")));
     // tests:
@@ -171,7 +174,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
   // A function for the logging of Time
   public static Optional<LogEntry> printResponseTime(HttpRequest request, HttpResponse response, Long requestTime) {
     if (response.status().isSuccess()) {
-      Long elapsedTime = (requestTime - System.nanoTime()) / 1000000;
+      Long elapsedTime = (System.nanoTime() - requestTime) / 1000000;
       return Optional.of(
         LogEntry.create(
           "Logged Request:" + request.method().name() + ":" + request.getUri() + ":" + response.status() + ":" + elapsedTime,
