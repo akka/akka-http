@@ -130,6 +130,13 @@ val scalaMacroSupport = Seq(
   }),
 )
 
+val scala3MigrationModeOption = 
+  scalacOptions ++= {
+    if (scalaVersion.value startsWith "3")
+      Seq("-source:3.0-migration")
+    else
+      Nil
+  }
 
 lazy val parsing = project("akka-parsing")
   .settings(commonSettings)
@@ -157,14 +164,7 @@ lazy val httpCore = project("akka-http-core")
       if (System.getProperty("akka.http.test-against-akka-main", "false") == "true") AkkaDependency.masterSnapshot
       else AkkaDependency.default
   )
-  .settings(
-    scalacOptions ++= {
-      if (scalaVersion.value startsWith "3")
-        Seq("-source", "3.0-migration")
-      else
-        Nil
-    },
-  )
+  .settings(scala3MigrationModeOption)
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
   .settings(scalaMacroSupport)
@@ -184,7 +184,6 @@ lazy val http = project("akka-http")
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
   .enablePlugins(ReproducibleBuildsPlugin)
-  .enablePlugins(NoScala3) // FIXME
 
 def gustavDir(kind: String) = Def.task {
   val ver =
