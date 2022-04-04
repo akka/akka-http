@@ -4,7 +4,8 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.impl.util.SingletonException
+import akka.http.caching.scaladsl.{ CachingSettings, LfuCacheSettings }
+import akka.http.impl.util._
 import akka.http.scaladsl.model.{ HttpResponse, Uri }
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
@@ -14,6 +15,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.model.HttpMethods.GET
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class CachingDirectivesSpec extends AnyWordSpec with Matchers with ScalatestRouteTest with CachingDirectives {
 
@@ -74,6 +78,40 @@ class CachingDirectivesSpec extends AnyWordSpec with Matchers with ScalatestRout
         _.fail(MyException) // bubbling up
       }) ~> check { responseAs[String] shouldEqual "Good" }
     }
+    "don't block cache when directive processing is slow" in {
+      // Below we configure enough threads to run this blocking work load in parallel, so 100 times Thread.sleep(100) should still execute quickly
+      // (creating threads will still take some time).
+      // However, there was a bug where the directive is directly executed inside of `ConcurrentHashMap.computeIfAbsent`. When you block inside
+      // of `computeIfAbsent` you will block hash map nodes and subsequent access to this node may run into the lock.
+      // When done correctly, we immediate return a Future which is entered into the cache quickly and avoid this kind of locking.
+
+      // small caches will have fewer nodes and will lock up with less concurrency
+      val settings = CachingSettings(system).withLfuCacheSettings(LfuCacheSettings(system).withInitialCapacity(2))
+
+      val route = cache(routeCache(settings), simpleKeyer) {
+        get {
+          path(IntNumber) { i =>
+            // do some heavy work *before* returning a route
+            Thread.sleep(100)
+            complete("")
+          }
+        }
+      }
+
+      implicit val executor = system.dispatcher
+
+      Future.traverse(1 to 1000) { i =>
+        Future {
+          Get(s"/$i") ~> route ~> check {} // check blocks to wait for result
+        }
+      }.awaitResult(5.second)
+    }
   }
 
+  override def testConfigSource: String =
+    """akka.actor.default-dispatcher.fork-join-executor {
+      |  parallelism-min = 1000
+      |  parallelism-max = 1000
+      |}
+      |""".stripMargin
 }
