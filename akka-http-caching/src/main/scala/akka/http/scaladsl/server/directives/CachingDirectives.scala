@@ -13,6 +13,8 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 
+import scala.concurrent.Future
+
 @ApiMayChange
 trait CachingDirectives {
   import akka.http.scaladsl.server.directives.BasicDirectives._
@@ -43,14 +45,17 @@ trait CachingDirectives {
    * Wraps its inner Route with caching support using the given [[Cache]] implementation and
    * keyer function. Note that routes producing streaming responses cannot be wrapped with this directive.
    */
-  def alwaysCache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K]): Directive0 = {
-    mapInnerRoute { route => ctx =>
-      keyer.lift(ctx) match {
-        case Some(key) => cache.apply(key, () => route(ctx))
-        case None      => route(ctx)
+  def alwaysCache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K]): Directive0 =
+    // Do directive processing asynchronously to avoid locking the cache accidentally (#4092)
+    // This will be slightly slower, but the rational here is that caching is used for slower kind of processing
+    // anyway so the performance hit should be acceptable.
+    CachingDirectives.asyncRoute &
+      mapInnerRoute { route => ctx =>
+        keyer.lift(ctx) match {
+          case Some(key) => cache.apply(key, () => route(ctx))
+          case None      => route(ctx)
+        }
       }
-    }
-  }
 
   /**
    * Creates an [[LfuCache]] with default settings obtained from the system's configuration.
@@ -65,4 +70,14 @@ trait CachingDirectives {
     LfuCache[K, RouteResult](settings)
 }
 
-object CachingDirectives extends CachingDirectives
+object CachingDirectives extends CachingDirectives {
+  /**
+   * Run all route processing asynchronously.
+   */
+  private[CachingDirectives] def asyncRoute: Directive0 =
+    Directive { inner => ctx =>
+      import ctx.executionContext
+      Future { inner(()) }
+        .flatMap(route => route(ctx))
+    }
+}
