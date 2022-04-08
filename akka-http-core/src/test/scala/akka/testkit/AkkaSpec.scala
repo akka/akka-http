@@ -9,7 +9,7 @@ import org.scalactic.{ CanEqual, TypeCheckedTripleEquals }
 import language.postfixOps
 import org.scalatest.BeforeAndAfterAll
 import akka.actor.ActorSystem
-import akka.event.{ Logging, LoggingAdapter, LogSource }
+import akka.event.{ Logging, LoggingAdapter }
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -59,9 +59,6 @@ object AkkaSpec {
 abstract class AkkaSpec(_system: ActorSystem)
   extends TestKit(_system) with AnyWordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
   with TypeCheckedTripleEquals with ScalaFutures {
-  //  implicit val myLogSourceType: LogSource[this.getClass.type] = new LogSource[this.getClass.type] {
-  //    def genString(a: this.getClass.type) = a.getClass.getName
-  //  }
 
   implicit val patience: PatienceConfig = PatienceConfig(testKitSettings.DefaultTimeout.duration)
 

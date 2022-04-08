@@ -5,13 +5,12 @@
 package akka.http.impl.model.parser
 
 import akka.parboiled2._
-import akka.parboiled2.support.hlist.{ ::, HNil }
 
 private[parser] trait IpAddressParsing { this: Parser =>
   import CharacterClasses._
 
-  def `ip-v4-address`: Rule[HNil, Array[Byte] :: HNil] = rule[HNil, Array[Byte] :: HNil] {
-    `ip-number` ~ '.' ~ `ip-number` ~ '.' ~ `ip-number` ~ '.' ~ `ip-number` ~> (Array[Byte](_: Byte, _: Byte, _: Byte, _: Byte))
+  def `ip-v4-address` = rule {
+    `ip-number` ~ '.' ~ `ip-number` ~ '.' ~ `ip-number` ~ '.' ~ `ip-number` ~> (Array[Byte](_, _, _, _))
   }
 
   def `ip-number` = rule {
