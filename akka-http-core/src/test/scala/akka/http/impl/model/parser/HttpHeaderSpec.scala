@@ -650,10 +650,10 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         `WWW-Authenticate`(HttpChallenge("BaSiC", "WallyWorld")).renderedTo("BaSiC realm=\"WallyWorld\"")
       "WWW-Authenticate: Basic realm=\"foo<bar\"" =!= `WWW-Authenticate`(HttpChallenge("Basic", Some("foo<bar")))
       """WWW-Authenticate: Digest
-                               realm="testrealm@host.com",
-                               qop="auth,auth-int",
-                               nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,
-                               opaque=5ccc069c403ebaf9f0171e9517f40e41""".stripMarginWithNewline("\r\n") =!=
+                           realm="testrealm@host.com",
+                           qop="auth,auth-int",
+                           nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,
+                           opaque=5ccc069c403ebaf9f0171e9517f40e41""".stripMarginWithNewline("\r\n") =!=
         `WWW-Authenticate`(HttpChallenge("Digest", "testrealm@host.com", Map(
           "nonce" -> "dcd98b7102dd2f0e8b11d0f600bfb0c093",
           "opaque" -> "5ccc069c403ebaf9f0171e9517f40e41",

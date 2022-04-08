@@ -20,7 +20,7 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
 
   // http://tools.ietf.org/html/rfc6266#section-4.1
   def `content-disposition` = rule {
-    `disposition-type` ~ (zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI) ~> { p =>
+    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> { p =>
       val all = TreeMap(p: _*)
       // https://tools.ietf.org/html/rfc6266#section-4.3
       // when both "filename" and "filename*" are present in a single header field value,
@@ -53,7 +53,7 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
 
   // https://tools.ietf.org/html/rfc5987#section-3.2.1
   def `ext-value` = rule {
-    (charset ~ '\'' ~ (optional(language) ~ '\'' ~ capture(`value-chars`))) ~> (decodeExtValue(_, _, _))
+    (charset ~ '\'' ~ optional(language) ~ '\'' ~ capture(`value-chars`)) ~> (decodeExtValue(_, _, _))
   }
 
   def charset = rule {
