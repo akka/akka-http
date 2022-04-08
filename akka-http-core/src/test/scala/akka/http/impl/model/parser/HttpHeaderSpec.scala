@@ -350,6 +350,15 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       "Host: 127.0.0.1" =!= Host("127.0.0.1")
     }
 
+    "If-Match dispatching" in {
+      // https://github.com/akka/akka-http/issues/443 Check dispatching for "if-match" does not throw "RuleNotFound"
+      import scala.util._
+      import akka.parboiled2.DynamicRuleHandler
+      import akka.parboiled2.support.hlist.{ ::, HNil }
+      val Failure(cause) = Try(HeaderParser.dispatch(null.asInstanceOf[DynamicRuleHandler[HeaderParser, HttpHeader :: HNil]], "if-match"))
+      cause.getClass should be(classOf[NullPointerException])
+    }
+
     "If-Match" in {
       """If-Match: *""" =!= `If-Match`.`*`
       """If-Match: "938fz3f83z3z38z"""" =!= `If-Match`(EntityTag("938fz3f83z3z38z"))
