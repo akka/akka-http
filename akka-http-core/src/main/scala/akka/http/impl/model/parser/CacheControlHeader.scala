@@ -36,6 +36,6 @@ private[parser] trait CacheControlHeader { this: HeaderParser =>
   def `quoted-tokens` = rule { '"' ~ zeroOrMore(`quoted-tokens-elem`).separatedBy(listSep) ~ '"' }
 
   def `quoted-tokens-elem` = rule {
-    clearSB() ~ (zeroOrMore(!'"' ~ !',' ~ qdtext ~ appendSB() | `quoted-pair`) ~ push(sb.toString))
+    clearSB() ~ zeroOrMore(!'"' ~ !',' ~ qdtext ~ appendSB() | `quoted-pair`) ~ push(sb.toString)
   }
 }

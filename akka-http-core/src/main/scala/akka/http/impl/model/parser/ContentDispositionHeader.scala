@@ -40,8 +40,8 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
   def `disposition-parm` = rule { (`filename-parm` | `disp-ext-parm`) ~> (_ -> _) }
 
   def `filename-parm` = rule(
-    ignoreCase("filename") ~ OWS ~ (ws('=') ~ push("filename") ~ word)
-      | ignoreCase("filename*") ~ OWS ~ (ws('=') ~ push("filename*") ~ `ext-value`))
+    ignoreCase("filename") ~ OWS ~ ws('=') ~ push("filename") ~ word
+      | ignoreCase("filename*") ~ OWS ~ ws('=') ~ push("filename*") ~ `ext-value`)
 
   def `disp-ext-parm` = rule(
     token ~ ws('=') ~ word
