@@ -4,22 +4,7 @@
 
 package akka.http.impl.model.parser
 
-import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
-import akka.http.impl.model.parser.HeaderParser.Settings
-import org.scalatest.matchers.{ MatchResult, Matcher }
-import akka.http.impl.util._
-import akka.http.scaladsl.model.{ HttpHeader, _ }
-import headers._
-import CacheDirectives._
-import MediaTypes._
-import MediaRanges._
-import HttpCharsets._
-import HttpEncodings._
-import HttpMethods._
-
-import java.net.InetAddress
-import akka.http.scaladsl.model.MediaType.WithOpenCharset
-import org.scalatest.exceptions.TestFailedException
+import akka.http.scaladsl.model._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
