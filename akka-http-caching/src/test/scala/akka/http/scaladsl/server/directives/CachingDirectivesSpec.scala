@@ -16,6 +16,8 @@ import akka.http.scaladsl.model.HttpMethods.GET
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import akka.testkit._
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -104,7 +106,7 @@ class CachingDirectivesSpec extends AnyWordSpec with Matchers with ScalatestRout
         Future {
           Get(s"/$i") ~> route ~> check {} // check blocks to wait for result
         }
-      }.awaitResult(5.second)
+      }.awaitResult(10.second.dilated)
     }
   }
 
