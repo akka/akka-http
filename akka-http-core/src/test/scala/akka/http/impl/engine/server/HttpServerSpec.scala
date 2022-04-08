@@ -1557,29 +1557,29 @@ class HttpServerSpec extends AkkaSpec(
       netOut.expectComplete()
     })
 
-    //    "allow overriding the URI parsing error response" in assertAllStagesStopped(new TestSetup {
-    //      override def settings: ServerSettings = super.settings.withParsingErrorHandler("akka.http.impl.engine.server.TestParsingErrorHandler$")
-    //
-    //      send("""GET http://www.example.com/unparsable HTTP/1.1
-    //             |Host: www.example.net
-    //             |
-    //             |""")
-    //
-    //      requests.request(1)
-    //
-    //      expectResponseWithWipedDate(
-    //        """|HTTP/1.1 418 I'm a teapot
-    //           |Server: akka-http/test
-    //           |Date: XXXX
-    //           |Connection: close
-    //           |Content-Type: text/plain; charset=UTF-8
-    //           |Content-Length: 7
-    //           |
-    //           |Tea hea""")
-    //
-    //      netIn.sendComplete()
-    //      netOut.expectComplete()
-    //    })
+    "allow overriding the URI parsing error response" in assertAllStagesStopped(new TestSetup {
+      override def settings: ServerSettings = super.settings.withParsingErrorHandler("akka.http.impl.engine.server.TestParsingErrorHandler$")
+
+      send("""GET http://www.example.com/unparsable HTTP/1.1
+             |Host: www.example.net
+             |
+             |""")
+
+      requests.request(1)
+
+      expectResponseWithWipedDate(
+        """|HTTP/1.1 418 I'm a teapot
+           |Server: akka-http/test
+           |Date: XXXX
+           |Connection: close
+           |Content-Type: text/plain; charset=UTF-8
+           |Content-Length: 7
+           |
+           |Tea hea""")
+
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
   }
   class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
     implicit def system = spec.system
