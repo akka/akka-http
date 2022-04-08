@@ -127,7 +127,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://tools.ietf.org/html/rfc7231#section-5.1.1
   def `expect` = rule {
-    ignoreCase("100-continue") ~ (OWS ~ (EOI ~ push(Expect.`100-continue`)))
+    ignoreCase("100-continue") ~ OWS ~ EOI ~ push(Expect.`100-continue`)
   }
 
   // http://tools.ietf.org/html/rfc7234#section-5.3
@@ -213,7 +213,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     }
 
     rule {
-      oneOrMore(directives | ignoredDirective).separatedBy(oneOrMore(ws(";"))) ~ (zeroOrMore(ws(";")) ~ EOI) ~>
+      oneOrMore(directives | ignoredDirective).separatedBy(oneOrMore(ws(";"))) ~ zeroOrMore(ws(";")) ~ EOI ~>
         (`Strict-Transport-Security`.fromDirectives(_: _*))
     }
   }
@@ -229,7 +229,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // https://tools.ietf.org/html/rfc6265
   def `set-cookie` = rule {
-    `cookie-pair` ~> (_.toCookie) ~ (zeroOrMore(ws(';') ~ `cookie-av`) ~ EOI) ~> (`Set-Cookie`(_))
+    `cookie-pair` ~> (_.toCookie) ~ zeroOrMore(ws(';') ~ `cookie-av`) ~ EOI ~> (`Set-Cookie`(_))
   }
 
   // http://tools.ietf.org/html/rfc7230#section-6.7
@@ -260,7 +260,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
   def `x-forwarded-host` = rule {
-    host ~> (hostHeader => `X-Forwarded-Host`.apply(hostHeader.host))
+    host ~> (hostHeader => `X-Forwarded-Host`(hostHeader.host))
   }
 
   // de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto
