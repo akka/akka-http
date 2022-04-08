@@ -11,7 +11,7 @@ private[parser] trait IpAddressParsing { this: Parser =>
   import CharacterClasses._
 
   def `ip-v4-address`: Rule[HNil, Array[Byte] :: HNil] = rule[HNil, Array[Byte] :: HNil] {
-    `ip-number` ~ '.' ~ `ip-number` ~ '.' ~ `ip-number` ~ '.' ~ `ip-number` ~> (Array[Byte](_, _, _, _))
+    `ip-number` ~ '.' ~ `ip-number` ~ '.' ~ `ip-number` ~ '.' ~ `ip-number` ~> (Array[Byte](_: Byte, _: Byte, _: Byte, _: Byte))
   }
 
   def `ip-number` = rule {

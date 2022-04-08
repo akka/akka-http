@@ -160,7 +160,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         Authorization(GenericHttpCredentials("NoTokenScheme", ""))
       "Authorization: QVFJQzV3TTJMWTRTZmN3Zk=" =!=
         ErrorInfo(
-          "Illegal HTTP header 'Authorization': Invalid input '=', expected auth-param, OWS, token68, 'EOI' or tchar (line 1, column 23)",
+          "Illegal HTTP header 'Authorization': Invalid input '=', expected tchar, OWS, auth-param, token68 or 'EOI' (line 1, column 23)",
           """QVFJQzV3TTJMWTRTZmN3Zk=
             |                      ^""".stripMarginWithNewline("\n"))
     }
@@ -400,7 +400,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       "Location: https://spray.io/{sec}" =!= Location(Uri("https://spray.io/{sec}")).renderedTo(
         "https://spray.io/%7Bsec%7D")
       "Location: https://spray.io/ sec" =!= ErrorInfo("Illegal HTTP header 'Location': Invalid input ' ', " +
-        "expected '/', 'EOI', '#', segment or '?' (line 1, column 18)", "https://spray.io/ sec\n                 ^")
+        "expected segment, '/', '?', '#' or 'EOI' (line 1, column 18)", "https://spray.io/ sec\n                 ^")
     }
 
     "Link" in {
@@ -765,7 +765,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       "X-Real-Ip: ::" =!=> "0:0:0:0:0:0:0:0"
       "X-Real-Ip: akka.io" =!=
         ErrorInfo(
-          "Illegal HTTP header 'X-Real-Ip': Invalid input 'k', expected HEXDIG, h8, ':', ch16o or cc (line 1, column 2)",
+          "Illegal HTTP header 'X-Real-Ip': Invalid input 'k', expected HEXDIG, h8, ':', cc or ch16o (line 1, column 2)",
           "akka.io\n ^")
     }
 
