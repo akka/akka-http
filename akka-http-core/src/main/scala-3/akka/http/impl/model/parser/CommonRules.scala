@@ -81,12 +81,9 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
     `IMF-fixdate` ~ OWS | `asctime-date` ~ OWS | '0' ~ push(DateTime.MinValue) ~ OWS
   }
 
-  def `IMF-fixdate`: Rule[HNil, DateTime :: HNil] = rule[HNil, DateTime :: HNil] { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
-    (`day-name-l` | `day-name`) ~ ", " ~ `IMF-fixdate-no-wday` ~> checkDateTime
-  }
-  def `IMF-fixdate-no-wday`: Rule[HNil, DateTime :: HNil] = rule[HNil, DateTime :: HNil] { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
-    (date1 | date2) ~ ' ' ~ (`time-of-day` ~ ' ' ~ ("GMT" | "UTC")) ~> {
-      (day: Int, month: Int, year: Int, hour: Int, min: Int, sec: Int) => DateTime(year, month, day, hour, min, sec)
+  def `IMF-fixdate` = rule { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
+    (`day-name-l` | `day-name`) ~ ", " ~ (date1 | date2) ~ ' ' ~ `time-of-day` ~ ' ' ~ ("GMT" | "UTC") ~> {
+      (wkday, day, month, year, hour, min, sec) => createDateTime(year, month, day, hour, min, sec, wkday)
     }
   }
 
