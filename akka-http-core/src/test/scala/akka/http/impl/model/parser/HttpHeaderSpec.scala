@@ -162,7 +162,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         ErrorInfo(
           "Illegal HTTP header 'Authorization': Invalid input '=', expected tchar, OWS, auth-param, token68 or 'EOI' (line 1, column 23)",
           """QVFJQzV3TTJMWTRTZmN3Zk=
-                |                      ^""".stripMarginWithNewline("\n"))
+            |                      ^""".stripMarginWithNewline("\n"))
     }
 
     "Cache-Control" in {
