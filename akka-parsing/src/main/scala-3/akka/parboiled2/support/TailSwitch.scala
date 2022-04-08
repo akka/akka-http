@@ -74,6 +74,15 @@ object TailSwitch {
   type Aux[L <: HList, LI <: HList, T <: HList, TI <: HList, R <: HList, RI <: HList, Out0] =
     TailSwitch[L, T, R] { type Out = Out0 }
 
-  implicit def tailSwitch[L <: HList, T <: HList, R <: HList]
-      : TailSwitch[L, T, R] { type Out = TailSwitch0[L, L, T, T, R, HNil] } = `n/a`
+  implicit def tailSwitch[L <: _ :: _, T <: _ :: _, R <: HList]
+  : TailSwitch[L, T, R] { type Out = TailSwitch0[L, L, T, T, R, HNil] } = `n/a`
+  /// Optimisations to reduce compilation times to something tolerable
+  implicit def tailSwitch0: TailSwitch[HNil, HNil, HNil] { type Out = HNil }             = `n/a`
+  implicit def tailSwitch1[T <: _ :: _]: TailSwitch[HNil, T, HNil] { type Out = HNil } = `n/a`
+  implicit def tailSwitch2[L <: _ :: _, R <: _ :: _]: TailSwitch[L, HNil, R] { type Out = Prepend0[L, R] } =
+    `n/a`
+  implicit def tailSwitch3[L <: ::[_, _]]: TailSwitch[L, HNil, HNil] { type Out = L } =
+    `n/a`
+  implicit def tailSwitch4[T <: HList, R <: ::[_, _]]: TailSwitch[HNil, T, R] { type Out = R } =
+    `n/a`
 }

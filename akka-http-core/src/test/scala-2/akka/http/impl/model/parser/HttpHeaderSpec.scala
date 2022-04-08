@@ -713,7 +713,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       "X-Forwarded-For: ::" =!=> "0:0:0:0:0:0:0:0"
       "X-Forwarded-For: 1.2.3.4, akka.io" =!=
         ErrorInfo(
-          "Illegal HTTP header 'X-Forwarded-For': Invalid input 'k', expected HEXDIG, h8, ':', ch16o or cc (line 1, column 11)",
+          "Illegal HTTP header 'X-Forwarded-For': Invalid input 'k', expected HEXDIG, h8, ':', cc or ch16o (line 1, column 11)",
           "1.2.3.4, akka.io\n          ^")
     }
 

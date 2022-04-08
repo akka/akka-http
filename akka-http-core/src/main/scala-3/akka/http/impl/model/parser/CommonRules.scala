@@ -68,29 +68,32 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
   // http://tools.ietf.org/html/rfc7234#section-5.3
   // ******************************************************************************************
 
-  def `expires-date`: Rule1[DateTime] = ??? /*rule {
+  def `expires-date`: Rule1[DateTime] = rule {
     (`HTTP-date` | zeroOrMore(ANY) ~ push(DateTime.MinValue)) ~ OWS
-  }*/
-  /*
+  }
+
   // ******************************************************************************************
   // http://tools.ietf.org/html/rfc7231#section-7.1.1.1
   // but more lenient where we have already seen differing implementations in the field
   // ******************************************************************************************
 
   def `HTTP-date`: Rule1[DateTime] = rule {
-    (`IMF-fixdate` | `asctime-date` | '0' ~ push(DateTime.MinValue)) ~ OWS
+    `IMF-fixdate` ~ OWS | `asctime-date` ~ OWS | '0' ~ push(DateTime.MinValue) ~ OWS
   }
 
-  def `IMF-fixdate` = rule { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
-    (`day-name-l` | `day-name`) ~ ", " ~ (date1 | date2) ~ ' ' ~ `time-of-day` ~ ' ' ~ ("GMT" | "UTC") ~> {
-      (wkday, day, month, year, hour, min, sec) => createDateTime(year, month, day, hour, min, sec, wkday)
+  def `IMF-fixdate`: Rule[HNil, DateTime :: HNil] = rule[HNil, DateTime :: HNil] { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
+    (`day-name-l` | `day-name`) ~ ", " ~ `IMF-fixdate-no-wday` ~> checkDateTime
+  }
+  def `IMF-fixdate-no-wday`: Rule[HNil, DateTime :: HNil] = rule[HNil, DateTime :: HNil] { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
+    (date1 | date2) ~ ' ' ~ (`time-of-day` ~ ' ' ~ ("GMT" | "UTC")) ~> {
+      (day: Int, month: Int, year: Int, hour: Int, min: Int, sec: Int) => DateTime(year, month, day, hour, min, sec)
     }
   }
 
   def `day-name` = rule(
     "Sun" ~ push(0) | "Mon" ~ push(1) | "Tue" ~ push(2) | "Wed" ~ push(3) | "Thu" ~ push(4) | "Fri" ~ push(5) | "Sat" ~ push(6))
 
-  def date1 = rule { day ~ `date-sep` ~ month ~ `date-sep` ~ year }
+  def date1 = rule { day ~ (`date-sep` ~ (month ~ (`date-sep` ~ year))) }
 
   def day = rule { digit2 | digit }
 
@@ -98,32 +101,35 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
     "Jan" ~ push(1) | "Feb" ~ push(2) | "Mar" ~ push(3) | "Apr" ~ push(4) | "May" ~ push(5) | "Jun" ~ push(6) | "Jul" ~ push(7) |
       "Aug" ~ push(8) | "Sep" ~ push(9) | "Oct" ~ push(10) | "Nov" ~ push(11) | "Dec" ~ push(12))
 
-  def year = rule { digit4 | digit2 ~> (y => if (y <= 69) y + 2000 else y + 1900) }
+  def year: Rule[HNil, Int :: HNil] = rule { digit4 | digit2 ~> (y => if (y <= 69) y + 2000 else y + 1900) }
 
-  def `time-of-day` = rule { hour ~ ':' ~ minute ~ ':' ~ second }
+  def `time-of-day`: Rule[HNil, Int :: Int :: Int :: HNil] = rule { hour ~ ':' ~ (minute ~ ':' ~ second) }
   def hour = rule { digit2 }
   def minute = rule { digit2 }
   def second = rule { digit2 }
 
-  // def `obs-date` = rule { `rfc850-date` | `asctime-date` }
+  def `obs-date` = rule { `rfc850-date` | `asctime-date` }
 
-  // def `rfc850-date` = rule { `day-name-l` ~ ", " ~ date2 ~ ' ' ~ `time-of-day` ~ " GMT" }
+  def `rfc850-date`: Rule[HNil, Int :: Int :: Int :: Int :: Int :: Int :: Int :: HNil] = rule { `day-name-l` ~ ", " ~ (date2 ~ ' ' ~ (`time-of-day` ~ " GMT")) }
 
   // per #17714, parse two digit year to https://tools.ietf.org/html/rfc6265#section-5.1.1
-  def date2 = rule { day ~ '-' ~ month ~ '-' ~ (digit2 ~> (y => if (y <= 69) y + 2000 else y + 1900)) }
+  def date2: Rule[HNil, Int :: Int :: Int :: HNil] = rule { day ~ '-' ~ (month ~ '-' ~ (digit2 ~> (y => if (y <= 69) y + 2000 else y + 1900))) }
 
-  def `day-name-l` = rule(
+  def `day-name-l`: Rule[HNil, Int :: HNil] = rule(
     "Sunday" ~ push(0) | "Monday" ~ push(1) | "Tuesday" ~ push(2) | "Wednesday" ~ push(3) | "Thursday" ~ push(4) |
       "Friday" ~ push(5) | "Saturday" ~ push(6))
 
-  def `asctime-date` = rule {
-    `day-name` ~ ' ' ~ date3 ~ ' ' ~ `time-of-day` ~ ' ' ~ year ~> {
-      (wkday, month, day, hour, min, sec, year) => createDateTime(year, month, day, hour, min, sec, wkday)
+  def `asctime-date`: Rule[HNil, DateTime :: HNil] = rule {
+    `day-name` ~ ' ' ~ `asctime-date-no-wday` ~> checkDateTime
+  }
+  def `asctime-date-no-wday`: Rule[HNil, DateTime :: HNil] = rule {
+    date3 ~ ' ' ~ (`time-of-day` ~ ' ' ~ year) ~> {
+      (month: Int, day: Int, hour: Int, min: Int, sec: Int, year: Int) => DateTime(year, month, day, hour, min, sec)
     }
   }
 
-  def date3 = rule { month ~ ' ' ~ (digit2 | ' ' ~ digit) }
-*/
+  def date3: Rule[HNil, Int :: Int :: HNil] = rule { month ~ ' ' ~ (digit2 | ' ' ~ digit) }
+
   // ******************************************************************************************
   // http://tools.ietf.org/html/rfc7231#section-5.3.1
   // ******************************************************************************************
@@ -452,12 +458,13 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
 
   private def digitInt(c: Char): Int = c - '0'
 
+  private def checkDateTime(wkday: Int, dt: DateTime) = if (dt.weekday != wkday)
+    throw ParsingException(s"Illegal weekday in date $dt: is '${DateTime.weekday(wkday)}' but " +
+      s"should be '${DateTime.weekday(dt.weekday)}'")
+  else dt
   private def createDateTime(year: Int, month: Int, day: Int, hour: Int, min: Int, sec: Int, wkday: Int): DateTime = {
     val dt = DateTime(year, month, day, hour, min, sec)
-    if (dt.weekday != wkday)
-      throw ParsingException(s"Illegal weekday in date $dt: is '${DateTime.weekday(wkday)}' but " +
-        s"should be '${DateTime.weekday(dt.weekday)}'")
-    dt
+    checkDateTime(wkday, dt)
   }
 
   def httpMethodDef: Rule1[HttpMethod] = rule {

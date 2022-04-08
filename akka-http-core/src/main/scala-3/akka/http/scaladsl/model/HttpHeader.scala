@@ -76,7 +76,7 @@ object HttpHeader {
   def parse(name: String, value: String, settings: HeaderParser.Settings = HeaderParser.DefaultSettings): ParsingResult =
     if (name.forall(c => CharacterClasses.tchar(c))) {
       import akka.parboiled2.Parser.DeliveryScheme.Try
-      /*val parser = new HeaderParser(value, settings)
+      val parser = new HeaderParser(value, settings)
       parser.`header-field-value`.run() match {
         case Success(preProcessedValue) =>
           HeaderParser.parseFull(name.toLowerCase, preProcessedValue, settings) match {
@@ -92,7 +92,7 @@ object HttpHeader {
             case e             => parser.failure(e)
           }).info
           ParsingResult.Error(info.withSummaryPrepended(s"Illegal HTTP header value"))
-      }*/ ???
+      }
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
 
   /** INTERNAL API */
