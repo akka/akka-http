@@ -4,14 +4,13 @@
 
 package akka.http.scaladsl.model
 
-import java.net.InetAddress
 import java.nio.charset.Charset
-
+import java.net.InetAddress
 import akka.http.impl.util.StringRendering
-import akka.http.scaladsl.model.Uri._
-import akka.parboiled2.UTF8
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.{ MatchResult, Matcher }
+import akka.parboiled2.UTF8
+import Uri._
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class UriSpec extends AnyWordSpec with Matchers {
