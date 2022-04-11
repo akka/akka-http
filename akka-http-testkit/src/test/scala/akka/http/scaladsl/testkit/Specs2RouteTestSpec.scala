@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.testkit
 
+import akka.actor.ActorRef
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
@@ -54,7 +55,7 @@ class Specs2RouteTestSpec extends Specification with Specs2RouteTest {
       case object Command
       val service = TestProbe()
       val handler = TestProbe()
-      implicit def serviceRef = service.ref
+      implicit def serviceRef: ActorRef = service.ref
       implicit val askTimeout: Timeout = 1.second
 
       val result =

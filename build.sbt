@@ -251,7 +251,6 @@ lazy val httpTestkit = project("akka-http-testkit")
   .enablePlugins(BootstrapGenjavadoc, MultiNodeScalaTest, ScaladocNoVerificationOfDiagrams)
   .enablePlugins(ReproducibleBuildsPlugin)
   .disablePlugins(MimaPlugin) // testkit, no bin compat guaranteed
-  .enablePlugins(NoScala3) // FIXME
 
 lazy val httpTests = project("akka-http-tests")
   .settings(commonSettings)

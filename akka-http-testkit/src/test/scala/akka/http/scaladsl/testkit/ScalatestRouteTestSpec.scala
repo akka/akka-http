@@ -14,6 +14,7 @@ import akka.http.scaladsl.model._
 import StatusCodes._
 import HttpMethods._
 import Directives._
+import akka.actor.ActorRef
 import akka.stream.scaladsl.Source
 import org.scalatest.exceptions.TestFailedException
 import headers.`X-Forwarded-Proto`
@@ -101,7 +102,7 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
       case object Command
       val service = TestProbe()
       val handler = TestProbe()
-      implicit def serviceRef = service.ref
+      implicit def serviceRef: ActorRef = service.ref
       implicit val askTimeout: Timeout = 1.second.dilated
 
       val result =

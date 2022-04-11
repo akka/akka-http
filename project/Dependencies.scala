@@ -81,7 +81,14 @@ object Dependencies {
     object Test {
       val sprayJson    = Compile.sprayJson                                         % "test" // ApacheV2
       val junit        = Compile.junit                                             % "test" // Common Public License 1.0
-      val specs2       = "org.specs2"     %% "specs2-core"     % specs2Version     % "test" // MIT
+      val specs2       = {
+        val specs2 = "org.specs2"     %% "specs2-core" // MIT
+        ScalaVersionDependentModuleID.versioned {
+          case v if v.startsWith("2.") => specs2 % "4.10.6"
+          case _ => specs2 % "4.15.0"
+        }
+      }
+
       val scalacheck   = "org.scalacheck" %% "scalacheck"      % scalaCheckVersion % "test" // New BSD
       val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.3"            % "test" // MIT
 
@@ -123,11 +130,7 @@ object Dependencies {
 
   lazy val httpTestkit = Seq(
     versionDependentDeps(
-      ScalaVersionDependentModuleID.fromPF {
-        // FIXME: ultimately, we might update to a Scala 3 compatible version of specs2
-        // for now disable specs2 support in the Scala 3 akka-http-testkit
-        case v if v startsWith "2." => Test.specs2.withConfigurations(Some("provided; test"))
-      }
+      Test.specs2 % "provided; test"
     ),
     l ++= Seq(
       Test.junit, Test.junitIntf, Compile.junit % "provided",
