@@ -7,6 +7,8 @@ package akka
 import sbt._
 import Keys._
 
+import scala.util.matching.Regex.Groups
+
 object AkkaDependency {
 
   sealed trait Akka {
@@ -89,8 +91,23 @@ object AkkaDependency {
     import scala.concurrent.Await
     import scala.concurrent.duration._
 
+    val snapshotVersionR = """href=".*/((\d+)\.(\d+)\.(\d+)\+(\d+)-[0-9a-f]+-SNAPSHOT)/"""".r
+
     // akka-cluster-sharding-typed_2.13 seems to be the last nightly published by `akka-publish-nightly` so if that's there then it's likely the rest also made it
     val body = Await.result(http.run(url("https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/akka-cluster-sharding-typed_2.13/")), 10.seconds).bodyAsString
-    """href=".*/([^?/].*?)/"""".r.findAllMatchIn(body).map(_.group(1)).filter(_.startsWith(prefix)).toList.last
+    val allVersions =
+      snapshotVersionR.findAllMatchIn(body)
+        .map {
+          case Groups(full, ep, maj, min, offset) =>
+            (
+              ep.toInt,
+              maj.toInt,
+              min.toInt,
+              offset.toInt
+            ) -> full
+        }
+        .filter(_._2.startsWith(prefix))
+        .toVector.sortBy(_._1)
+    allVersions.last._2
   }
 }
