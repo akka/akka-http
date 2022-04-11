@@ -6,17 +6,16 @@ package akka.http.scaladsl.server.directives
 
 import akka.http.caching.scaladsl.{ CachingSettings, LfuCacheSettings }
 import akka.http.impl.util._
-import akka.http.scaladsl.model.{ HttpResponse, Uri }
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.headers.CacheDirectives._
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ ExceptionHandler, RequestContext }
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.model.HttpMethods.GET
+import akka.http.scaladsl.model.headers.CacheDirectives._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.{ HttpResponse, Uri }
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.{ ExceptionHandler, RequestContext, RouteResult }
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.testkit._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import akka.testkit._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -101,11 +100,10 @@ class CachingDirectivesSpec extends AnyWordSpec with Matchers with ScalatestRout
       }
 
       implicit val executor = system.dispatcher
+      val routeFunc = RouteResult.routeToFunction(route)
 
       Future.traverse(1 to 1000) { i =>
-        Future {
-          Get(s"/$i") ~> route ~> check {} // check blocks to wait for result
-        }
+        routeFunc(Get(s"/$i"))
       }.awaitResult(10.second.dilated)
     }
   }
