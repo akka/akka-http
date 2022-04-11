@@ -17,7 +17,7 @@ object CachingDirectives {
 
   import akka.http.scaladsl.server.directives.{ CachingDirectives => D }
 
-  private implicit def routeResultCacheMapping[K] =
+  private implicit def routeResultCacheMapping[K]: JavaMapping[Cache[K, RouteResult], akka.http.caching.scaladsl.Cache[K, akka.http.scaladsl.server.RouteResult]] =
     CacheJavaMapping.cacheMapping[K, RouteResult, K, akka.http.scaladsl.server.RouteResult]
 
   /**
