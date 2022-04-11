@@ -336,7 +336,6 @@ lazy val httpCaching = project("akka-http-caching")
   .settings(Dependencies.httpCaching)
   .dependsOn(http, httpCore, httpTestkit % "test")
   .enablePlugins(BootstrapGenjavadoc)
-  .enablePlugins(NoScala3) // FIXME
 
 def project(name: String) =
   Project(id = name, base = file(name))
