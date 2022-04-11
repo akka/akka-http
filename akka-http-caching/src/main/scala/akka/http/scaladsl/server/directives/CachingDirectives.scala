@@ -49,13 +49,13 @@ trait CachingDirectives {
     // Do directive processing asynchronously to avoid locking the cache accidentally (#4092)
     // This will be slightly slower, but the rational here is that caching is used for slower kind of processing
     // anyway so the performance hit should be acceptable.
-    CachingDirectives.asyncRoute &
-      mapInnerRoute { route => ctx =>
-        keyer.lift(ctx) match {
-          case Some(key) => cache.apply(key, () => route(ctx))
-          case None      => route(ctx)
-        }
+    Directive { inner => ctx =>
+      import ctx.executionContext
+      keyer.lift(ctx) match {
+        case Some(key) => cache.apply(key, () => Future(inner(())(ctx)).flatten)
+        case None      => inner(())(ctx)
       }
+    }
 
   /**
    * Creates an [[LfuCache]] with default settings obtained from the system's configuration.
@@ -70,14 +70,4 @@ trait CachingDirectives {
     LfuCache[K, RouteResult](settings)
 }
 
-object CachingDirectives extends CachingDirectives {
-  /**
-   * Run all route processing asynchronously.
-   */
-  private[CachingDirectives] def asyncRoute: Directive0 =
-    Directive { inner => ctx =>
-      import ctx.executionContext
-      Future { inner(()) }
-        .flatMap(route => route(ctx))
-    }
-}
+object CachingDirectives extends CachingDirectives
