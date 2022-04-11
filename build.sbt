@@ -71,7 +71,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation)
+  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation, NoScala3)
   .disablePlugins(MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
@@ -130,7 +130,7 @@ val scalaMacroSupport = Seq(
   }),
 )
 
-val scala3MigrationModeOption = 
+val scala3MigrationModeOption =
   scalacOptions ++= {
     if (scalaVersion.value startsWith "3")
       Seq("-source:3.0-migration")
@@ -295,7 +295,7 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .settings(commonSettings)
-  .enablePlugins(NoPublish/*, AggregatePRValidation*/)
+  .enablePlugins(NoPublish, NoScala3 /*FIXME */ /*, AggregatePRValidation*/)
   .disablePlugins(MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
@@ -315,7 +315,7 @@ lazy val httpSprayJson =
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .settings(commonSettings)
-  .enablePlugins(NoPublish/*, AggregatePRValidation*/)
+  .enablePlugins(NoPublish, NoScala3 /*FIXME */ /*, AggregatePRValidation*/)
   .disablePlugins(MimaPlugin)
   .aggregate(httpJackson)
 
@@ -507,7 +507,7 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
   )
 
 lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-materials"))
-  .enablePlugins(BillOfMaterialsPlugin)
+  .enablePlugins(BillOfMaterialsPlugin, NoScala3 /* FIXME */)
   .disablePlugins(MimaPlugin)
   .settings(
     name := "akka-http-bom",
