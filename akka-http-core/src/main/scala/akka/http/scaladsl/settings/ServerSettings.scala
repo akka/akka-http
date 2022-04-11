@@ -108,7 +108,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
   override def withTerminationDeadlineExceededResponse(response: akka.http.javadsl.model.HttpResponse): ServerSettings =
     self.copy(terminationDeadlineExceededResponse = response.asScala)
-  override def withParsingErrorHandler(newValue: String) = self.copy(parsingErrorHandler = newValue)
+  override def withParsingErrorHandler(newValue: String): ServerSettings = self.copy(parsingErrorHandler = newValue)
   override def withStreamCancellationDelay(newValue: FiniteDuration): ServerSettings = self.copy(streamCancellationDelay = newValue)
 
   // overloads for Scala idiomatic use
