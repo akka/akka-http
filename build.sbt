@@ -281,7 +281,7 @@ lazy val httpTests = project("akka-http-tests")
       targetFile
     }
   )
-  .enablePlugins(NoScala3) // FIXME
+  .settings(scala3MigrationModeOption)
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .settings(commonSettings)

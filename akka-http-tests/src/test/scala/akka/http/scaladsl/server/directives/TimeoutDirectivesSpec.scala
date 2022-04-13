@@ -14,7 +14,7 @@ import scala.concurrent.{ Future, Promise }
 
 class TimeoutDirectivesSpec extends RoutingSpec {
 
-  implicit val routeTestTimeout = RouteTestTimeout(5.seconds.dilated)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.seconds.dilated)
 
   "Request Timeout" should {
     "be configurable in routing layer" in {

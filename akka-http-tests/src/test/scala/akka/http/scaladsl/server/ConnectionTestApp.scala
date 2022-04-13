@@ -27,9 +27,9 @@ object ConnectionTestApp {
     }
     """)
 
-  implicit val system = ActorSystem("ConnectionTest", testConf)
+  implicit val system: ActorSystem = ActorSystem("ConnectionTest", testConf)
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val clientFlow = Http().superPool[Int]()
 

@@ -23,6 +23,7 @@ import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.event.LogSource
 
 abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String)
   extends AnyWordSpecLike with Matchers with BeforeAndAfterAll with WithLogCapturing {
@@ -37,10 +38,10 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
 
       http.host-connection-pool.base-connection-backoff = 0 ms
     }""").withFallback(ConfigFactory.load())
-  implicit val system = ActorSystem("DontLeakActorsOnFailingConnectionSpecs-" + poolImplementation, config)
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("DontLeakActorsOnFailingConnectionSpecs-" + poolImplementation, config)
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val log = Logging(system, getClass)
+  val log = Logging(system, getClass)(LogSource.fromClass)
 
   "Http.superPool" should {
 

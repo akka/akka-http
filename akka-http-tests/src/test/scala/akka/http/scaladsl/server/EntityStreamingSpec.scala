@@ -16,9 +16,10 @@ import akka.stream.scaladsl._
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
+import spray.json.RootJsonFormat
 
 class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
-  implicit override val patience = PatienceConfig(5.seconds.dilated(system), 200.millis)
+  implicit override val patience: PatienceConfig = PatienceConfig(5.seconds.dilated(system), 200.millis)
 
   //#models
   case class Tweet(uid: Int, txt: String)
@@ -35,8 +36,8 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     extends akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
     with spray.json.DefaultJsonProtocol {
 
-    implicit val tweetFormat = jsonFormat2(Tweet.apply)
-    implicit val measurementFormat = jsonFormat2(Measurement.apply)
+    implicit val tweetFormat: RootJsonFormat[Tweet] = jsonFormat2(Tweet.apply)
+    implicit val measurementFormat: RootJsonFormat[Measurement] = jsonFormat2(Measurement.apply)
   }
 
   "spray-json-response-streaming" in {
@@ -278,6 +279,13 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
               .runFold(0) { (cnt, _) => cnt + 1 }
 
           complete {
+            implicit val marshaller = // Scala 3 workaround for missing implicit conversion
+              Marshaller.futureMarshaller(
+                Marshaller.liftMarshaller(
+                  sprayJsonMarshaller(mapFormat(StringJsonFormat, StringJsonFormat))
+                )
+              )
+
             measurementsSubmitted.map(n => Map("msg" -> s"""Total metrics received: $n"""))
           }
         }

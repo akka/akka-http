@@ -93,6 +93,13 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
                 case AlreadyRegistered =>
                   import spray.json.DefaultJsonProtocol._
                   import SprayJsonSupport._
+                  implicit val marshaller = // Scala 3 workaround for missing implicit conversion
+                    Marshaller.fromStatusCodeAndValue[StatusCodes.ClientError, Map[String, String]](
+                      a => a,
+                      sprayJsonMarshaller(mapFormat(StringJsonFormat, StringJsonFormat)
+                      )
+                    )
+
                   StatusCodes.BadRequest -> Map("error" -> "User already Registered")
               }
             }
