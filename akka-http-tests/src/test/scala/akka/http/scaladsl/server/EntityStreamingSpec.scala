@@ -6,7 +6,6 @@ package akka.http.scaladsl.server
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
 import akka.http.scaladsl.marshalling._
@@ -16,7 +15,7 @@ import akka.stream.scaladsl._
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
-import spray.json.RootJsonFormat
+import spray.json.{ DefaultJsonProtocol, RootJsonFormat }
 
 class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
   implicit override val patience: PatienceConfig = PatienceConfig(5.seconds.dilated(system), 200.millis)
@@ -279,14 +278,10 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
               .runFold(0) { (cnt, _) => cnt + 1 }
 
           complete {
-            implicit val marshaller = // Scala 3 workaround for missing implicit conversion
-              Marshaller.futureMarshaller(
-                Marshaller.liftMarshaller(
-                  sprayJsonMarshaller(mapFormat(StringJsonFormat, StringJsonFormat))
-                )
-              )
-
-            measurementsSubmitted.map(n => Map("msg" -> s"""Total metrics received: $n"""))
+            // FIXME: workaround for Scala 3 which cannot figure out the right implicit for some reason
+            // Needs same name to avoid ambiguity in Scala 2
+            implicit val mapFormat: RootJsonFormat[Map[String, String]] = DefaultJsonProtocol.mapFormat
+            measurementsSubmitted.map((n: Int) => Map[String, String]("msg" -> s"""Total metrics received: $n"""))
           }
         }
       }
