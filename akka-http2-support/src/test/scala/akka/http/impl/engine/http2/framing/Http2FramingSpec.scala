@@ -494,7 +494,7 @@ class Http2FramingSpec extends AkkaSpecWithMaterializer {
     }
 
   private def parseToEvents(bytes: Seq[ByteString]): immutable.Seq[FrameEvent] =
-    Source(bytes.toVector).via(new Http2FrameParsing(shouldReadPreface = false, Logging(system, getClass))).runWith(Sink.seq)
+    Source(bytes.toVector).via(new Http2FrameParsing(shouldReadPreface = false, Logging(system, classOf[Http2FramingSpec]))).runWith(Sink.seq)
       .awaitResult(1.second.dilated)
   private def renderToByteString(events: immutable.Seq[FrameEvent]): ByteString =
     Source(events).map(FrameRenderer.render).runFold(ByteString.empty)(_ ++ _)

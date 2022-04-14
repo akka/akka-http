@@ -51,7 +51,7 @@ class H2cUpgradeSpec extends AkkaSpecWithMaterializer("""
       testWith(settings)
     }
 
-    def testWith(settings: String) {
+    def testWith(settings: String) = {
       val upgradeRequest =
         s"""GET / HTTP/1.1
 Host: localhost
@@ -62,7 +62,7 @@ HTTP2-Settings: $settings
       val frameProbe = Http2FrameProbe()
 
       Source.single(ByteString(upgradeRequest)).concat(Source.maybe)
-        .via(Tcp().outgoingConnection(binding.localAddress.getHostName, binding.localAddress.getPort))
+        .via(Tcp(system).outgoingConnection(binding.localAddress.getHostName, binding.localAddress.getPort))
         .runWith(frameProbe.sink)
 
       @tailrec def readToEndOfHeader(currentlyRead: String = ""): String =
