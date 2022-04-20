@@ -30,6 +30,8 @@ import org.scalatest.wordspec.AnyWordSpec
 @nowarn("msg=synchronous compression with `encode` is not supported in the future any more")
 class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with BeforeAndAfterAll with ScalaFutures {
 
+  import akka.http.ccompat.ImplicitUtils._
+
   val maxContentLength = 800
   // Protect network more than memory:
   val decodeMaxSize = 1600

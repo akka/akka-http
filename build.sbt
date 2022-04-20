@@ -130,14 +130,6 @@ val scalaMacroSupport = Seq(
   }),
 )
 
-val scala3MigrationModeOption =
-  scalacOptions ++= {
-    if (scalaVersion.value startsWith "3")
-      Seq("-source:3.0-migration")
-    else
-      Nil
-  }
-
 lazy val parsing = project("akka-parsing")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.parsing"))
@@ -279,7 +271,6 @@ lazy val httpTests = project("akka-http-tests")
       targetFile
     }
   )
-  .settings(scala3MigrationModeOption)
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .settings(commonSettings)

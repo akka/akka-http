@@ -81,7 +81,7 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
     }
   }
 
-  override def afterAll = TestKit.shutdownActorSystem(system)
+  override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 }
 
 class LegacyPoolDontLeakActorsOnFailingConnectionSpecs extends DontLeakActorsOnFailingConnectionSpecs("legacy")
