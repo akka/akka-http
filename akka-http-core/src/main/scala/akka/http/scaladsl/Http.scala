@@ -1105,7 +1105,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   def apply()(implicit system: ClassicActorSystemProvider): HttpExt = super.apply(system)
   override def apply(system: ActorSystem): HttpExt = super.apply(system)
 
-  def lookup() = Http
+  def lookup = Http
 
   def createExtension(system: ExtendedActorSystem): HttpExt =
     new HttpExt(system.settings.config getConfig "akka.http")(system)

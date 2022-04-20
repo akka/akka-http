@@ -542,7 +542,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         lazy val requestIn = TestPublisher.probe[RequestContext]()
         lazy val responseOut = TestSubscriber.probe[ResponseContext]()
 
-        protected val server: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
+        protected def server: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
 
         protected def settings: ConnectionPoolSettings
 
@@ -699,7 +699,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
           connection.acceptConnectionPromise.future
         }
 
-        protected override lazy val server =
+        protected override lazy val server: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
           Flow.fromSinkAndSourceMat(
             // buffer is needed because the async subscriber/publisher boundary will otherwise request > 1
             Flow[HttpRequest].buffer(1, OverflowStrategy.backpressure)
