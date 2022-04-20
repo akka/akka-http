@@ -53,40 +53,40 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def modeledHeaderParsing: Boolean
 
   /* Java APIs */
-  override def getCookieParsingMode: js.ParserSettings.CookieParsingMode = cookieParsingMode
-  override def getHeaderValueCacheLimits: util.Map[String, Int] = headerValueCacheLimits.asJava
-  override def getMaxChunkExtLength = maxChunkExtLength
-  override def getUriParsingMode: akka.http.javadsl.model.Uri.ParsingMode = uriParsingMode
-  override def getMaxHeaderCount = maxHeaderCount
-  override def getMaxContentLength = maxContentLength
-  override def getMaxToStrictBytes = maxToStrictBytes
-  override def getMaxHeaderValueLength = maxHeaderValueLength
-  override def getIncludeTlsSessionInfoHeader = includeTlsSessionInfoHeader
-  override def getIncludeSslSessionAttribute = includeSslSessionAttribute
-  override def getIllegalHeaderWarnings = illegalHeaderWarnings
-  override def getIgnoreIllegalHeaderFor = ignoreIllegalHeaderFor
-  override def getMaxHeaderNameLength = maxHeaderNameLength
-  override def getMaxChunkSize = maxChunkSize
-  override def getMaxResponseReasonLength = maxResponseReasonLength
-  override def getMaxUriLength = maxUriLength
-  override def getMaxMethodLength = maxMethodLength
-  override def getMaxCommentParsingDepth: Int = maxCommentParsingDepth
-  override def getErrorLoggingVerbosity: js.ParserSettings.ErrorLoggingVerbosity = errorLoggingVerbosity
-  override def getIllegalResponseHeaderNameProcessingMode = illegalResponseHeaderNameProcessingMode
-  override def getIllegalResponseHeaderValueProcessingMode = illegalResponseHeaderValueProcessingMode
-  override def getConflictingContentTypeHeaderProcessingMode = conflictingContentTypeHeaderProcessingMode
+  override def getCookieParsingMode: js.ParserSettings.CookieParsingMode = this.cookieParsingMode
+  override def getHeaderValueCacheLimits: util.Map[String, Int] = this.headerValueCacheLimits.asJava
+  override def getMaxChunkExtLength = this.maxChunkExtLength
+  override def getUriParsingMode: akka.http.javadsl.model.Uri.ParsingMode = this.uriParsingMode
+  override def getMaxHeaderCount = this.maxHeaderCount
+  override def getMaxContentLength = this.maxContentLength
+  override def getMaxToStrictBytes = this.maxToStrictBytes
+  override def getMaxHeaderValueLength = this.maxHeaderValueLength
+  override def getIncludeTlsSessionInfoHeader = this.includeTlsSessionInfoHeader
+  override def getIncludeSslSessionAttribute = this.includeSslSessionAttribute
+  override def getIllegalHeaderWarnings = this.illegalHeaderWarnings
+  override def getIgnoreIllegalHeaderFor = this.ignoreIllegalHeaderFor
+  override def getMaxHeaderNameLength = this.maxHeaderNameLength
+  override def getMaxChunkSize = this.maxChunkSize
+  override def getMaxResponseReasonLength = this.maxResponseReasonLength
+  override def getMaxUriLength = this.maxUriLength
+  override def getMaxMethodLength = this.maxMethodLength
+  override def getMaxCommentParsingDepth: Int = this.maxCommentParsingDepth
+  override def getErrorLoggingVerbosity: js.ParserSettings.ErrorLoggingVerbosity = this.errorLoggingVerbosity
+  override def getIllegalResponseHeaderNameProcessingMode = this.illegalResponseHeaderNameProcessingMode
+  override def getIllegalResponseHeaderValueProcessingMode = this.illegalResponseHeaderValueProcessingMode
+  override def getConflictingContentTypeHeaderProcessingMode = this.conflictingContentTypeHeaderProcessingMode
 
   override def getCustomMethods = new Function[String, Optional[akka.http.javadsl.model.HttpMethod]] {
-    override def apply(t: String) = OptionConverters.toJava(customMethods(t))
+    override def apply(t: String) = OptionConverters.toJava(self.customMethods(t))
   }
   override def getCustomStatusCodes = new Function[Int, Optional[akka.http.javadsl.model.StatusCode]] {
-    override def apply(t: Int) = OptionConverters.toJava(customStatusCodes(t))
+    override def apply(t: Int) = OptionConverters.toJava(self.customStatusCodes(t))
   }
   override def getCustomMediaTypes = new akka.japi.function.Function2[String, String, Optional[akka.http.javadsl.model.MediaType]] {
     override def apply(mainType: String, subType: String): Optional[model.MediaType] =
-      OptionConverters.toJava(customMediaTypes(mainType, subType))
+      OptionConverters.toJava(self.customMediaTypes(mainType, subType))
   }
-  def getModeledHeaderParsing: Boolean = modeledHeaderParsing
+  def getModeledHeaderParsing: Boolean = this.modeledHeaderParsing
 
   // override for more specific return type
   override def withMaxUriLength(newValue: Int): ParserSettings = self.copy(maxUriLength = newValue)

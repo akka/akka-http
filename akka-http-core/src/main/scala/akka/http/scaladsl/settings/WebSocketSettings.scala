@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 abstract class WebSocketSettings extends akka.http.javadsl.settings.WebSocketSettings { self: WebSocketSettingsImpl =>
   def randomFactory: () => Random
   override final val getRandomFactory: Supplier[Random] = new Supplier[Random] {
-    override def get(): Random = randomFactory()
+    override def get(): Random = self.randomFactory()
   }
   override def periodicKeepAliveMode: String
   override def periodicKeepAliveMaxIdle: Duration
@@ -27,7 +27,7 @@ abstract class WebSocketSettings extends akka.http.javadsl.settings.WebSocketSet
    */
   def periodicKeepAliveData: () => ByteString
   final def getPeriodicKeepAliveData: Supplier[ByteString] = new Supplier[ByteString] {
-    override def get(): ByteString = periodicKeepAliveData()
+    override def get(): ByteString = self.periodicKeepAliveData()
   }
 
   override def withRandomFactoryFactory(newValue: Supplier[Random]): WebSocketSettings =

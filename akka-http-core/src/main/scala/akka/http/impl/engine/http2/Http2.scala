@@ -263,7 +263,7 @@ private[http] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvide
   override def get(system: ClassicActorSystemProvider): Http2Ext = super.get(system)
   def apply()(implicit system: ClassicActorSystemProvider): Http2Ext = super.apply(system)
   override def apply(system: ActorSystem): Http2Ext = super.apply(system)
-  def lookup(): ExtensionId[_ <: Extension] = Http2
+  def lookup: ExtensionId[_ <: Extension] = Http2
   def createExtension(system: ExtendedActorSystem): Http2Ext = new Http2Ext()(system)
 
   private[http] type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, ServerTerminator]
