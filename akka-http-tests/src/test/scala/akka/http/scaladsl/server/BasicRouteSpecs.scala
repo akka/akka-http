@@ -8,6 +8,7 @@ import akka.http.scaladsl.model
 import model.HttpMethods._
 import model.StatusCodes
 import akka.testkit.EventFilter
+import akka.http.scaladsl.server.util.ConstructFromTuple
 
 object BasicRouteSpecs {
   private[http] def defaultExnHandler500Error(message: String) = {
@@ -148,7 +149,7 @@ class BasicRouteSpecs extends RoutingSpec {
     "extract one argument" in {
       case class MyNumber(i: Int)
 
-      val abcPath = path("abc" / IntNumber).as(MyNumber)(echoComplete)
+      val abcPath = path("abc" / IntNumber).as(ConstructFromTuple.instance1(MyNumber))(echoComplete)
 
       Get("/abc/5") ~> abcPath ~> check {
         responseAs[String] shouldEqual "MyNumber(5)"
@@ -157,7 +158,7 @@ class BasicRouteSpecs extends RoutingSpec {
     "extract two arguments" in {
       case class Person(name: String, age: Int)
 
-      val personPath = path("person" / Segment / IntNumber).as(Person)(echoComplete)
+      val personPath = path("person" / Segment / IntNumber).as(ConstructFromTuple.instance2(Person))(echoComplete)
 
       Get("/person/john/38") ~> personPath ~> check {
         responseAs[String] shouldEqual "Person(john,38)"
@@ -168,7 +169,7 @@ class BasicRouteSpecs extends RoutingSpec {
         require(i > 10)
       }
 
-      val abcPath = path("abc" / IntNumber).as(MyValidNumber)(echoComplete)
+      val abcPath = path("abc" / IntNumber).as(ConstructFromTuple.instance1(MyValidNumber))(echoComplete)
 
       Get("/abc/5") ~> abcPath ~> check {
         rejection shouldBe a[ValidationRejection]

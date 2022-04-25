@@ -23,7 +23,7 @@ import akka.testkit._
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
   // operations touch files, can be randomly hit by slowness
-  implicit val routeTestTimeout = RouteTestTimeout(3.seconds.dilated)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   // need to serve from the src directory, when sbt copies the resource directory over to the
   // target directory it will resolve symlinks in the process

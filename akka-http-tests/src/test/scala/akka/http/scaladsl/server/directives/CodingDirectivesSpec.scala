@@ -27,7 +27,7 @@ import scala.concurrent.duration._
 
 class CodingDirectivesSpec extends RoutingSpec with Inside {
 
-  implicit val routeTestTimeout = RouteTestTimeout(3.seconds.dilated)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   val echoRequestContent: Route = { ctx => ctx.complete(ctx.request.entity.dataBytes.utf8String) }
 

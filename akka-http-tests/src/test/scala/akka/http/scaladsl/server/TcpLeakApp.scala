@@ -20,12 +20,12 @@ object TcpLeakApp extends App {
     akka.loglevel = DEBUG
     akka.log-dead-letters = on
     akka.io.tcp.trace-logging = on""")
-  implicit val system = ActorSystem("ServerTest", testConf)
-  implicit val fm = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
+  implicit val fm: ActorMaterializer = ActorMaterializer()
 
   import system.dispatcher
 
-  val tcpFlow = Tcp().outgoingConnection(new InetSocketAddress("127.0.0.1", 1234)).named("TCP-outgoingConnection")
+  val tcpFlow = Tcp(system).outgoingConnection(new InetSocketAddress("127.0.0.1", 1234)).named("TCP-outgoingConnection")
   List
     .fill(100)(
       Source

@@ -41,12 +41,12 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
     akka.http.server.parsing.max-content-length = $maxContentLength
     akka.http.routing.decode-max-size = $decodeMaxSize
     """)
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
   val random = new scala.util.Random(42)
 
-  implicit val defaultPatience = PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
+  implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   "a normal route" should {
     val route = path("noDirective") {

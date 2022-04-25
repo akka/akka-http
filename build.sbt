@@ -280,7 +280,7 @@ lazy val httpTests = project("akka-http-tests")
       targetFile
     }
   )
-  .enablePlugins(NoScala3) // FIXME
+  .settings(scala3MigrationModeOption)
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .settings(commonSettings)
@@ -302,14 +302,12 @@ lazy val httpXml =
     .settings(AutomaticModuleName.settings("akka.http.marshallers.scalaxml"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpXml)
-    .enablePlugins(NoScala3) // FIXME
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
     .settings(AutomaticModuleName.settings("akka.http.marshallers.sprayjson"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpSprayJson)
-    .enablePlugins(NoScala3) // FIXME
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .settings(commonSettings)
@@ -325,7 +323,6 @@ lazy val httpJackson =
     .dependsOn(httpTestkit % "test")
     .settings(Dependencies.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
-    .enablePlugins(NoScala3) // FIXME
 
 lazy val httpCaching = project("akka-http-caching")
   .settings(commonSettings)
