@@ -37,9 +37,9 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  /*@pre213
+  @pre213
   def respondWithHeaders(responseHeaders: HttpHeader*): Directive0 =
-    respondWithHeaders(responseHeaders.toList)*/
+    respondWithHeaders(responseHeaders.toList)
 
   /**
    * Unconditionally adds the given response headers to all HTTP responses of its inner Route.
@@ -59,9 +59,9 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  /*@pre213
+  @pre213
   def respondWithDefaultHeaders(responseHeaders: HttpHeader*): Directive0 =
-    respondWithDefaultHeaders(responseHeaders.toList)*/
+    respondWithDefaultHeaders(responseHeaders.toList)
 
   /**
    * Adds the given response headers to all HTTP responses of its inner Route,
