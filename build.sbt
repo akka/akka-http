@@ -170,6 +170,11 @@ lazy val httpCore = project("akka-http-core")
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .enablePlugins(Pre213Preprocessor).settings(
+    akka.http.sbt.Pre213Preprocessor.pre213Files := Seq(
+      "headers.scala", "HttpMessage.scala", "LanguageRange.scala", "CacheDirective.scala", "LinkValue.scala"
+    )
+  )
   .disablePlugins(ScalafixPlugin)
 
 lazy val http = project("akka-http")
