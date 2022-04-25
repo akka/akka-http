@@ -233,7 +233,6 @@ lazy val http2Support = project("akka-http2-support")
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
   .disablePlugins(MimaPlugin) // experimental module still
-  .enablePlugins(NoScala3) // FIXME
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(commonSettings)
