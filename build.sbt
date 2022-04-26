@@ -187,6 +187,11 @@ lazy val http = project("akka-http")
     Compile / scalacOptions += "-language:_"
   )
   .settings(scalaMacroSupport)
+  .enablePlugins(Pre213Preprocessor).settings(
+    akka.http.sbt.Pre213Preprocessor.pre213Files := Seq(
+      "scaladsl/server/directives/FormFieldDirectives.scala", "scaladsl/server/directives/RespondWithDirectives.scala"
+    )
+  )
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
   .enablePlugins(ReproducibleBuildsPlugin)
 

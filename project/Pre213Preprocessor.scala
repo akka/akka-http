@@ -11,9 +11,9 @@ object Pre213Preprocessor extends AutoPlugin {
   override def projectSettings: Seq[Def.Setting[_]] = {
     Compile / sources := {
       if (scalaVersion.value startsWith "3") {
-        val filter = pre213Files.value.toSet
+        val filter: File => Boolean = f => pre213Files.value.exists(suffix => f.getAbsolutePath.replace("\\", "//").endsWith(suffix))
         (Compile / sources).value.map { s =>
-          if (filter(s.getName)) {
+          if (filter(s)) {
             val data = IO.read(s)
             val targetFile = sourceManaged.value / s.getName
             val newData = pattern.replaceAllIn(data, "@since213")
