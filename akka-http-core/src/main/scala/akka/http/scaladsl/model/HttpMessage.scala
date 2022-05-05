@@ -72,23 +72,27 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def discardEntityBytes(system: ClassicActorSystemProvider): HttpMessage.DiscardedEntity = entity.discardBytes()(SystemMaterializer(system).materializer)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
-  /*@pre213
-  def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)*/
-
-  /** Returns a copy of this message with the list of headers set to the given ones. */
-  def withHeaders(headers: immutable.Seq[HttpHeader]): Self
+  @pre213
+  def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
   @since213
   def withHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
     withHeaders(firstHeader +: otherHeaders.toList)
 
+  /** Returns a copy of this message with the list of headers set to the given ones. */
+  def withHeaders(headers: immutable.Seq[HttpHeader]): Self
+
   /**
    * Returns a new message that contains all of the given default headers which didn't already
    * exist (by case-insensitive header name) in this message.
    */
-  /*@pre213
-  def withDefaultHeaders(defaultHeaders: HttpHeader*): Self = withDefaultHeaders(defaultHeaders.toList)*/
+  @pre213
+  def withDefaultHeaders(defaultHeaders: HttpHeader*): Self = withDefaultHeaders(defaultHeaders.toList)
+
+  @since213
+  def withDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
+    withDefaultHeaders(firstHeader +: otherHeaders.toList)
 
   /**
    * Returns a new message that contains all of the given default headers which didn't already
@@ -99,10 +103,6 @@ sealed trait HttpMessage extends jm.HttpMessage {
       if (headers.isEmpty) defaultHeaders
       else defaultHeaders.foldLeft(headers) { (acc, h) => if (headers.exists(_ is h.lowercaseName)) acc else h +: acc }
     }
-
-  @since213
-  def withDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
-    withDefaultHeaders(firstHeader +: otherHeaders.toList)
 
   /** Returns a copy of this message with the attributes set to the given ones. */
   def withAttributes(headers: Map[AttributeKey[_], _]): Self

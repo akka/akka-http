@@ -37,9 +37,13 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  /*@pre213
+  @pre213
   def respondWithHeaders(responseHeaders: HttpHeader*): Directive0 =
-    respondWithHeaders(responseHeaders.toList)*/
+    respondWithHeaders(responseHeaders.toList)
+
+  @since213
+  def respondWithHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
+    respondWithHeaders(firstHeader +: otherHeaders.toList)
 
   /**
    * Unconditionally adds the given response headers to all HTTP responses of its inner Route.
@@ -49,28 +53,15 @@ trait RespondWithDirectives {
   def respondWithHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
     mapResponseHeaders(responseHeaders.toList ++ _)
 
-  @since213
-  def respondWithHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
-    respondWithHeaders(firstHeader +: otherHeaders.toList)
-
   /**
    * Adds the given response headers to all HTTP responses of its inner Route,
    * if a header already exists it is not added again.
    *
    * @group response
    */
-  /*@pre213
+  @pre213
   def respondWithDefaultHeaders(responseHeaders: HttpHeader*): Directive0 =
-    respondWithDefaultHeaders(responseHeaders.toList)*/
-
-  /**
-   * Adds the given response headers to all HTTP responses of its inner Route,
-   * if a header already exists it is not added again.
-   *
-   * @group response
-   */
-  def respondWithDefaultHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
-    mapResponse(_.withDefaultHeaders(responseHeaders))
+    respondWithDefaultHeaders(responseHeaders.toList)
 
   /**
    * Adds the given response headers to all HTTP responses of its inner Route,
@@ -82,6 +73,14 @@ trait RespondWithDirectives {
   def respondWithDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
     respondWithDefaultHeaders(firstHeader +: otherHeaders.toList)
 
+  /**
+   * Adds the given response headers to all HTTP responses of its inner Route,
+   * if a header already exists it is not added again.
+   *
+   * @group response
+   */
+  def respondWithDefaultHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
+    mapResponse(_.withDefaultHeaders(responseHeaders))
 }
 
 object RespondWithDirectives extends RespondWithDirectives

@@ -25,8 +25,8 @@ final case class LinkValue(uri: Uri, params: immutable.Seq[LinkParam]) extends j
 }
 
 object LinkValue {
-  /*@pre213
-  def apply(uri: Uri, params: LinkParam*): LinkValue = apply(uri, immutable.Seq(params: _*))*/
+  @pre213
+  def apply(uri: Uri, params: LinkParam*): LinkValue = apply(uri, immutable.Seq(params: _*))
   @since213
   def apply(uri: Uri, firstParam: LinkParam, otherParams: LinkParam*): LinkValue = apply(uri, firstParam +: otherParams)
 }
