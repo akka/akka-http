@@ -25,5 +25,7 @@ private[akka] object CacheJavaMapping {
 
     implicit object CachingSettings extends JavaMapping.Inherited[javadsl.CachingSettings, scaladsl.CachingSettings]
     implicit object LfuCacheSettings extends JavaMapping.Inherited[javadsl.LfuCacheSettings, scaladsl.LfuCacheSettings]
+    implicit object RefreshingCacheSettings extends JavaMapping.Inherited[javadsl.RefreshingCacheSettings, scaladsl.RefreshingCacheSettings]
+
   }
 }
