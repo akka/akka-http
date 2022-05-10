@@ -17,10 +17,18 @@ import scala.collection.JavaConverters._
 @DoNotInherit
 trait LoadingCache[K, V] extends akka.http.caching.javadsl.LoadingCache[K, V] {
 
-  def loadFuture(key: K): CompletionStage[V] = futureToJava(load(key))
+  /**
+   * Returns either the cached value at `K` or attempts to load it on it's first read.
+   * Should time t be refreshTime < t < expireTime, then returns the previous value and triggers a refresh.
+   * Should time t be refreshTime <= expireTime < t, then triggers the loading function and returns that value.
+   */
   def load(key: K): Future[V]
+  def loadFuture(key: K): CompletionStage[V] = futureToJava(load(key))
 
-  def loadAllMap(keys: util.Set[K]): CompletionStage[util.Map[K, V]] = futureToJava(loadAll(keys.asScala.toSet)).thenApply(_.asJava)
+  /**
+   * Returns a Map of all values or fails.
+   */
   def loadAll(keys: Set[K]): Future[Map[K, V]]
+  def loadAllMap(keys: util.Set[K]): CompletionStage[util.Map[K, V]] = futureToJava(loadAll(keys.asScala.toSet)).thenApply(_.asJava)
 
 }
