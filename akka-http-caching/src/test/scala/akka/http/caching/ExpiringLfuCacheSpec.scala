@@ -174,7 +174,7 @@ class ExpiringLfuCacheSpec extends AnyWordSpec with Matchers with BeforeAndAfter
           .withTimeToLive(timeToLive)
           .withTimeToIdle(timeToIdle)
       )
-    }.asInstanceOf[LfuCache[Int, T]]
+    }
   }
 
 }
