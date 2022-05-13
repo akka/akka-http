@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.caching.impl
 
 import akka.annotation.InternalApi

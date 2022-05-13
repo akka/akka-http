@@ -10,8 +10,8 @@ import akka.http.caching.scaladsl.CachingSettings
 import akka.testkit.TestKit
 import com.github.benmanes.caffeine.cache.AsyncCacheLoader
 import org.scalatest.BeforeAndAfterAll
-import scala.compat.java8.FutureConverters._
 
+import scala.compat.java8.FutureConverters.{ toJava => toJavaFuture }
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import org.scalatest.matchers.should.Matchers
@@ -25,7 +25,7 @@ class ExpiringRefreshingCacheSpec extends AnyWordSpec with Matchers with BeforeA
     "refresh values after the refresh-after-write" in {
       val wait = 1.second
 
-      def loader: AsyncCacheLoader[Int, String] = (_: Int, _: Executor) => Future.successful("B").toJava.toCompletableFuture
+      def loader: AsyncCacheLoader[Int, String] = (_: Int, _: Executor) => toJavaFuture(Future.successful("B")).toCompletableFuture
 
       val cache = refreshingCache[String](refreshAfterWrite = wait, cacheLoader = loader)
       cache.put(1, Future.successful("A"))
@@ -39,7 +39,7 @@ class ExpiringRefreshingCacheSpec extends AnyWordSpec with Matchers with BeforeA
       val wait = 1.second
 
       def loader: AsyncCacheLoader[Int, String] = (_: Int, _: Executor) =>
-        Future.failed(new NoSuchElementException("404: ¯\\_(ツ)_/¯")).toJava.toCompletableFuture
+        toJavaFuture[String](Future.failed(new NoSuchElementException("404: ¯\\_(ツ)_/¯"))).toCompletableFuture
 
       val cache = refreshingCache[String](refreshAfterWrite = wait, expireAfterWrite = wait / 2, cacheLoader = loader)
       cache.put(1, Future.successful("A"))
@@ -55,7 +55,7 @@ class ExpiringRefreshingCacheSpec extends AnyWordSpec with Matchers with BeforeA
       val wait = 1.second
 
       def loader: AsyncCacheLoader[Int, String] = (t: Int, _: Executor) =>
-        Future.successful(t.toString).toJava.toCompletableFuture
+        toJavaFuture(Future.successful(t.toString)).toCompletableFuture
 
       val cache = refreshingCache[String](refreshAfterWrite = wait, cacheLoader = loader)
 
@@ -70,7 +70,7 @@ class ExpiringRefreshingCacheSpec extends AnyWordSpec with Matchers with BeforeA
       val wait = 1.second
 
       def loader: AsyncCacheLoader[Int, String] = (_: Int, _: Executor) =>
-        Future.failed(new NoSuchElementException("404: ¯\\_(ツ)_/¯")).toJava.toCompletableFuture
+        toJavaFuture[String](Future.failed(new NoSuchElementException("404: ¯\\_(ツ)_/¯"))).toCompletableFuture
 
       val cache = refreshingCache[String](refreshAfterWrite = wait, cacheLoader = loader)
 
@@ -84,7 +84,7 @@ class ExpiringRefreshingCacheSpec extends AnyWordSpec with Matchers with BeforeA
     TestKit.shutdownActorSystem(system)
   }
 
-  def dummyLoader[K, V]: AsyncCacheLoader[K, V] = (_: K, _: Executor) => Future.failed(new NoSuchElementException("")).toJava.toCompletableFuture
+  def dummyLoader[K, V]: AsyncCacheLoader[K, V] = (_: K, _: Executor) => toJavaFuture[V](Future.failed(new NoSuchElementException(""))).toCompletableFuture
 
   def refreshingCache[T](
     maxCapacity:       Int                      = 500,

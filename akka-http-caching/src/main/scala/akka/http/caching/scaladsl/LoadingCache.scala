@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.caching.scaladsl
 
 import akka.annotation.{ ApiMayChange, DoNotInherit }

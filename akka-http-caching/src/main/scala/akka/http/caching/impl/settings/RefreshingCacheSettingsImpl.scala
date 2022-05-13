@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.caching.impl.settings
 
 import akka.annotation.InternalApi
@@ -5,7 +9,6 @@ import akka.http.caching.scaladsl.RefreshingCacheSettings
 import akka.http.impl.util._
 import com.typesafe.config.Config
 
-import scala.jdk.DurationConverters._
 import scala.concurrent.duration.Duration
 
 /** INTERNAL API */
@@ -26,7 +29,7 @@ private[http] object RefreshingCacheSettingsImpl extends SettingsCompanionImpl[R
     val c = inner.withFallback(root.getConfig(prefix))
     new RefreshingCacheSettingsImpl(
       c.getInt("max-capacity"),
-      c.getDuration("refresh-after-write").toScala,
+      c.getPotentiallyInfiniteDuration("refresh-after-write"),
       c.getPotentiallyInfiniteDuration("expire-after-write"),
 
     )
