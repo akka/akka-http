@@ -2,7 +2,7 @@
 
 Directives for request-level mapped diagnostic context logging using the @apidoc[MarkerLoggingAdapter]. 
 
-These directives provide an API to setup a new MDC-compatible logger for every request and append (key, value) MDC entries to be included in any emitted logs for the duration of the request 
+These directives provide an API to instantiate a new MDC-compatible logger for every request and append (key, value) MDC entries to be included in any logs emitted from the request. 
 
 For example, one might extract a request ID from a header at the beginning of the request and append it as a (key, value) MDC entry.
 Any subsequent logs emitted by this request would include the request ID as an entry.
@@ -11,16 +11,16 @@ Any subsequent logs emitted by this request would include the request ID as an e
 
 @@@ index
 
-* [withMdcLogging](withMdcLogging.md)
+* [withMarkerLoggingAdapter](withMarkerLoggingAdapter.md)
 * [withMdcEntries](withMdcEntries.md)
 * [withMdcEntry](withMdcEntry.md)
-* [extractMarkerLog](extractMarkerLog.md)
 
 @@@
 
 ## Structured JSON MDC Logging
 
-In order to get structured (i.e., JSON) MDC logging, some additional configurations are necessary. 
+In order to get structured (i.e., JSON) MDC logging, some additional dependencies and configurations are necessary. 
+
 One possible configuration is as follows:
 
 1. Add akka-slf4j, logback-classic, and logstash-logback-encoder as dependencies.
@@ -37,5 +37,4 @@ One possible configuration is as follows:
         <appender-ref ref="CONSOLE" />
     </root>
 </configuration>
-```  
-
+```

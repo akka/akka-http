@@ -1,44 +1,31 @@
 package akka.http.scaladsl.server.directives
 
-import akka.event.{ DiagnosticMarkerBusLoggingAdapter, MarkerLoggingAdapter }
-import akka.http.scaladsl.model.StatusCodes
+import akka.event._
 import akka.http.scaladsl.server.RoutingSpec
-import scala.jdk.CollectionConverters._
+import akka.testkit.EventFilter
+
+import scala.collection.mutable.ListBuffer
 
 class MdcLoggingDirectivesSpec extends RoutingSpec {
 
-  "The `withMdcLogging` directive" should {
-    "provide a DiagnosticMarkerBusLoggingAdapter" in {
-      Get() ~> withMdcLogging {
-        extractLog {
-          case _: DiagnosticMarkerBusLoggingAdapter => completeOk
-          case other                                => failTest(s"expected a DiagnosticMarkerBusLoggingAdapter but found $other")
+  "The `withMarkerLoggingAdapter` directive" should {
+    "set a DiagnosticMarkerBusLoggingAdapter on the request context and provide the same adapter to the caller" in {
+      Get() ~> withMarkerLoggingAdapter { provided: MarkerLoggingAdapter =>
+        extractLog { extracted: LoggingAdapter =>
+          extracted shouldEqual provided
+          completeOk
         }
       } ~> check {
         response shouldEqual Ok
       }
     }
-    "provide a new DiagnosticMarkerBusLoggingAdapter for each request" in {
-      val route = withMdcLogging {
-        extractLog {
-          case l: DiagnosticMarkerBusLoggingAdapter => complete(l.hashCode().toString)
-          case other                                => failTest(s"expected a DiagnosticMarkerBusLoggingAdapter but found $other")
-        }
-      }
-      val reps = 100
-      val responseEntities = (1 to reps).map(_ => Get() ~> route ~> check {
-        status shouldEqual StatusCodes.OK
-        entityAs[String]
-      })
-      responseEntities.distinct.length shouldBe reps
-    }
-    "provide the same DiagnosticMarkerBusLoggingAdapter when nested multiple times" in {
-      Get() ~> withMdcLogging {
+    "provides a new DiagnosticMarkerBusLoggingAdapter for each invocation" in {
+      Get() ~> withMarkerLoggingAdapter { _ =>
         extractLog { log1 =>
-          withMdcLogging {
+          withMarkerLoggingAdapter { _ =>
             extractLog { log2 =>
-              if (log1 == log2) completeOk
-              else failTest(s"$log1 != $log2")
+              log1 should not equal log2
+              completeOk
             }
           }
         }
@@ -48,69 +35,56 @@ class MdcLoggingDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "The `extractMarkerLog` directive" should {
-    "provide a MarkerLoggingAdapter" in {
-      Get() ~> extractMarkerLog {
-        case _: MarkerLoggingAdapter => completeOk
-        case other                   => failTest(s"expected a MarkerLoggingAdapter but found $other")
-      }
-    }
-    "provide a new MarkerLoggingAdapter for each request" in {
-      val route = extractMarkerLog {
-        case log: MarkerLoggingAdapter => complete(log.hashCode().toString)
-        case other                     => failTest(s"expected a MarkerLoggingAdapter but found $other")
-      }
-      val reps = 100
-      val responseEntities = (1 to reps).map(_ => Get() ~> route ~> check {
-        status shouldEqual StatusCodes.OK
-        entityAs[String]
-      })
-      responseEntities.distinct.length shouldBe reps
-    }
-    "provide the same MarkerLoggingAdapter when nested multiple times" in {
-      Get() ~> extractMarkerLog { log1 =>
-        withMdcLogging {
-          extractMarkerLog { log2 =>
-            if (log1 == log2) completeOk
-            else failTest(s"$log1 != $log2")
+  "The `withMdcEntries` and `withMdcEntry` directives" should {
+    "incrementally append entries to the LoggingAdapter MDC maps" in {
+      Get() ~> extractLog { log1 =>
+        withMdcEntry("foo", "foo entry 1") {
+          extractLog { log2 =>
+            withMdcEntries("foo" -> "foo entry 2", "bar" -> "bar entry 1") {
+              extractLog { log3 =>
+                log1.mdc shouldBe Map.empty
+                log2.mdc shouldBe Map("foo" -> "foo entry 1")
+                log3.mdc shouldBe Map("foo" -> "foo entry 2", "bar" -> "bar entry 1")
+                completeOk
+              }
+            }
           }
         }
       } ~> check {
         response shouldEqual Ok
       }
     }
-  }
+    "include the entries in the LoggingEvents" in {
+      val buf = ListBuffer.empty[Logging.Info2]
+      val filter = EventFilter.custom {
+        case e: Logging.Info2 => buf.append(e).nonEmpty
 
-  "The `withMdcEntries` directive" should {
-    "append entries to the DiagnosticMarkerBusLoggingAdapter's MDC map" in {
-      Get() ~> withMdcEntries(("foo", "foo entry"), ("bar", "bar entry")) {
-        extractMarkerLog {
-          case log: DiagnosticMarkerBusLoggingAdapter =>
-            val map = log.getMDC.asScala
-            if (!map.get("foo").contains("foo entry")) failTest(s"missing or incorrect key 'foo' in $map")
-            else if (!map.get("bar").contains("bar entry")) failTest(s"missing or incorrect key 'bar' in $map")
-            else completeOk
-          case other => failTest(s"expected a DiagnosticMarkerBusLoggingAdapter but found $other")
-        }
-      } ~> check {
-        response shouldEqual Ok
       }
-    }
-    "replace entries with same key when nested" in {
-      Get() ~> withMdcEntries(("foo", "foo entry 1")) {
-        extractMarkerLog {
-          case log: DiagnosticMarkerBusLoggingAdapter =>
-            val map = log.getMDC.asScala
-            if (!map.get("foo").contains("foo entry 1")) failTest(s"'foo' should be 'foo entry 1'")
-            else withMdcEntries(("foo", "foo entry 2")) {
-              val map = log.getMDC.asScala
-              if (!map.get("foo").contains("foo entry 2")) failTest(s"'foo' should be 'foo entry 2'")
-              else completeOk
+      filter.intercept {
+        Get() ~> withMdcEntries("user_id" -> "1234", "request_id" -> "abcd") {
+          extractLog { log1 =>
+            log1.info("test 1")
+            withMdcEntry("status", "200") {
+              extractLog { log2 =>
+                log1.info("test 2")
+                log2.info("test 3")
+                completeOk
+              }
             }
-          case other => failTest(s"expected a DiagnosticMarkerBusLoggingAdapter but found $other")
+          }
+        } ~> check {
+          response shouldEqual Ok
+          buf.size shouldBe 3
+          val l1 = buf(0)
+          val l2 = buf(1)
+          val l3 = buf(2)
+          l1.message shouldBe "test 1"
+          l1.mdc shouldBe Map("user_id" -> "1234", "request_id" -> "abcd")
+          l2.message shouldBe "test 2"
+          l2.mdc shouldBe Map("user_id" -> "1234", "request_id" -> "abcd")
+          l3.message shouldBe "test 3"
+          l3.mdc shouldBe Map("user_id" -> "1234", "request_id" -> "abcd", "status" -> "200")
         }
-      } ~> check {
-        response shouldEqual Ok
       }
     }
   }
