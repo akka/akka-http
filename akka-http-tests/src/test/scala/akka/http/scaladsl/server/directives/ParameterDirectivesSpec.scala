@@ -274,7 +274,7 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
     "extract a parameter value as Case Class" in {
       case class Color(red: Int, green: Int, blue: Int)
       Get("/?red=90&green=50&blue=0") ~> {
-        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(ConstructFromTuple.instance3(Color)) { color =>
+        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color.apply _) { color =>
           complete(s"${color.red} ${color.green} ${color.blue}")
         }
       } ~> check { responseAs[String] shouldEqual "90 50 0" }
@@ -286,7 +286,7 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
         require(0 <= blue && blue <= 255)
       }
       Get("/?red=500&green=0&blue=0") ~> {
-        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(ConstructFromTuple.instance3(Color)) { color =>
+        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color.apply _) { color =>
           complete(s"${color.red} ${color.green} ${color.blue}")
         }
       } ~> check {
@@ -300,7 +300,7 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
         require(0 <= blue && blue <= 255)
       }
       Get("/?red=0&green=0&blue=0") ~> {
-        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(ConstructFromTuple.instance3(Color)) { _ =>
+        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color.apply _) { _ =>
           throw new IllegalArgumentException
         }
       } ~> check {
