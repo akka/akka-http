@@ -25,7 +25,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec 
   """
 
   // test touches disk, so give it some time
-  implicit val routeTimeout = RouteTestTimeout(7.seconds.dilated)
+  implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(7.seconds.dilated)
 
   "storeUploadedFile" in {
     //#storeUploadedFile

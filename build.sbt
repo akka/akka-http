@@ -289,7 +289,6 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
   .enablePlugins(JmhPlugin)
   .enablePlugins(NoPublish) // don't release benchs
   .disablePlugins(MimaPlugin)
-  .enablePlugins(NoScala3) // FIXME
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .settings(commonSettings)
@@ -412,7 +411,7 @@ lazy val httpScalafixTests =
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
-  .enablePlugins(NoScala3) // FIXME
+  //.enablePlugins(NoScala3) // FIXME
   .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-typed", "provided", AkkaDependency.docs)
@@ -430,11 +429,16 @@ lazy val docs = project("docs")
     scalacOptions ++= Seq(
       // Make sure we don't accidentally keep documenting deprecated calls
       "-Xfatal-warnings",
-      // In docs adding an unused variable can be helpful, for example
-      // to show its type
-      "-Xlint:-unused",
       // Does not appear to lead to problems
       "-Wconf:msg=The outer reference in this type test cannot be checked at run time:s",
+    ),
+    scalacOptions ++= (
+      if (scalaVersion.value.startsWith("3")) Seq.empty
+      else Seq(
+        // In docs adding an unused variable can be helpful, for example
+        // to show its type
+        "-Xlint:-unused"
+      )
     ),
     scalacOptions --= Seq(
       // Code after ??? can be considered 'dead',  but still useful for docs

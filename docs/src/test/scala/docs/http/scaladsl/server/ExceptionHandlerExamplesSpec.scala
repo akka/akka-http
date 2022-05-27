@@ -31,7 +31,7 @@ object MyExplicitExceptionHandler {
 
   object MyApp extends App {
 
-    implicit val system = ActorSystem()
+    implicit val system: ActorSystem = ActorSystem()
 
     val route: Route =
       handleExceptions(myExceptionHandler) {
@@ -66,7 +66,7 @@ object MyImplicitExceptionHandler {
 
   object MyApp extends App {
 
-    implicit val system = ActorSystem()
+    implicit val system: ActorSystem = ActorSystem()
 
     val route: Route =
     // ... some route structure
@@ -150,7 +150,7 @@ object RespondWithHeaderExceptionHandlerExample {
   }
 
   object MyApp extends App {
-    implicit val system = ActorSystem()
+    implicit val system: ActorSystem = ActorSystem()
 
     Http().newServerAt("localhost", 8080).bind(route)
   }
