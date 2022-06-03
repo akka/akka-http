@@ -10,3 +10,4 @@ target
 .*.swp
 *.vim
 .ensime*
+.bsp
