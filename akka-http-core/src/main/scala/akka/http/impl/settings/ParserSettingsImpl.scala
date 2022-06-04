@@ -51,7 +51,7 @@ private[akka] final case class ParserSettingsImpl(
   require(maxHeaderNameLength > 0, "max-header-name-length must be > 0")
   require(maxHeaderValueLength > 0, "max-header-value-length must be > 0")
   require(maxHeaderCount > 0, "max-header-count must be > 0")
-  require(maxContentLengthSetting.forall(_ > 0), "if set max-content-length must be > 0")
+  require(maxContentLengthSetting.forall(_ >= 0), "if set max-content-length must be >= 0")
   require(maxChunkExtLength > 0, "max-chunk-ext-length must be > 0")
   require(maxChunkSize > 0, "max-chunk-size must be > 0")
   require(maxCommentParsingDepth > 0, "max-comment-parsing-depth must be > 0")
