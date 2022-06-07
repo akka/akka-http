@@ -100,7 +100,7 @@ private[client] object NewHostConnectionPool {
             dispatchRequest(nextRequest)
             pullIfNeeded()
           } else // embargo might change state from unconnected -> embargoed losing an idle slot between the pull and the push here
-            retryBuffer.addLast(nextRequest)
+            retryBuffer.addFirst(nextRequest)
         }
         def onPull(): Unit =
           if (!slotsWaitingForDispatch.isEmpty)
