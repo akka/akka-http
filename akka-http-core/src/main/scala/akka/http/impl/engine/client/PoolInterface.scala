@@ -13,6 +13,7 @@ import akka.http.impl.engine.client.pool.NewHostConnectionPool
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
+import akka.macros.LogHelper
 import akka.stream.ActorMaterializer
 import akka.stream.Attributes
 import akka.stream.FlowShape
@@ -90,7 +91,7 @@ private[http] object PoolInterface {
 
   @InternalStableApi // name `Logic` and annotated methods
   private class Logic(poolId: PoolId, shape: FlowShape[ResponseContext, RequestContext], master: PoolMaster, requestOut: Outlet[RequestContext], responseIn: Inlet[ResponseContext], bufferSize: Int,
-                      log: LoggingAdapter)(implicit executionContext: ExecutionContext) extends TimerGraphStageLogic(shape) with PoolInterface with InHandler with OutHandler {
+                      val log: LoggingAdapter)(implicit executionContext: ExecutionContext) extends TimerGraphStageLogic(shape) with PoolInterface with InHandler with OutHandler with LogHelper {
     private[this] val PoolOverflowException = new BufferOverflowException( // stack trace cannot be prevented here because `BufferOverflowException` is final
       s"Exceeded configured max-open-requests value of [${poolId.hcps.setup.settings.maxOpenRequests}]. This means that the request queue of this pool (${poolId.hcps}) " +
         s"has completely filled up because the pool currently does not process requests fast enough to handle the incoming request load. " +
@@ -115,7 +116,7 @@ private[http] object PoolInterface {
     }
 
     override protected def onTimer(timerKey: Any): Unit = {
-      log.debug(s"Pool shutting down because akka.http.host-connection-pool.idle-timeout triggered after $idleTimeout.")
+      debug(s"Pool shutting down because akka.http.host-connection-pool.idle-timeout triggered after $idleTimeout.")
       requestShutdown(ShutdownReason.IdleTimeout)
     }
 
@@ -145,7 +146,7 @@ private[http] object PoolInterface {
     override def onPull(): Unit =
       if (!buffer.isEmpty) {
         val ctx = buffer.removeFirst()
-        log.debug(s"Dispatching request [${ctx.request.debugString}] from buffer to pool")
+        debug(s"Dispatching request [${ctx.request.debugString}] from buffer to pool. Remaining buffer: ${buffer.size()}/$bufferSize")
         push(requestOut, ctx)
       }
 
@@ -165,13 +166,13 @@ private[http] object PoolInterface {
         resetIdleTimer()
         val ctx = RequestContext(effectiveRequest, responsePromise, retries)
         if (isAvailable(requestOut)) {
-          log.debug(s"Dispatching request [${request.debugString}] to pool")
+          debug(s"Dispatching request [${request.debugString}] to pool")
           push(requestOut, ctx)
         } else if (buffer.size < bufferSize) {
-          log.debug(s"Buffering request [${request.debugString}] at position ${buffer.size}")
           buffer.addLast(ctx)
+          debug(s"Buffering request [${request.debugString}] at position ${buffer.size}/$bufferSize")
         } else {
-          log.debug(s"Could not dispatch request [${request.debugString}] because buffer is full")
+          debug(s"Could not dispatch request [${request.debugString}] because buffer is full")
           responsePromise.tryFailure(PoolOverflowException)
         }
     }
@@ -189,11 +190,11 @@ private[http] object PoolInterface {
     def shutdownIfRequestedAndPossible(): Unit =
       if (shuttingDown) {
         if (remainingRequested == 0) {
-          log.debug("Pool is now shutting down as requested.")
+          debug("Pool is now shutting down as requested.")
           shutdownPromise.trySuccess(shuttingDownReason.get)
           completeStage()
         } else
-          log.debug(s"Pool is shutting down after waiting for [$remainingRequested] outstanding requests.")
+          debug(s"Pool is shutting down after waiting for [$remainingRequested] outstanding requests.")
       }
 
     def resetIdleTimer(): Unit = {
@@ -210,7 +211,7 @@ private[http] object PoolInterface {
     // PoolInterface implementations
     override def request(request: HttpRequest, responsePromise: Promise[HttpResponse]): Unit =
       requestCallback.invokeWithFeedback((request, responsePromise)).failed.foreach { _ =>
-        log.debug("Request was sent to pool which was already closed, retrying through the master to create new pool instance")
+        debug("Request was sent to pool which was already closed, retrying through the master to create new pool instance")
         responsePromise.tryCompleteWith(master.dispatchRequest(poolId, request)(materializer))
       }
     override def shutdown()(implicit ec: ExecutionContext): Future[ShutdownReason] = {
