@@ -197,6 +197,21 @@ class BasicDirectivesSpec extends RoutingSpec {
       }
     }
 
+    "return 400 Bad request on EntityStreamException" in {
+      val errorMessage = "An EntityStreamException error"
+      val failingEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, Source.failed(EntityStreamException(errorMessage)))
+      val timeout = 10.milliseconds
+
+      Post("/abc", failingEntity) ~> {
+        extractStrictEntity(timeout) { _ =>
+          complete("content")
+        }
+      } ~> check {
+        entityAs[String] shouldEqual errorMessage
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
     "return 500 InternalServerError status if response generation timed out" in {
       Get("/abc") ~> {
         extractStrictEntity(1.second) { _ =>
