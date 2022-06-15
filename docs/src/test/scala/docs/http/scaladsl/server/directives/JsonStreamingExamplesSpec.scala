@@ -228,7 +228,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     Post("/metrics", entity = data) ~> route ~> check {
       status should ===(StatusCodes.OK)
-      responseAs[String] should ===("""{"msg":"Total metrics received: 2"}""")
+      responseAs[String] should ===("Total metrics received: 2")
     }
 
     // the FramingWithContentType will reject any content type that it does not understand:

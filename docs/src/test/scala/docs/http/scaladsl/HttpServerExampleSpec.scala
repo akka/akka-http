@@ -7,8 +7,11 @@ package docs.http.scaladsl
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{ Directive, Route }
+import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldSpec
+import akka.http.scaladsl.server.util.ConstructFromTuple
 import akka.testkit.TestActors
+
 import scala.annotation.nowarn
 import docs.CompileOnlySpec
 
@@ -262,8 +265,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
         pathEnd {
           concat(
             put {
-              // form extraction from multipart or www-url-encoded forms
-              formFields("email", "total".as[Money]).as(Order) { (order: Order) =>
+              formFields("email", "total".as[Money]).as(Order.apply _) { (order: Order) =>
                 complete {
                   // complete with serialized Future result
                   (myDbActor ? Update(order)).mapTo[TransactionResult]
@@ -285,7 +287,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
           get {
             // parameters to case class extraction
             parameters("size".as[Int], "color".optional, "dangerous".withDefault("no"))
-              .as(OrderItem) { (orderItem: OrderItem) =>
+              .as(OrderItem.apply _) { (orderItem: OrderItem) =>
                 // ... route using case class instance created from
                 // required and optional query parameters
                 complete("") // #hide

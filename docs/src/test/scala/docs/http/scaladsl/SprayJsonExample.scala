@@ -44,10 +44,7 @@ object SprayJsonExample {
     orders.find(o => o.id == itemId)
   }
   def saveOrder(order: Order): Future[Done] = {
-    orders = order match {
-      case Order(items) => items ::: orders
-      case _            => orders
-    }
+    orders = order.items ::: orders
     Future { Done }
   }
 
