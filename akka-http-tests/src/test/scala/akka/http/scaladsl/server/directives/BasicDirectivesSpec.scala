@@ -197,6 +197,20 @@ class BasicDirectivesSpec extends RoutingSpec {
       }
     }
 
+    "return 400 Bad Request if max size is exceeded" in {
+      val request = HttpEntity(ContentTypes.`text/plain(UTF-8)`, Source.single(ByteString("abcd")))
+      val timeout = 10.milliseconds
+
+      Post("/abc", request) ~> {
+        extractStrictEntity(timeout, 2) { _ =>
+          complete("content")
+        }
+      } ~> check {
+        entityAs[String] shouldEqual s"Request too large"
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
     "return 400 Bad request on EntityStreamException" in {
       val errorMessage = "An EntityStreamException error"
       val failingEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, Source.failed(EntityStreamException(errorMessage)))
