@@ -292,7 +292,7 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .settings(commonSettings)
-  .enablePlugins(NoPublish, NoScala3 /*FIXME */ /*, AggregatePRValidation*/)
+  .enablePlugins(NoPublish /*, AggregatePRValidation*/)
   .disablePlugins(MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
@@ -310,7 +310,7 @@ lazy val httpSprayJson =
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .settings(commonSettings)
-  .enablePlugins(NoPublish, NoScala3 /*FIXME */ /*, AggregatePRValidation*/)
+  .enablePlugins(NoPublish /*, AggregatePRValidation*/)
   .disablePlugins(MimaPlugin)
   .aggregate(httpJackson)
 
@@ -411,7 +411,6 @@ lazy val httpScalafixTests =
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
-  //.enablePlugins(NoScala3) // FIXME
   .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-typed", "provided", AkkaDependency.docs)
@@ -505,7 +504,7 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
   )
 
 lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-materials"))
-  .enablePlugins(BillOfMaterialsPlugin, NoScala3 /* FIXME */)
+  .enablePlugins(BillOfMaterialsPlugin)
   .disablePlugins(MimaPlugin)
   .settings(
     name := "akka-http-bom",
