@@ -32,7 +32,9 @@ sealed abstract class ByteRange extends jm.headers.ByteRange with ValueRenderabl
 object ByteRange {
   def apply(first: Long, last: Long) = Slice(first, last)
   def fromOffset(offset: Long) = FromOffset(offset)
-  def suffix(length: Long) = Suffix(length)
+
+  /** Constructs a range that spans the last `length` bytes of an entity. */
+  def suffix(length: Long): Suffix = Suffix(length)
 
   final case class Slice(first: Long, last: Long) extends ByteRange {
     require(0 <= first && first <= last, "first must be >= 0 and <= last")
@@ -56,6 +58,10 @@ object ByteRange {
     override def getOffset: OptionalLong = OptionalLong.of(offset)
   }
 
+  /**
+   * Used to specify the last `length` bytes of an entity. If the entity is shorter than the given `length`, then the
+   * range spans the entire entity.
+   */
   final case class Suffix(length: Long) extends ByteRange {
     require(0 <= length, "length must be >= 0")
     def render[R <: Rendering](r: R): r.type = r ~~ '-' ~~ length
