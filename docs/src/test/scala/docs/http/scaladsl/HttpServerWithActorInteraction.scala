@@ -70,7 +70,7 @@ object HttpServerWithActorInteraction {
             implicit val timeout: Timeout = 5.seconds
 
             // query the actor for the current auction state
-            val bids: Future[Bids] = (auction ? (replyTo => GetBids(replyTo))).mapTo[Bids]
+            val bids: Future[Bids] = auction.ask(GetBids(_))
             complete(bids)
           }
         )
