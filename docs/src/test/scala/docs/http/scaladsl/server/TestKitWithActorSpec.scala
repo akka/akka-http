@@ -8,8 +8,9 @@ package docs.http.scaladsl.server
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
+import akka.{ actor => untyped }
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.{ ActorRef, Scheduler }
+import akka.actor.typed.{ ActorRef, ActorSystem, Scheduler }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -24,7 +25,7 @@ object RouteUnderTest {
   // Your route under test, scheduler is only needed as ask is used
   def route(someActor: ActorRef[Ping])(implicit scheduler: Scheduler, timeout: Timeout) = get {
     path("ping") {
-      complete(someActor ? Ping)
+      complete(someActor ? Ping.apply)
     }
   }
 }
@@ -35,9 +36,9 @@ class TestKitWithActorSpec extends AnyWordSpec with Matchers with ScalatestRoute
   // This test does not use the classic APIs,
   // so it needs to adapt the system:
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem = system.toTyped
-  implicit val timeout = Timeout(500.milliseconds)
-  implicit val scheduler = system.scheduler
+  implicit val typedSystem: ActorSystem[_] = system.toTyped
+  implicit val timeout: Timeout = Timeout(500.milliseconds)
+  implicit val scheduler: untyped.Scheduler = system.scheduler
 
   "The service" should {
     "return a 'PONG!' response for GET requests to /ping" in {

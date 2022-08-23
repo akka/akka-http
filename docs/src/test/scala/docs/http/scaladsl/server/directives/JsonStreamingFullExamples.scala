@@ -22,6 +22,7 @@ class JsonStreamingFullExamples extends AnyWordSpec {
   import akka.stream.scaladsl.Source
   import spray.json.DefaultJsonProtocol
 
+  import scala.concurrent.ExecutionContext
   import scala.io.StdIn
   import scala.util.Random
 
@@ -31,21 +32,21 @@ class JsonStreamingFullExamples extends AnyWordSpec {
 
     import spray.json._
 
-    implicit val userFormat = jsonFormat2(User)
+    implicit val userFormat: JsonFormat[User] = jsonFormat2(User.apply)
 
     val `vnd.example.api.v1+json` =
       MediaType.applicationWithFixedCharset("vnd.example.api.v1+json", HttpCharsets.`UTF-8`)
     val ct = ContentType.apply(`vnd.example.api.v1+json`)
 
     implicit def userMarshaller: ToEntityMarshaller[User] = Marshaller.oneOf(
-      Marshaller.withFixedContentType(`vnd.example.api.v1+json`) { organisation =>
-        HttpEntity(`vnd.example.api.v1+json`, organisation.toJson.compactPrint)
+      Marshaller.withFixedContentType(`vnd.example.api.v1+json`) { (user: User) =>
+        HttpEntity(`vnd.example.api.v1+json`, user.toJson.compactPrint)
       })
   }
 
   object ApiServer extends App with UserProtocol {
-    implicit val system = ActorSystem("api")
-    implicit val executionContext = system.dispatcher
+    implicit val system: ActorSystem = ActorSystem("api")
+    implicit val executionContext: ExecutionContext = system.dispatcher
 
     implicit val jsonStreamingSupport: JsonEntityStreamingSupport = EntityStreamingSupport.json()
       .withContentType(ct)

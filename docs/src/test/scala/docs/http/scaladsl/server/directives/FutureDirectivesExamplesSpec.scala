@@ -20,12 +20,12 @@ import docs.CompileOnlySpec
 class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   object TestException extends Throwable
 
-  implicit val myExceptionHandler =
+  implicit val myExceptionHandler: ExceptionHandler =
     ExceptionHandler {
       case TestException => complete(InternalServerError -> "Unsuccessful future!")
     }
 
-  implicit val responseTimeout = Timeout(2, TimeUnit.SECONDS)
+  implicit val responseTimeout: Timeout = Timeout(2, TimeUnit.SECONDS)
 
   "onComplete" in {
     //#onComplete

@@ -15,17 +15,19 @@ import akka.http.scaladsl.model.StatusCodes
 // "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.7"
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
+import spray.json.RootJsonFormat
 
 import scala.io.StdIn
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 object SprayJsonExample {
 
   // needed to run the route
-  implicit val system = ActorSystem(Behaviors.empty, "SprayExample")
+  implicit val system: ActorSystem[_] = ActorSystem(Behaviors.empty, "SprayExample")
   // needed for the future map/flatmap in the end and future in fetchItem and saveOrder
-  implicit val executionContext = system.executionContext
+  implicit val executionContext: ExecutionContext = system.executionContext
 
   var orders: List[Item] = Nil
 
@@ -34,18 +36,15 @@ object SprayJsonExample {
   final case class Order(items: List[Item])
 
   // formats for unmarshalling and marshalling
-  implicit val itemFormat = jsonFormat2(Item)
-  implicit val orderFormat = jsonFormat1(Order)
+  implicit val itemFormat: RootJsonFormat[Item] = jsonFormat2(Item.apply)
+  implicit val orderFormat: RootJsonFormat[Order] = jsonFormat1(Order.apply)
 
   // (fake) async database query api
   def fetchItem(itemId: Long): Future[Option[Item]] = Future {
     orders.find(o => o.id == itemId)
   }
   def saveOrder(order: Order): Future[Done] = {
-    orders = order match {
-      case Order(items) => items ::: orders
-      case _            => orders
-    }
+    orders = order.items ::: orders
     Future { Done }
   }
 

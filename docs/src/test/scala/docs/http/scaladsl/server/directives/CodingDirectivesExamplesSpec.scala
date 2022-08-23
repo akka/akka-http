@@ -79,7 +79,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#decodeRequest
     val route =
       decodeRequest {
-        entity(as[String]) { content: String =>
+        entity(as[String]) { (content: String) =>
           complete(s"Request content: '$content'")
         }
       }
@@ -100,7 +100,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#decodeRequestWith
     val route =
       decodeRequestWith(Coders.Gzip) {
-        entity(as[String]) { content: String =>
+        entity(as[String]) { (content: String) =>
           complete(s"Request content: '$content'")
         }
       }
@@ -121,7 +121,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#decodeRequestWith
     val route =
       decodeRequestWith(Coders.Gzip, Coders.NoCoding) {
-        entity(as[String]) { content: String =>
+        entity(as[String]) { (content: String) =>
           complete(s"Request content: '$content'")
         }
       }

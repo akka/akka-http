@@ -16,19 +16,15 @@ object Common extends AutoPlugin {
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding", "UTF-8", // yes, this is 2 args
-      "-target:jvm-1.8",
+      "-release", "8",
       "-unchecked",
-      "-Xlint",
       "-Ywarn-dead-code",
       // Silence deprecation notices for changes introduced in Scala 2.12
       // Can be removed when we drop support for Scala 2.12:
       "-Wconf:msg=object JavaConverters in package collection is deprecated:s",
       "-Wconf:msg=is deprecated \\(since 2\\.13\\.:s",
     ),
-    // '-release' parameter is restricted to 'Compile, compile' scope because
-    // otherwise `sbt akka-http-xml/compile:doc` fails with it on Scala 2.12.9
-    Compile / compile / scalacOptions ++=
-      onlyAfterScala212(onlyAfterJdk8("-release", "8")).value,
+    scalacOptions ++= onlyOnScala2(Seq("-Xlint")).value,
     javacOptions ++=
       Seq("-encoding", "UTF-8") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
     // restrict to 'compile' scope because otherwise it is also passed to
@@ -53,6 +49,9 @@ object Common extends AutoPlugin {
   def onlyAfterJdk8[T](values: T*): Seq[T] = if (isJdk8) Seq.empty[T] else values
   def onlyAfterScala212[T](values: Seq[T]): Def.Initialize[Seq[T]] = Def.setting {
     if (scalaMinorVersion.value >= 12) values else Seq.empty[T]
+  }
+  def onlyOnScala2[T](values: Seq[T]): Def.Initialize[Seq[T]] = Def.setting {
+    if (scalaVersion.value.startsWith("3")) Seq.empty[T] else values
   }
 
   def scalaMinorVersion: Def.Initialize[Long] = Def.setting { CrossVersion.partialVersion(scalaVersion.value).get._2 }
