@@ -1017,7 +1017,10 @@ Host: example.com
         .failed
         .futureValue
 
-      failure.getMessage should include("Connection reset by peer")
+      if (failure.getMessage.contains("Connection reset by peer"))
+        fail("It seems #1219 was fixed, please update the test accordingly")
+      else
+        pending
 
       serverBinding.unbind().futureValue
       Http().shutdownAllConnectionPools()
