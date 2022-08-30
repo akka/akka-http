@@ -311,7 +311,7 @@ object Credentials {
 
     /**
      * Compares with custom 'verifier' and the passed secret with the received secret part of the Credentials.
-     * Use of this method only if custom String equality testing is required not recommended.
+     * Use of this method only if custom String equality testing is required, not recommended.
      */
     def provideVerify(secret: String, verifier: (String, String) => Boolean): Boolean = provideVerify(verifier.curried(secret))
   }
