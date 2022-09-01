@@ -17,7 +17,7 @@ import scala.concurrent.{ Await, Future }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ExpiringRefreshingCacheSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class ExpiringLoadingCacheSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
 
@@ -90,8 +90,8 @@ class ExpiringRefreshingCacheSpec extends AnyWordSpec with Matchers with BeforeA
     maxCapacity:       Int                      = 500,
     refreshAfterWrite: Duration                 = 1.second,
     expireAfterWrite:  Duration                 = Duration.Inf,
-    cacheLoader:       AsyncCacheLoader[Int, T] = dummyLoader[Int, T]): RefreshingCache[Int, T] = {
-    RefreshingCache[Int, T]({
+    cacheLoader:       AsyncCacheLoader[Int, T] = dummyLoader[Int, T]): LoadingCache[Int, T] = {
+    LoadingCache[Int, T]({
       val settings = CachingSettings(system)
       settings.withRefreshingCacheSettings(
         settings.refreshingCacheSettings

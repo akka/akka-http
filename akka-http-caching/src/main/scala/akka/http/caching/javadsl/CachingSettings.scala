@@ -16,7 +16,7 @@ import com.typesafe.config.Config
 @DoNotInherit
 abstract class CachingSettings private[http] () { self: CachingSettingsImpl =>
   def lfuCacheSettings: LfuCacheSettings
-  def refreshingCacheSettings: RefreshingCacheSettings
+  def refreshingCacheSettings: LoadingCacheSettings
 
   // overloads for idiomatic Scala use
   def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings = {
@@ -27,7 +27,7 @@ abstract class CachingSettings private[http] () { self: CachingSettingsImpl =>
   }
 
   // overloads for idiomatic Scala use
-  def withRefreshingCacheSettings(newSettings: RefreshingCacheSettings): CachingSettings = {
+  def withRefreshingCacheSettings(newSettings: LoadingCacheSettings): CachingSettings = {
     import akka.http.impl.util.JavaMapping.Implicits._
     import akka.http.caching.CacheJavaMapping.Implicits._
 

@@ -5,7 +5,7 @@
 package akka.http.caching.impl
 
 import akka.annotation.InternalApi
-import akka.http.caching.RefreshingCache.toJavaMappingFunction
+import akka.http.caching.LoadingCache.toJavaMappingFunction
 import akka.http.caching.scaladsl.LoadingCache
 import akka.http.impl.util.JavaMapping.Implicits.convertToScala
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache

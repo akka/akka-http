@@ -21,16 +21,16 @@ import scala.compat.java8.FutureConverters._
 import scala.compat.java8.FunctionConverters._
 
 @ApiMayChange
-object RefreshingCache {
+object LoadingCache {
 
-  def apply[K, V](implicit system: ActorSystem, cacheLoader: AsyncCacheLoader[K, V]): RefreshingCache[K, V] =
+  def apply[K, V](implicit system: ActorSystem, cacheLoader: AsyncCacheLoader[K, V]): LoadingCache[K, V] =
     apply(scaladsl.CachingSettings(system), cacheLoader)
 
   /**
-   * Creates a new [[akka.http.caching.RefreshingCache]], with an asychronous refresh interval
+   * Creates a new [[akka.http.caching.LoadingCache]], with an asychronous refresh interval
    * and an optional expiration on unused entries
    */
-  def apply[K, V](cachingSettings: scaladsl.CachingSettings, cacheLoader: AsyncCacheLoader[K, V]): RefreshingCache[K, V] = {
+  def apply[K, V](cachingSettings: scaladsl.CachingSettings, cacheLoader: AsyncCacheLoader[K, V]): LoadingCache[K, V] = {
     val settings = cachingSettings.refreshingCacheSettings
 
     require(settings.maxCapacity >= 0, "maxCapacity must not be negative")
@@ -42,29 +42,29 @@ object RefreshingCache {
 
   /**
    * Java API
-   * Creates a new [[akka.http.caching.RefreshingCache]] using configuration of the system,
+   * Creates a new [[akka.http.caching.LoadingCache]] using configuration of the system,
    * with an asychronous refresh interval and an optional expiration on unused entries
    */
-  def create[K, V](system: ActorSystem, cacheLoader: AsyncCacheLoader[K, V]): RefreshingCache[K, V] =
+  def create[K, V](system: ActorSystem, cacheLoader: AsyncCacheLoader[K, V]): LoadingCache[K, V] =
     apply(system, cacheLoader)
 
   /**
    * Java API
-   * Creates a new [[akka.http.caching.RefreshingCache]], with an asychronous refresh interval
+   * Creates a new [[akka.http.caching.LoadingCache]], with an asychronous refresh interval
    * and an optional expiration on unused entries
    */
-  def create[K, V](settings: javadsl.CachingSettings, cacheLoader: AsyncCacheLoader[K, V]): RefreshingCache[K, V] =
+  def create[K, V](settings: javadsl.CachingSettings, cacheLoader: AsyncCacheLoader[K, V]): LoadingCache[K, V] =
     apply(settings.asScala, cacheLoader)
 
-  private def simpleRefreshingCache[K, V](cacheLoader: AsyncCacheLoader[K, V], maxCapacity: Int, refreshAfterWrite: Duration): RefreshingCache[K, V] = {
+  private def simpleRefreshingCache[K, V](cacheLoader: AsyncCacheLoader[K, V], maxCapacity: Int, refreshAfterWrite: Duration): LoadingCache[K, V] = {
     val store = Caffeine.newBuilder().asInstanceOf[Caffeine[K, V]]
       .maximumSize(maxCapacity)
       .refreshAfterWrite(refreshAfterWrite.asJava)
       .buildAsync[K, V](cacheLoader)
-    new RefreshingCache[K, V](store)
+    new LoadingCache[K, V](store)
   }
 
-  private def expiringRefreshingCache[K, V](cacheLoader: AsyncCacheLoader[K, V], maxCapacity: Long, refreshAfterWrite: Duration, expireAfterWrite: Duration): RefreshingCache[K, V] = {
+  private def expiringRefreshingCache[K, V](cacheLoader: AsyncCacheLoader[K, V], maxCapacity: Long, refreshAfterWrite: Duration, expireAfterWrite: Duration): LoadingCache[K, V] = {
 
     def expire: Caffeine[K, V] => Caffeine[K, V] = { builder =>
       if (expireAfterWrite.isFinite) builder.expireAfterWrite(expireAfterWrite.toMillis, TimeUnit.MILLISECONDS)
@@ -80,7 +80,7 @@ object RefreshingCache {
       .maximumSize(maxCapacity)
 
     val store: AsyncLoadingCache[K, V] = (refresh andThen expire)(builder).buildAsync[K, V](cacheLoader)
-    new RefreshingCache[K, V](store)
+    new LoadingCache[K, V](store)
   }
 
   def toJavaMappingFunction[K, V](genValue: () => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
@@ -92,4 +92,4 @@ object RefreshingCache {
 
 /** INTERNAL API */
 @InternalApi
-private[caching] class RefreshingCache[K, V](store: AsyncLoadingCache[K, V]) extends LoadingCacheImpl[K, V](store)
+private[caching] class LoadingCache[K, V](store: AsyncLoadingCache[K, V]) extends LoadingCacheImpl[K, V](store)
