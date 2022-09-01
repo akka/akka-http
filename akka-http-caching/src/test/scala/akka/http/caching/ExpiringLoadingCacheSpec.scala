@@ -23,7 +23,7 @@ class ExpiringLoadingCacheSpec extends AnyWordSpec with Matchers with BeforeAndA
 
   "A RefreshingCache" should {
     "refresh values after the refresh-after-write" in {
-      val wait = 1.second
+      val wait = 50.millis
 
       def loader: AsyncCacheLoader[Int, String] = (_: Int, _: Executor) => toJavaFuture(Future.successful("B")).toCompletableFuture
 
