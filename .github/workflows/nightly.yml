@@ -42,10 +42,10 @@ jobs:
           key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
 
       - name: Compile everything
-        run: sbt -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} "+~ ${{ matrix.SCALA_VERSION }} Test/compile"
+        run: sbt -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} Test/compile
 
       - name: Run all tests JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}, Akka ${{ matrix.AKKA_VERSION }}
-        run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} "+~ ${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues test"
+        run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues test
 
       - name: Upload test results
         uses: actions/upload-artifact@v2  # upload test results
