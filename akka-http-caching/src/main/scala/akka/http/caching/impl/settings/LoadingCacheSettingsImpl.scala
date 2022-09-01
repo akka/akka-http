@@ -19,12 +19,12 @@ private[http] final case class LoadingCacheSettingsImpl(
   expireAfterWrite:  Duration
 )
   extends LoadingCacheSettings {
-  override def productPrefix = "RefreshingCacheSettings"
+  override def productPrefix = "LoadingCacheSettings"
 }
 
 /** INTERNAL API */
 @InternalApi
-private[http] object LoadingCacheSettingsImpl extends SettingsCompanionImpl[LoadingCacheSettingsImpl]("akka.http.caching.refreshing-cache") {
+private[http] object LoadingCacheSettingsImpl extends SettingsCompanionImpl[LoadingCacheSettingsImpl]("akka.http.caching.loading-cache") {
   def fromSubConfig(root: Config, inner: Config): LoadingCacheSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
     new LoadingCacheSettingsImpl(

@@ -36,7 +36,7 @@ class ExpiringLoadingCacheSpec extends AnyWordSpec with Matchers with BeforeAndA
     }
 
     "evicts entries values after expire-after-write" in {
-      val wait = 1.second
+      val wait = 50.millis
 
       def loader: AsyncCacheLoader[Int, String] = (_: Int, _: Executor) =>
         toJavaFuture[String](Future.failed(new NoSuchElementException("404: ¯\\_(ツ)_/¯"))).toCompletableFuture
@@ -52,7 +52,7 @@ class ExpiringLoadingCacheSpec extends AnyWordSpec with Matchers with BeforeAndA
     }
 
     "loads multiple values" in {
-      val wait = 1.second
+      val wait = 50.millis
 
       def loader: AsyncCacheLoader[Int, String] = (t: Int, _: Executor) =>
         toJavaFuture(Future.successful(t.toString)).toCompletableFuture
@@ -67,7 +67,7 @@ class ExpiringLoadingCacheSpec extends AnyWordSpec with Matchers with BeforeAndA
     }
 
     "fail when loader fails" in {
-      val wait = 1.second
+      val wait = 50.millis
 
       def loader: AsyncCacheLoader[Int, String] = (_: Int, _: Executor) =>
         toJavaFuture[String](Future.failed(new NoSuchElementException("404: ¯\\_(ツ)_/¯"))).toCompletableFuture
@@ -93,8 +93,8 @@ class ExpiringLoadingCacheSpec extends AnyWordSpec with Matchers with BeforeAndA
     cacheLoader:       AsyncCacheLoader[Int, T] = dummyLoader[Int, T]): LoadingCache[Int, T] = {
     LoadingCache[Int, T]({
       val settings = CachingSettings(system)
-      settings.withRefreshingCacheSettings(
-        settings.refreshingCacheSettings
+      settings.withLoadingCacheSettings(
+        settings.loadingCache
           .withMaxCapacity(maxCapacity)
           .withRefreshAfterWrite(refreshAfterWrite)
           .withExpireAfterWrite(expireAfterWrite)

@@ -17,15 +17,15 @@ import com.typesafe.config.Config
 abstract class CachingSettings private[http] () extends javadsl.CachingSettings { self: CachingSettingsImpl =>
   def lfuCacheSettings: LfuCacheSettings
 
-  def refreshingCacheSettings: LoadingCacheSettings
+  def loadingCache: LoadingCacheSettings
 
   // overloads for idiomatic Scala use
   def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings =
     self.copy(lfuCacheSettings = newSettings)
 
   // overloads for idiomatic Scala use
-  def withRefreshingCacheSettings(newSettings: LoadingCacheSettings): CachingSettings =
-    self.copy(refreshingCacheSettings = newSettings)
+  def withLoadingCacheSettings(newSettings: LoadingCacheSettings): CachingSettings =
+    self.copy(loadingCache = newSettings)
 }
 
 object CachingSettings extends SettingsCompanion[CachingSettings] {

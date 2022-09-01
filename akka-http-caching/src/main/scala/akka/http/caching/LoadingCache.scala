@@ -27,36 +27,36 @@ object LoadingCache {
     apply(scaladsl.CachingSettings(system), cacheLoader)
 
   /**
-   * Creates a new [[akka.http.caching.LoadingCache]], with an asychronous refresh interval
+   * Creates a new [[akka.http.caching.LoadingCache]], with an asynchronous refresh interval
    * and an optional expiration on unused entries
    */
   def apply[K, V](cachingSettings: scaladsl.CachingSettings, cacheLoader: AsyncCacheLoader[K, V]): LoadingCache[K, V] = {
-    val settings = cachingSettings.refreshingCacheSettings
+    val settings = cachingSettings.loadingCache
 
     require(settings.maxCapacity >= 0, "maxCapacity must not be negative")
     require(settings.refreshAfterWrite.isFinite, "refreshAfterWrite must be finite")
 
-    if (settings.expireAfterWrite.isFinite) expiringRefreshingCache(cacheLoader, settings.maxCapacity, settings.refreshAfterWrite, settings.expireAfterWrite)
-    else simpleRefreshingCache(cacheLoader, settings.maxCapacity, settings.refreshAfterWrite)
+    if (settings.expireAfterWrite.isFinite) expiringLoadingCache(cacheLoader, settings.maxCapacity, settings.refreshAfterWrite, settings.expireAfterWrite)
+    else simpleLoadingCache(cacheLoader, settings.maxCapacity, settings.refreshAfterWrite)
   }
 
   /**
    * Java API
    * Creates a new [[akka.http.caching.LoadingCache]] using configuration of the system,
-   * with an asychronous refresh interval and an optional expiration on unused entries
+   * with an asynchronous refresh interval and an optional expiration on unused entries
    */
   def create[K, V](system: ActorSystem, cacheLoader: AsyncCacheLoader[K, V]): LoadingCache[K, V] =
     apply(system, cacheLoader)
 
   /**
    * Java API
-   * Creates a new [[akka.http.caching.LoadingCache]], with an asychronous refresh interval
+   * Creates a new [[akka.http.caching.LoadingCache]], with an asynchronous refresh interval
    * and an optional expiration on unused entries
    */
   def create[K, V](settings: javadsl.CachingSettings, cacheLoader: AsyncCacheLoader[K, V]): LoadingCache[K, V] =
     apply(settings.asScala, cacheLoader)
 
-  private def simpleRefreshingCache[K, V](cacheLoader: AsyncCacheLoader[K, V], maxCapacity: Int, refreshAfterWrite: Duration): LoadingCache[K, V] = {
+  private def simpleLoadingCache[K, V](cacheLoader: AsyncCacheLoader[K, V], maxCapacity: Int, refreshAfterWrite: Duration): LoadingCache[K, V] = {
     val store = Caffeine.newBuilder().asInstanceOf[Caffeine[K, V]]
       .maximumSize(maxCapacity)
       .refreshAfterWrite(refreshAfterWrite.asJava)
@@ -64,7 +64,7 @@ object LoadingCache {
     new LoadingCache[K, V](store)
   }
 
-  private def expiringRefreshingCache[K, V](cacheLoader: AsyncCacheLoader[K, V], maxCapacity: Long, refreshAfterWrite: Duration, expireAfterWrite: Duration): LoadingCache[K, V] = {
+  private def expiringLoadingCache[K, V](cacheLoader: AsyncCacheLoader[K, V], maxCapacity: Long, refreshAfterWrite: Duration, expireAfterWrite: Duration): LoadingCache[K, V] = {
 
     def expire: Caffeine[K, V] => Caffeine[K, V] = { builder =>
       if (expireAfterWrite.isFinite) builder.expireAfterWrite(expireAfterWrite.toMillis, TimeUnit.MILLISECONDS)
