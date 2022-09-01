@@ -29,7 +29,7 @@ class LoadingCacheImpl[K, V](override val store: AsyncLoadingCache[K, V]) extend
     futureToScala(
       store
         .getAll(keys.asJava)
-        .thenApply(asJavaFunction { map: util.Map[K, V] => map.asScala.toMap })
+        .thenApply(asJavaFunction((map: util.Map[K, V]) => map.asScala.toMap))
     )
 
 }
