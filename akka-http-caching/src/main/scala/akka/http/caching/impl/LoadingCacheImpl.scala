@@ -25,13 +25,11 @@ import scala.compat.java8.FutureConverters.{ toScala => futureToScala }
 class LoadingCacheImpl[K, V](override val store: AsyncLoadingCache[K, V]) extends CacheImpl(store) with LoadingCache[K, V] {
   override def load(key: K): Future[V] = futureToScala(store.get(key))
 
-  override def loadAll(keys: Set[K]): Future[Map[K, V]] = {
+  override def loadAll(keys: Set[K]): Future[Map[K, V]] =
+    futureToScala(
+      store
+        .getAll(keys.asJava)
+        .thenApply(asJavaFunction { map: util.Map[K, V] => map.asScala.toMap })
+    )
 
-    val f: CompletableFuture[util.Map[K, V]] = store.getAll(keys.asJava)
-
-    val convert: util.Map[K, V] => Map[K, V] = _.asScala.toMap
-
-    val g: CompletableFuture[Map[K, V]] = f.thenApply(asJavaFunction(convert))
-    futureToScala(g)
-  }
 }
