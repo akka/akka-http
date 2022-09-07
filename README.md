@@ -84,4 +84,4 @@ Joining the extended team in such form gives you, in addition to street-cred, of
 License
 -------
 
-Akka HTTP is Open Source and available under the Apache 2 License.
+Akka HTTP is licensed under the Business Source License 1.1, see LICENSE.txt.
