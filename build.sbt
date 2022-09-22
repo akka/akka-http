@@ -10,6 +10,8 @@ import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
 import com.lightbend.paradox.apidoc.ApidocPlugin.autoImport.apidocRootPackage
+import sbt.librarymanagement.SemanticSelector
+import sbt.librarymanagement.VersionNumber
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -465,7 +467,7 @@ lazy val docs = project("docs")
     ),
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
-    ValidatePR / additionalTasks += Compile / paradox,
+    ValidatePR / additionalTasks ++= (if (isJdk11orHigher) Seq(Compile / paradox) else Nil),
     ThisBuild / publishRsyncHost := "akkarepo@gustav.akka.io",
     publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("docs").value),
   )
@@ -496,3 +498,6 @@ lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-
   )
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
+
+lazy val isJdk11orHigher: Boolean =
+  VersionNumber(sys.props("java.specification.version")).matchesSemVer(SemanticSelector(">=11"))
