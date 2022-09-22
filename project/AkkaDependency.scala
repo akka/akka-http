@@ -30,11 +30,11 @@ object AkkaDependency {
         Sources(akkaSources)
       case None =>
         Option(System.getProperty("akka.http.build.akka.version")) match {
-          case Some("master") => masterSnapshot
-          case Some("release-2.5") =>
+          case Some("main") | Some("master") => mainSnapshot
+          case Some("release-2.6") =>
             // Don't 'downgrade' building even if akka.sources asks for it
             // (typically for the docs that require 2.6)
-            if (defaultVersion.startsWith("2.5")) Artifact(determineLatestSnapshot("2.5"), true)
+            if (defaultVersion.startsWith("2.6")) Artifact(determineLatestSnapshot("2.6"), true)
             else Artifact(defaultVersion)
           case Some("default") => Artifact(defaultVersion)
           case Some(other) => Artifact(other, true)
@@ -44,12 +44,11 @@ object AkkaDependency {
   }
 
   // Default version updated only when needed, https://doc.akka.io//docs/akka/current/project/downstream-upgrade-strategy.html
-  val minimumExpectedAkkaVersion = "2.5.32"
+  val minimumExpectedAkkaVersion = "2.7.0-M1"
   val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
-  val minimumExpectedAkka26Version = "2.6.8"
-  val docs = akkaDependency(defaultVersion = minimumExpectedAkka26Version)
+  val docs = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
 
-  lazy val masterSnapshot = Artifact(determineLatestSnapshot(), true)
+  lazy val mainSnapshot = Artifact(determineLatestSnapshot(), true)
 
   val akkaVersion: String = default match {
     case Artifact(version, _) => version

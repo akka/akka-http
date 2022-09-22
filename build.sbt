@@ -156,7 +156,7 @@ lazy val httpCore = project("akka-http-core")
     "akka-stream-testkit",
     "test",
     akka =
-      if (System.getProperty("akka.http.test-against-akka-main", "false") == "true") AkkaDependency.masterSnapshot
+      if (System.getProperty("akka.http.test-against-akka-main", "false") == "true") AkkaDependency.mainSnapshot
       else AkkaDependency.default
   )
   .settings(Dependencies.httpCore)
@@ -443,8 +443,7 @@ lazy val docs = project("docs")
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
       "akka.version" -> AkkaDependency.docs.version,
-      "akka.minimum.version25" -> AkkaDependency.minimumExpectedAkkaVersion,
-      "akka.minimum.version26" -> AkkaDependency.minimumExpectedAkka26Version,
+      "akka.minimum.version" -> AkkaDependency.minimumExpectedAkkaVersion,
       "jackson.xml.version" -> Dependencies.jacksonXmlVersion,
       "scalafix.version" -> _root_.scalafix.sbt.BuildInfo.scalafixVersion, // grab from scalafix plugin directly
       "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.docs.link}/%s",

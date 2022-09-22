@@ -131,7 +131,7 @@ of your libraries: `Detected java.lang.NoSuchMethodError error, which MAY be cau
 
 ### Compatibility with Akka
 
-Akka HTTP 10.2.x is (binary) compatible with Akka >= $akka.minimum.version25$ and Akka >= $akka.minimum.version26$ and future Akka 2.x versions that are released during the lifetime of Akka HTTP 10.2.x.
+Akka HTTP 10.4.x is (binary) compatible with Akka >= $akka.minimum.version$ and future Akka 2.x versions that are released during the lifetime of Akka HTTP 10.4.x.
 To facilitate supporting multiple minor versions of Akka we do not depend on `akka-stream`
 explicitly but mark it as a `provided` dependency in our build. That means that you will *always* have to add
 a manual dependency to `akka-stream`.
