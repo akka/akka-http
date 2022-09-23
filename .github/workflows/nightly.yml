@@ -14,7 +14,7 @@ jobs:
       matrix:
         SCALA_VERSION: [2.12, 2.13]
         JABBA_JDK: [8, 11, 17]
-        AKKA_VERSION: [main, default, 2.6.18]
+        AKKA_VERSION: [main, default]
 
     steps:
       - name: Checkout
