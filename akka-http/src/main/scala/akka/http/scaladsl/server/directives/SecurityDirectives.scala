@@ -302,6 +302,18 @@ object Credentials {
      * See also [[EnhancedString#secure_==]], for more information.
      */
     def verify(secret: String): Boolean = verify(secret, x => x)
+
+    /**
+     * Compares with custom 'verifier' the received secret part of the Credentials.
+     * Use of this method only if custom String equality testing is required, not recommended.
+     */
+    def provideVerify(verifier: String => Boolean): Boolean
+
+    /**
+     * Compares with custom 'verifier' and the passed secret with the received secret part of the Credentials.
+     * Use of this method only if custom String equality testing is required, not recommended.
+     */
+    def provideVerify(secret: String, verifier: (String, String) => Boolean): Boolean = provideVerify(verifier.curried(secret))
   }
 
   def apply(cred: Option[HttpCredentials]): Credentials = {
@@ -309,10 +321,12 @@ object Credentials {
       case Some(BasicHttpCredentials(username, receivedSecret)) =>
         new Credentials.Provided(username) {
           def verify(secret: String, hasher: String => String): Boolean = secret secure_== hasher(receivedSecret)
+          def provideVerify(verifier: String => Boolean): Boolean = verifier(receivedSecret)
         }
       case Some(OAuth2BearerToken(token)) =>
         new Credentials.Provided(token) {
           def verify(secret: String, hasher: String => String): Boolean = secret secure_== hasher(token)
+          def provideVerify(verifier: String => Boolean): Boolean = verifier(token)
         }
       case Some(c) =>
         throw new UnsupportedOperationException(s"Credentials does not support scheme '${c.scheme}'.")

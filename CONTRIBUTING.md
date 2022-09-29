@@ -16,7 +16,8 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `main` – active development branch of akka-http 10.2.x
+* `main` – active development branch of akka-http 10.4.x
+* `release-10.2` – branch for fixes to akka-http 10.2.x
 * `release-10.1` – branch for fixes to akka-http 10.1.x
 
 ## Tags
@@ -75,7 +76,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your Pull Request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
 1. Now it's finally time to [submit the Pull Request](https://help.github.com/articles/using-pull-requests)!
-1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](https://www.lightbend.com/contribute/cla) online CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
+1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](https://www.lightbend.com/contribute/cla/akka) online CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
 1. If you're not already on the contributors white-list, the @akka-ci bot will ask `Can one of the repo owners verify this patch?`, to which a core member will reply by commenting `OK TO TEST`. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
 1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip through. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more lose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
     - The community and team are really nice people, so don't be afraid to ask follow up questions if you didn't understand some comment, or would like to clarify how to continue with a given feature. We're here to help, so feel free to ask and discuss any kind of questions you might have during review!
@@ -322,7 +323,7 @@ Snapshots are published to a snapshot repository. See the latest information abo
 
 ## Related links
 
-* [Akka Contributor License Agreement](https://www.lightbend.com/contribute/cla)
+* [Akka Contributor License Agreement](https://www.lightbend.com/contribute/cla/akka)
 * [Akka HTTP Issue Tracker](https://github.com/akka/akka-http/issues)
 * [Scalariform](https://github.com/scala-ide/scalariform)
 

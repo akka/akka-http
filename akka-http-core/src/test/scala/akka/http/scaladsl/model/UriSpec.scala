@@ -857,5 +857,13 @@ class UriSpec extends AnyWordSpec with Matchers {
       query.head._2 shouldEqual "1"
       query.last._2 shouldEqual "2000"
     }
+
+    "collapsing dot segments correctly in relative paths" in {
+      Uri.from(scheme = "file", path = "aa/bb/../../cc") shouldEqual
+        Uri.from(scheme = "file", path = "cc")
+      Uri.from(scheme = "file", path = "aa/../cc") shouldEqual
+        Uri.from(scheme = "file", path = "cc")
+    }
+
   }
 }

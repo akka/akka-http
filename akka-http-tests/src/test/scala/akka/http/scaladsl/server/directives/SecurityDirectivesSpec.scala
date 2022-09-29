@@ -21,6 +21,11 @@ class SecurityDirectivesSpec extends RoutingSpec {
   val basicChallenge = HttpChallenges.basic("MyRealm")
   val oAuth2Challenge = HttpChallenges.oAuth2("MyRealm")
 
+  def doBasicAuthVerify(secret: String) =
+    authenticateBasicPF("MyRealm", { case p @ Credentials.Provided(identifier) if p.verify(secret) => identifier })
+  def doBasicAuthProvideVerify(secret: String) =
+    authenticateBasicPF("MyRealm", { case p @ Credentials.Provided(identifier) if p.provideVerify(password => secret == password) => identifier })
+
   "basic authentication" should {
     "reject requests without Authorization header with an AuthenticationFailedRejection" in {
       Get() ~> {
@@ -53,6 +58,18 @@ class SecurityDirectivesSpec extends RoutingSpec {
     "extract the object representing the user identity created by successful authentication" in {
       Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> {
         doBasicAuth { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "Alice" }
+    }
+    "extract the object representing the user identity created by verifying user password" in {
+      val secret = "secret"
+      Get() ~> Authorization(BasicHttpCredentials("Alice", secret)) ~> {
+        doBasicAuthVerify(secret) { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "Alice" }
+    }
+    "extract the object representing the user identity created by providing a custom verifier to test user password" in {
+      val secret = "secret"
+      Get() ~> Authorization(BasicHttpCredentials("Alice", secret)) ~> {
+        doBasicAuthProvideVerify(secret) { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Alice" }
     }
     "extract the object representing the user identity created for the anonymous user" in {

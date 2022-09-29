@@ -10,6 +10,8 @@ import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
 import com.lightbend.paradox.apidoc.ApidocPlugin.autoImport.apidocRootPackage
+import sbt.librarymanagement.SemanticSelector
+import sbt.librarymanagement.VersionNumber
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -27,7 +29,7 @@ inThisBuild(Def.settings(
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
-  licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
+  licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/akka-http/main/LICENSE.txt"))), // FIXME change s/main/v10.3.0/ when released
   description := "Akka Http: Modern, fast, asynchronous, streaming-first HTTP server and client.",
   testOptions ++= Seq(
     Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
@@ -153,7 +155,7 @@ lazy val httpCore = project("akka-http-core")
     "akka-stream-testkit",
     "test",
     akka =
-      if (System.getProperty("akka.http.test-against-akka-main", "false") == "true") AkkaDependency.masterSnapshot
+      if (System.getProperty("akka.http.test-against-akka-main", "false") == "true") AkkaDependency.mainSnapshot
       else AkkaDependency.default
   )
   .settings(Dependencies.httpCore)
@@ -457,8 +459,7 @@ lazy val docs = project("docs")
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
       "akka.version" -> AkkaDependency.docs.version,
-      "akka.minimum.version25" -> AkkaDependency.minimumExpectedAkkaVersion,
-      "akka.minimum.version26" -> AkkaDependency.minimumExpectedAkka26Version,
+      "akka.minimum.version" -> AkkaDependency.minimumExpectedAkkaVersion,
       "jackson.xml.version" -> Dependencies.jacksonXmlVersion,
       "scalafix.version" -> _root_.scalafix.sbt.BuildInfo.scalafixVersion, // grab from scalafix plugin directly
       "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.docs.link}/%s",
@@ -481,7 +482,7 @@ lazy val docs = project("docs")
     ),
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
-    ValidatePR / additionalTasks += Compile / paradox,
+    ValidatePR / additionalTasks ++= (if (isJdk11orHigher) Seq(Compile / paradox) else Nil),
     ThisBuild / publishRsyncHost := "akkarepo@gustav.akka.io",
     publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("docs").value),
   )
@@ -512,3 +513,6 @@ lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-
   )
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
+
+lazy val isJdk11orHigher: Boolean =
+  VersionNumber(sys.props("java.specification.version")).matchesSemVer(SemanticSelector(">=11"))

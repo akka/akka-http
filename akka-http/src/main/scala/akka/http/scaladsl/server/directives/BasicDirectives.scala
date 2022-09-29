@@ -402,6 +402,8 @@ trait BasicDirectives {
           throw IllegalRequestException(
             StatusCodes.RequestTimeout,
             ErrorInfo(s"Request timed out after $timeout while waiting for entity data", "Consider increasing the timeout for toStrict"))
+        case EntityStreamException(info) =>
+          throw IllegalRequestException(StatusCodes.BadRequest, info)
       }.flatMap { strictEntity =>
         val newCtx = ctx.mapRequest(_.withEntity(strictEntity))
         inner(())(newCtx)

@@ -251,6 +251,41 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         trailingResponseHeaders.size should be(1)
         trailingResponseHeaders.head should be(("Status", "grpc-status 10"))
       }
+      "consider stream as closed after sending out strict response > WINDOW_SIZE" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings =
+          // allow only single stream to be able to probe whether main stream is closed
+          super.settings.mapHttp2Settings(_.withMaxConcurrentStreams(1))
+
+        network.sendSETTING(SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, 1000)
+        network.expectSettingsAck()
+
+        val streamId = 1
+        network.sendHEADERS(streamId, endStream = true, network.headersForRequest(Get("/")))
+        user.expectRequest()
+        val response =
+          HttpResponse(StatusCodes.OK, entity = HttpEntity.Strict(
+            ContentTypes.`application/octet-stream`,
+            ByteString("a" * 2000))) // > default INITIAL_WINDOW_SIZE
+            .addAttribute(AttributeKeys.trailer, Trailer(RawHeader("Status", "grpc-status 10")))
+
+        // single configured stream is ongoing, so extra streams will be refused
+        network.sendRequest(3, HttpRequest())
+        network.expectRST_STREAM(3, ErrorCode.REFUSED_STREAM)
+
+        user.emitResponse(streamId, response)
+
+        network.expectHeaderBlock(streamId, endStream = false)
+        network.expectDATA(streamId, endStream = false, ByteString("a" * 1000))
+        network.toNet.request(5)
+        network.sendWINDOW_UPDATE(streamId, 1000)
+        network.expectDATA(streamId, endStream = false, ByteString("a" * 1000))
+        val trailingResponseHeaders = network.expectDecodedResponseHEADERSPairs(streamId)
+        trailingResponseHeaders.size should be(1)
+        trailingResponseHeaders.head should be(("Status", "grpc-status 10"))
+
+        network.sendRequest(5, HttpRequest())
+        user.expectRequest()
+      }
 
       "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         network.sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, 8192)

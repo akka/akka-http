@@ -149,7 +149,21 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
   private def updateState(streamId: Int, handle: StreamState => StreamState, event: String, eventArg: AnyRef = null): Unit =
     updateStateAndReturn(streamId, x => (handle(x), ()), event, eventArg)
 
+  // Calling multiplexer.enqueueOutStream directly out of the state machine is not allowed, because it might try to
+  // reenter the state machine with `pullNextState`. This call defers enqueuing until the current state machine operation
+  // is done.
+  private var deferredStreamToEnqueue: Int = -1
+  private def enqueueOutStream(streamId: Int): Unit = if (stateMachineRunning) {
+    require(deferredStreamToEnqueue == -1, "Only one stream can be enqueued during a single state change")
+    deferredStreamToEnqueue = streamId
+  } else
+    multiplexer.enqueueOutStream(streamId)
+
+  private var stateMachineRunning = false
   private def updateStateAndReturn[R](streamId: Int, handle: StreamState => (StreamState, R), event: String, eventArg: AnyRef = null): R = {
+    require(!stateMachineRunning, "State machine already running")
+    stateMachineRunning = true
+
     val oldState = streamFor(streamId)
 
     val (newState, ret) = handle(oldState)
@@ -162,8 +176,17 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     }
 
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName} after handling [$event${if (eventArg ne null) s"($eventArg)" else ""}]")
+
+    stateMachineRunning = false
+    if (deferredStreamToEnqueue != -1) {
+      val streamId = deferredStreamToEnqueue
+      deferredStreamToEnqueue = -1
+      if (streamStates.contains(streamId))
+        multiplexer.enqueueOutStream(streamId)
+    }
     ret
   }
+
   /** Called to cleanup any state when the connection is torn down */
   def shutdownStreamHandling(): Unit = updateAllStates({ id => id.shutdown(); Closed }, "shutdownStreamHandling")
 
@@ -668,7 +691,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     def enqueueIfPossible(): Unit =
       if (canSend && !isEnqueued) {
         isEnqueued = true
-        multiplexer.enqueueOutStream(streamId)
+        enqueueOutStream(streamId)
       }
 
     def registerIncomingData(inlet: SubSinkInlet[_]): Unit = {
