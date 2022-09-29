@@ -489,12 +489,14 @@ lazy val docs = project("docs")
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
 lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akka-http-compatibility-tests"))
-  .enablePlugins(NoPublish, NoScala3)
+  .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided",
+    libraryDependencies +=(
+      // no scala 3 native artifact available yet so use 2.13
+      if (scalaBinaryVersion.value == "3") ("com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided").cross(CrossVersion.for3Use2_13)
+      else "com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided"
     ),
     (Test / dependencyClasspath) := {
       // HACK: We'd like to use `dependsOn(http % "test->compile")` to upgrade the explicit dependency above to the
