@@ -28,13 +28,7 @@ object Dependencies {
   val scala212Version = "2.12.15"
   val scala213Version = "2.13.8"
   val scala3Version = "3.1.3"
-  val allScalaVersions =
-    // FIXME: can be simplified when Akka 2.5 is dropped
-    if (AkkaDependency.akkaVersion startsWith "2.6.")
-      // Scala 3 only for Akka 2.6
-      Seq(scala213Version, scala212Version, scala3Version)
-    else
-      Seq(scala213Version, scala212Version)
+  val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
   val Versions = Seq(
     crossScalaVersions := allScalaVersions,
