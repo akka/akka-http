@@ -198,6 +198,7 @@ private[http] object StreamUtils {
    * Returns a flow that is almost identity but delays propagation of cancellation from downstream to upstream.
    */
   def delayCancellation[T](cancelAfter: Duration): Flow[T, T, NotUsed] = Flow.fromGraph(new DelayCancellationStage(cancelAfter))
+  /** INTERNAL API */
   final class DelayCancellationStage[T](cancelAfter: Duration) extends SimpleLinearGraphStage[T] {
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with ScheduleSupport with InHandler with OutHandler with StageLogging {
       setHandlers(in, out, this)
