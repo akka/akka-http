@@ -1345,7 +1345,7 @@ class HttpServerSpec extends AkkaSpec(
                 responses.sendError(error.asInstanceOf[Exception])
 
                 expectResponseWithWipedDate(
-                  s"""HTTP/1.1 413 Payload Too Large
+                  s"""HTTP/1.1 413 Content Too Large
                       |Server: akka-http/test
                       |Date: XXXX
                       |Connection: close
@@ -1369,7 +1369,7 @@ class HttpServerSpec extends AkkaSpec(
                 responses.sendError(error.asInstanceOf[Exception])
 
                 expectResponseWithWipedDate(
-                  s"""HTTP/1.1 413 Payload Too Large
+                  s"""HTTP/1.1 413 Content Too Large
                     |Server: akka-http/test
                     |Date: XXXX
                     |Connection: close

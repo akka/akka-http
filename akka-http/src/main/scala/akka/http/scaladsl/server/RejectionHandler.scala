@@ -190,7 +190,7 @@ object RejectionHandler {
         case MalformedRequestContentRejection(msg, throwable) => {
           val rejectionMessage = "The request content was malformed:\n" + msg
           throwable match {
-            case _: EntityStreamSizeException => rejectRequestEntityAndComplete((PayloadTooLarge, rejectionMessage))
+            case _: EntityStreamSizeException => rejectRequestEntityAndComplete((ContentTooLarge, rejectionMessage))
             case _                            => rejectRequestEntityAndComplete((BadRequest, rejectionMessage))
           }
         }

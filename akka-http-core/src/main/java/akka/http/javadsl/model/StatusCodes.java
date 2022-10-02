@@ -57,10 +57,16 @@ public final class StatusCodes {
     public static final StatusCode GONE = akka.http.scaladsl.model.StatusCodes.Gone();
     public static final StatusCode LENGTH_REQUIRED = akka.http.scaladsl.model.StatusCodes.LengthRequired();
     public static final StatusCode PRECONDITION_FAILED = akka.http.scaladsl.model.StatusCodes.PreconditionFailed();
+    public static final StatusCode CONTENT_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.ContentTooLarge();
+
+    /**
+     * @deprecated deprecated in favor of CONTENT_TOO_LARGE
+     */
+    @Deprecated
     public static final StatusCode PAYLOAD_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.PayloadTooLarge();
 
     /**
-     * @deprecated deprecated in favor of PAYLOAD_TOO_LARGE
+     * @deprecated deprecated in favor of CONTENT_TOO_LARGE
      */
     @Deprecated
     public static final StatusCode REQUEST_ENTITY_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.RequestEntityTooLarge();
@@ -83,6 +89,12 @@ public final class StatusCodes {
     public static final StatusCode IM_A_TEAPOT = akka.http.scaladsl.model.StatusCodes.ImATeapot();
     public static final StatusCode ENHANCE_YOUR_CALM = akka.http.scaladsl.model.StatusCodes.EnhanceYourCalm();
     public static final StatusCode MISDIRECTED_REQUEST = akka.http.scaladsl.model.StatusCodes.MisdirectedRequest();
+    public static final StatusCode UNPROCESSABLE_CONTENT = akka.http.scaladsl.model.StatusCodes.UnprocessableContent();
+
+    /**
+     * @deprecated deprecated in favor of UNPROCESSABLE_CONTENT
+     */
+    @Deprecated
     public static final StatusCode UNPROCESSABLE_ENTITY = akka.http.scaladsl.model.StatusCodes.UnprocessableEntity();
     public static final StatusCode LOCKED = akka.http.scaladsl.model.StatusCodes.Locked();
     public static final StatusCode FAILED_DEPENDENCY = akka.http.scaladsl.model.StatusCodes.FailedDependency();

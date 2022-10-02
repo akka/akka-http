@@ -88,7 +88,7 @@ public class MiscDirectivesTest extends JUnitRouteTest {
 
     route
       .run(withEntityOfSize(501))
-      .assertStatusCode(StatusCodes.PAYLOAD_TOO_LARGE);
+      .assertStatusCode(StatusCodes.CONTENT_TOO_LARGE);
 
   }
 
