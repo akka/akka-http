@@ -5,7 +5,6 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.impl.engine.client.HttpsProxyGraphStage
@@ -13,6 +12,7 @@ import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, HttpsProxySettings }
 import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.{ Flow, Keep, Tcp }
 import akka.util.ByteString
 
@@ -120,13 +120,15 @@ object ClientTransport {
     override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
       implicit val ec: ExecutionContext = system.dispatcher
 
-      Flow.lazyFutureFlow(() =>
-        lookup(host, port).map { address =>
-          connectToAddress(address, settings)
-        }
-      ).mapMaterializedValue(_.flatten)
+      Flow[ByteString].prepend(Source.single(ByteString()))
+        .viaMat(Flow.lazyFutureFlow(() =>
+          lookup(host, port).map { address =>
+            connectToAddress(address, settings)
+          }
+        ))((_, right) => right.flatten)
         // buffer needed because HTTP client expects demand before it does request (which is reasonable for buffered TCP connections)
         .buffer(1, OverflowStrategy.backpressure)
+
     }
   }
 }
