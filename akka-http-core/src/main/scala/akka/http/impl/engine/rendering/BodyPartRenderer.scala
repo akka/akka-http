@@ -56,6 +56,7 @@ private[http] object BodyPartRenderer {
                 case Strict(_, data)           => chunkStream((r ~~ data).get)
                 case Default(_, _, data)       => bodyPartChunks(data)
                 case IndefiniteLength(_, data) => bodyPartChunks(data)
+                case other                     => throw new IllegalArgumentException(s"Unexpected entity: $other") // compiler completeness check pleaser
               }
 
             renderBoundary(r, boundary, suppressInitialCrLf = !firstBoundaryRendered)

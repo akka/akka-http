@@ -13,7 +13,6 @@ import akka.http.scaladsl.model.HttpEntity.Chunk
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings, `Content-Encoding` }
 import akka.http.scaladsl.server.Directives._
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.testkit.TestKit
 import akka.util.ByteString
@@ -45,7 +44,6 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
     """)
   implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   val random = new scala.util.Random(42)
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))

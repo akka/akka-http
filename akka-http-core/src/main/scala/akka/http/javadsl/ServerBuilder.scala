@@ -185,6 +185,6 @@ object ServerBuilder {
     def connectionSource(): Source[IncomingConnection, CompletionStage[ServerBinding]] =
       http.bindImpl(interface, port, context.asScala, settings.asScala, log)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContexts.sameThreadExecutionContext).toJava).asJava
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContexts.parasitic).toJava).asJava
   }
 }

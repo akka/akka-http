@@ -10,6 +10,8 @@ import akka.http.scaladsl.server.directives.BasicDirectives._
 import akka.http.scaladsl.server.RequestEntityExpectedRejection
 import headers._
 
+import scala.annotation.nowarn
+
 /**
  * @groupname misc Miscellaneous directives
  * @groupprio misc 140
@@ -107,6 +109,7 @@ object MiscDirectives extends MiscDirectives {
   import RouteDirectives._
   import RouteResult._
 
+  @nowarn("msg=deprecated")
   private val _extractClientIP: Directive1[RemoteAddress] =
     headerValuePF { case `X-Forwarded-For`(Seq(address, _*)) => address } |
       headerValuePF { case `X-Real-Ip`(address) => address } |

@@ -96,6 +96,7 @@ public class CookieDirectivesExamplesTest extends JUnitRouteTest {
         Optional.empty(),
         false,
         false,
+        Optional.empty(),
         Optional.empty()));
 
     testRoute(route).run(HttpRequest.GET("/"))

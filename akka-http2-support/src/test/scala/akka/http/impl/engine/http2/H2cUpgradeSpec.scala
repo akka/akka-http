@@ -51,7 +51,7 @@ class H2cUpgradeSpec extends AkkaSpecWithMaterializer("""
       testWith(settings)
     }
 
-    def testWith(settings: String) = {
+    def testWith(settings: String): Unit = {
       val upgradeRequest =
         s"""GET / HTTP/1.1
 Host: localhost

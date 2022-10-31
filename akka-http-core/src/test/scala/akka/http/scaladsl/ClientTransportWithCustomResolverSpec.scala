@@ -74,7 +74,7 @@ class ClientTransportWithCustomResolverSpec extends AkkaSpecWithMaterializer("ak
       assertThrows[TimeoutException](Await.result(resolverCalled.future, 3.seconds.dilated))
 
       // resolving kicks in when a request comes along
-      sourceQueue.offer(HttpRequest(POST, s"http://$hostnameToFind:$portToFind/") -> ())
+      sourceQueue.offer((HttpRequest(POST, s"http://$hostnameToFind:$portToFind/"), ()))
       Await.result(resolverCalled.future, 3.seconds.dilated) shouldBe Done
       val resp = Await.result(sinkQueue.pull(), 3.seconds.dilated).value._1.get
       resp.status shouldBe StatusCodes.OK

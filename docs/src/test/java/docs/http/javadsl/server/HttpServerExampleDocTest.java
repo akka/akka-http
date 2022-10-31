@@ -17,9 +17,9 @@ import akka.http.javadsl.server.Directives;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.japi.function.Function;
-import akka.stream.ActorMaterializer;
 import akka.stream.IOResult;
 import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
@@ -42,10 +42,10 @@ public class HttpServerExampleDocTest {
   public static void bindingExample() throws Exception {
     //#binding-example
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = SystemMaterializer.get(system).materializer();
 
     Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080));
+      Http.get(system).newServerAt("localhost", 8080).connectionSource();
 
     CompletionStage<ServerBinding> serverBindingFuture =
       serverSource.to(Sink.foreach(connection -> {
@@ -60,10 +60,10 @@ public class HttpServerExampleDocTest {
   public static void bindingFailureExample() throws Exception {
     //#binding-failure-handling
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = SystemMaterializer.get(system).materializer();
 
     Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-      Http.get(system).bind(ConnectHttp.toHost("localhost", 80));
+      Http.get(system).newServerAt("localhost", 80).connectionSource();
 
     CompletionStage<ServerBinding> serverBindingFuture =
       serverSource.to(Sink.foreach(connection -> {
@@ -82,10 +82,10 @@ public class HttpServerExampleDocTest {
   public static void connectionSourceFailureExample() throws Exception {
     //#incoming-connections-source-failure-handling
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = SystemMaterializer.get(system).materializer();
 
     Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080));
+      Http.get(system).newServerAt("localhost", 8080).connectionSource();
 
     Flow<IncomingConnection, IncomingConnection, NotUsed> failureDetection =
       Flow.of(IncomingConnection.class).watchTermination((notUsed, termination) -> {
@@ -112,10 +112,10 @@ public class HttpServerExampleDocTest {
   public static void connectionStreamFailureExample() throws Exception {
     //#connection-stream-failure-handling
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = SystemMaterializer.get(system).materializer();
 
     Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080));
+      Http.get(system).newServerAt("localhost", 8080).connectionSource();
 
     Flow<HttpRequest, HttpRequest, NotUsed> failureDetection =
       Flow.of(HttpRequest.class)
@@ -155,10 +155,10 @@ public class HttpServerExampleDocTest {
     //#full-server-example
     try {
       //#full-server-example
-      final Materializer materializer = ActorMaterializer.create(system);
+      final Materializer materializer = SystemMaterializer.get(system).materializer();
 
       Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-        Http.get(system).bind(ConnectHttp.toHost("localhost", 8080));
+        Http.get(system).newServerAt("localhost", 8080).connectionSource();
 
       //#request-handler
       final Function<HttpRequest, HttpResponse> requestHandler =
@@ -233,7 +233,7 @@ public class HttpServerExampleDocTest {
 
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
 
     final Unmarshaller<HttpEntity, Bid> asBid = Jackson.unmarshaller(Bid.class);
 
@@ -252,7 +252,7 @@ public class HttpServerExampleDocTest {
     //#consume-raw-dataBytes
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
 
     final Route s =
       put(() ->
@@ -298,7 +298,7 @@ public class HttpServerExampleDocTest {
         //#discard-close-connections
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
 
     final Route s =
       put(() ->
@@ -325,12 +325,10 @@ public class HttpServerExampleDocTest {
   public static void gracefulTerminationExample() throws Exception {
     //#graceful-termination
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
 
 
-    CompletionStage<ServerBinding> binding = Http.get(system).bindAndHandle(
-        Directives.complete("Hello world!").flow(system, materializer),
-        ConnectHttp.toHost("localhost", 8080), materializer);
+    CompletionStage<ServerBinding> binding = Http.get(system).newServerAt("localhost", 8080)
+        .bindFlow(Directives.complete("Hello world!").flow(system));
 
     ServerBinding serverBinding = binding.toCompletableFuture().get(3, TimeUnit.SECONDS);
 

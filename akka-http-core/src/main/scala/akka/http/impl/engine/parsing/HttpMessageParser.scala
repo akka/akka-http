@@ -89,7 +89,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
   protected final def doPull(): Output =
     result match {
       case null => if (terminated) StreamEnd else NeedMoreData
-      case buffer: ListBuffer[Output] =>
+      case buffer: ListBuffer[Output @unchecked] =>
         val head = buffer.head
         buffer.remove(0) // faster than `ListBuffer::drop`
         if (buffer.isEmpty) result = null
@@ -97,6 +97,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       case ele: Output @unchecked =>
         result = null
         ele
+      case other => throw new IllegalArgumentException(s"Unexpected result: $other") // compiler completeness check pleaser
     }
 
   protected final def shouldComplete(): Boolean = {
@@ -299,13 +300,14 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
   }
 
   protected def emit(output: Output): Unit = result match {
-    case null                       => result = output
-    case buffer: ListBuffer[Output] => buffer += output
+    case null                                  => result = output
+    case buffer: ListBuffer[Output @unchecked] => buffer += output
     case old: Output @unchecked =>
       val buffer = new ListBuffer[Output]
       buffer += old
       buffer += output
       result = buffer
+    case other => throw new IllegalArgumentException(s"Unexpected output: $other") // compiler completeness check pleaser
   }
 
   protected final def continue(input: ByteString, offset: Int)(next: (ByteString, Int) => StateResult): StateResult = {

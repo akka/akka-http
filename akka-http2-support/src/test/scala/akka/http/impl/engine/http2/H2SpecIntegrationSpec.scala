@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.http.impl.util.{ ExampleHttpContexts, WithLogCapturing }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives
-import akka.stream.{ ActorMaterializer, Materializer }
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
@@ -36,7 +35,6 @@ class H2SpecIntegrationSpec extends AkkaSpec(
   """) with Directives with ScalaFutures with WithLogCapturing {
 
   implicit val ec: ExecutionContext = system.dispatcher
-  implicit val mat: Materializer = ActorMaterializer()
 
   override def expectedTestDuration = 5.minutes // because slow jenkins, generally finishes below 1 or 2 minutes
 

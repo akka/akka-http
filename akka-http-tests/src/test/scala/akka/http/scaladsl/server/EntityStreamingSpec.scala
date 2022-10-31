@@ -118,7 +118,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
 
     // flatten the Future[Source[]] into a Source[]:
     val source: Source[Tweet, Future[NotUsed]] =
-      Source.fromFutureSource(unmarshalled)
+      Source.futureSource(unmarshalled)
 
     //#json-streaming-client-example
     // tests ------------------------------------------------------------

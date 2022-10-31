@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.ws
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
@@ -11,6 +12,7 @@ import akka.stream.testkit.Utils
 import akka.util.ByteString
 import akka.http.impl.engine.server.HttpServerTestSetupBase
 import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.stream.Materializer
 
 import scala.concurrent.duration._
 
@@ -177,8 +179,8 @@ class WebSocketServerSpec extends AkkaSpecWithMaterializer("akka.http.server.web
   }
 
   class TestSetup extends HttpServerTestSetupBase with WSTestSetupBase {
-    implicit def system = spec.system
-    implicit def materializer = spec.materializer
+    implicit def system: ActorSystem = spec.system
+    implicit def materializer: Materializer = spec.materializer
 
     def expectBytes(length: Int): ByteString = netOut.expectBytes(length)
     def expectBytes(bytes: ByteString): Unit = netOut.expectBytes(bytes)

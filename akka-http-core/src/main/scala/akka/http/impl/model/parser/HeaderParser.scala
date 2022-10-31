@@ -75,6 +75,7 @@ private[http] class HeaderParser(
       error match {
         case IllegalUriException(info) => info
         case NonFatal(e)               => ErrorInfo.fromCompoundString(e.getMessage)
+        case other                     => throw new IllegalStateException(s"Unexpected error: $other") // compiler completeness check pleaser
       }
     }
   def ruleNotFound(ruleName: String): Result = HeaderParser.RuleNotFound

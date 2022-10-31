@@ -65,7 +65,8 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
             log.error(e, s"Websocket handler failed with ${e.getMessage}")
             setHandler(in, new WaitingForPeerCloseFrame())
             push(out, FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
-          case Tick => pull(in) // ignore
+          case Tick  => pull(in) // ignore
+          case other => throw new IllegalStateException(s"Unexpected element type: $other") // compiler completeness check pleaser
         }
 
       override def onUpstreamFinish(): Unit = {

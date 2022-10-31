@@ -32,6 +32,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 
 import java.util.UUID
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -132,6 +133,7 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
 
       val (serverBinding, http2ClientFow) = bindAndConnect(probe)
 
+      @nowarn("msg=deprecated")
       val (requestQueue, _) =
         Source.queue(10, OverflowStrategy.fail)
           .viaMat(http2ClientFow)(Keep.left)
@@ -199,6 +201,7 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
       telemetryProbe.expectMsg("bind-seen")
 
       val responseProbe = TestProbe()
+      @nowarn("msg=deprecated")
       val (requestQueue, _) =
         Source.queue(10, OverflowStrategy.fail)
           .viaMat(http2ClientFlow)(Keep.left)

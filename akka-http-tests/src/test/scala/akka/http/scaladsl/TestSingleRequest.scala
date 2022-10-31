@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.util.ByteString
 import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.ActorSystem
-import akka.stream._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -20,7 +19,6 @@ object TestSingleRequest extends App {
     akka.stream.materializer.debug.fuzzing-mode = off
     """)
   implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   import system.dispatcher
 
   val url = StdIn.readLine("url? ")

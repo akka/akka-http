@@ -5,10 +5,12 @@
 package akka.http.scaladsl
 
 import java.util.function.Supplier
-
 import akka.http.javadsl.server.Route
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used")
 class RouteJavaScalaDslConversionSpec extends AnyWordSpec {
 
   "Routes" must {

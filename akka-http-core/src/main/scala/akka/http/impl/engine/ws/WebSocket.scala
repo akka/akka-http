@@ -156,6 +156,7 @@ private[http] object WebSocket {
               (Source.single(first) ++ remaining)
                 .collect { case b: BinaryMessagePart if b.data.nonEmpty => b.data }
             )
+          case other => throw new IllegalStateException(s"Unexpected type value: $other") // compiler completeness check pleaser
         }
 
     def prepareMessages: Flow[MessagePart, Message, NotUsed] =

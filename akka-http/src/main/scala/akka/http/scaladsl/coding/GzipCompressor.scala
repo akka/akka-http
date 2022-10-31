@@ -5,14 +5,16 @@
 package akka.http.scaladsl.coding
 
 import java.util.zip.{ CRC32, Deflater, Inflater, ZipException }
-
 import akka.annotation.InternalApi
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.impl.io.ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.ByteString
 
+import scala.annotation.nowarn
+
 /** Internal API */
+@nowarn("msg=deprecated")
 @InternalApi
 private[coding] class GzipCompressor(compressionLevel: Int) extends DeflateCompressor(compressionLevel) {
   override protected lazy val deflater = new Deflater(compressionLevel, true)
@@ -60,7 +62,7 @@ private[coding] object GzipCompressor {
 private[coding] class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
   override def createLogic(attr: Attributes) = new ParsingLogic {
     private[this] val inflater = new Inflater(true)
-    private[this] var crc32: CRC32 = new CRC32
+    private[this] val crc32: CRC32 = new CRC32
 
     trait Step extends ParseStep[ByteString] {
       override def onTruncation(): Unit = failStage(new ZipException("Truncated GZIP stream"))

@@ -6,7 +6,6 @@ package akka.http.scaladsl
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
@@ -14,11 +13,10 @@ import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.http.scaladsl.model.ws._
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Source }
-
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import HttpMethods._
 
+import scala.annotation.nowarn
 import scala.io.StdIn
 
 object TestServer extends App {
@@ -32,10 +30,12 @@ object TestServer extends App {
     """)
   implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
 
+  @nowarn("msg=deprecated")
   val settings = ActorMaterializerSettings(system)
     .withFuzzing(false)
     //    .withSyncProcessingLimit(Int.MaxValue)
     .withInputBuffer(128, 128)
+  @nowarn("msg=deprecated")
   implicit val fm: ActorMaterializer = ActorMaterializer(settings)
   try {
     val binding = Http().newServerAt("localhost", 9001).bindSync {

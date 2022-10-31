@@ -10,7 +10,6 @@ import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import spray.json._
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
@@ -19,7 +18,6 @@ import akka.http.scaladsl.model.ws._
 object WSClientAutobahnTest extends App {
   implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val Agent = "akka-http"
   val Parallelism = 4

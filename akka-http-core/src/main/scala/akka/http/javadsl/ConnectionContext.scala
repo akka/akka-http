@@ -5,14 +5,13 @@
 package akka.http.javadsl
 
 import java.util.{ Optional, Collection => JCollection }
-
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.stream.TLSClientAuth
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import javax.net.ssl.{ SSLContext, SSLEngine, SSLParameters }
 
+import javax.net.ssl.{ SSLContext, SSLEngine, SSLParameters }
 import scala.compat.java8.OptionConverters
 
 object ConnectionContext {
@@ -106,6 +105,9 @@ abstract class ConnectionContext {
 @DoNotInherit
 abstract class HttpConnectionContext extends akka.http.javadsl.ConnectionContext {
   override final def isSecure = false
+
+  @Deprecated
+  @deprecated("Not always available", since = "10.2.0")
   override def sslConfig: Option[AkkaSSLConfig] = None
 }
 

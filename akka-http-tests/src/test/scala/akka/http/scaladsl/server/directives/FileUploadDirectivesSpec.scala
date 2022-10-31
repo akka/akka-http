@@ -5,7 +5,6 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.File
-
 import akka.NotUsed
 import akka.http.scaladsl.model.{ Multipart, _ }
 import akka.http.scaladsl.server.{ MissingFormFieldRejection, Route, RoutingSpec }
@@ -15,6 +14,7 @@ import akka.util.ByteString
 import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -485,6 +485,7 @@ class MockFailingWritePath extends java.nio.file.Path { selfPath =>
   import java.nio.file.{ AccessMode, CopyOption, DirectoryStream, FileStore, FileSystem, LinkOption, OpenOption, Path, PathMatcher, WatchEvent, WatchKey, WatchService }
   import java.{ lang, util }
 
+  @nowarn("msg=never used")
   override def getFileSystem: FileSystem =
     new FileSystem {
       override def provider(): FileSystemProvider = new FileSystemProvider {

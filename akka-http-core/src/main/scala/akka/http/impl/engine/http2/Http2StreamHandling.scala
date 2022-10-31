@@ -553,7 +553,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     outlet.setHandler(this)
 
     def onPull(): Unit = incomingStreamPulled(streamId)
-    override def onDownstreamFinish(): Unit = {
+    override def onDownstreamFinish(cause: Throwable): Unit = {
       debug(s"Incoming side of stream [$streamId]: cancelling because downstream finished")
       multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.CANCEL))
       // FIXME: go through state machine and don't manipulate vars directly here
@@ -754,7 +754,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
       endStreamSent = true
       maybeInlet match {
         case OptionVal.Some(inlet) => inlet.cancel()
-        case OptionVal.None        => // nothing to clean up
+        case _                     => // nothing to clean up
       }
     }
 
@@ -779,6 +779,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
           if (headers.nonEmpty && !trailer.isEmpty)
             log.warning("Found both an attribute with trailing headers, and headers in the `LastChunk`. This is not supported.")
           trailer = OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer, shouldRenderAutoHeaders = false, dateHeaderRendering = DateHeaderRendering.Unavailable), None))
+        case other => throw new IllegalArgumentException(s"Unexpected stream element $other") // compiler completeness check pleaser
       }
 
       maybePull()

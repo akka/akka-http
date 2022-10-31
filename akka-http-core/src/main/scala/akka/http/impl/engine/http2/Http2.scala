@@ -29,6 +29,7 @@ import akka.util.ByteString
 import akka.Done
 
 import javax.net.ssl.SSLEngine
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -101,7 +102,7 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
                 // See https://github.com/akka/akka/issues/17992
                 case NonFatal(ex) =>
                   Done
-              }(ExecutionContexts.sameThreadExecutionContext)
+              }(ExecutionContexts.parasitic)
           } catch {
             case NonFatal(e) =>
               log.error(e, "Could not materialize handling flow for {}", incoming)
@@ -195,6 +196,8 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
     def getChosenProtocol(): String = chosenProtocol.getOrElse(Http2AlpnSupport.HTTP11) // default to http/1, e.g. when ALPN jar is missing
 
     var eng: Option[SSLEngine] = None
+
+    @nowarn("msg=deprecated")
     def createEngine(): SSLEngine = {
       val engine = httpsContext.sslContextData match {
         case Left(ssl) =>
@@ -215,6 +218,7 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
 
   def outgoingConnection(host: String, port: Int, connectionContext: HttpsConnectionContext, clientConnectionSettings: ClientConnectionSettings, log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     def createEngine(): SSLEngine = {
+      @nowarn("msg=deprecated")
       val engine = connectionContext.sslContextData match {
         // TODO FIXME configure hostname verification for this case
         case Left(ssl) =>

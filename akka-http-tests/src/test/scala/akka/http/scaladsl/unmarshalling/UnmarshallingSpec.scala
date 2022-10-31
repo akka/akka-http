@@ -11,7 +11,6 @@ import org.scalatest.BeforeAndAfterAll
 import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaType.WithFixedCharset
-import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
@@ -24,7 +23,6 @@ import org.scalatest.matchers.should.Matchers
 
 class UnmarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override val testConfig = ConfigFactory.load()
 

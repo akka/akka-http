@@ -10,6 +10,7 @@ import org.scalatestplus.junit.JUnitSuite;
 
 public class ParserSettingsTest extends JUnitSuite {
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testCreateWithActorSystem() {
         ActorSystem sys = ActorSystem.create("test");

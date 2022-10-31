@@ -11,7 +11,6 @@ import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.settings.ServerSettings;
-import akka.stream.ActorMaterializer;
 import com.typesafe.config.ConfigFactory;
 
 import java.io.IOException;
@@ -92,7 +91,6 @@ public abstract class HttpApp extends AllDirectives {
 
     final ActorSystem theSystem = system.orElseGet(() -> ActorSystem.create(Logging.simpleName(this).replaceAll("\\$", "")));
     systemReference.set(theSystem);
-    final ActorMaterializer materializer = ActorMaterializer.create(theSystem);
 
     CompletionStage<ServerBinding> bindingFuture = Http
       .get(theSystem)

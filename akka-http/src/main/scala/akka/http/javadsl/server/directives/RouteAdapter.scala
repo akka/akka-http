@@ -42,6 +42,7 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
     alternative match {
       case adapt: RouteAdapter =>
         RouteAdapter(delegate ~ adapt.delegate)
+      case other => throw new IllegalStateException(s"Unexpected type of alternative: $other") // compiler completeness check pleaser
     }
 
   override def seal(): Route = RouteAdapter(scaladsl.server.Route.seal(delegate))

@@ -12,6 +12,10 @@ import akka.http.scaladsl.Http;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Deprecated: See akka.http.javadsl.server.HttpApp
+ */
+@Deprecated
 public class MinimalHttpApp extends HttpApp {
 
   CompletableFuture<Done> shutdownTrigger = new CompletableFuture<>();

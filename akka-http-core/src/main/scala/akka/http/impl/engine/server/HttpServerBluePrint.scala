@@ -113,7 +113,7 @@ private[http] object HttpServerBluePrint {
       }
 
       // optimization: this callback is used to handle entity substream cancellation to avoid allocating a dedicated handler
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         if (entitySource ne null) {
           // application layer has cancelled or only partially consumed response entity:
           // connection will be closed
@@ -211,7 +211,7 @@ private[http] object HttpServerBluePrint {
             // so can pull downstream then
             downstreamPullWaiting = true
           }
-          override def onDownstreamFinish(): Unit = {
+          override def onDownstreamFinish(cause: Throwable): Unit = {
             // downstream signalled not wanting any more requests
             // we should keep processing the entity stream and then
             // when it completes complete the stage
@@ -296,7 +296,7 @@ private[http] object HttpServerBluePrint {
       // TODO: provide and use default impl for simply connecting an input and an output port as we do here
       setHandler(requestOut, new OutHandler {
         def onPull(): Unit = pull(requestIn)
-        override def onDownstreamFinish() = cancel(requestIn)
+        override def onDownstreamFinish(cause: Throwable) = cancel(requestIn)
       })
       setHandler(responseIn, new InHandler {
         def onPush(): Unit = {
@@ -309,7 +309,7 @@ private[http] object HttpServerBluePrint {
       })
       setHandler(responseOut, new OutHandler {
         def onPull(): Unit = pull(responseIn)
-        override def onDownstreamFinish() = cancel(responseIn)
+        override def onDownstreamFinish(cause: Throwable) = cancel(responseIn)
       })
     }
   }
@@ -396,7 +396,7 @@ private[http] object HttpServerBluePrint {
     val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
     override private[akka] def createLogicAndMaterializedValue(inheritedAttributes: Attributes, outerMaterializer: Materializer) = new GraphStageLogic(shape) {
-      val parsingErrorHandler: ParsingErrorHandler = settings.parsingErrorHandlerInstance(ActorMaterializerHelper.downcast(outerMaterializer).system)
+      val parsingErrorHandler: ParsingErrorHandler = settings.parsingErrorHandlerInstance(outerMaterializer.system)
       val pullHttpResponseIn = () => tryPull(httpResponseIn)
       var openRequests = immutable.Queue[RequestStart]()
       var oneHundredContinueResponsePending = false
@@ -441,7 +441,7 @@ private[http] object HttpServerBluePrint {
         def onPull(): Unit =
           if (oneHundredContinueResponsePending) pullSuppressed = true
           else if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
-        override def onDownstreamFinish(): Unit =
+        override def onDownstreamFinish(cause: Throwable): Unit =
           if (openRequests.isEmpty) completeStage()
           else failStage(new IllegalStateException("User handler flow was cancelled with ongoing request") with NoStackTrace)
       })
@@ -460,7 +460,7 @@ private[http] object HttpServerBluePrint {
                 case Failure(ex) =>
                   log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
                 case _ => // ignore
-              }(ExecutionContexts.sameThreadExecutionContext)
+              }(ExecutionContexts.parasitic)
               newEntity
             }
 
@@ -509,6 +509,8 @@ private[http] object HttpServerBluePrint {
             case NonFatal(e) =>
               log.error(e, "Internal server error, sending 500 response")
               emitErrorResponse(HttpResponse(StatusCodes.InternalServerError))
+
+            case other => throw new IllegalStateException(s"Unexpected error: $other") // compiler completeness check pleaser
           }
       })
 
@@ -653,7 +655,7 @@ private[http] object HttpServerBluePrint {
       })
       setHandler(toNet, new OutHandler {
         override def onPull(): Unit = pull(fromHttp)
-        override def onDownstreamFinish(): Unit = completeStage()
+        override def onDownstreamFinish(cause: Throwable): Unit = completeStage()
       })
 
       setHandler(fromNet, new InHandler {
@@ -663,11 +665,12 @@ private[http] object HttpServerBluePrint {
       })
       setHandler(toHttp, new OutHandler {
         override def onPull(): Unit = pull(fromNet)
-        override def onDownstreamFinish(): Unit = cancel(fromNet)
+        override def onDownstreamFinish(cause: Throwable): Unit = cancel(fromNet)
       })
 
       private var activeTimers = 0
-      private def timeout = ActorMaterializerHelper.downcast(materializer).settings.subscriptionTimeoutSettings.timeout
+      @nowarn("msg=deprecated")
+      private def timeout = materializer.settings.subscriptionTimeoutSettings.timeout
       private def addTimeout(s: SubscriptionTimeout): Unit = {
         if (activeTimers == 0) setKeepGoing(true)
         activeTimers += 1
@@ -684,6 +687,7 @@ private[http] object HttpServerBluePrint {
           activeTimers -= 1
           if (activeTimers == 0) setKeepGoing(false)
           f()
+        case other => throw new IllegalStateException(s"Unexpected type of timer key: $other") // compiler completeness check pleaser
       }
 
       def switchToOtherProtocol(newFlow: Flow[ByteString, ByteString, Any]): Unit = {
@@ -698,7 +702,7 @@ private[http] object HttpServerBluePrint {
         if (isClosed(fromNet)) {
           setHandler(toNet, new OutHandler {
             override def onPull(): Unit = sinkIn.pull()
-            override def onDownstreamFinish(): Unit = {
+            override def onDownstreamFinish(cause: Throwable): Unit = {
               completeStage()
               sinkIn.cancel()
             }
@@ -715,7 +719,7 @@ private[http] object HttpServerBluePrint {
 
           setHandler(toNet, new OutHandler {
             override def onPull(): Unit = sinkIn.pull()
-            override def onDownstreamFinish(): Unit = {
+            override def onDownstreamFinish(cause: Throwable): Unit = {
               completeStage()
               sinkIn.cancel()
               sourceOut.complete()
@@ -744,10 +748,10 @@ private[http] object HttpServerBluePrint {
 
               sourceOut.setHandler(new OutHandler {
                 override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
-                override def onDownstreamFinish(): Unit = cancel(fromNet)
+                override def onDownstreamFinish(cause: Throwable): Unit = cancel(fromNet)
               })
             }
-            override def onDownstreamFinish(): Unit = cancel(fromNet)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(fromNet)
           })
 
           // disable the old handlers, at this point we might still get something due to cancellation delay which we need to ignore
@@ -756,7 +760,7 @@ private[http] object HttpServerBluePrint {
             override def onPull(): Unit = ()
             override def onUpstreamFinish(): Unit = ()
             override def onUpstreamFailure(ex: Throwable): Unit = ()
-            override def onDownstreamFinish(): Unit = ()
+            override def onDownstreamFinish(cause: Throwable): Unit = ()
           })
 
           newFlow.runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)

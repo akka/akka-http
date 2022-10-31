@@ -11,7 +11,6 @@ import akka.event.Logging
 import akka.http.impl.util.WithLogCapturing
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.testkit.TestKit
@@ -39,7 +38,6 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
       http.host-connection-pool.base-connection-backoff = 0 ms
     }""").withFallback(ConfigFactory.load())
   implicit val system: ActorSystem = ActorSystem("DontLeakActorsOnFailingConnectionSpecs-" + poolImplementation, config)
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val log = Logging(system, getClass)(LogSource.fromClass)
 

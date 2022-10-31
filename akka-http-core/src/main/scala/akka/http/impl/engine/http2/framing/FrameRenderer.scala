@@ -91,7 +91,8 @@ private[http2] object FrameRenderer {
               b.putInt32(value)
 
               renderNext(remaining)
-            case Nil =>
+            case Nil   =>
+            case other => throw new IllegalArgumentException(s"Unexpected remaining: $other") // compiler completeness check pleaser
           }
 
         renderNext(settings)

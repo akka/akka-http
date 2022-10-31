@@ -717,6 +717,7 @@ Host: example.com
 
       // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
       val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
+      @nowarn("msg=deprecated")
       val sslConfig = AkkaSSLConfig.apply().withSettings(sslConfigSettings)
       val sslContext = {
         val certStore = KeyStore.getInstance(KeyStore.getDefaultType)

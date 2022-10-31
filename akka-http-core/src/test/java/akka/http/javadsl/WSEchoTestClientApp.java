@@ -6,13 +6,12 @@ package akka.http.javadsl;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.dispatch.Futures;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.japi.function.Function;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -22,6 +21,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
@@ -41,9 +41,9 @@ public class WSEchoTestClientApp {
         ActorSystem system = ActorSystem.create();
 
         try {
-            final Materializer materializer = ActorMaterializer.create(system);
+            final Materializer materializer = SystemMaterializer.get(system).materializer();
 
-            final Future<Message> ignoredMessage = Futures.successful((Message) TextMessage.create("blub"));
+            final Callable<Future<Message>> ignoredMessage = () -> Future.successful(TextMessage.create("blub"));
             final Future<Message> delayedCompletion =
                 akka.pattern.Patterns.after(
                         FiniteDuration.apply(1, "second"),
@@ -56,7 +56,7 @@ public class WSEchoTestClientApp {
                         TextMessage.create("abc"),
                         TextMessage.create("def"),
                         TextMessage.create("ghi")
-                )).concat(Source.fromFuture(delayedCompletion).drop(1));
+                )).concat(Source.future(delayedCompletion).drop(1));
 
             Sink<Message, CompletionStage<List<String>>> echoSink =
                 Flow.of(Message.class)

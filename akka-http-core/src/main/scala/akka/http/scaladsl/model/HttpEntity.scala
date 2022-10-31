@@ -5,12 +5,10 @@
 package akka.http.scaladsl.model
 
 import java.util.OptionalLong
-
 import language.implicitConversions
 import java.io.File
 import java.nio.file.{ Files, Path }
 import java.lang.{ Iterable => JIterable }
-
 import scala.util.control.NonFatal
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -28,10 +26,10 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
-
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.{ DoNotInherit, InternalApi }
 
+import scala.annotation.nowarn
 import scala.compat.java8.FutureConverters
 
 /**
@@ -76,7 +74,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
    */
   def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] = {
     import akka.http.impl.util._
-    val config = fm.asInstanceOf[ActorMaterializer].system.settings.config
+    val config = fm.system.settings.config
     toStrict(timeout, config.getPossiblyInfiniteBytes("akka.http.parsing.max-to-strict-bytes"))
   }
 
@@ -638,6 +636,7 @@ object HttpEntity {
       private var maxBytes = -1L
       private var bytesLeft = Long.MaxValue
 
+      @nowarn("msg=deprecated") // we need getFirst semantics
       override def preStart(): Unit = {
         _attributes.getFirst[SizeLimit] match {
           case Some(limit: SizeLimit) if limit.isDisabled =>

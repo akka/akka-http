@@ -7,10 +7,9 @@ package akka.http.impl.engine.parsing
 import java.nio.{ ByteBuffer, CharBuffer }
 import java.util.Arrays.copyOf
 import java.lang.{ StringBuilder => JStringBuilder }
-
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.settings.ParserSettings.{ IllegalResponseHeaderValueProcessingMode, IllegalResponseHeaderNameProcessingMode }
+import akka.http.scaladsl.settings.ParserSettings.{ IllegalResponseHeaderNameProcessingMode, IllegalResponseHeaderValueProcessingMode }
 import akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity
 import akka.http.scaladsl.settings.ParserSettings
 
@@ -23,6 +22,8 @@ import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader, MediaTypes, StatusCode,
 import akka.http.scaladsl.model.headers.{ EmptyHeader, RawHeader }
 import akka.http.impl.model.parser.HeaderParser
 import akka.http.impl.model.parser.CharacterClasses._
+
+import scala.annotation.nowarn
 
 /**
  * INTERNAL API
@@ -130,7 +131,9 @@ private[engine] final class HttpHeaderParser private (
         values(valueIx) match {
           case branch: ValueBranch            => parseHeaderValue(input, cursor, branch)()
           case valueParser: HeaderValueParser => startValueBranch(valueIx, valueParser) // no header yet of this type
-          case EmptyHeader                    => resultHeader = EmptyHeader; cursor
+          case EmptyHeader =>
+            resultHeader = EmptyHeader; cursor
+          case other => throw new IllegalStateException(s"Unexpected value at $valueIx: $other") // compiler completeness check pleaser
         }
       case nodeChar =>
         val char = CharUtils.toLowerCase(byteChar(input, cursor))
@@ -391,6 +394,7 @@ private[engine] final class HttpHeaderParser private (
   /**
    * Returns a string representation of the raw trie data.
    */
+  @nowarn("msg=exhaustive")
   def formatRawTrie: String = {
     def char(c: Char) = (c >> 8).toString + (if ((c & 0xFF) > 0) "/" + (c & 0xFF).toChar else "/Ω")
     s"nodes: ${nodes take nodeCount map char mkString ", "}\n" +
@@ -507,6 +511,7 @@ private[http] object HttpHeaderParser {
             else parser.insert(ByteString(insertName), valueParser)()
           case header: String =>
             parser.parseHeaderLine(ByteString(header + "\r\nx"))()
+          case other => throw new IllegalArgumentException(s"Unexpected parser: $other") // compiler completeness check pleaser
         }
         insertInGoodOrder(items)(startIx, pivot)
         insertInGoodOrder(items)(pivot + 1, endIx)

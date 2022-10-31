@@ -48,7 +48,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
 
       val (response, sink) = Http().singleWebSocketRequest(
         WebSocketRequest("ws://127.0.0.1:" + myPort),
-        Flow.fromSinkAndSourceMat(TestSink.probe[Message], Source.empty)(Keep.left))
+        Flow.fromSinkAndSourceMat(TestSink[Message](), Source.empty)(Keep.left))
 
       response.futureValue.response.status.isSuccess should ===(true)
       sink
@@ -86,7 +86,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
               override def onPull(): Unit = pull(shape.in)
 
               override def preStart(): Unit = {
-                promise.future.foreach(_ => getAsyncCallback[Done](_ => complete(shape.out)).invoke(Done))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+                promise.future.foreach(_ => getAsyncCallback[Done](_ => complete(shape.out)).invoke(Done))(akka.dispatch.ExecutionContexts.parasitic)
               }
 
               setHandlers(shape.in, shape.out, this)
@@ -104,7 +104,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
               .joinMat(completeOnlySwitch.via(
                 Tcp(system).outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true)))(Keep.both)
           }(Keep.right)
-          .toMat(TestSink.probe[Message])(Keep.both)
+          .toMat(TestSink[Message]())(Keep.both)
           .run()
 
       response.futureValue.response.status.isSuccess should ===(true)

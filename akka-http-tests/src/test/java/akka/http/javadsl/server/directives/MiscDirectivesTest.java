@@ -52,6 +52,7 @@ public class MiscDirectivesTest extends JUnitRouteTest {
       .assertEntity("Path too long!");
   }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testClientIpExtraction() throws UnknownHostException {
     TestRoute route = testRoute(extractClientIP(ip -> complete(ip.toString())));

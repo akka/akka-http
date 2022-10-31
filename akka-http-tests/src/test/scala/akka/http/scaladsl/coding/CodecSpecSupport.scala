@@ -6,7 +6,6 @@ package akka.http.scaladsl.coding
 
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.matchers.should.Matchers
@@ -71,7 +70,6 @@ voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita ka
 est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy e""".replace("\r\n", "\n")
 
   implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 }

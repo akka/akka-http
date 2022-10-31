@@ -12,7 +12,6 @@ import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.StatusCodes;
 //#imports
 import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
 
 import java.io.IOException;
 //#imports

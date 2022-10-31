@@ -123,9 +123,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       /** Network pulls in new frames */
       def onPull(): Unit = updateState(_.onPull())
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         frameOutFinished()
-        super.onDownstreamFinish()
+        super.onDownstreamFinish(cause)
       }
 
       private var _state: MultiplexerState = Idle

@@ -8,7 +8,6 @@ import scala.util.control.NonFatal
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.model._
 import StatusCodes._
-import scala.language.implicitConversions
 
 trait ExceptionHandler extends ExceptionHandler.PF {
 

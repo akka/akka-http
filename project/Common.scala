@@ -26,7 +26,7 @@ object Common extends AutoPlugin {
     ),
     scalacOptions ++= onlyOnScala2(Seq("-Xlint")).value,
     javacOptions ++=
-      Seq("-encoding", "UTF-8") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
+      Seq("-encoding", "UTF-8", "-Xlint:deprecation") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
     // restrict to 'compile' scope because otherwise it is also passed to
     // javadoc and -target is not valid there.
     // https://github.com/sbt/sbt/issues/1785
@@ -36,8 +36,10 @@ object Common extends AutoPlugin {
 
     // in test code we often use destructing assignment, which now produces an exhaustiveness warning
     // when the type is asserted
-    Test / compile / scalacOptions += "-Wconf:msg=match may not be exhaustive:s",
-    Test / compile / scalacOptions += "-Wconf:cat=lint-infer-any:s",
+    Test / compile / scalacOptions ++=
+      Seq("-Wconf:msg=match may not be exhaustive:s",
+      "-Wconf:cat=lint-infer-any:s"
+      ),
 
     mimaReportSignatureProblems := true,
     Global / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"

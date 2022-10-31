@@ -19,9 +19,11 @@ import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
 
+@nowarn("msg=deprecated")
 class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eventually {
   import system.dispatcher
 

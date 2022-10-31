@@ -27,10 +27,11 @@ private[parser] trait ContentTypeHeader { this: Parser with CommonRules with Com
       case Nil =>
         val parameters = if (builder eq null) Map.empty[String, String] else builder.result()
         getMediaType(main, sub, charset.isDefined, parameters) match {
-          case x: MediaType.Binary                               => ContentType.Binary(x)
-          case x: MediaType.WithFixedCharset                     => ContentType.WithFixedCharset(x)
+          case x: MediaType.Binary => ContentType.Binary(x)
+          case x: MediaType.WithFixedCharset => ContentType.WithFixedCharset(x)
           case x: MediaType.WithOpenCharset if charset.isDefined => ContentType.WithCharset(x, charset.get)
-          case x: MediaType.WithOpenCharset if charset.isEmpty   => ContentType.WithMissingCharset(x)
+          case x: MediaType.WithOpenCharset if charset.isEmpty => ContentType.WithMissingCharset(x)
+          case other => throw new IllegalStateException(s"Unexpected type value: $other") // compiler completeness check pleaser
         }
 
       case Seq((key, value), tail @ _*) if equalsAsciiCaseInsensitive(key, "charset") =>
@@ -40,5 +41,6 @@ private[parser] trait ContentTypeHeader { this: Parser with CommonRules with Com
         val b = if (builder eq null) TreeMap.newBuilder[String, String] else builder
         b += kvp
         contentType(main, sub, tail, charset, b)
+      case other => throw new IllegalStateException(s"Unexpected params: $other") // compiler completeness check pleaser
     }
 }

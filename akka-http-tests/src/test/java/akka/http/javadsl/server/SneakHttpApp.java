@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@SuppressWarnings("deprecation")
 public class SneakHttpApp extends MinimalHttpApp {
 
   AtomicBoolean postServerShutdownCalled = new AtomicBoolean(false);
