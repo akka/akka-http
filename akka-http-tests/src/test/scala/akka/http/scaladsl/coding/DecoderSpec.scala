@@ -42,15 +42,12 @@ class DecoderSpec extends AnyWordSpec with CodecSpecSupport {
 
     override def newDecompressorStage(maxBytesPerChunk: Int): () => GraphStage[FlowShape[ByteString, ByteString]] =
       () => new SimpleLinearGraphStage[ByteString] {
-        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          setHandler(in, new InHandler {
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+          new GraphStageLogic(shape) with InHandler with OutHandler {
             override def onPush(): Unit = push(out, grab(in) ++ ByteString("compressed"))
-          })
-          setHandler(out, new OutHandler {
             override def onPull(): Unit = pull(in)
-          })
-        }
+            setHandlers(in, out, this)
+          }
       }
   }
-
 }

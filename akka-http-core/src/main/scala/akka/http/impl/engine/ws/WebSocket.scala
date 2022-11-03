@@ -271,16 +271,14 @@ private[http] object WebSocket {
 
     val shape = new FlowShape(in, out)
 
-    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      setHandler(out, new OutHandler {
+    def createLogic(effectiveAttributes: Attributes): GraphStageLogic with InHandler with OutHandler =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
         override def onPull(): Unit = pull(in)
-      })
-      setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
         override def onUpstreamFinish(): Unit = emit(out, UserHandlerCompleted, () => completeStage())
         override def onUpstreamFailure(ex: Throwable): Unit = emit(out, UserHandlerErredOut(ex), () => completeStage())
-      })
-    }
+        setHandlers(in, out, this)
+      }
   }
 
   case object Tick

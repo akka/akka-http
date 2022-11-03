@@ -51,37 +51,36 @@ private[http] class HttpResponseRendererFactory(
     val shape: FlowShape[ResponseRenderingContext, ResponseRenderingOutput] = FlowShape(in, out)
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-      new GraphStageLogic(shape) {
+      new GraphStageLogic(shape) with InHandler {
         var closeMode: CloseMode = DontClose // signals what to do after the current response
         def close: Boolean = closeMode != DontClose
         def closeIf(cond: Boolean): Unit = if (cond) closeMode = CloseConnection
         var transferSink: Option[SubSinkInlet[ByteString]] = None
         def transferring: Boolean = transferSink.isDefined
 
-        setHandler(in, new InHandler {
-          override def onPush(): Unit =
-            render(grab(in)) match {
-              case Strict(outElement) =>
-                push(out, outElement)
-                if (close) completeStage()
-              case HeadersAndStreamedEntity(headerData, outStream) =>
-                try transfer(headerData, outStream)
-                catch {
-                  case NonFatal(e) =>
-                    log.error(e, s"Rendering of response failed because response entity stream materialization failed with '${e.getMessage}'. Sending out 500 response instead.")
-                    push(out, render(ResponseRenderingContext(HttpResponse(500, entity = StatusCodes.InternalServerError.defaultMessage))).asInstanceOf[Strict].bytes)
-                }
-            }
-
-          override def onUpstreamFinish(): Unit =
-            if (transferring) closeMode = CloseConnection
-            else completeStage()
-
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            stopTransfer()
-            failStage(ex)
+        override def onPush(): Unit =
+          render(grab(in)) match {
+            case Strict(outElement) =>
+              push(out, outElement)
+              if (close) completeStage()
+            case HeadersAndStreamedEntity(headerData, outStream) =>
+              try transfer(headerData, outStream)
+              catch {
+                case NonFatal(e) =>
+                  log.error(e, s"Rendering of response failed because response entity stream materialization failed with '${e.getMessage}'. Sending out 500 response instead.")
+                  push(out, render(ResponseRenderingContext(HttpResponse(500, entity = StatusCodes.InternalServerError.defaultMessage))).asInstanceOf[Strict].bytes)
+              }
           }
-        })
+
+        override def onUpstreamFinish(): Unit =
+          if (transferring) closeMode = CloseConnection
+          else completeStage()
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          stopTransfer()
+          failStage(ex)
+        }
+
         private val waitForDemandHandler = new OutHandler {
           def onPull(): Unit = if (!hasBeenPulled(in)) tryPull(in)
         }
@@ -92,6 +91,7 @@ private[http] class HttpResponseRendererFactory(
           transferSink = None
         }
 
+        setHandler(in, this)
         setHandler(out, waitForDemandHandler)
         def transfer(headerData: ByteString, outStream: Source[ByteString, Any]): Unit = {
           val sinkIn = new SubSinkInlet[ByteString]("RenderingSink")

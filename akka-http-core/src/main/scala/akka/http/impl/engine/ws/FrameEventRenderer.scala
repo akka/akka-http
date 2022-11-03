@@ -33,7 +33,7 @@ private[http] final class FrameEventRenderer extends GraphStage[FlowShape[FrameE
 
           push(out, renderStart(start))
 
-        case f: FrameData =>
+        case _: FrameData =>
           fail(out, new IllegalStateException("unexpected FrameData (need FrameStart first)"))
       }
     }
