@@ -5,7 +5,6 @@
 @@@ index
 
 * [Security Announcements](security.md)
-* [Release Notes](release-notes/index.md)
 * [introduction](introduction.md)
 * [usage](usage.md)
 * [common/index](common/index.md)
@@ -16,5 +15,6 @@
 * [tips](tipsandtricks.md)
 * [contributing](contributing.md)
 * [reference](reference.md)
+* [Release Notes](release-notes/index.md)
 
 @@@
