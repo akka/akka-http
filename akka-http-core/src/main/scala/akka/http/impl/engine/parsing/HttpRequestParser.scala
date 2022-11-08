@@ -209,7 +209,7 @@ private[http] final class HttpRequestParser(
             setCompletionHandling(HttpMessageParser.CompletionOk)
             startNewMessage(input, bodyStart)
           } else if (!method.isEntityAccepted) {
-            failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
+            failMessageStart(UnprocessableContent, s"${method.name} requests must not have an entity")
           } else if (contentLength <= input.size - bodyStart) {
             val cl = contentLength.toInt
             emitRequestStart(strictEntity(cth, input, bodyStart, cl))
@@ -221,7 +221,7 @@ private[http] final class HttpRequestParser(
           }
         } else {
           if (!method.isEntityAccepted) {
-            failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
+            failMessageStart(UnprocessableContent, s"${method.name} requests must not have an entity")
           } else {
             if (clh.isEmpty) {
               emitRequestStart(chunkedEntity(cth), headers)

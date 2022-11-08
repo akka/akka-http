@@ -130,7 +130,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     }
 
     Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
-      status shouldEqual StatusCodes.PayloadTooLarge
+      status shouldEqual StatusCodes.ContentTooLarge
     }
 
     //#withSizeLimit-example
@@ -175,7 +175,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     }
 
     Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
-      status shouldEqual StatusCodes.PayloadTooLarge
+      status shouldEqual StatusCodes.ContentTooLarge
     }
     //#withSizeLimit-nested-example
   }

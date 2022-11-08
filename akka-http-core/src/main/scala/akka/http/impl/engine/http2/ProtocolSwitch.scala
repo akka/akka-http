@@ -60,11 +60,7 @@ private[http] object ProtocolSwitch {
                 }
             })
 
-            private val ignorePull = new OutHandler {
-              def onPull(): Unit = ()
-            }
-
-            setHandler(netOut, ignorePull)
+            setHandler(netOut, GraphStageLogic.EagerTerminateOutput)
 
             def install(serverImplementation: HttpImplementation, firstElement: SslTlsInbound): Unit = {
               val networkSide = Flow.fromSinkAndSource(serverDataIn.sink, serverDataOut.source)

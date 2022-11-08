@@ -11,7 +11,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonDatabindVersion = "2.13.4"
+  val jacksonDatabindVersion = "2.13.4.2"
   val jacksonXmlVersion = "2.13.4"
   val junitVersion = "4.13.2"
   val h2specVersion = "1.5.0"
@@ -25,8 +25,8 @@ object Dependencies {
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
-  val scala212Version = "2.12.15"
-  val scala213Version = "2.13.8"
+  val scala212Version = "2.12.17"
+  val scala213Version = "2.13.10"
   val scala3Version = "3.1.3"
   val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
@@ -67,7 +67,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.9.1"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.10"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion      % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.10.2"            % "test" // WTFPL
     }

@@ -37,6 +37,7 @@ object Common extends AutoPlugin {
     // in test code we often use destructing assignment, which now produces an exhaustiveness warning
     // when the type is asserted
     Test / compile / scalacOptions += "-Wconf:msg=match may not be exhaustive:s",
+    Test / compile / scalacOptions += "-Wconf:cat=lint-infer-any:s",
 
     mimaReportSignatureProblems := true,
     Global / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"
