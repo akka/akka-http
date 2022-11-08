@@ -18,7 +18,7 @@ Key links:
 
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
 - [ ] For minor or major versions, update the Change date in the LICENSE file and update the `licenses` url in the build.
-- [ ] Create a PR to add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone
+- [ ] For minor or major versions, add a release notes entry in `docs/src/main/paradox/release-notes/`.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka-http/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka-http/milestones?direction=asc&sort=due_date)
 - [ ] Make sure all important PRs have been merged
