@@ -13,17 +13,22 @@ object Common extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
   override lazy val projectSettings = Seq(
     projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
-    scalacOptions ++= Seq(
-      "-deprecation",
-      "-encoding", "UTF-8", // yes, this is 2 args
-      "-release", "8",
-      "-unchecked",
-      "-Ywarn-dead-code",
-      // Silence deprecation notices for changes introduced in Scala 2.12
-      // Can be removed when we drop support for Scala 2.12:
-      "-Wconf:msg=object JavaConverters in package collection is deprecated:s",
-      "-Wconf:msg=is deprecated \\(since 2\\.13\\.:s",
-    ),
+    scalacOptions ++=
+      Seq(
+        "-deprecation",
+        "-encoding", "UTF-8", // yes, this is 2 args
+        "-release", "8",
+        "-unchecked",
+        // Silence deprecation notices for changes introduced in Scala 2.12
+        // Can be removed when we drop support for Scala 2.12:
+        "-Wconf:msg=object JavaConverters in package collection is deprecated:s",
+        "-Wconf:msg=is deprecated \\(since 2\\.13\\.:s") ++
+      (if (scalaVersion.value.startsWith("2."))
+        // Scala 2.x
+        Seq("-Ywarn-dead-code")
+      else
+        // Scala 3
+        Seq.empty),
     scalacOptions ++= onlyOnScala2(Seq("-Xlint")).value,
     javacOptions ++=
       Seq("-encoding", "UTF-8", "-Xlint:deprecation") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
@@ -37,9 +42,15 @@ object Common extends AutoPlugin {
     // in test code we often use destructing assignment, which now produces an exhaustiveness warning
     // when the type is asserted
     Test / compile / scalacOptions ++=
-      Seq("-Wconf:msg=match may not be exhaustive:s",
-      "-Wconf:cat=lint-infer-any:s"
-      ),
+      (if (scalaVersion.value.startsWith("2.")) {
+        // Scala 2.x
+        Seq(
+          "-Wconf:msg=match may not be exhaustive:s",
+          "-Wconf:cat=lint-infer-any:s")
+      } else {
+        // Scala 3
+        Seq.empty
+      }),
 
     mimaReportSignatureProblems := true,
     Global / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"

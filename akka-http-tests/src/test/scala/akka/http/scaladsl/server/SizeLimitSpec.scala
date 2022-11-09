@@ -46,7 +46,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
     """)
   implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-  implicit val materializer = Materializer.createMaterializer(system)
+  implicit val materializer: Materializer = Materializer.createMaterializer(system)
   val random = new scala.util.Random(42)
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
