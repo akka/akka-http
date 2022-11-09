@@ -19,16 +19,19 @@ object Common extends AutoPlugin {
         "-encoding", "UTF-8", // yes, this is 2 args
         "-release", "8",
         "-unchecked",
-        // Silence deprecation notices for changes introduced in Scala 2.12
-        // Can be removed when we drop support for Scala 2.12:
-        "-Wconf:msg=object JavaConverters in package collection is deprecated:s",
         "-Wconf:msg=is deprecated \\(since 2\\.13\\.:s") ++
       (if (scalaVersion.value.startsWith("2."))
         // Scala 2.x
-        Seq("-Ywarn-dead-code")
+        Seq("-Ywarn-dead-code",
+          // Silence deprecation notices for changes introduced in Scala 2.12
+          // Can be removed when we drop support for Scala 2.12:
+          "-Wconf:msg=object JavaConverters in package collection is deprecated:s",
+        )
       else
         // Scala 3
-        Seq.empty),
+        Seq(
+          "-Wconf:msg=does not suppress any warnings:s" // some are warnings in 2.12
+        )),
     scalacOptions ++= onlyOnScala2(Seq("-Xlint")).value,
     javacOptions ++=
       Seq("-encoding", "UTF-8", "-Xlint:deprecation") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
