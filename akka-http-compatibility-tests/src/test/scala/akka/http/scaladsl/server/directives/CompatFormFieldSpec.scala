@@ -20,16 +20,6 @@ class CompatFormFieldSpec extends RoutingSpec {
           responseAs[String] shouldEqual "12"
         }
       }
-      "for two parameters" in {
-        val req = Post("/", FormData("name" -> "Aloisia", "age" -> "12"))
-        req ~> CompatFormField.twoParameters(echoComplete2) ~> check {
-          responseAs[String] shouldEqual "Aloisia 12"
-        }
-
-        req ~> CompatFormField.twoParametersRoute ~> check {
-          responseAs[String] shouldEqual "Aloisia 12"
-        }
-      }
     } else
       "ignore incompatiblity in 2.13" in succeed
 
