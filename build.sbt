@@ -29,7 +29,7 @@ inThisBuild(Def.settings(
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
-  licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/akka-http/main/LICENSE.txt"))), // FIXME change s/main/v10.4.1/ when released
+  licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/akka-http/main/LICENSE.txt"))), // FIXME change s/main/v10.5.0/ when released
   description := "Akka Http: Modern, fast, asynchronous, streaming-first HTTP server and client.",
   testOptions ++= Seq(
     Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),

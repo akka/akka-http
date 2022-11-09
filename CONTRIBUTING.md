@@ -16,9 +16,9 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `main` – active development branch of akka-http 10.4.x
-* `release-10.2` – branch for fixes to akka-http 10.2.x
-* `release-10.1` – branch for fixes to akka-http 10.1.x
+* `main` – active development branch of akka-http 10.5.x
+* `release-10.4` - maintenance branch for akka-http 10.4.x
+* `release-10.2` – maintenance branch for akka-http 10.2.x (only critical bug and security fixes)
 
 ## Tags
 
