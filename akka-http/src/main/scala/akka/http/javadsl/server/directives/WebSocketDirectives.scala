@@ -10,7 +10,6 @@ import java.util.Optional
 import java.util.function.{ Function => JFunction }
 
 import akka.NotUsed
-import scala.collection.JavaConverters._
 import akka.http.scaladsl.model.{ ws => s }
 import akka.http.javadsl.model.ws.Message
 import akka.http.javadsl.model.ws.UpgradeToWebSocket
@@ -50,7 +49,8 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * this is a WebSocket request. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
   def extractOfferedWsProtocols(inner: JFunction[JList[String], Route]): Route = RouteAdapter {
-    D.extractOfferedWsProtocols { list =>
+    import scala.collection.JavaConverters._
+    D.extractOfferedWsProtocols { (list: Seq[String]) =>
       inner.apply(list.asJava).delegate
     }
   }

@@ -386,7 +386,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AkkaSpe
       generalRawMultiParseTo(GET, expected: _*)
     def generalRawMultiParseTo(requestMethod: HttpMethod, expected: Either[ResponseOutput, HttpResponse]*): Matcher[Seq[String]] =
       equal(expected.map(strictEqualify))
-        .matcher[Seq[Either[ResponseOutput, StrictEqualHttpResponse]]] compose { input: Seq[String] =>
+        .matcher[Seq[Either[ResponseOutput, StrictEqualHttpResponse]]] compose { (input: Seq[String]) =>
           collectBlocking {
             rawParse(requestMethod, input: _*)
               .mapAsync(1) {

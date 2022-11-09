@@ -20,8 +20,10 @@ import scala.concurrent.duration._
 
 class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
 
+  import akka.http.ccompat.ImplicitUtils._
+
   // tests touches filesystem, so reqs may take longer than the default of 1.second to complete
-  implicit val routeTimeout = RouteTestTimeout(6.seconds.dilated)
+  implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
 
   "the storeUploadedFile directive" should {
     val data = s"<int>${"42" * 1000000}</int>" // ~2MB of data

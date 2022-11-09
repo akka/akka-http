@@ -7,7 +7,7 @@ package akka.http.impl.model.parser
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 
-private[parser] trait AcceptLanguageHeader { this: Parser with CommonRules with CommonActions =>
+private[parser] trait AcceptLanguageHeader { this: Parser with CommonRules with CommonActions with StringBuilding =>
 
   // http://tools.ietf.org/html/rfc7231#section-5.3.5
   def `accept-language` = rule {

@@ -22,9 +22,9 @@ import scala.util.{ Failure, Success }
  * An example App that runs a quick test against the websocket server at wss://echo.websocket.org
  */
 object EchoTestClientApp extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   def delayedCompletion(delay: FiniteDuration): Source[Nothing, NotUsed] =
     Source.single(1)

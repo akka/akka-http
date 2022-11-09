@@ -29,7 +29,7 @@ import scala.util.control.NoStackTrace
  * Mixed into the Http2ServerDemux graph logic.
  */
 @InternalApi
-private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper =>
+private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper { self =>
   // required API from demux
   def isServer: Boolean
   def multiplexer: Http2Multiplexer
@@ -235,7 +235,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
    *   * Open -> HalfClosedRemoteSendingData: on receiving response DATA with endStream = true before request has been fully sent out (uncommon)
    *   * HalfClosedRemoteSendingData -> Closed: on sending out request DATA with endStream = true
    */
-  sealed abstract class StreamState { _: Product =>
+  sealed abstract class StreamState { self: Product =>
     def handle(event: StreamFrameEvent): StreamState
 
     def stateName: String = productPrefix
@@ -350,7 +350,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
     override def incrementWindow(delta: Int): StreamState = copy(extraInitialWindow = extraInitialWindow + delta)
   }
-  trait Sending extends StreamState { _: Product =>
+  trait Sending extends StreamState { self: Product =>
     protected def outStream: OutStream
 
     override def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = {
@@ -365,7 +365,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         }
 
       val nextState =
-        if (outStream.isDone) handleOutgoingEnded()
+        if (outStream.isDone) this.handleOutgoingEnded()
         else this
 
       (nextState, res)
@@ -408,10 +408,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         // We're not planning on sending any data on this stream anymore, so we don't care about window updates.
         this
       case _ =>
-        expectIncomingStream(event, Closed, HalfClosedLocal, correlationAttributes)
+        expectIncomingStream(event, Closed, HalfClosedLocal(_), correlationAttributes)
     }
   }
-  sealed abstract class ReceivingData extends StreamState { _: Product =>
+  sealed abstract class ReceivingData extends StreamState { self: Product =>
     def handle(event: StreamFrameEvent): StreamState = event match {
       case d: DataFrame =>
         outstandingConnectionLevelWindow -= d.sizeInWindow
@@ -448,7 +448,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     protected def incrementWindow(delta: Int): StreamState
     protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit
   }
-  sealed abstract class ReceivingDataWithBuffer(afterEndStreamReceived: StreamState) extends ReceivingData { _: Product =>
+  sealed abstract class ReceivingDataWithBuffer(afterEndStreamReceived: StreamState) extends ReceivingData { self: Product =>
     protected def buffer: IncomingStreamBuffer
 
     override protected def onDataFrame(dataFrame: DataFrame): StreamState = {

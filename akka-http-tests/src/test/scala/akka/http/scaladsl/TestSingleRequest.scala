@@ -19,8 +19,8 @@ object TestSingleRequest extends App {
     akka.log-dead-letters = off
     akka.stream.materializer.debug.fuzzing-mode = off
     """)
-  implicit val system = ActorSystem("ServerTest", testConf)
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
   import system.dispatcher
 
   val url = StdIn.readLine("url? ")

@@ -55,7 +55,7 @@ class PrepareRequestsSpec extends AkkaSpec {
   "The PrepareRequest stage" should {
 
     "not fail when there is demand from both streamed entity consumption and regular flow" in {
-      implicit val materializer = ActorMaterializer()
+      implicit val materializer: ActorMaterializer = ActorMaterializer()
       // covers bug #19623 where a reply before the streamed
       // body has been consumed causes pull/push twice
       val inProbe = TestPublisher.manualProbe[ParserOutput.RequestOutput]()
@@ -115,7 +115,7 @@ class PrepareRequestsSpec extends AkkaSpec {
     }
 
     "not complete running entity stream when upstream cancels" in {
-      implicit val materializer = ActorMaterializer()
+      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
       val inProbe = TestPublisher.manualProbe[ParserOutput.RequestOutput]()
       val upstreamProbe = TestSubscriber.manualProbe[HttpRequest]()
@@ -166,7 +166,7 @@ class PrepareRequestsSpec extends AkkaSpec {
 
     "complete stage if chunked stream is completed without reaching end of chunks" in {
       // a bit unsure about this, but to document the assumption
-      implicit val materializer = ActorMaterializer()
+      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
       val inProbe = TestPublisher.manualProbe[ParserOutput.RequestOutput]()
       val upstreamProbe = TestSubscriber.manualProbe[HttpRequest]()
@@ -207,7 +207,7 @@ class PrepareRequestsSpec extends AkkaSpec {
     }
 
     "cancel the stage when the entity stream is canceled" in {
-      implicit val materializer = ActorMaterializer()
+      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
       val inProbe = TestPublisher.manualProbe[ParserOutput.RequestOutput]()
       val upstreamProbe = TestSubscriber.manualProbe[HttpRequest]()

@@ -24,16 +24,16 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def fileIODispatcher: String
 
   /* Java APIs */
-  def getVerboseErrorMessages: Boolean = verboseErrorMessages
-  def getFileGetConditional: Boolean = fileGetConditional
-  def getRenderVanityFooter: Boolean = renderVanityFooter
-  def getRangeCountLimit: Int = rangeCountLimit
-  def getRangeCoalescingThreshold: Long = rangeCoalescingThreshold
-  def getDecodeMaxBytesPerChunk: Int = decodeMaxBytesPerChunk
-  def getDecodeMaxSize: Long = decodeMaxSize
+  def getVerboseErrorMessages: Boolean = this.verboseErrorMessages
+  def getFileGetConditional: Boolean = this.fileGetConditional
+  def getRenderVanityFooter: Boolean = this.renderVanityFooter
+  def getRangeCountLimit: Int = this.rangeCountLimit
+  def getRangeCoalescingThreshold: Long = this.rangeCoalescingThreshold
+  def getDecodeMaxBytesPerChunk: Int = this.decodeMaxBytesPerChunk
+  def getDecodeMaxSize: Long = this.decodeMaxSize
   @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
   @Deprecated
-  def getFileIODispatcher: String = fileIODispatcher
+  def getFileIODispatcher: String = this.fileIODispatcher
 
   override def withVerboseErrorMessages(verboseErrorMessages: Boolean): RoutingSettings = self.copy(verboseErrorMessages = verboseErrorMessages)
   override def withFileGetConditional(fileGetConditional: Boolean): RoutingSettings = self.copy(fileGetConditional = fileGetConditional)

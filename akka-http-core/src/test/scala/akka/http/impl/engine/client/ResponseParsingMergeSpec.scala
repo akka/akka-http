@@ -24,7 +24,7 @@ class ResponseParsingMergeSpec extends AkkaSpec {
   "The ResponseParsingMerge stage" should {
 
     "not lose entity truncation errors on upstream finish" in {
-      implicit val mat = ActorMaterializer()
+      implicit val mat: ActorMaterializer = ActorMaterializer()
 
       val inBypassProbe = TestPublisher.manualProbe[OutgoingConnectionBlueprint.BypassData]()
       val inSessionBytesProbe = TestPublisher.manualProbe[SessionBytes]()

@@ -419,7 +419,7 @@ private[engine] final class HttpHeaderParser private (
     charBuffer.flip()
     val result =
       if (coderResult.isUnderflow & charBuffer.hasRemaining) {
-        val c = charBuffer.get()
+        val c = charBuffer.get().toInt
         if (charBuffer.hasRemaining) (charBuffer.get() << 16) | c else c
       } else -1
     byteBuffer.clear()

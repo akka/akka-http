@@ -116,8 +116,10 @@ private[http] object Renderer {
         if (value.isEmpty) sRenderer.render(r, defaultValue) else tRenderer.render(r, value.get)
     }
 
-  def defaultSeqRenderer[T: Renderer] = genericSeqRenderer[Renderable, T](Rendering.`, `, Rendering.Empty)
-  def seqRenderer[T: Renderer](separator: String = ", ", empty: String = "") = genericSeqRenderer[String, T](separator, empty)
+  def defaultSeqRenderer[T: Renderer]: Renderer[immutable.Iterable[T]] =
+    genericSeqRenderer[Renderable, T](Rendering.`, `, Rendering.Empty)
+  def seqRenderer[T: Renderer](separator: String = ", ", empty: String = ""): Renderer[immutable.Iterable[T]] =
+    genericSeqRenderer[String, T](separator, empty)
   def genericSeqRenderer[S, T](separator: S, empty: S)(implicit sRenderer: Renderer[S], tRenderer: Renderer[T]): Renderer[immutable.Iterable[T]] =
     new Renderer[immutable.Iterable[T]] {
       def render[R <: Rendering](r: R, value: immutable.Iterable[T]): r.type = {
@@ -216,7 +218,7 @@ private[http] trait Rendering {
   /**
    * Renders the given string in double quotes.
    */
-  def ~~#!(s: String): this.type = ~~('"').putEscaped(s) ~~ '"'
+  def ~~#!(s: String): this.type = this.~~('"').putEscaped(s, Rendering.`\"`, '\\').~~('"')
 
   def putEscaped(s: String, escape: CharPredicate = Rendering.`\"`, escChar: Char = '\\'): this.type = {
     @tailrec def rec(ix: Int = 0): this.type =

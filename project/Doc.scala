@@ -63,11 +63,15 @@ object Scaladoc extends AutoPlugin {
       "-sourcepath", base.getAbsolutePath,
       "-doc-title", "Akka HTTP",
       "-doc-version", ver,
-      // Workaround https://issues.scala-lang.org/browse/SI-10028
-      "-skip-packages", "akka.pattern:org.specs2",
       "-doc-canonical-base-url", "https://doc.akka.io/api/akka-http/current/"
     ) ++
-      plugins.map(plugin => "-Xplugin:" + plugin)
+      plugins.map(plugin => "-Xplugin:" + plugin) ++
+      // Workaround https://issues.scala-lang.org/browse/SI-10028
+      (if (scalaBinaryVersion == "3")
+          // https://github.com/lampepfl/dotty/issues/14939
+          List("-skip-packages:akka.pattern:org.specs2")
+       else
+          List("-skip-packages", "akka.pattern:org.specs2"))
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 

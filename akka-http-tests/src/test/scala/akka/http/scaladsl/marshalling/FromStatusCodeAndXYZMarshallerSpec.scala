@@ -9,13 +9,14 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{ ContentTypes, MediaRanges, MediaTypes }
 import akka.http.scaladsl.server.{ Route, RoutingSpec }
+import spray.json.RootJsonFormat
 
 class FromStatusCodeAndXYZMarshallerSpec extends RoutingSpec {
   case class ErrorInfo(errorMessage: String)
   // a somewhat arbitrary ErrorInfo marshaller that can either return a text or an application/json response
   implicit val errorInfoMarshaller: ToEntityMarshaller[ErrorInfo] = {
     import spray.json.DefaultJsonProtocol._
-    implicit val errorInfoFormat = jsonFormat1(ErrorInfo.apply _)
+    implicit val errorInfoFormat: RootJsonFormat[ErrorInfo] = jsonFormat1(ErrorInfo.apply _)
     Marshaller.oneOf(
       Marshaller.StringMarshaller.compose[ErrorInfo](_.errorMessage),
       SprayJsonSupport.sprayJsonMarshaller(errorInfoFormat)

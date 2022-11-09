@@ -10,7 +10,7 @@ import scala.collection.immutable.TreeMap
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model._
 
-private[parser] trait ContentTypeHeader { this: Parser with CommonRules with CommonActions =>
+private[parser] trait ContentTypeHeader { this: Parser with CommonRules with CommonActions with StringBuilding =>
 
   // http://tools.ietf.org/html/rfc7231#section-3.1.1.5
   def `content-type` = rule {

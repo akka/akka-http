@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,8 @@
 
 package akka.parboiled2
 
-import java.lang.{ StringBuilder => JStringBuilder }
 import scala.annotation.tailrec
+import java.lang.{ StringBuilder => JStringBuilder }
 
 /**
  * Abstraction for error formatting logic.
@@ -41,7 +41,8 @@ class ErrorFormatter(
   showTraces:           Boolean = false,
   showFrameStartOffset: Boolean = true,
   expandTabs:           Int     = -1,
-  traceCutOff:          Int     = 120) {
+  traceCutOff:          Int     = 120
+) {
 
   /**
    * Formats the given [[ParseError]] into a String using the settings configured for this formatter instance.
@@ -76,7 +77,10 @@ class ErrorFormatter(
     if (ix < input.length) {
       val chars = mismatchLength(error)
       if (chars == 1) sb.append("Invalid input '").append(CharUtils.escape(input charAt ix)).append('\'')
-      else sb.append("Invalid input \"").append(CharUtils.escape(input.sliceString(ix, ix + chars))).append('"')
+      else
+        sb.append("Invalid input \"")
+          .append(CharUtils.escape(input.sliceString(ix, math.min(ix + chars, input.length))))
+          .append('"')
     } else sb.append("Unexpected end of input")
   }
 
@@ -133,7 +137,7 @@ class ErrorFormatter(
    * Formats what is expected at the error location as a [[List]] of Strings.
    */
   def formatExpectedAsList(error: ParseError): List[String] = {
-    val distinctStrings: Set[String] = error.effectiveTraces.iterator.map(formatAsExpected).toSet
+    val distinctStrings = error.effectiveTraces.map(formatAsExpected).distinct
     distinctStrings.toList
   }
 
@@ -187,8 +191,14 @@ class ErrorFormatter(
    */
   def formatTraces(error: ParseError): String = {
     import error._
-    traces.map(formatTrace(_, position.index)).mkString(s"${traces.size} rule" + (if (traces.size != 1) "s" else "") +
-      " mismatched at error location:\n  ", "\n  ", "\n")
+    traces
+      .map(formatTrace(_, position.index))
+      .mkString(
+        s"${traces.size} rule${(if (traces.size != 1) "s" else "")}" +
+          " mismatched at error location:\n  ",
+        "\n  ",
+        "\n"
+      )
   }
 
   /**
@@ -200,8 +210,11 @@ class ErrorFormatter(
     val doSep: String => JStringBuilder = sb.append
     val dontSep: String => JStringBuilder = _ => sb
     def render(names: List[String], sep: String = "") = if (names.nonEmpty) names.reverse.mkString("", ":", sep) else ""
-    @tailrec def rec(remainingPrefix: List[RuleTrace.NonTerminal], names: List[String],
-                     sep: String => JStringBuilder): JStringBuilder =
+    @tailrec def rec(
+      remainingPrefix: List[RuleTrace.NonTerminal],
+      names:           List[String],
+      sep:             String => JStringBuilder
+    ): JStringBuilder =
       remainingPrefix match {
         case NonTerminal(Named(name), _) :: tail =>
           rec(tail, name :: names, sep)
@@ -228,7 +241,8 @@ class ErrorFormatter(
    */
   def formatNonTerminal(
     nonTerminal:          RuleTrace.NonTerminal,
-    showFrameStartOffset: Boolean               = showFrameStartOffset): String = {
+    showFrameStartOffset: Boolean               = showFrameStartOffset
+  ): String = {
     import RuleTrace._
     import CharUtils.escape
     val keyString = nonTerminal.key match {

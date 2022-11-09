@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,10 @@
 package akka.parboiled2
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.reflect.internal.annotations.compileTimeOnly
+import scala.annotation.compileTimeOnly
 import scala.collection.immutable
 import akka.parboiled2.support._
-import akka.shapeless.HList
+import akka.parboiled2.support.hlist.HList
 
 sealed trait RuleX
 
@@ -48,7 +48,8 @@ sealed class Rule[-I <: HList, +O <: HList] extends RuleX {
   @compileTimeOnly("Calls to `~` must be inside `rule` macro")
   def ~[I2 <: HList, O2 <: HList](that: Rule[I2, O2])(implicit
     i: TailSwitch[I2, O @uncheckedVariance, I @uncheckedVariance],
-                                                      o: TailSwitch[O @uncheckedVariance, I2, O2]): Rule[i.Out, o.Out] = `n/a`
+                                                      o: TailSwitch[O @uncheckedVariance, I2, O2]
+  ): Rule[i.Out, o.Out] = `n/a`
 
   /**
    * Same as `~` but with "cut" semantics, meaning that the parser will never backtrack across this boundary.
@@ -57,7 +58,8 @@ sealed class Rule[-I <: HList, +O <: HList] extends RuleX {
   @compileTimeOnly("Calls to `~!~` must be inside `rule` macro")
   def ~!~[I2 <: HList, O2 <: HList](that: Rule[I2, O2])(implicit
     i: TailSwitch[I2, O @uncheckedVariance, I @uncheckedVariance],
-                                                        o: TailSwitch[O @uncheckedVariance, I2, O2]): Rule[i.Out, o.Out] = `n/a`
+                                                        o: TailSwitch[O @uncheckedVariance, I2, O2]
+  ): Rule[i.Out, o.Out] = `n/a`
 
   /**
    * Combines this rule with the given other one in a way that the resulting rule matches if this rule matches
@@ -115,19 +117,9 @@ sealed class Rule[-I <: HList, +O <: HList] extends RuleX {
 /**
  * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
  */
-object Rule extends Rule0 {
-  /**
-   * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
-   */
-  implicit class Runnable[L <: HList](rule: RuleN[L]) {
-    def run()(implicit scheme: Parser.DeliveryScheme[L]): scheme.Result = macro ParserMacros.runImpl[L]
-  }
-}
+object Rule extends Rule0 with RuleRunnable
 
-abstract class RuleDSL
-  extends RuleDSLBasics
-  with RuleDSLCombinators
-  with RuleDSLActions
+abstract class RuleDSL extends RuleDSLBasics with RuleDSLCombinators with RuleDSLActions
 
 // phantom type for WithSeparatedBy pimp
 trait Repeated

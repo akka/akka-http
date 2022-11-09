@@ -55,7 +55,7 @@ class RejectionHandlerBuilder(asScala: server.RejectionHandler.Builder) {
    * The list passed to the given function is guaranteed to be non-empty.
    */
   def handleAll[T <: Rejection](t: Class[T], handler: function.Function[java.util.List[T], Route]): RejectionHandlerBuilder = {
-    asScala.handleAll { rejections: collection.immutable.Seq[T] => handler.apply(rejections.asJava).delegate }(ClassTag(t))
+    asScala.handleAll { (rejections: collection.immutable.Seq[T]) => handler.apply(rejections.asJava).delegate }(ClassTag(t))
     this
   }
 

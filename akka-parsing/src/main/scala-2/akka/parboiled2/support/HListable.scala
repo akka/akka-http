@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package akka.shapeless
+package akka.parboiled2.support
 
-/** Dependent unary function type. */
-trait DepFn1[T] {
-  type Out
-  def apply(t: T): Out
+import akka.parboiled2.support.hlist._
+
+trait HListable[T] {
+  type Out <: HList
 }
 
-/** Dependent binary function type. */
-trait DepFn2[T, U] {
-  type Out
-  def apply(t: T, u: U): Out
+object HListable extends LowerPriorityHListable {
+  implicit def fromUnit: HListable[Unit] { type Out = HNil } = `n/a`
+  implicit def fromHList[T <: HList]: HListable[T] { type Out = T } = `n/a`
+}
+
+abstract class LowerPriorityHListable {
+  implicit def fromAnyRef[T]: HListable[T] { type Out = T :: HNil } = `n/a`
 }

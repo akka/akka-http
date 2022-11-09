@@ -78,10 +78,10 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
 
     val masterTerminator = new MasterServerTerminator(log)
 
-    Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, Duration.Inf) // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
+    Tcp(system).bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, Duration.Inf) // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
       .via(if (telemetry == NoOpTelemetry) Flow[Tcp.IncomingConnection] else telemetry.serverBinding)
       .mapAsyncUnordered(settings.maxConnections) {
-        incoming: Tcp.IncomingConnection =>
+        (incoming: Tcp.IncomingConnection) =>
           try {
             httpPlusSwitching(http1, http2).addAttributes(prepareServerAttributes(settings, incoming))
               .watchTermination() {
@@ -263,7 +263,7 @@ private[http] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvide
   override def get(system: ClassicActorSystemProvider): Http2Ext = super.get(system)
   def apply()(implicit system: ClassicActorSystemProvider): Http2Ext = super.apply(system)
   override def apply(system: ActorSystem): Http2Ext = super.apply(system)
-  def lookup(): ExtensionId[_ <: Extension] = Http2
+  def lookup: ExtensionId[_ <: Extension] = Http2
   def createExtension(system: ExtendedActorSystem): Http2Ext = new Http2Ext()(system)
 
   private[http] type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, ServerTerminator]

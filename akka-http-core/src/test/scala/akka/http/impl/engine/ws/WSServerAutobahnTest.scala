@@ -20,8 +20,8 @@ import akka.stream.scaladsl.Flow
 import scala.io.StdIn
 
 object WSServerAutobahnTest extends App {
-  implicit val system = ActorSystem("WSServerTest")
-  implicit val fm = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("WSServerTest")
+  implicit val fm: ActorMaterializer = ActorMaterializer()
 
   val host = System.getProperty("akka.ws-host", "127.0.0.1")
   val port = System.getProperty("akka.ws-port", "9001").toInt

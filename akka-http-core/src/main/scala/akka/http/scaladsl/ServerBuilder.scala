@@ -131,7 +131,7 @@ private[http] object ServerBuilder {
     system:       ClassicActorSystemProvider,
     materializer: Materializer
   ) extends ServerBuilder {
-    private val http: scaladsl.HttpExt = scaladsl.Http(system)
+    private val http: scaladsl.HttpExt = scaladsl.Http(system.classicSystem)
 
     def onInterface(newInterface: String): ServerBuilder = copy(interface = newInterface)
     def onPort(newPort: Int): ServerBuilder = copy(port = newPort)

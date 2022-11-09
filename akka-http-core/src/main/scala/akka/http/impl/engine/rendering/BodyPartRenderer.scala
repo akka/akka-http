@@ -139,7 +139,7 @@ private[http] object BodyPartRenderer {
   def randomBoundary(length: Int = 18, random: java.util.Random = ThreadLocalRandom.current()): String = {
     val array = new Array[Byte](length)
     random.nextBytes(array)
-    Base64.custom.encodeToString(array, false)
+    Base64.custom().encodeToString(array, false)
   }
 
   /**

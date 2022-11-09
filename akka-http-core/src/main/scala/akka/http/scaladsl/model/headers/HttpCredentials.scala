@@ -23,7 +23,7 @@ final case class BasicHttpCredentials(username: String, password: String) extend
   val cookie = {
     val userPass = username + ':' + password
     val bytes = userPass.getBytes(`UTF-8`.nioCharset)
-    Base64.rfc2045.encodeToChar(bytes, false)
+    Base64.rfc2045().encodeToChar(bytes, false)
   }
   def render[R <: Rendering](r: R): r.type = r ~~ "Basic " ~~ cookie
 
@@ -34,7 +34,7 @@ final case class BasicHttpCredentials(username: String, password: String) extend
 
 object BasicHttpCredentials {
   def apply(credentials: String): BasicHttpCredentials = {
-    val bytes = Base64.rfc2045.decodeFast(credentials)
+    val bytes = Base64.rfc2045().decodeFast(credentials)
     val userPass = new String(bytes, `UTF-8`.nioCharset)
     userPass.indexOf(':') match {
       case -1 => apply(userPass, "")

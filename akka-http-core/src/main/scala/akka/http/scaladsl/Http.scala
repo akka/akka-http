@@ -10,7 +10,7 @@ import javax.net.ssl._
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.http2.Http2
@@ -133,7 +133,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
     )
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
-    Tcp()
+    Tcp(system)
       .bind(
         interface,
         port,
@@ -1105,7 +1105,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   def apply()(implicit system: ClassicActorSystemProvider): HttpExt = super.apply(system)
   override def apply(system: ActorSystem): HttpExt = super.apply(system)
 
-  def lookup() = Http
+  def lookup = Http
 
   def createExtension(system: ExtendedActorSystem): HttpExt =
     new HttpExt(system.settings.config getConfig "akka.http")(system)
@@ -1160,7 +1160,7 @@ trait DefaultSSLContextCreation {
   def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     val config = sslConfig.config
 
-    val log = Logging(system, getClass)
+    val log = Logging(system, getClass)(LogSource.fromClass)
     val mkLogger = new AkkaLoggerFactory(system)
 
     // initial ssl context!

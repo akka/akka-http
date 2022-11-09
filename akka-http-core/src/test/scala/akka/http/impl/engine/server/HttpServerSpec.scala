@@ -48,7 +48,7 @@ class HttpServerSpec extends AkkaSpec(
      akka.http.server.log-unencrypted-network-bytes = 100
      akka.http.server.request-timeout = infinite
   """) with Inside with WithLogCapturing { spec =>
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   "The server implementation" should {
     "deliver an empty request as soon as all headers are received" in assertAllStagesStopped(new TestSetup {

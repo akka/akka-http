@@ -8,7 +8,7 @@ import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers.`Accept-Charset`
 import akka.http.scaladsl.model.HttpCharsetRange
 
-private[parser] trait AcceptCharsetHeader { this: Parser with CommonRules with CommonActions =>
+private[parser] trait AcceptCharsetHeader { this: Parser with CommonRules with CommonActions with StringBuilding =>
 
   // http://tools.ietf.org/html/rfc7231#section-5.3.3
   def `accept-charset` = rule {

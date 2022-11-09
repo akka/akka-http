@@ -4,18 +4,17 @@
 
 package akka.http.impl.util
 
-import akka.stream.{ ActorMaterializer, Attributes }
+import akka.stream.{ ActorMaterializer, Attributes, Materializer }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
 
 class StreamUtilsSpec extends AkkaSpec with ScalaFutures {
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: Materializer = ActorMaterializer()
 
   "captureTermination" should {
     "signal completion" when {

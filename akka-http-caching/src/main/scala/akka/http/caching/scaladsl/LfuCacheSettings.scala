@@ -22,10 +22,10 @@ abstract class LfuCacheSettings private[http] () extends javadsl.LfuCacheSetting
   def timeToLive: Duration
   def timeToIdle: Duration
 
-  final def getMaxCapacity: Int = maxCapacity
-  final def getInitialCapacity: Int = initialCapacity
-  final def getTimeToLive: Duration = timeToLive
-  final def getTimeToIdle: Duration = timeToIdle
+  final def getMaxCapacity: Int = self.maxCapacity
+  final def getInitialCapacity: Int = self.initialCapacity
+  final def getTimeToLive: Duration = self.timeToLive
+  final def getTimeToIdle: Duration = self.timeToIdle
 
   override def withMaxCapacity(newMaxCapacity: Int): LfuCacheSettings = self.copy(maxCapacity = newMaxCapacity)
   override def withInitialCapacity(newInitialCapacity: Int): LfuCacheSettings = self.copy(initialCapacity = newInitialCapacity)

@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,9 @@
 
 package akka.parboiled2
 
-import scala.reflect.internal.annotations.compileTimeOnly
+import scala.annotation.compileTimeOnly
 import akka.parboiled2.support._
-import akka.shapeless.HList
+import akka.parboiled2.support.hlist.HList
 
 trait RuleDSLBasics {
 
@@ -46,6 +46,15 @@ trait RuleDSLBasics {
    */
   @compileTimeOnly("Calls to `valueMap` must be inside `rule` macro")
   implicit def valueMap[T](m: Map[String, T])(implicit h: HListable[T]): RuleN[h.Out] = `n/a`
+
+  /**
+   * Matches any of the given maps keys and pushes the respective value upon
+   * a successful match.
+   *
+   * @param ignoreCase a flag that tells if map keys case should be ignored
+   */
+  @compileTimeOnly("Calls to `valueMap` must be inside `rule` macro")
+  def valueMap[T](m: Map[String, T], ignoreCase: Boolean = false)(implicit h: HListable[T]): RuleN[h.Out] = `n/a`
 
   /**
    * Matches any single one of the given characters.
@@ -92,7 +101,7 @@ trait RuleDSLBasics {
   /**
    * Matches the EOI (end-of-input) character.
    */
-  final def EOI: Char = akka.parboiled2.EOI
+  def EOI: Char = akka.parboiled2.EOI
 
   /**
    * Matches no character (i.e. doesn't cause the parser to make any progress) but succeeds always (as a rule).
@@ -122,6 +131,7 @@ trait RuleDSLBasics {
 
   @compileTimeOnly("Calls to `str2CharRangeSupport` must be inside `rule` macro")
   implicit def str2CharRangeSupport(s: String): CharRangeSupport = `n/a`
+
   sealed trait CharRangeSupport {
     def -(other: String): Rule0
   }

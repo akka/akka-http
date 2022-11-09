@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,35 +14,21 @@
  * limitations under the License.
  */
 
-package akka.shapeless
+package akka.parboiled2.support.hlist
 package ops
 
 object hlist {
-  /**
-   * Type class witnessing that this `HList` is composite and providing access to head and tail.
-   *
-   * @author Miles Sabin
-   */
-  trait IsHCons[L <: HList] {
-    type H
-    type T <: HList
 
-    def head(l: L): H
-    def tail(l: L): T
+  /** Dependent unary function type. */
+  trait DepFn1[T] {
+    type Out
+    def apply(t: T): Out
   }
 
-  object IsHCons {
-    def apply[L <: HList](implicit isHCons: IsHCons[L]): Aux[L, isHCons.H, isHCons.T] = isHCons
-
-    type Aux[L <: HList, H0, T0 <: HList] = IsHCons[L] { type H = H0; type T = T0 }
-    implicit def hlistIsHCons[H0, T0 <: HList]: Aux[H0 :: T0, H0, T0] =
-      new IsHCons[H0 :: T0] {
-        type H = H0
-        type T = T0
-
-        def head(l: H0 :: T0): H = l.head
-        def tail(l: H0 :: T0): T = l.tail
-      }
+  /** Dependent binary function type. */
+  trait DepFn2[T, U] {
+    type Out
+    def apply(t: T, u: U): Out
   }
 
   /**
@@ -50,7 +36,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait Reverse[L <: HList] extends DepFn1[L] { type Out <: HList }
+  trait Reverse[L <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object Reverse {
     def apply[L <: HList](implicit reverse: Reverse[L]): Aux[L, reverse.Out] = reverse
@@ -63,11 +49,12 @@ object hlist {
         def apply(l: L): Out = reverse(HNil, l)
       }
 
-    trait Reverse0[Acc <: HList, L <: HList, Out <: HList] {
+    trait Reverse0[Acc <: HList, L <: HList, Out <: HList] extends Serializable {
       def apply(acc: Acc, l: L): Out
     }
 
     object Reverse0 {
+
       implicit def hnilReverse[Out <: HList]: Reverse0[Out, HNil, Out] =
         new Reverse0[Out, HNil, Out] {
           def apply(acc: Out, l: HNil): Out = acc
@@ -85,12 +72,24 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] { type Out <: HList }
+  trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable {
+    type Out <: HList
+  }
 
-  trait LowPriorityPrepend {
+  trait LowestPriorityPrepend {
     type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
-    implicit def hnilPrepend0[P <: HList, S <: HNil]: Aux[P, S, P] =
+    implicit def hlistPrepend[PH, PT <: HList, S <: HList, PtOut <: HList](implicit pt: Prepend.Aux[PT, S, PtOut]): Prepend.Aux[PH :: PT, S, PH :: PtOut] =
+      new Prepend[PH :: PT, S] {
+        type Out = PH :: PtOut
+        def apply(prefix: PH :: PT, suffix: S): Out = prefix.head :: pt(prefix.tail, suffix)
+      }
+  }
+
+  trait LowPriorityPrepend extends LowestPriorityPrepend {
+    override type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
+
+    implicit def hnilPrepend0[P <: HList, S >: HNil.type <: HNil]: Aux[P, S, P] =
       new Prepend[P, S] {
         type Out = P
         def apply(prefix: P, suffix: S): P = prefix
@@ -100,16 +99,10 @@ object hlist {
   object Prepend extends LowPriorityPrepend {
     def apply[P <: HList, S <: HList](implicit prepend: Prepend[P, S]): Aux[P, S, prepend.Out] = prepend
 
-    implicit def hnilPrepend1[P <: HNil, S <: HList]: Aux[P, S, S] =
+    implicit def hnilPrepend1[P >: HNil.type <: HNil, S <: HList]: Aux[P, S, S] =
       new Prepend[P, S] {
         type Out = S
         def apply(prefix: P, suffix: S): S = suffix
-      }
-
-    implicit def hlistPrepend[PH, PT <: HList, S <: HList](implicit pt: Prepend[PT, S]): Aux[PH :: PT, S, PH :: pt.Out] =
-      new Prepend[PH :: PT, S] {
-        type Out = PH :: pt.Out
-        def apply(prefix: PH :: PT, suffix: S): Out = prefix.head :: pt(prefix.tail, suffix)
       }
   }
 
@@ -118,7 +111,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait ReversePrepend[P <: HList, S <: HList] extends DepFn2[P, S] { type Out <: HList }
+  trait ReversePrepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable { type Out <: HList }
 
   trait LowPriorityReversePrepend {
     type Aux[P <: HList, S <: HList, Out0 <: HList] = ReversePrepend[P, S] { type Out = Out0 }

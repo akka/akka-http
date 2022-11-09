@@ -225,7 +225,7 @@ class MarshallingDirectivesSpec extends RoutingSpec with Inside {
   "The marshalling infrastructure for JSON" should {
     import spray.json._
     case class Foo(name: String)
-    implicit val fooFormat = jsonFormat1(Foo)
+    implicit val fooFormat: RootJsonFormat[Foo] = jsonFormat1(Foo)
     val foo = Foo("Hällö")
 
     "render JSON with UTF-8 encoding if no `Accept-Charset` request header is present" in {

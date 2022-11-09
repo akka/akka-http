@@ -211,7 +211,8 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
       val connId = telemetryProbe.expectMsgType[ConnectionId]
       // ... and a request flies in via _that_ connection.
       telemetryProbe.expectMsg("request-seen")
-      telemetryProbe.expectMsgType[ConnectionId] should ===(connId)
+      val requestConnId = telemetryProbe.expectMsgType[ConnectionId]
+      requestConnId should ===(connId)
 
       // The server sends the response...
       telemetryProbe.expectMsg("response-seen")

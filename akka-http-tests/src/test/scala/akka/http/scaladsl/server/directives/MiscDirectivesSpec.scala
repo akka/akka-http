@@ -19,6 +19,8 @@ import scala.annotation.nowarn
 @nowarn("msg=use remote-address-attribute instead")
 class MiscDirectivesSpec extends RoutingSpec {
 
+  import akka.http.ccompat.ImplicitUtils._
+
   "the extractClientIP directive" should {
     "extract from a X-Forwarded-For header" in {
       Get() ~> addHeaders(`X-Forwarded-For`(remoteAddress("2.3.4.5")), RawHeader("x-real-ip", "1.2.3.4")) ~> {

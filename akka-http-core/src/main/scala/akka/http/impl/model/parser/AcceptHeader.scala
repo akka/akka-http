@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ MediaRange, MediaRanges }
 import akka.http.impl.util._
 
-private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonActions =>
+private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonActions with StringBuilding =>
   import CharacterClasses._
 
   // http://tools.ietf.org/html/rfc7231#section-5.3.2

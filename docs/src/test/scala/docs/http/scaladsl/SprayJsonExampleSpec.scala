@@ -25,8 +25,8 @@ class SprayJsonExampleSpec extends AnyWordSpec with Matchers {
 
     // collect your json format instances into a support trait:
     trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
-      implicit val itemFormat = jsonFormat2(Item)
-      implicit val orderFormat = jsonFormat1(Order) // contains List[Item]
+      implicit val itemFormat: RootJsonFormat[Item] = jsonFormat2(Item.apply)
+      implicit val orderFormat: RootJsonFormat[Order] = jsonFormat1(Order.apply) // contains List[Item]
     }
 
     // use it wherever json (un)marshalling is needed

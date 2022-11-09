@@ -542,7 +542,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         lazy val requestIn = TestPublisher.probe[RequestContext]()
         lazy val responseOut = TestSubscriber.probe[ResponseContext]()
 
-        protected val server: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
+        protected def server: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
 
         protected def settings: ConnectionPoolSettings
 
@@ -699,7 +699,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
           connection.acceptConnectionPromise.future
         }
 
-        protected override lazy val server =
+        protected override lazy val server: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
           Flow.fromSinkAndSourceMat(
             // buffer is needed because the async subscriber/publisher boundary will otherwise request > 1
             Flow[HttpRequest].buffer(1, OverflowStrategy.backpressure)
@@ -833,7 +833,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
       //   2. when client connection was established, grab server connection as well and attach to proxies
       //      (cannot be implemented with just mapMaterializedValue because there's no transposing constructor for BidiFlow)
       BidiFlow.fromGraph(
-        GraphDSL.create(Sink.asPublisher[HttpResponse](fanout = false), Source.asSubscriber[HttpRequest], clientConnectionFlow(serverBinding, connectionKillSwitch))((_, _, _)) { implicit builder => (resIn, reqOut, client) =>
+        GraphDSL.createGraph(Sink.asPublisher[HttpResponse](fanout = false), Source.asSubscriber[HttpRequest], clientConnectionFlow(serverBinding, connectionKillSwitch))((_, _, _)) { implicit builder => (resIn, reqOut, client) =>
           import GraphDSL.Implicits._
 
           builder.materializedValue ~> Sink.foreach[(Publisher[HttpResponse], Subscriber[HttpRequest], Future[Http.OutgoingConnection])] {

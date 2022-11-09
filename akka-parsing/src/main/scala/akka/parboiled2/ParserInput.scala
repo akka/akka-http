@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
+ * Copyright 2009-2019 Mathias Doenitz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import scala.annotation.tailrec
 import java.nio.ByteBuffer
 
 trait ParserInput {
+
   /**
    * Returns the character at the given (zero-based) index.
    * Note: this method is hot and should be small and efficient.
@@ -54,12 +55,17 @@ object ParserInput {
   val Empty = apply(Array.empty[Byte])
 
   implicit def apply(bytes: Array[Byte]): ByteArrayBasedParserInput = new ByteArrayBasedParserInput(bytes)
-  implicit def apply(bytes: Array[Byte], endIndex: Int): ByteArrayBasedParserInput = new ByteArrayBasedParserInput(bytes, endIndex)
+
+  implicit def apply(bytes: Array[Byte], endIndex: Int): ByteArrayBasedParserInput =
+    new ByteArrayBasedParserInput(bytes, endIndex)
   implicit def apply(string: String): StringBasedParserInput = new StringBasedParserInput(string)
   implicit def apply(chars: Array[Char]): CharArrayBasedParserInput = new CharArrayBasedParserInput(chars)
-  implicit def apply(chars: Array[Char], endIndex: Int): CharArrayBasedParserInput = new CharArrayBasedParserInput(chars, endIndex)
+
+  implicit def apply(chars: Array[Char], endIndex: Int): CharArrayBasedParserInput =
+    new CharArrayBasedParserInput(chars, endIndex)
 
   abstract class DefaultParserInput extends ParserInput {
+
     def getLine(line: Int): String = {
       @tailrec def rec(ix: Int, lineStartIx: Int, lineNr: Int): String =
         if (ix < length)
@@ -67,7 +73,8 @@ object ParserInput {
             if (lineNr < line) rec(ix + 1, ix + 1, lineNr + 1)
             else sliceString(lineStartIx, ix)
           else rec(ix + 1, lineStartIx, lineNr)
-        else if (lineNr == line) sliceString(lineStartIx, ix) else ""
+        else if (lineNr == line) sliceString(lineStartIx, ix)
+        else ""
       rec(ix = 0, lineStartIx = 0, lineNr = 1)
     }
   }
@@ -86,8 +93,9 @@ object ParserInput {
    */
   class ByteArrayBasedParserInput(bytes: Array[Byte], endIndex: Int = 0) extends DefaultParserInput {
     val length = if (endIndex <= 0 || endIndex > bytes.length) bytes.length else endIndex
-    def charAt(ix: Int) = (bytes(ix) & 0xFF).toChar
-    def sliceString(start: Int, end: Int) = new String(bytes, start, end - start, `ISO-8859-1`)
+    def charAt(ix: Int) = (bytes(ix) & 0xff).toChar
+    def sliceString(start: Int, end: Int) = new String(bytes, start, math.max(end - start, 0), `ISO-8859-1`)
+
     def sliceCharArray(start: Int, end: Int) =
       `ISO-8859-1`.decode(ByteBuffer.wrap(java.util.Arrays.copyOfRange(bytes, start, end))).array()
   }
@@ -95,7 +103,8 @@ object ParserInput {
   class StringBasedParserInput(string: String) extends DefaultParserInput {
     def charAt(ix: Int) = string.charAt(ix)
     def length = string.length
-    def sliceString(start: Int, end: Int) = string.substring(start, end)
+    def sliceString(start: Int, end: Int) = string.substring(start, math.min(end, string.length))
+
     def sliceCharArray(start: Int, end: Int) = {
       val chars = new Array[Char](end - start)
       string.getChars(start, end, chars, 0)
@@ -106,7 +115,7 @@ object ParserInput {
   class CharArrayBasedParserInput(chars: Array[Char], endIndex: Int = 0) extends DefaultParserInput {
     val length = if (endIndex <= 0 || endIndex > chars.length) chars.length else endIndex
     def charAt(ix: Int) = chars(ix)
-    def sliceString(start: Int, end: Int) = new String(chars, start, end - start)
+    def sliceString(start: Int, end: Int) = new String(chars, start, math.max(end - start, 0))
     def sliceCharArray(start: Int, end: Int) = java.util.Arrays.copyOfRange(chars, start, end)
   }
 }

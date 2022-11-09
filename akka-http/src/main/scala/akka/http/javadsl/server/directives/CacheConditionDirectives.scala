@@ -74,7 +74,7 @@ abstract class CacheConditionDirectives extends BasicDirectives {
    * must be on a deeper level in your route structure in order to function correctly.
    */
   def conditional(eTag: Optional[EntityTag], lastModified: Optional[DateTime], inner: Supplier[Route]): Route = RouteAdapter {
-    D.conditional(eTag.asScala.map(_.asScala), lastModified.asScala.map(_.asScala)) { inner.get.delegate }
+    D.conditional(eTag.asScala.map((e: EntityTag) => e.asScala), lastModified.asScala.map((d: DateTime) => d.asScala)) { inner.get.delegate }
   }
 
 }

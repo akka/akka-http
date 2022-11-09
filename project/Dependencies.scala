@@ -19,15 +19,16 @@ object Dependencies {
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
 
-  val scalaTestVersion = "3.1.4"
+  val scalaTestVersion = "3.2.9"
   val specs2Version = "4.10.6"
-  val scalaCheckVersion = "1.14.3"
+  val scalaCheckVersion = "1.15.4"
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
   val scala212Version = "2.12.17"
   val scala213Version = "2.13.10"
-  val allScalaVersions = Seq(scala213Version, scala212Version)
+  val scala3Version = "3.1.3"
+  val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
   val Versions = Seq(
     crossScalaVersions := allScalaVersions,
@@ -36,11 +37,20 @@ object Dependencies {
   object Provided {
     val jsr305 = "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided" // ApacheV2
 
-    val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _ % "provided") // Scala License
+    val scalaReflect  = ScalaVersionDependentModuleID.fromPF {
+      case v if v startsWith "2." => "org.scala-lang" % "scala-reflect" % v % "provided" // Scala License
+    }
   }
 
   object Compile {
-    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.3.0" // Scala License
+    val scalaXml      = {
+      val xml = "org.scala-lang.modules" %% "scala-xml" // Scala License
+      ScalaVersionDependentModuleID.versioned {
+        case v if v.startsWith("2.") => xml % "1.3.0"
+        case _ => xml % "2.0.1"
+      }
+    }
+
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.6"       // ApacheV2
@@ -65,12 +75,19 @@ object Dependencies {
     object Test {
       val sprayJson    = Compile.sprayJson                                         % "test" // ApacheV2
       val junit        = Compile.junit                                             % "test" // Common Public License 1.0
-      val specs2       = "org.specs2"     %% "specs2-core"     % specs2Version     % "test" // MIT
+      val specs2       = {
+        val specs2 = "org.specs2"     %% "specs2-core" // MIT
+        ScalaVersionDependentModuleID.versioned {
+          case v if v.startsWith("2.") => specs2 % "4.10.6"
+          case _ => specs2 % "4.15.0"
+        }
+      }
+
       val scalacheck   = "org.scalacheck" %% "scalacheck"      % scalaCheckVersion % "test" // New BSD
       val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.3"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
-      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
+      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-15" % (scalaTestVersion + ".0") % "test"
       val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
       // HTTP/2
@@ -105,10 +122,14 @@ object Dependencies {
 
   lazy val http2Support = l ++= Seq(Test.h2spec)
 
-  lazy val httpTestkit = l ++= Seq(
-    Test.junit, Test.junitIntf, Compile.junit % "provided",
-    Test.scalatest.withConfigurations(Some("provided; test")),
-    Test.specs2.withConfigurations(Some("provided; test"))
+  lazy val httpTestkit = Seq(
+    versionDependentDeps(
+      Test.specs2 % "provided; test"
+    ),
+    l ++= Seq(
+      Test.junit, Test.junitIntf, Compile.junit % "provided",
+      Test.scalatest.withConfigurations(Some("provided; test")),
+    )
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest, Test.junitIntf)

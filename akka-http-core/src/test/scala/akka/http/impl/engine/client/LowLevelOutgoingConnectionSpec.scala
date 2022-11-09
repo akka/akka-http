@@ -4,10 +4,12 @@
 
 package akka.http.impl.engine.client
 
-import com.typesafe.config.ConfigFactory
+import scala.concurrent.ExecutionContext
 
+import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+
 import org.scalatest.Inside
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.util.ByteString
@@ -21,10 +23,11 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
+import akka.http.scaladsl.Http
 import akka.testkit._
 
 class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Inside {
-  implicit val dispatcher = system.dispatcher
+  implicit val dispatcher: ExecutionContext = system.dispatcher
 
   "The connection-level client implementation" should {
 
@@ -1003,7 +1006,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Insid
       val netOut = TestSubscriber.manualProbe[ByteString]()
       val netIn = TestPublisher.manualProbe[ByteString]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b => client =>
+      RunnableGraph.fromGraph(GraphDSL.createGraph(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b => client =>
         import GraphDSL.Implicits._
         Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
         client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) => x } ~> Sink.fromSubscriber(netOut)

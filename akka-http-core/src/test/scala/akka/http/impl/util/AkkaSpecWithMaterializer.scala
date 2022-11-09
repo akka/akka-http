@@ -6,7 +6,7 @@ package akka.http.impl.util
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.stream.{ ActorMaterializer, SystemMaterializer }
+import akka.stream.{ ActorMaterializer, Materializer, SystemMaterializer }
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
@@ -25,7 +25,7 @@ abstract class AkkaSpecWithMaterializer(configOverrides: String)
 
   def this() = this("")
 
-  implicit val materializer = SystemMaterializer(system).materializer
+  implicit val materializer: Materializer = SystemMaterializer(system).materializer
 
   override protected def beforeTermination(): Unit =
     // don't log anything during shutdown, especially not AbruptTerminationExceptions

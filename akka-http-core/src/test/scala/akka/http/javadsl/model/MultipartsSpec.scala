@@ -25,7 +25,7 @@ class MultipartsSpec extends AnyWordSpec with Matchers with Inside with BeforeAn
   val testConf: Config = ConfigFactory.parseString("""
   akka.event-handlers = ["akka.testkit.TestEventListener"]
   akka.loglevel = WARNING""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   val materializer = SystemMaterializer.get(system).materializer
   override def afterAll() = TestKit.shutdownActorSystem(system)
 

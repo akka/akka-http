@@ -47,7 +47,7 @@ object ClientTransport {
   }
 
   private def connectToAddress(address: InetSocketAddress, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
-    Tcp().outgoingConnection(address, settings.localAddress,
+    Tcp(system.classicSystem).outgoingConnection(address, settings.localAddress,
       settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
       .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
   }

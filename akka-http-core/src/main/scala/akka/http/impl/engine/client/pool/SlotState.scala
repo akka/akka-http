@@ -332,7 +332,7 @@ private[pool] object SlotState {
       WaitingForEndOfResponseEntity(ongoingRequest, ongoingResponse, waitingForEndOfRequestEntity = false)
     }
   }
-  final case object WaitingForEndOfRequestEntity extends ConnectedState {
+  case object WaitingForEndOfRequestEntity extends ConnectedState {
     final override def isIdle = false
 
     override def onRequestEntityCompleted(ctx: SlotContext): SlotState =

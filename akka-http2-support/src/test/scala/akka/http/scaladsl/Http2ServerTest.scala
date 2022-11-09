@@ -35,7 +35,7 @@ object Http2ServerTest extends App {
     akka.actor.default-dispatcher.fork-join-executor.parallelism-max=8
     akka.http.server.preview.enable-http2 = true
                                                    """)
-  implicit val system = ActorSystem("ServerTest", testConf)
+  implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
   implicit val ec: ExecutionContext = system.dispatcher
 
   def slowDown[T](millis: Int): T => Future[T] = { t =>

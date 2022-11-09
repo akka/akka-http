@@ -1,0 +1,2 @@
+# MiMa doesn't get that scala.Serializable is alias for java.io.Serializable
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.model.ErrorInfo")

@@ -16,7 +16,7 @@ import akka.http.scaladsl.model.Uri
 
 import java.nio.charset.Charset
 
-private[parser] trait ContentDispositionHeader { this: Parser with CommonRules with CommonActions =>
+private[parser] trait ContentDispositionHeader { this: Parser with CommonRules with CommonActions with StringBuilding =>
 
   // http://tools.ietf.org/html/rfc6266#section-4.1
   def `content-disposition` = rule {

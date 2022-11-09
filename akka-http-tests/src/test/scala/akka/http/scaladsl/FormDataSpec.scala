@@ -11,7 +11,7 @@ import akka.http.scaladsl.model._
 import akka.testkit.AkkaSpec
 
 class FormDataSpec extends AkkaSpec {
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
   import system.dispatcher
 
   val formData = FormData(Map("surname" -> "Smith", "age" -> "42"))

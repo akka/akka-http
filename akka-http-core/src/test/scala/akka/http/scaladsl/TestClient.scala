@@ -25,8 +25,8 @@ object TestClient extends App {
     akka.loglevel = DEBUG
     akka.log-dead-letters = off
     akka.io.tcp.trace-logging = off""")
-  implicit val system = ActorSystem("ServerTest", testConf)
-  implicit val fm = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
+  implicit val fm: ActorMaterializer = ActorMaterializer()
   import system.dispatcher
 
   installEventStreamLoggerFor[UnhandledMessage]

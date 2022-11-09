@@ -259,7 +259,7 @@ private[http] final class UriParser(
     // has a max value-stack depth of 3
     def keyValuePairsWithLimitedStackUse: Rule1[Query] = rule {
       keyValuePair ~> { (key, value) => Query.Cons(key, value, Query.Empty) } ~ {
-        zeroOrMore('&' ~ keyValuePair ~> { (prefix: Query, key, value) => Query.Cons(key, value, prefix) }) ~>
+        zeroOrMore('&' ~ keyValuePair ~> { (prefix: Query.Cons, key, value) => Query.Cons(key, value, prefix) }) ~>
           (_.reverse)
       }
     }

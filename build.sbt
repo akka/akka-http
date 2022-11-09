@@ -73,7 +73,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation)
+  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation, NoScala3)
   .disablePlugins(MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
@@ -107,7 +107,7 @@ def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
   config / unmanagedSourceDirectories += {
     val sourceDir = (config / sourceDirectory).value
     CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+      case Some((e, n)) if e > 2 || (e == 2 && n >= 13) => sourceDir / "scala-2.13+"
       case _                       => sourceDir / "scala-2.13-"
     }
   }
@@ -132,7 +132,6 @@ val scalaMacroSupport = Seq(
   }),
 )
 
-
 lazy val parsing = project("akka-parsing")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.parsing"))
@@ -150,7 +149,7 @@ lazy val parsing = project("akka-parsing")
 lazy val httpCore = project("akka-http-core")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.core"))
-  .dependsOn(parsing, httpScalafixRules % ScalafixConfig)
+  .dependsOn(parsing/*, httpScalafixRules % ScalafixConfig*/)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
@@ -164,6 +163,12 @@ lazy val httpCore = project("akka-http-core")
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .enablePlugins(Pre213Preprocessor).settings(
+    akka.http.sbt.Pre213Preprocessor.pre213Files := Seq(
+      "headers.scala", "HttpMessage.scala", "LanguageRange.scala", "CacheDirective.scala", "LinkValue.scala"
+    )
+  )
+  .disablePlugins(ScalafixPlugin)
 
 lazy val http = project("akka-http")
   .settings(commonSettings)
@@ -175,6 +180,11 @@ lazy val http = project("akka-http")
     Compile / scalacOptions += "-language:_"
   )
   .settings(scalaMacroSupport)
+  .enablePlugins(Pre213Preprocessor).settings(
+    akka.http.sbt.Pre213Preprocessor.pre213Files := Seq(
+      "scaladsl/server/directives/FormFieldDirectives.scala", "scaladsl/server/directives/RespondWithDirectives.scala"
+    )
+  )
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
   .enablePlugins(ReproducibleBuildsPlugin)
 
@@ -284,7 +294,7 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .settings(commonSettings)
-  .enablePlugins(NoPublish/*, AggregatePRValidation*/)
+  .enablePlugins(NoPublish /*, AggregatePRValidation*/)
   .disablePlugins(MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
@@ -302,7 +312,7 @@ lazy val httpSprayJson =
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .settings(commonSettings)
-  .enablePlugins(NoPublish/*, AggregatePRValidation*/)
+  .enablePlugins(NoPublish /*, AggregatePRValidation*/)
   .disablePlugins(MimaPlugin)
   .aggregate(httpJackson)
 
@@ -348,22 +358,23 @@ def httpMarshallersJavaSubproject(name: String) =
   .enablePlugins(ReproducibleBuildsPlugin)
 
 lazy val httpScalafix = project("akka-http-scalafix")
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish, NoScala3)
   .disablePlugins(MimaPlugin)
   .aggregate(httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests)
 
 lazy val httpScalafixRules =
   Project(id = "akka-http-scalafix-rules", base = file("akka-http-scalafix/scalafix-rules"))
     .settings(
-      libraryDependencies += Dependencies.Compile.scalafix
+      libraryDependencies += Dependencies.Compile.scalafix,
     )
+    .enablePlugins(NoScala3)
     .disablePlugins(MimaPlugin) // tooling, no bin compat guaranteed
 
 lazy val httpScalafixTestInput =
   Project(id = "akka-http-scalafix-test-input", base = file("akka-http-scalafix/scalafix-test-input"))
     .dependsOn(http)
     .addAkkaModuleDependency("akka-stream")
-    .enablePlugins(NoPublish)
+    .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
     .settings(
       addCompilerPlugin(scalafixSemanticdb),
@@ -378,12 +389,12 @@ lazy val httpScalafixTestOutput =
   Project(id = "akka-http-scalafix-test-output", base = file("akka-http-scalafix/scalafix-test-output"))
     .dependsOn(http)
     .addAkkaModuleDependency("akka-stream")
-    .enablePlugins(NoPublish)
+    .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
 
 lazy val httpScalafixTests =
   Project(id = "akka-http-scalafix-tests", base = file("akka-http-scalafix/scalafix-tests"))
-    .enablePlugins(NoPublish)
+    .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin)
     .settings(
       publish / skip := true,
@@ -419,11 +430,16 @@ lazy val docs = project("docs")
     scalacOptions ++= Seq(
       // Make sure we don't accidentally keep documenting deprecated calls
       "-Xfatal-warnings",
-      // In docs adding an unused variable can be helpful, for example
-      // to show its type
-      "-Xlint:-unused",
       // Does not appear to lead to problems
       "-Wconf:msg=The outer reference in this type test cannot be checked at run time:s",
+    ),
+    scalacOptions ++= (
+      if (scalaVersion.value.startsWith("3")) Seq.empty
+      else Seq(
+        // In docs adding an unused variable can be helpful, for example
+        // to show its type
+        "-Xlint:-unused"
+      )
     ),
     scalacOptions --= Seq(
       // Code after ??? can be considered 'dead',  but still useful for docs
@@ -477,15 +493,17 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
   .disablePlugins(MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided",
+    libraryDependencies +=(
+      // no scala 3 native artifact available yet so use 2.13
+      if (scalaBinaryVersion.value == "3") ("com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided").cross(CrossVersion.for3Use2_13)
+      else "com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided"
     ),
     (Test / dependencyClasspath) := {
       // HACK: We'd like to use `dependsOn(http % "test->compile")` to upgrade the explicit dependency above to the
       //       current version but that fails. So, this is a manual `dependsOn` which works as expected.
       (Test / dependencyClasspath).value.filterNot(_.data.getName contains "akka") ++
       (httpTests / Test / fullClasspath).value
-    }
+    },
   )
 
 lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-materials"))

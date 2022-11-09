@@ -26,9 +26,9 @@ class TightRequestTimeoutSpec extends AnyWordSpec with Matchers with BeforeAndAf
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = 10ms""")
 
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer = ActorMaterializer()
-  implicit val patience = PatienceConfig(3.seconds.dilated)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
+  implicit val patience: PatienceConfig = PatienceConfig(3.seconds.dilated)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
