@@ -495,8 +495,9 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
   .settings(
     libraryDependencies +=(
       // no scala 3 native artifact available yet so use 2.13
-      if (scalaBinaryVersion.value == "3") ("com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided").cross(CrossVersion.for3Use2_13)
-      else "com.typesafe.akka" %% "akka-http" % MiMa.latest101Version % "provided"
+      // FIXME remove if-else once artifact with 3 is published
+      if (scalaBinaryVersion.value == "3") ("com.typesafe.akka" %% "akka-http" % MiMa.latest102Version % "provided").cross(CrossVersion.for3Use2_13)
+      else "com.typesafe.akka" %% "akka-http" % MiMa.latest102Version % "provided"
     ),
     (Test / dependencyClasspath) := {
       // HACK: We'd like to use `dependsOn(http % "test->compile")` to upgrade the explicit dependency above to the

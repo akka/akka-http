@@ -17,39 +17,12 @@ object MiMa extends AutoPlugin {
   override def requires = MimaPlugin
   override def trigger = allRequirements
 
-  //Exclude these non-existent versions when checking compatibility with previous versions
-  private val ignoredModules = Map(
-    "akka-http-caching" -> Set("10.0.0", "10.0.1", "10.0.2", "10.0.3", "10.0.4", "10.0.5", "10.0.6", "10.0.7", "10.0.8", "10.0.9", "10.0.10")
-  )
-
   // A fork is a branch of the project where new releases are created that are not ancestors of the current release line
-  val forks = Seq("10.0.", "10.1.", "10.2.")
+  val forks = Seq("10.2.")
   val currentFork = "10.4."
 
   // manually maintained list of previous versions to make sure all incompatibilities are found
   // even if so far no files have been been created in this project's mima-filters directory
-  val pre213Versions = Set(
-    "10.0.15",
-    "10.1.0",
-    "10.1.1",
-    "10.1.2",
-    "10.1.3",
-    "10.1.4",
-    "10.1.5",
-    "10.1.6",
-    "10.1.7",
-  )
-
-  val `10.1-post-2.13-versions` = Set(
-    "10.1.8",
-    "10.1.9",
-    "10.1.10",
-    "10.1.11",
-    "10.1.12",
-    "10.1.13",
-    "10.1.14",
-    "10.1.15",
-  )
   val `10.2-versions` = Set(
     "10.2.0",
     "10.2.1",
@@ -61,23 +34,27 @@ object MiMa extends AutoPlugin {
     "10.2.7",
     "10.2.8",
     "10.2.9",
+    "10.2.10",
   )
 
-  val post213Versions = `10.1-post-2.13-versions` ++ `10.2-versions`
+  val `10.4-versions` = Set(
+    "10.4.0",
+  )
+
+  val pre3Versions = `10.2-versions` ++ `10.4-versions`
 
   val post3Versions = Set.empty[String]
 
-  lazy val latestVersion = post213Versions.max(versionOrdering)
-  lazy val latest101Version = `10.1-post-2.13-versions`.max(versionOrdering)
+  lazy val latestVersion = pre3Versions.max(versionOrdering)
+  lazy val latest102Version = `10.2-versions`.max(versionOrdering)
 
   override val projectSettings = Seq(
     mimaPreviousArtifacts := {
       val versions =
-        if (scalaBinaryVersion.value == "2.13") post213Versions
-        else if (scalaBinaryVersion.value == "3") post3Versions
-        else pre213Versions ++ post213Versions
+        if (scalaBinaryVersion.value == "3") post3Versions
+        else pre3Versions
 
-      versions.collect { case version if !ignoredModules.get(name.value).exists(_.contains(version)) =>
+      versions.map { version =>
         organization.value %% name.value % version
       }
     },
