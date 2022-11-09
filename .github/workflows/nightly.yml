@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        SCALA_VERSION: [2.12, 2.13]
+        SCALA_VERSION: [2.12, 2.13, 3.1]
         JABBA_JDK: [8, 11, 17]
         AKKA_VERSION: [main, default]
 
