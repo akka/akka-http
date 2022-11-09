@@ -39,14 +39,6 @@ jobs:
       - name: Check for missing formatting
         run: git diff --exit-code --color
 
-      - name: FOSSA policy check
-        if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == 'akka/akka-http' }}
-        run: |-
-          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/spectrometer/master/install.sh | bash
-          fossa analyze && fossa test
-        env:
-          FOSSA_API_KEY: "${{secrets.FOSSA_API_KEY}}"
-
   compile-and-test:
     name: Compile and test
     runs-on: ubuntu-latest
