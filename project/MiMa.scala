@@ -18,8 +18,8 @@ object MiMa extends AutoPlugin {
   override def trigger = allRequirements
 
   // A fork is a branch of the project where new releases are created that are not ancestors of the current release line
-  val forks = Seq("10.2.")
-  val currentFork = "10.4."
+  val forks = Seq("10.2.", "10.4.")
+  val currentFork = "10.5."
 
   // manually maintained list of previous versions to make sure all incompatibilities are found
   // even if so far no files have been been created in this project's mima-filters directory
