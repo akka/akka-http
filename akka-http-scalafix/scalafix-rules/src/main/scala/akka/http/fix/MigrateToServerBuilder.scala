@@ -81,7 +81,7 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
       } ++
         named.map {
           case q"$name = $expr" => name.asInstanceOf[Term.Name].value -> expr
-          case other            => throw new IllegalStateException(s"Unexpected term $other") // compiler completeness check pleaser
+          case _                => throw new IllegalStateException("Unexpected term") // compiler completeness check pleaser
         }
       ).toMap
     }

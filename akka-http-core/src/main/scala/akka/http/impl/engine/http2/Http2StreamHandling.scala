@@ -779,7 +779,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
           if (headers.nonEmpty && !trailer.isEmpty)
             log.warning("Found both an attribute with trailing headers, and headers in the `LastChunk`. This is not supported.")
           trailer = OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer, shouldRenderAutoHeaders = false, dateHeaderRendering = DateHeaderRendering.Unavailable), None))
-        case other => throw new IllegalArgumentException(s"Unexpected stream element $other") // compiler completeness check pleaser
+        case _ => throw new IllegalArgumentException("Unexpected stream element") // compiler completeness check pleaser
       }
 
       maybePull()

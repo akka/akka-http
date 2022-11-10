@@ -97,7 +97,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       case ele: Output @unchecked =>
         result = null
         ele
-      case other => throw new IllegalArgumentException(s"Unexpected result: $other") // compiler completeness check pleaser
+      case _ => throw new IllegalArgumentException("Unexpected result") // compiler completeness check pleaser
     }
 
   protected final def shouldComplete(): Boolean = {
@@ -307,7 +307,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       buffer += old
       buffer += output
       result = buffer
-    case other => throw new IllegalArgumentException(s"Unexpected output: $other") // compiler completeness check pleaser
+    case _ => throw new IllegalArgumentException("Unexpected output") // compiler completeness check pleaser
   }
 
   protected final def continue(input: ByteString, offset: Int)(next: (ByteString, Int) => StateResult): StateResult = {

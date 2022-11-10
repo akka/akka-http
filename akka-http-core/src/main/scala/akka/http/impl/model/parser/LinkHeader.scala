@@ -79,6 +79,6 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
       case Seq((x: LinkParams.`type`), tail @ _*)   => sanitize(tail, if (seenType) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS, seenType = true)
       case Seq(head, tail @ _*)                     => sanitize(tail, result :+ head, seenRel, seenMedia, seenTitle, seenTitleS, seenType)
       case Nil                                      => result
-      case other                                    => throw new IllegalArgumentException(s"Unexpected params: $other") // compiler completeness check pleaser
+      case _                                        => throw new IllegalArgumentException("Unexpected params") // compiler completeness check pleaser
     }
 }

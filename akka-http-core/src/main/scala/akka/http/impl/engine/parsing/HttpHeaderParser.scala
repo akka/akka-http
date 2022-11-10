@@ -133,7 +133,7 @@ private[engine] final class HttpHeaderParser private (
           case valueParser: HeaderValueParser => startValueBranch(valueIx, valueParser) // no header yet of this type
           case EmptyHeader =>
             resultHeader = EmptyHeader; cursor
-          case other => throw new IllegalStateException(s"Unexpected value at $valueIx: $other") // compiler completeness check pleaser
+          case _ => throw new IllegalStateException(s"Unexpected value at $valueIx") // compiler completeness check pleaser
         }
       case nodeChar =>
         val char = CharUtils.toLowerCase(byteChar(input, cursor))
@@ -511,7 +511,7 @@ private[http] object HttpHeaderParser {
             else parser.insert(ByteString(insertName), valueParser)()
           case header: String =>
             parser.parseHeaderLine(ByteString(header + "\r\nx"))()
-          case other => throw new IllegalArgumentException(s"Unexpected parser: $other") // compiler completeness check pleaser
+          case _ => throw new IllegalArgumentException(s"Unexpected parser at $pivot") // compiler completeness check pleaser
         }
         insertInGoodOrder(items)(startIx, pivot)
         insertInGoodOrder(items)(pivot + 1, endIx)

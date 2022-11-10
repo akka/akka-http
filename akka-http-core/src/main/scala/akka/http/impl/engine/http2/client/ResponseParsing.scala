@@ -101,7 +101,7 @@ private[http2] object ResponseParsing {
           validateHeader(httpHeader)
           rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)
 
-        case other => throw new IllegalStateException(s"Unexpected remaining header $other") // compiler completeness check pleaser
+        case _ => throw new IllegalStateException("Unexpected remaining header") // compiler completeness check pleaser
       }
 
     rec(subStream.initialHeaders.keyValuePairs)

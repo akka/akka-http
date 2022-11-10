@@ -53,7 +53,7 @@ class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspe
               data = Right(data),
               correlationAttributes = Map.empty
             )
-          case other => throw new IllegalStateException(s"Unexpected frame: $other") // compiler completeness check pleaser
+          case _ => throw new IllegalStateException("Unexpected frame") // compiler completeness check pleaser
         }
         .map(parseRequest)
         .runWith(Sink.head)

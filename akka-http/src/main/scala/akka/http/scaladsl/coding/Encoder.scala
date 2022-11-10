@@ -65,7 +65,7 @@ object Encoder {
   val DefaultFilter: HttpMessage => Boolean = {
     case req: HttpRequest                    => isCompressible(req)
     case res @ HttpResponse(status, _, _, _) => isCompressible(res) && status.allowsEntity
-    case other                               => throw new IllegalStateException(s"Unexpected type of request key: $other") // compiler completeness check pleaser
+    case _                                   => throw new IllegalStateException("Unexpected type of request key") // compiler completeness check pleaser
   }
   private[coding] def isCompressible(msg: HttpMessage): Boolean =
     msg.entity.contentType.mediaType.isCompressible

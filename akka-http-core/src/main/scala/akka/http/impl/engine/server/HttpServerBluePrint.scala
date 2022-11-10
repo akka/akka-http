@@ -510,7 +510,7 @@ private[http] object HttpServerBluePrint {
               log.error(e, "Internal server error, sending 500 response")
               emitErrorResponse(HttpResponse(StatusCodes.InternalServerError))
 
-            case other => throw new IllegalStateException(s"Unexpected error: $other") // compiler completeness check pleaser
+            case ex => throw new IllegalStateException("Unexpected error", ex) // compiler completeness check pleaser
           }
       })
 
