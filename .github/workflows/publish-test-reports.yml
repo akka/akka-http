@@ -4,6 +4,10 @@ on:
     workflows: ['Validate and test']                     # runs after CI workflow
     types:
       - completed
+
+permissions:
+  contents: read
+
 jobs:
   publish-test-results:
     name: "Publish details with dorny-test-reporter"
