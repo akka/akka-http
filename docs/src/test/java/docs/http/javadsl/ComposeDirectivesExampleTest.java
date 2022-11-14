@@ -14,7 +14,6 @@ import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.PathMatcher1;
 import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 
 import static akka.http.javadsl.common.PartialApplication.*;

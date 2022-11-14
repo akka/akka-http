@@ -66,12 +66,12 @@ import scala.concurrent.ExecutionContext
           // which might prevent automatic rescheduling in the worst case
           a.wasUsed = true
           a
-        case s @ Idle =>
+        case Idle =>
           val r = if (rendered ne null) rendered else renderValue()
           val newValue = AutoUpdated(r)
           newValue.wasUsed = true
           // use CAS to avoid that multiple accessing threads schedule multiple timers
-          if (!dateState.compareAndSet(s, newValue)) get(rendered)
+          if (!dateState.compareAndSet(Idle, newValue)) get(rendered)
           else {
             scheduleAutoUpdate()
             newValue

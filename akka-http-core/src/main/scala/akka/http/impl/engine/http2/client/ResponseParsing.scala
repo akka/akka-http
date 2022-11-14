@@ -100,6 +100,8 @@ private[http2] object ResponseParsing {
           val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
           validateHeader(httpHeader)
           rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)
+
+        case _ => throw new IllegalStateException("Unexpected remaining header") // compiler completeness check pleaser
       }
 
     rec(subStream.initialHeaders.keyValuePairs)

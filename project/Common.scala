@@ -13,20 +13,28 @@ object Common extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
   override lazy val projectSettings = Seq(
     projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
-    scalacOptions ++= Seq(
-      "-deprecation",
-      "-encoding", "UTF-8", // yes, this is 2 args
-      "-release", "8",
-      "-unchecked",
-      "-Ywarn-dead-code",
-      // Silence deprecation notices for changes introduced in Scala 2.12
-      // Can be removed when we drop support for Scala 2.12:
-      "-Wconf:msg=object JavaConverters in package collection is deprecated:s",
-      "-Wconf:msg=is deprecated \\(since 2\\.13\\.:s",
-    ),
+    scalacOptions ++=
+      Seq(
+        "-deprecation",
+        "-encoding", "UTF-8", // yes, this is 2 args
+        "-release", "8",
+        "-unchecked",
+        "-Wconf:msg=is deprecated \\(since 2\\.13\\.:s") ++
+      (if (scalaVersion.value.startsWith("2."))
+        // Scala 2.x
+        Seq("-Ywarn-dead-code",
+          // Silence deprecation notices for changes introduced in Scala 2.12
+          // Can be removed when we drop support for Scala 2.12:
+          "-Wconf:msg=object JavaConverters in package collection is deprecated:s",
+        )
+      else
+        // Scala 3
+        Seq(
+          "-Wconf:msg=does not suppress any warnings:s" // some are warnings in 2.12
+        )),
     scalacOptions ++= onlyOnScala2(Seq("-Xlint")).value,
     javacOptions ++=
-      Seq("-encoding", "UTF-8") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
+      Seq("-encoding", "UTF-8", "-Xlint:deprecation") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
     // restrict to 'compile' scope because otherwise it is also passed to
     // javadoc and -target is not valid there.
     // https://github.com/sbt/sbt/issues/1785
@@ -36,8 +44,16 @@ object Common extends AutoPlugin {
 
     // in test code we often use destructing assignment, which now produces an exhaustiveness warning
     // when the type is asserted
-    Test / compile / scalacOptions += "-Wconf:msg=match may not be exhaustive:s",
-    Test / compile / scalacOptions += "-Wconf:cat=lint-infer-any:s",
+    Test / compile / scalacOptions ++=
+      (if (scalaVersion.value.startsWith("2.")) {
+        // Scala 2.x
+        Seq(
+          "-Wconf:msg=match may not be exhaustive:s",
+          "-Wconf:cat=lint-infer-any:s")
+      } else {
+        // Scala 3
+        Seq.empty
+      }),
 
     mimaReportSignatureProblems := true,
     Global / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"

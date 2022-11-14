@@ -141,6 +141,7 @@ private[http] object Renderer {
           case Nil              => r ~~ empty
           case x: IndexedSeq[T] => recI(x)
           case x: LinearSeq[T]  => recL(x)
+          case _                => throw new IllegalStateException("Unexpected type value") // compiler completeness check pleaser
         }
       }
     }

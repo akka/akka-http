@@ -191,7 +191,7 @@ private[http] final class HttpRequestParser(
               Handshake.Server.websocketUpgrade(headers, hostHeaderPresent, websocketSettings, headerParser.log) match {
                 case OptionVal.Some(upgrade) =>
                   RequestStart(method, uri, protocol, attributes.updated(AttributeKeys.webSocketUpgrade, upgrade), upgrade :: allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
-                case OptionVal.None =>
+                case _ => // OptionVal.None
                   RequestStart(method, uri, protocol, attributes, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
               }
             } else RequestStart(method, uri, protocol, attributes, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)

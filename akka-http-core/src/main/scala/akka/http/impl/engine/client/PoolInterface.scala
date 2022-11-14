@@ -14,7 +14,6 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
 import akka.macros.LogHelper
-import akka.stream.ActorMaterializer
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
@@ -58,7 +57,7 @@ private[http] object PoolInterface {
     import poolId.hcps
     import hcps._
     import setup.{ connectionContext, settings }
-    implicit val system = fm.asInstanceOf[ActorMaterializer].system
+    implicit val system = fm.system
     val log: LoggingAdapter = Logging(system, poolId)(PoolLogSource)
 
     log.debug("Creating pool.")

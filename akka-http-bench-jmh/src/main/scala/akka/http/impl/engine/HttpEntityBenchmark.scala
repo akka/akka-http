@@ -11,7 +11,6 @@ import akka.dispatch.ExecutionContexts
 import akka.http.CommonBenchmark
 import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
 import akka.stream.scaladsl.Source
-import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations.{ Benchmark, Param, Setup, TearDown }
@@ -21,14 +20,13 @@ class HttpEntityBenchmark extends CommonBenchmark {
   var entityType: String = _
 
   implicit var system: ActorSystem = _
-  implicit var mat: Materializer = _
 
   var entity: HttpEntity = _
 
   @Benchmark
   def discardBytes(): Unit = {
     val latch = new CountDownLatch(1)
-    entity.discardBytes(mat)
+    entity.discardBytes()
       .future
       .onComplete(_ => latch.countDown())(ExecutionContexts.parasitic)
     latch.await()
@@ -44,7 +42,6 @@ class HttpEntityBenchmark extends CommonBenchmark {
         """)
         .withFallback(ConfigFactory.load())
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
-    mat = ActorMaterializer()
 
     entity = entityType match {
       case "strict" =>

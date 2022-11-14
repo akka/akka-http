@@ -127,7 +127,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
         .watchTermination() { (termWatchBefore, termWatchAfter) =>
           // flag termination when the user handler has gotten (or has emitted) termination
           // signals in both directions
-          termWatchBefore.flatMap(_ => termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
+          termWatchBefore.flatMap(_ => termWatchAfter)(ExecutionContexts.parasitic)
         }
         .joinMat(baseFlow)(Keep.both)
     )
@@ -268,7 +268,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
               // See https://github.com/akka/akka/issues/17992
               case NonFatal(ex) => Done
-            }(ExecutionContexts.sameThreadExecutionContext)
+            }(ExecutionContexts.parasitic)
         } catch {
           case NonFatal(e) =>
             log.error(e, "Could not materialize handling flow for {}", incoming)
@@ -809,7 +809,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
     // The user should keep control over how much parallelism is required.
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
-      case (request, userContext) => poolInterface(request).transform(response => Success(response -> userContext))(ExecutionContexts.sameThreadExecutionContext)
+      case (request, userContext) => poolInterface(request).transform(response => Success(response -> userContext))(ExecutionContexts.parasitic)
     }
   }
 
@@ -820,6 +820,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
   private[http] def sslTlsServerStage(connectionContext: ConnectionContext) =
     sslTlsStage(connectionContext, Server, None)
 
+  @nowarn("msg=deprecated")
   private def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)]) =
     connectionContext match {
       case hctx: HttpsConnectionContext =>
@@ -924,7 +925,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * Note: rather than unbinding explicitly you can also use [[addToCoordinatedShutdown]] to add this task to Akka's coordinated shutdown.
      */
     def unbind(): Future[Done] =
-      unbindAction().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+      unbindAction().map(_ => Done)(ExecutionContexts.parasitic)
 
     /**
      * Triggers "graceful" termination request being handled on this connection.
@@ -973,7 +974,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
       require(hardDeadline > Duration.Zero, "deadline must be greater than 0, was: " + hardDeadline)
 
       _whenTerminationSignalIssued.trySuccess(hardDeadline.fromNow)
-      val terminated = unbindAction().flatMap(_ => terminateAction(hardDeadline))(ExecutionContexts.sameThreadExecutionContext)
+      val terminated = unbindAction().flatMap(_ => terminateAction(hardDeadline))(ExecutionContexts.parasitic)
       _whenTerminated.completeWith(terminated)
       whenTerminated
     }
@@ -1013,7 +1014,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
         unbind()
       }
       shutdown.addTask(CoordinatedShutdown.PhaseServiceRequestsDone, s"http-terminate-${localAddress}") { () =>
-        terminate(hardTerminationDeadline).map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+        terminate(hardTerminationDeadline).map(_ => Done)(ExecutionContexts.parasitic)
       }
       this
     }

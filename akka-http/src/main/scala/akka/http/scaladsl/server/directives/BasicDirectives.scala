@@ -17,7 +17,7 @@ import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.Uri.Path
 import akka.util.ConstantFun.scalaIdentityFunction
-import akka.stream.{ ActorMaterializerHelper, Materializer }
+import akka.stream.Materializer
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.server.util.Tuple
 import akka.http.scaladsl.util.FastFuture
@@ -260,7 +260,7 @@ trait BasicDirectives {
    * @group basic
    */
   def extractActorSystem: Directive1[ActorSystem] = extract { ctx =>
-    ActorMaterializerHelper.downcast(ctx.materializer).system
+    ctx.materializer.system
   }
 
   /**

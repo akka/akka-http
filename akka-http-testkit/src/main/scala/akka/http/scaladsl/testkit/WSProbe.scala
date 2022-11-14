@@ -128,7 +128,7 @@ object WSProbe {
         case _ => throw new AssertionError(s"""Expected BinaryMessage("$bytes") but got TextMessage""")
       }
 
-      def expectNoMessage(): Unit = subscriber.expectNoMsg()
+      def expectNoMessage(): Unit = subscriber.expectNoMessage()
       def expectNoMessage(max: FiniteDuration): Unit = subscriber.expectNoMessage(max)
 
       def expectCompletion(): Unit = subscriber.expectComplete()

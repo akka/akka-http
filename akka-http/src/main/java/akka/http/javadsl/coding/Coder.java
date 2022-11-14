@@ -8,9 +8,6 @@ import java.util.concurrent.CompletionStage;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import akka.http.scaladsl.coding.Deflate$;
-import akka.http.scaladsl.coding.Gzip$;
-import akka.http.scaladsl.coding.NoCoding$;
 import akka.stream.Materializer;
 import akka.util.ByteString;
 import scala.compat.java8.FutureConverters;
@@ -18,12 +15,13 @@ import scala.compat.java8.FutureConverters;
 /**
  * A coder is an implementation of the predefined encoders/decoders defined for HTTP.
  */
+@SuppressWarnings({"deprecation", "removal"})
 public enum Coder {
-    NoCoding(NoCoding$.MODULE$), Deflate(Deflate$.MODULE$), Gzip(Gzip$.MODULE$),
-    DeflateLevel1(Deflate$.MODULE$.withLevel(1)),
-    DeflateLevel9(Deflate$.MODULE$.withLevel(9)),
-    GzipLevel1(Gzip$.MODULE$.withLevel(1)),
-    GzipLevel9(Gzip$.MODULE$.withLevel(9));
+    NoCoding(akka.http.scaladsl.coding.NoCoding$.MODULE$), Deflate(akka.http.scaladsl.coding.Deflate$.MODULE$), Gzip(akka.http.scaladsl.coding.Gzip$.MODULE$),
+    DeflateLevel1(akka.http.scaladsl.coding.Deflate$.MODULE$.withLevel(1)),
+    DeflateLevel9(akka.http.scaladsl.coding.Deflate$.MODULE$.withLevel(9)),
+    GzipLevel1(akka.http.scaladsl.coding.Gzip$.MODULE$.withLevel(1)),
+    GzipLevel9(akka.http.scaladsl.coding.Gzip$.MODULE$.withLevel(9));
 
     private akka.http.scaladsl.coding.Coder underlying;
 

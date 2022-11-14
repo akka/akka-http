@@ -66,6 +66,7 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
             setHandler(in, new WaitingForPeerCloseFrame())
             push(out, FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
           case Tick => pull(in) // ignore
+          case _    => throw new IllegalStateException("Unexpected element type") // compiler completeness check pleaser
         }
 
       override def onUpstreamFinish(): Unit = {

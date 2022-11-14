@@ -40,7 +40,7 @@ import scala.concurrent.duration.FiniteDuration;
 import akka.actor.AbstractActor;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import static akka.pattern.PatternsCS.pipe;
+import static akka.pattern.Patterns.pipe;
 
 //#single-request-in-actor-example
 

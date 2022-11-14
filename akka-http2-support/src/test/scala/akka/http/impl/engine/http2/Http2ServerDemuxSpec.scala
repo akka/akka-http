@@ -32,9 +32,9 @@ class Http2ServerDemuxSpec extends AkkaSpecWithMaterializer("""
       )
       val bidi = BidiFlow.fromGraph(new Http2ServerDemux(settings, initialRemoteSettings, upgraded = true))
 
-      val ((substreamProducer, (frameConsumer, frameProducer)), substreamConsumer) = TestSource.probe[Http2SubStream]
-        .viaMat(bidi.joinMat(Flow.fromSinkAndSourceMat(TestSink.probe[FrameEvent], TestSource.probe[FrameEvent])(Keep.both))(Keep.right))(Keep.both)
-        .toMat(TestSink.probe[Http2SubStream])(Keep.both)
+      val ((substreamProducer, (frameConsumer, frameProducer)), substreamConsumer) = TestSource[Http2SubStream]()
+        .viaMat(bidi.joinMat(Flow.fromSinkAndSourceMat(TestSink[FrameEvent](), TestSource[FrameEvent]())(Keep.both))(Keep.right))(Keep.both)
+        .toMat(TestSink[Http2SubStream]())(Keep.both)
         .run()
 
       frameConsumer.request(1000)
@@ -53,11 +53,11 @@ class Http2ServerDemuxSpec extends AkkaSpecWithMaterializer("""
         Map.empty
       ))
 
-      frameConsumer.expectNext shouldBe an[SettingsFrame]
+      frameConsumer.expectNext() shouldBe an[SettingsFrame]
       // The client could send an 'ack' here, but doesn't need to
       // frameProducer.sendNext(SettingsAckFrame(frame.asInstanceOf[SettingsFrame].settings))
 
-      frameConsumer.expectNext shouldBe (response)
+      frameConsumer.expectNext() shouldBe (response)
     }
   }
 }

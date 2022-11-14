@@ -9,8 +9,7 @@ package akka.http.impl.util
 
 import akka.annotation.InternalApi
 import akka.stream.stage.GraphStageLogic
-import akka.event.{ LogSource, LoggingAdapter, NoLogging }
-import akka.stream.ActorMaterializer
+import akka.event.LoggingAdapter
 
 // TODO Try to reconcile with what Akka provides in StageLogging.
 // We thought this could be removed when https://github.com/akka/akka/issues/18793 had been implemented
@@ -24,7 +23,7 @@ private[akka] trait StageLoggingWithOverride extends GraphStageLogic {
 
   private var _log: LoggingAdapter = null
 
-  protected def logSource: Class[_] = this.getClass
+  protected def logSource: Class[AnyRef] = this.getClass.asInstanceOf[Class[AnyRef]]
 
   def log: LoggingAdapter = {
     // only used in StageLogic, i.e. thread safe
@@ -32,12 +31,8 @@ private[akka] trait StageLoggingWithOverride extends GraphStageLogic {
       case null =>
         _log =
           logOverride match {
-            case DefaultNoLogging =>
-              materializer match {
-                case a: ActorMaterializer => akka.event.Logging(a.system, logSource)(LogSource.fromClass)
-                case _                    => NoLogging
-              }
-            case x => x
+            case DefaultNoLogging => akka.event.Logging(materializer.system, logSource)
+            case x                => x
           }
       case _ =>
     }

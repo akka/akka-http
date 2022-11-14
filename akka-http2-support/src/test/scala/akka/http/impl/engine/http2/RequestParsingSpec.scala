@@ -53,11 +53,12 @@ class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspe
               data = Right(data),
               correlationAttributes = Map.empty
             )
+          case _ => throw new IllegalStateException("Unexpected frame") // compiler completeness check pleaser
         }
         .map(parseRequest)
         .runWith(Sink.head)
         .futureValue
-      catch { case ex => throw ex.getCause } // unpack futureValue exceptions
+      catch { case ex: Throwable => throw ex.getCause } // unpack futureValue exceptions
     }
 
     def shouldThrowMalformedRequest[T](block: => T): Exception = {

@@ -8,9 +8,10 @@ import akka.actor._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.stream.OverflowStrategy
 import com.typesafe.config.{ Config, ConfigFactory }
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
@@ -29,10 +30,10 @@ object ConnectionTestApp {
 
   implicit val system: ActorSystem = ActorSystem("ConnectionTest", testConf)
   import system.dispatcher
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val clientFlow = Http().superPool[Int]()
 
+  @nowarn("msg=deprecated")
   val sourceActor = {
     // Our superPool expects (HttpRequest, Int) as input
     val source = Source.actorRef[(HttpRequest, Int)](10000, OverflowStrategy.dropNew).buffer(20000, OverflowStrategy.fail)

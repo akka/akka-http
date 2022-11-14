@@ -198,7 +198,7 @@ private[http] object OutgoingConnectionBlueprint {
         if (!entitySubstreamStarted) pull(responseOutputIn)
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         // if downstream cancels while streaming entity,
         // make sure we also cancel the entity source, but
         // after being done with streaming the entity

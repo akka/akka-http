@@ -14,7 +14,6 @@ import akka.http.impl.util.enhanceString_
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings }
 import akka.http.scaladsl.{ ClientTransport, Http }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
@@ -33,7 +32,6 @@ class ConnectionPoolBenchmark extends CommonBenchmark {
   var maxConnections: String = _
 
   implicit var system: ActorSystem = _
-  implicit var mat: ActorMaterializer = _
   implicit def ec: ExecutionContext = system.dispatcher
 
   private var poolSettings: ConnectionPoolSettings = _
@@ -67,7 +65,6 @@ class ConnectionPoolBenchmark extends CommonBenchmark {
         """)
         .withFallback(ConfigFactory.load())
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
-    mat = ActorMaterializer()
 
     val responseBytes = ByteString(
       """HTTP/1.1 200 OK

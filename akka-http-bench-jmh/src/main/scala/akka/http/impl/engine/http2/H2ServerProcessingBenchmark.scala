@@ -9,7 +9,6 @@ import akka.http.CommonBenchmark
 import akka.http.impl.engine.server.ServerTerminator
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.util.ByteString
@@ -23,7 +22,6 @@ class H2ServerProcessingBenchmark extends CommonBenchmark with H2RequestResponse
 
   var httpFlow: Flow[ByteString, ByteString, Any] = _
   implicit var system: ActorSystem = _
-  implicit var mat: ActorMaterializer = _
 
   val packedResponse = ByteString(1, 5, 0, 0) // a HEADERS frame with end_stream == true
 
@@ -61,7 +59,6 @@ class H2ServerProcessingBenchmark extends CommonBenchmark with H2RequestResponse
     initRequestResponse()
 
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
-    mat = ActorMaterializer()
     val settings = implicitly[ServerSettings]
     val log = system.log
     implicit val ec = system.dispatcher

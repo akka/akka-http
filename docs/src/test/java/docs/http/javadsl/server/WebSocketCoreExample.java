@@ -26,7 +26,6 @@ import akka.http.scaladsl.model.AttributeKeys;
 import akka.japi.JavaPartialFunction;
 import akka.japi.function.Function;
 
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;

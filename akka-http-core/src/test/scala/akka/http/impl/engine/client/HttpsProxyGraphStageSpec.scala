@@ -197,9 +197,9 @@ class HttpsProxyGraphStageSpec extends AkkaSpecWithMaterializer {
 
         val flowUnderTest = proxyGraphStage.join(proxyFlow)
 
-        val (source, sink) = TestSource.probe[ByteString]
+        val (source, sink) = TestSource[ByteString]()
           .via(flowUnderTest)
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink())(Keep.both)
           .run()
 
         fn(source, flowInProbe, flowOutProbe, sink)

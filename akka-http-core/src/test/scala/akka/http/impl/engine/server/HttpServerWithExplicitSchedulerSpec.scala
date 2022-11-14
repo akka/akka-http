@@ -7,6 +7,7 @@ package akka.http.impl.engine.server
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Connection, `Timeout-Access` }
+import akka.stream.Materializer
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.testkit.ExplicitlyTriggeredScheduler
 import org.scalatest.Inside
@@ -164,7 +165,7 @@ class HttpServerWithExplicitSchedulerSpec extends AkkaSpecWithMaterializer(
 
   class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
     implicit def system = spec.system
-    implicit def materializer = spec.materializer
+    implicit def materializer: Materializer = spec.materializer
     lazy val scheduler = spec.system.scheduler.asInstanceOf[ExplicitlyTriggeredScheduler]
 
     override def settings = {

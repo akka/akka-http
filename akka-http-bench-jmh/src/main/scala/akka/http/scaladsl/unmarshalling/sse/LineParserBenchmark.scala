@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ FileIO, Keep, RunnableGraph, Sink, Source }
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
@@ -23,7 +22,6 @@ import scala.concurrent.duration._
 @BenchmarkMode(Array(Mode.AverageTime))
 class LineParserBenchmark {
   implicit val system: ActorSystem = ActorSystem("line-parser-benchmark")
-  implicit val mat: ActorMaterializer = ActorMaterializer()
 
   // @formatter:off
   @Param(Array(

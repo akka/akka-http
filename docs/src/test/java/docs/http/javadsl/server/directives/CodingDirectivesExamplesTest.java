@@ -55,6 +55,7 @@ import static akka.http.javadsl.server.Directives.withPrecompressedMediaTypeSupp
 
 //#withPrecompressedMediaTypeSupport
 
+@SuppressWarnings("deprecation")
 public class CodingDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test

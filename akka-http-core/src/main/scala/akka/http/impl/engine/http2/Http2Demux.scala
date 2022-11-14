@@ -27,6 +27,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler, StageLogging, TimerGraphStageLogic }
 import akka.util.{ ByteString, OptionVal }
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.concurrent.duration.Duration
@@ -289,7 +290,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         pingState.tickInterval().foreach(interval =>
           // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
-          schedulePeriodically(ConfigurablePing.Tick, interval)
+          scheduleWithFixedDelay(ConfigurablePing.Tick, interval, interval)
         )
       }
 
@@ -371,6 +372,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           pullFrameIn()
         }
 
+        @nowarn("msg=deprecated")
         override def onUpstreamFailure(ex: Throwable): Unit = {
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
@@ -392,6 +394,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             // handle every unhandled exception
             case NonFatal(e) =>
               super.onUpstreamFailure(e)
+
+            case other =>
+              throw other // compiler completeness check pleaser
           }
         }
       })
@@ -501,6 +506,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
           shutdownStreamHandling()
           completeStage()
+        case other => throw new IllegalArgumentException(s"Unexpected time key $other") // compiler completeness check pleaser
       }
 
       override def postStop(): Unit = {

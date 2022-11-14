@@ -18,7 +18,6 @@ import static akka.http.javadsl.model.AttributeKeys.trailer;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.japi.function.Function;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
 //#bindAndHandleSecure
@@ -36,7 +35,6 @@ class Http2Test {
   void testBindAndHandleAsync() {
     Function<HttpRequest, CompletionStage<HttpResponse>> asyncHandler = r -> CompletableFuture.completedFuture(HttpResponse.create());
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
     HttpsConnectionContext httpsConnectionContext = null;
 
     //#bindAndHandleSecure

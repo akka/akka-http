@@ -8,7 +8,6 @@ import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.MediaType.WithFixedCharset
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives
-import akka.stream.ActorMaterializer
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
@@ -16,8 +15,6 @@ import scala.concurrent.duration._
 
 class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
   with Directives with RequestBuilding {
-
-  implicit val mat: ActorMaterializer = ActorMaterializer()
 
   "Http" should {
     "find media types in a set if they differ in casing" in {

@@ -9,7 +9,6 @@ import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.util.FastFuture
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -73,7 +72,7 @@ private[http] object StreamUtils {
           materializationPromise.trySuccess(())
           killResult.future.value match {
             case Some(res) => handleKill(res)
-            case None      => killResult.future.onComplete(killCallback.invoke)(ExecutionContexts.sameThreadExecutionContext)
+            case None      => killResult.future.onComplete(killCallback.invoke)(ExecutionContexts.parasitic)
           }
         }
 
@@ -185,7 +184,7 @@ private[http] object StreamUtils {
   object OneTimeValve {
     def apply(): OneTimeValve = new OneTimeValve {
       val promise = Promise[Unit]()
-      val _source = Source.fromFuture(promise.future).drop(1) // we are only interested in the completion event
+      val _source = Source.future(promise.future).drop(1) // we are only interested in the completion event
 
       def source[T]: Source[T, NotUsed] = _source.asInstanceOf[Source[T, NotUsed]] // safe, because source won't generate any elements
       def open(): Unit = promise.success(())
@@ -208,7 +207,7 @@ private[http] object StreamUtils {
 
       var timeout: OptionVal[Cancellable] = OptionVal.None
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         cancelAfter match {
           case finite: FiniteDuration =>
             log.debug(s"Delaying cancellation for $finite")
@@ -238,7 +237,7 @@ private[http] object StreamUtils {
 
       override def postStop(): Unit = timeout match {
         case OptionVal.Some(x) => x.cancel()
-        case OptionVal.None    => // do nothing
+        case _                 => // do nothing
       }
     }
   }
@@ -331,19 +330,6 @@ private[http] object StreamUtils {
         val (newData, whenCompleted) = streamOp(x.data)
         x.copy(data = newData).asInstanceOf[T] -> whenCompleted
     }
-
-  /**
-   * Small helper necessary to deal with errors happening during IO operations like FileIO.toPath.
-   * In these operations, a failure during writing data will be turn into a successful IOResult containing
-   * a nested failure.
-   *
-   * Here we make sure to unnest errors.
-   *
-   * Can be removed when https://github.com/akka/akka/issues/23951 is finally fixed.
-   */
-  def handleIOResult(ioResult: IOResult): Future[IOResult] =
-    if (ioResult.wasSuccessful) FastFuture.successful(ioResult)
-    else FastFuture.failed(ioResult.getError)
 
   def encodeErrorAndComplete[T](f: Throwable => T): Flow[T, T, NotUsed] =
     Flow[T].recoverWithRetries(1, {

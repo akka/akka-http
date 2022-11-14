@@ -8,11 +8,13 @@ import akka.http.scaladsl.model._
 import headers._
 import akka.http.scaladsl.server._
 import directives.HeaderDirectivesSpec.XCustomHeader
-
 import org.scalatest.Inside
+
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 import scala.util.Try
 
+@nowarn("msg=deprecated")
 class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The headerValuePF directive" should {

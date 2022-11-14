@@ -24,8 +24,8 @@ import akka.http.javadsl.settings.RoutingSettings;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.server.*;
 import akka.japi.pf.PFBuilder;
-import akka.stream.ActorMaterializer;
 import akka.stream.ActorMaterializerSettings;
+import akka.stream.Materializer;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -287,11 +287,13 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     //#extractLog
   }
 
+  // FIXME rewrite to not use deprecated ActorMaterializerSettings/ActorMaterializer and update docs
+  @SuppressWarnings("deprecation")
   @Test
   public void testWithMaterializer() {
     //#withMaterializer
     final ActorMaterializerSettings settings = ActorMaterializerSettings.create(system());
-    final ActorMaterializer special = ActorMaterializer.create(settings, system(), "special");
+    final Materializer special = akka.stream.ActorMaterializer.create(settings, system(), "special");
 
     final Route sample = path("sample", () ->
       extractMaterializer(mat ->
@@ -1040,7 +1042,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     });
 
     // tests:
-    final Iterator iterator = Arrays.asList(
+    final Iterator<ByteString> iterator = Arrays.asList(
       ByteString.fromString("1"),
       ByteString.fromString("2"),
       ByteString.fromString("3")).iterator();
@@ -1062,7 +1064,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     );
 
     // tests:
-    final Iterator iterator = Arrays.asList(
+    final Iterator<ByteString> iterator = Arrays.asList(
       ByteString.fromString("1"),
       ByteString.fromString("2"),
       ByteString.fromString("3")).iterator();
@@ -1090,7 +1092,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     );
 
     // tests:
-    final Iterator iterator = Arrays.asList(
+    final Iterator<ByteString> iterator = Arrays.asList(
       ByteString.fromString("1"),
       ByteString.fromString("2"),
       ByteString.fromString("3")).iterator();

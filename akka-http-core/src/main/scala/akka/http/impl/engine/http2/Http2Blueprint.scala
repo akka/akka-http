@@ -163,6 +163,7 @@ private[http] object Http2Blueprint {
         case NonFatal(ex) =>
           log.error(s"HTTP2 connection failed with error [${ex.getMessage}]. Sending INTERNAL_ERROR and closing connection.")
           FrameRenderer.render(GoAwayFrame(0, Http2Protocol.ErrorCode.INTERNAL_ERROR))
+        case other: Throwable => throw other // compiler completeness check pleaser
       },
       Flow[ByteString]
     )

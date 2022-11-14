@@ -109,7 +109,7 @@ private[http2] object PersistentConnection {
         requestOut.setHandler(new OutHandler {
           override def onPull(): Unit =
             requestOutPulled = true
-          override def onDownstreamFinish(): Unit = ()
+          override def onDownstreamFinish(cause: Throwable): Unit = ()
         })
         responseIn.setHandler(new InHandler {
           override def onPush(): Unit = throw new IllegalStateException("no response push expected while connecting")
@@ -165,6 +165,8 @@ private[http2] object PersistentConnection {
           case EmbargoEnded(connectsLeft, nextEmbargo) =>
             log.debug("Reconnecting after backoff")
             connect(connectsLeft, nextEmbargo)
+          case other => throw new IllegalArgumentException(s"Unexpected timer key $other") // compiler completeness check pleaser
+
         }
       }
 
@@ -180,7 +182,7 @@ private[http2] object PersistentConnection {
             if (!isAvailable(requestIn)) pull(requestIn)
             else dispatchRequest(grab(requestIn))
 
-          override def onDownstreamFinish(): Unit = onDisconnected()
+          override def onDownstreamFinish(cause: Throwable): Unit = onDisconnected()
         })
         responseIn.setHandler(new InHandler {
           override def onPush(): Unit = {
@@ -234,10 +236,10 @@ private[http2] object PersistentConnection {
           responseIn.cancel()
           failStage(ex)
         }
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           requestOut.complete()
           responseIn.cancel()
-          super.onDownstreamFinish()
+          super.onDownstreamFinish(cause)
         }
       }
     }

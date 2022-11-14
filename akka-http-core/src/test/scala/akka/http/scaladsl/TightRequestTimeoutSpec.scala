@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl._
-import akka.stream.{ OverflowStrategy, ActorMaterializer }
+import akka.stream.OverflowStrategy
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
@@ -27,7 +27,6 @@ class TightRequestTimeoutSpec extends AnyWordSpec with Matchers with BeforeAndAf
     akka.http.server.request-timeout = 10ms""")
 
   implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val patience: PatienceConfig = PatienceConfig(3.seconds.dilated)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)

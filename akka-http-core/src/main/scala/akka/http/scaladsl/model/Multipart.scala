@@ -512,7 +512,10 @@ object Multipart {
         def create(_name: String, _entity: BodyPartEntity,
                    _additionalDispositionParams: Map[String, String],
                    _additionalHeaders:           Iterable[akka.http.javadsl.model.HttpHeader]): Multipart.FormData.BodyPart = {
-          val _headers = _additionalHeaders.to(immutable.Seq) map { case h: akka.http.scaladsl.model.HttpHeader => h }
+          val _headers = _additionalHeaders.to(immutable.Seq) map {
+            case h: akka.http.scaladsl.model.HttpHeader => h
+            case _                                      => throw new IllegalStateException("Unexpected type") // compiler completeness check pleaser
+          }
           apply(_name, _entity, _additionalDispositionParams, _headers)
         }
       }
@@ -523,7 +526,10 @@ object Multipart {
         def createStrict(_name: String, _entity: HttpEntity.Strict,
                          _additionalDispositionParams: Map[String, String],
                          _additionalHeaders:           Iterable[akka.http.javadsl.model.HttpHeader]): Multipart.FormData.BodyPart.Strict = {
-          val _headers = _additionalHeaders.to(immutable.Seq) map { case h: akka.http.scaladsl.model.HttpHeader => h }
+          val _headers = _additionalHeaders.to(immutable.Seq) map {
+            case h: akka.http.scaladsl.model.HttpHeader => h
+            case _                                      => throw new IllegalStateException("Unexpected type") // compiler completeness check pleaser
+          }
           Strict(_name, _entity, _additionalDispositionParams, _headers)
         }
       }

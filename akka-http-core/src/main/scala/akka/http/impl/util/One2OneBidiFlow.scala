@@ -78,7 +78,7 @@ private[http] object One2OneBidiFlow {
         override def onPull(): Unit =
           if (insideWrappedFlow < maxPending || maxPending == -1) pull(in)
           else pullSuppressed = true
-        override def onDownstreamFinish(): Unit = cancel(in)
+        override def onDownstreamFinish(cause: Throwable): Unit = cancel(in)
       })
 
       setHandler(fromWrapped, new InHandler {
@@ -101,7 +101,7 @@ private[http] object One2OneBidiFlow {
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pull(fromWrapped)
-        override def onDownstreamFinish(): Unit = cancel(fromWrapped)
+        override def onDownstreamFinish(cause: Throwable): Unit = cancel(fromWrapped)
       })
     }
   }

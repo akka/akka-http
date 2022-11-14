@@ -92,6 +92,7 @@ private[http2] object FrameRenderer {
 
               renderNext(remaining)
             case Nil =>
+            case _   => throw new IllegalArgumentException("Unexpected remaining") // compiler completeness check pleaser
           }
 
         renderNext(settings)

@@ -6,7 +6,6 @@ package docs.http.javadsl.server;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectionContext;
-import com.typesafe.sslconfig.akka.AkkaSSLConfig;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 

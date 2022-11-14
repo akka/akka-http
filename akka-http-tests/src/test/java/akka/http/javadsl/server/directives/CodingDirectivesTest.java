@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import static akka.http.javadsl.server.Directives.*;
 
+@SuppressWarnings("deprecation")
 public class CodingDirectivesTest extends JUnitRouteTest {
 
   @Test
