@@ -7,19 +7,20 @@ on:
 jobs:
   publish-test-results:
     name: "Publish details with dorny-test-reporter"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         SCALA_VERSION: [ 2.12, 2.13 ]
-        JABBA_JDK: [ 1.8, 1.11 ]
+        TEMURIN_JDK: [ 1.8, 1.11 ]
     steps:
-      - uses: dorny/test-reporter@v1
+      # https://github.com/dorny/test-reporter/releases/tag/v1.6.0
+      - uses: dorny/test-reporter@c9b3d0e2bd2a4e96aaf424dbaa31c46b42318226
         # avoid excessive notification spam, fail-on-error seems broken https://github.com/dorny/test-reporter/issues/161
         continue-on-error: true
         with:
-          artifact: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}
-          name: Test Results Details / Scala ${{ matrix.SCALA_VERSION }} on JDK ${{ matrix.JABBA_JDK }}
+          artifact: test-results-${{ matrix.TEMURIN_JDK }}-${{ matrix.SCALA_VERSION }}
+          name: Test Results Details / Scala ${{ matrix.SCALA_VERSION }} on JDK ${{ matrix.TEMURIN_JDK }}
           fail-on-error: false
           path: '**/target/test-reports/*.xml'
           reporter: java-junit
