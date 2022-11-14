@@ -30,7 +30,9 @@ jobs:
         run: sudo apt-get install -y graphviz
 
       - name: Publish Artifacts to Sonatype / Maven
-        run: sbt -jvm-opts .jvmopts-ghactions ci-release
+        run: |
+          mv .jvmopts-ghactions .jvmopts
+          sbt ci-release
         env:
           CI_SONATYPE_RELEASE: "; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
@@ -55,6 +57,8 @@ jobs:
           jvm: adopt:11
 
       - name: Publish Documentation
-        run: eval "$(ssh-agent -s)" && echo $SCP_SECRET | base64 -d > /tmp/id_rsa && chmod 600 /tmp/id_rsa && ssh-add /tmp/id_rsa && sbt -jvm-opts .jvmopts-ghactions -Dakka.genjavadoc.enabled=true publishRsync
+        run: |
+          mv .jvmopts-ghactions .jvmopts
+          eval "$(ssh-agent -s)" && echo $SCP_SECRET | base64 -d > /tmp/id_rsa && chmod 600 /tmp/id_rsa && ssh-add /tmp/id_rsa && sbt -Dakka.genjavadoc.enabled=true publishRsync
         env:
           SCP_SECRET: ${{ secrets.SCP_SECRET }}
