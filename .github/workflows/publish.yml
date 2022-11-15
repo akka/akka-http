@@ -24,7 +24,7 @@ jobs:
       - name: Set up JDK 8
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.8
+          jvm: adopt:1.11.0.9 # align with akka/akka
 
       - name: Install graphviz
         run: sudo apt-get install -y graphviz

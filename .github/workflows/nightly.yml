@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         SCALA_VERSION: [2.12, 2.13, 3.1]
-        TEMURIN_JDK: [8, 11, 17]
+        JDK_VERSION: ["temurin:1.8", "temurin:1.11", "temurin:1.17"]
         AKKA_VERSION: [main, default]
 
     steps:
@@ -28,10 +28,10 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.4.0
 
-      - name: Set up JDK ${{ matrix.TEMURIN_JDK }}
+      - name: Set up JDK ${{ matrix.JDK_VERSION }}
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: temurin:${{ matrix.TEMURIN_JDK }}
+          jvm: ${{ matrix.JDK_VERSION }}
 
       - name: Cache Build Target
         uses: actions/cache@v3.0.11
@@ -42,12 +42,12 @@ jobs:
       - name: Compile everything
         run: sbt -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} Test/compile
 
-      - name: Run all tests JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}, Akka ${{ matrix.AKKA_VERSION }}
+      - name: Run all tests JDK ${{ matrix.JDK_VERSION }}, Scala ${{ matrix.SCALA_VERSION }}, Akka ${{ matrix.AKKA_VERSION }}
         run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues test
 
       - name: Upload test results
         uses: actions/upload-artifact@v3.1.1
         if: success() || failure()        # run this step even if previous step failed
         with:
-          name: test-results-${{ matrix.JABBA_JDK }}-${{ matrix.SCALA_VERSION }}-${{ matrix.AKKA_VERSION }}
+          name: 'test-results-${{ matrix.JDK_VERSION }}-${{ matrix.SCALA_VERSION }}-${{ matrix.AKKA_VERSION }}'
           path: '**/target/test-reports/*.xml'
