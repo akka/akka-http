@@ -16,7 +16,14 @@ jobs:
       fail-fast: false
       matrix:
         SCALA_VERSION: [2.12, 2.13, 3.1]
-        JDK_VERSION: ["temurin:1.8", "temurin:1.11", "temurin:1.17"]
+        JDK_VERSION: ["1.8", "1.11", "1.17"]
+        include:
+          - JDK_VERSION: 1.8
+            JVM_NAME: temurin:1.8
+          - JDK_VERSION: 1.11
+            JVM_NAME: temurin:1.11
+          - JDK_VERSION: 1.17
+            JVM_NAME: temurin:1.17
         AKKA_VERSION: [main, default]
 
     steps:
@@ -31,7 +38,7 @@ jobs:
       - name: Set up JDK ${{ matrix.JDK_VERSION }}
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: ${{ matrix.JDK_VERSION }}
+          jvm: ${{ matrix.JVM_NAME }}
 
       - name: Cache Build Target
         uses: actions/cache@v3.0.11

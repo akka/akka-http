@@ -21,7 +21,7 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.4.0
 
-      - name: Set up JDK 8
+      - name: Set up JDK 1.11
         uses: coursier/setup-action@v1.3.0
         with:
           jvm: adopt:1.11.0.9 # align with akka/akka
