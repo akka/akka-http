@@ -24,7 +24,7 @@ jobs:
       - name: Set up JDK 1.11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.11.0.9 # align with akka/akka
+          jvm: temurin:1.11.0.17 # align with akka/akka
 
       - name: Install graphviz
         run: sudo apt-get install -y graphviz
@@ -54,7 +54,7 @@ jobs:
       - name: Set up JDK 11
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:11
+          jvm: temurin:1.11
 
       - name: Publish Documentation
         run: |

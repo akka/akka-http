@@ -25,10 +25,10 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.4.0
 
-      - name: Set up JDK 8
+      - name: Set up JDK 17
         uses: coursier/setup-action@v1.3.0
         with:
-          jvm: adopt:1.8
+          jvm: temurin:1.17
 
       - name: Cache Build Target
         uses: actions/cache@v3.0.11
