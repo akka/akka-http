@@ -20,10 +20,13 @@ jobs:
         include:
           - JDK_VERSION: 1.8
             JVM_NAME: temurin:1.8
+            extraOpts: '-Xmx128m'
           - JDK_VERSION: 1.11
             JVM_NAME: temurin:1.11
+            extraOpts: ''
           - JDK_VERSION: 1.17
             JVM_NAME: temurin:1.17
+            extraOpts: ''
         AKKA_VERSION: [main, default]
 
     steps:
@@ -47,10 +50,16 @@ jobs:
           key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
 
       - name: Compile everything
-        run: sbt -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} Test/compile
+        run: |-
+          sbt \
+            -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} \
+            mimaReportBinaryIssues Test/compile ${{ matrix.extraOpts }}
 
       - name: Run all tests JDK ${{ matrix.JDK_VERSION }}, Scala ${{ matrix.SCALA_VERSION }}, Akka ${{ matrix.AKKA_VERSION }}
-        run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues test
+        run: |-
+          sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 \
+            -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} \
+            test ${{ matrix.extraOpts }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v3.1.1
