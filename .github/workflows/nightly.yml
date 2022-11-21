@@ -20,11 +20,7 @@ jobs:
         include:
           - JDK_VERSION: 1.8
             JVM_NAME: temurin:1.8
-<<<<<<< Updated upstream
-            extraOpts: '-Xmx128m'
-=======
             extraOpts: '-J-Xmx2048m'
->>>>>>> Stashed changes
           - JDK_VERSION: 1.11
             JVM_NAME: temurin:1.11
             extraOpts: ''
