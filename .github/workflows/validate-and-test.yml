@@ -53,7 +53,7 @@ jobs:
         include:
           - JDK_VERSION: 1.8
             JVM_NAME: temurin:1.8
-            extraOpts: '-Xmx128m'
+            extraOpts: '-J-Xmx128m'
           - JDK_VERSION: 1.11
             JVM_NAME: temurin:1.11
             extraOpts: ''
