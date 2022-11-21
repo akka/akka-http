@@ -9,6 +9,8 @@ import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model.{ ErrorInfo, HttpResponse, StatusCode }
 import akka.http.scaladsl.settings.ServerSettings
 
+// FIXME trigger PR validation
+
 abstract class ParsingErrorHandler {
   def handle(status: StatusCode, error: ErrorInfo, log: LoggingAdapter, settings: ServerSettings): jm.HttpResponse
 }
