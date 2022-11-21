@@ -55,6 +55,8 @@ object Common extends AutoPlugin {
         Seq.empty
       }),
 
+    Compile / doc / javacOptions := javacOptions.value.filterNot(_ == "-Xlint:deprecation"),
+
     mimaReportSignatureProblems := true,
     Global / parallelExecution := sys.props.getOrElse("akka.http.parallelExecution", "true") != "false"
   )
