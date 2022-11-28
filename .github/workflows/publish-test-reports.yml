@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  # required to attach test details https://github.com/dorny/test-reporter/issues/149#issuecomment-1004820190
+  checks: write
 
 jobs:
   publish-test-results:
