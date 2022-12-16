@@ -43,13 +43,8 @@ object Dependencies {
   }
 
   object Compile {
-    val scalaXml      = {
-      val xml = "org.scala-lang.modules" %% "scala-xml" // Scala License
-      ScalaVersionDependentModuleID.versioned {
-        case v if v.startsWith("2.") => xml % "1.3.0"
-        case _ => xml % "2.0.1"
-      }
-    }
+    val scalaXml      =  "org.scala-lang.modules" %% "scala-xml" % "2.0.1" // Scala License
+
 
 
     // For akka-http spray-json support
