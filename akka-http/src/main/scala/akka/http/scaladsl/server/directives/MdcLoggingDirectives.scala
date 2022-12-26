@@ -42,15 +42,21 @@ object MdcLoggingDirectives extends MdcLoggingDirectives {
         extractRequestContext
           .flatMap { ctx =>
             provide {
+              // Convert the existing ctx.log LoggingAdapter to a DiagnosticMarkerBusLoggingAdapter.
+              // This requires various amounts of effort depending on the type of the current LoggingAdapter.
+              // In all cases, we create a _new_ DiagnosticMarkerBusLoggingAdapter in order to avoid race conditions,
+              // where multiple requests could add/remove entries from the same MDC map.
               ctx.log match {
-                // In order to avoid race conditions from using a shared LoggingAdapter, even if the existing adapter
-                // is a DiagnosticMarkerBusLoggingAdapter, we still create a new one and merge the two entries.
                 case existingAdapter: DiagnosticMarkerBusLoggingAdapter =>
                   import existingAdapter._
                   val newAdapter = new DiagnosticMarkerBusLoggingAdapter(bus, logSource, logClass, loggingFilterWithMarker)
                   newAdapter.mdc(existingAdapter.mdc ++ entries)
                   newAdapter
-                // If the logger is not already a DiagnosticLoggingAdapter, we create a new one with the given entries.
+                case bla: BusLogging =>
+                  val filter = new DefaultLoggingFilter(() => bla.bus.logLevel)
+                  val newAdapter = new DiagnosticMarkerBusLoggingAdapter(bla.bus, bla.logSource, bla.logClass, filter)
+                  newAdapter.mdc(entries)
+                  newAdapter
                 case _ =>
                   val (str, cls) = LogSource.fromAnyRef(sys, sys)
                   val filter = new DefaultLoggingFilter(sys.settings, sys.eventStream)
