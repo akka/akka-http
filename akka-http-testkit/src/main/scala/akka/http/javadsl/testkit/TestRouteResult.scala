@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit
@@ -33,13 +33,15 @@ import scala.annotation.varargs
 abstract class TestRouteResult(_result: Future[RouteResult], awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: Materializer) {
 
   private def _response = _result.awaitResult(awaitAtMost) match {
-    case scaladsl.server.RouteResult.Complete(r)          => r
+    case scaladsl.server.RouteResult.Complete(r) => r
     case scaladsl.server.RouteResult.Rejected(rejections) => doFail("Expected route to complete, but was instead rejected with " + rejections)
+    case other => throw new IllegalArgumentException(s"Unexpected result: $other") // compiler completeness check pleaser
   }
 
   private def _rejections = _result.awaitResult(awaitAtMost) match {
     case scaladsl.server.RouteResult.Complete(r)  => doFail("Request was not rejected, response was " + r)
     case scaladsl.server.RouteResult.Rejected(ex) => ex
+    case other                                    => throw new IllegalArgumentException(s"Unexpected result: $other") // compiler completeness check pleaser
   }
 
   /**

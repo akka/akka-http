@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -17,7 +17,7 @@ final class ErrorInfo(
   val summary:         String = "",
   val detail:          String = "",
   val errorHeaderName: String = ""
-) extends scala.Product with scala.Serializable with scala.Equals with java.io.Serializable {
+) extends scala.Product with scala.Equals with java.io.Serializable {
   def withSummary(newSummary: String) = copy(summary = newSummary)
   def withSummaryPrepended(prefix: String) = withSummary(if (summary.isEmpty) prefix else prefix + ": " + summary)
   def withErrorHeaderName(headerName: String) = new ErrorInfo(summary, detail, headerName.toLowerCase)

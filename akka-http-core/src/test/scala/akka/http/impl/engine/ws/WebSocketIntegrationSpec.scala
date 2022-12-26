@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -48,7 +48,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
 
       val (response, sink) = Http().singleWebSocketRequest(
         WebSocketRequest("ws://127.0.0.1:" + myPort),
-        Flow.fromSinkAndSourceMat(TestSink.probe[Message], Source.empty)(Keep.left))
+        Flow.fromSinkAndSourceMat(TestSink[Message](), Source.empty)(Keep.left))
 
       response.futureValue.response.status.isSuccess should ===(true)
       sink
@@ -86,7 +86,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
               override def onPull(): Unit = pull(shape.in)
 
               override def preStart(): Unit = {
-                promise.future.foreach(_ => getAsyncCallback[Done](_ => complete(shape.out)).invoke(Done))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+                promise.future.foreach(_ => getAsyncCallback[Done](_ => complete(shape.out)).invoke(Done))(akka.dispatch.ExecutionContexts.parasitic)
               }
 
               setHandlers(shape.in, shape.out, this)
@@ -102,9 +102,9 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
             Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
               .atop(TLSPlacebo())
               .joinMat(completeOnlySwitch.via(
-                Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true)))(Keep.both)
+                Tcp(system).outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true)))(Keep.both)
           }(Keep.right)
-          .toMat(TestSink.probe[Message])(Keep.both)
+          .toMat(TestSink[Message]())(Keep.both)
           .run()
 
       response.futureValue.response.status.isSuccess should ===(true)
@@ -179,7 +179,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
               .atop(TLSPlacebo())
               // the resource leak of #19398 existed only for severed websocket connections
               .atopMat(KillSwitches.singleBidi[ByteString, ByteString])(Keep.right)
-              .join(Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))
+              .join(Tcp(system).outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))
           }(Keep.right)
           .toMat(Sink.foreach(_ => messages += 1))(Keep.both)
           .run()
@@ -197,23 +197,30 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
       val handler = Flow[Message]
         .watchTermination()(Keep.right)
         .mapMaterializedValue(handlerTermination.completeWith(_))
-        .map(m => TextMessage.Strict(s"Echo [$m]"))
+        .map(m => TextMessage.Strict(s"Echo [${m.asTextMessage.getStrictText}]"))
 
       val bindingFuture = Http().newServerAt("localhost", 0).bindSync(_.attribute(webSocketUpgrade).get.handleMessages(handler, None))
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
-      val ((switch, connection), completion) =
-        Source.maybe
+      val clientMessageOut = TestPublisher.probe[Message]()
+      val clientMessageIn = TestSubscriber.probe[Message]()
+
+      val switch =
+        Source.fromPublisher(clientMessageOut)
           .viaMat {
             Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
               .atop(TLSPlacebo())
               .atopMat(KillSwitches.singleBidi[ByteString, ByteString])(Keep.right)
-              .joinMat(Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))(Keep.both)
+              .join(Tcp(system).outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))
           }(Keep.right)
-          .toMat(Sink.ignore)(Keep.both)
+          .toMat(Sink.fromSubscriber(clientMessageIn))(Keep.left)
           .run()
-      connection.futureValue
+
+      // simulate message exchange to make sure handler has been installed
+      clientMessageOut.sendNext(TextMessage("Test"))
+      clientMessageIn.requestNext(TextMessage("Echo [Test]"))
+
       switch.abort(new IllegalStateException("Connection aborted"))
 
       // Should fail, not complete:

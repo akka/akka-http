@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client.pool
@@ -100,7 +100,7 @@ private[client] object NewHostConnectionPool {
             dispatchRequest(nextRequest)
             pullIfNeeded()
           } else // embargo might change state from unconnected -> embargoed losing an idle slot between the pull and the push here
-            retryBuffer.addLast(nextRequest)
+            retryBuffer.addFirst(nextRequest)
         }
         def onPull(): Unit =
           if (!slotsWaitingForDispatch.isEmpty)
@@ -362,8 +362,8 @@ private[client] object NewHostConnectionPool {
             def loop[U](event: Event[U], arg: U, remainingIterations: Int): Unit =
               if (remainingIterations > 0)
                 runOneTransition(event, arg) match {
-                  case OptionVal.None       => // no more changes
                   case OptionVal.Some(next) => loop(next, (), remainingIterations - 1)
+                  case _                    => // no more changes
                 }
               else
                 throw new IllegalStateException(
@@ -450,7 +450,7 @@ private[client] object NewHostConnectionPool {
                   entityComplete.onComplete(safely {
                     case Success(_)     => withSlot(_.onRequestEntityCompleted())
                     case Failure(cause) => withSlot(_.onRequestEntityFailed(cause))
-                  })(ExecutionContexts.sameThreadExecutionContext)
+                  })(ExecutionContexts.parasitic)
                   request.withEntity(newEntity)
               }
 
@@ -504,9 +504,9 @@ private[client] object NewHostConnectionPool {
                       ongoingResponseEntity = None
                       ongoingResponseEntityKillSwitch = None
                     }
-                  }(ExecutionContexts.sameThreadExecutionContext)
+                  }(ExecutionContexts.parasitic)
                 case Failure(_) => throw new IllegalStateException("Should never fail")
-              })(ExecutionContexts.sameThreadExecutionContext)
+              })(ExecutionContexts.parasitic)
 
               withSlot(_.onResponseReceived(response.withEntity(newEntity)))
             }
@@ -531,8 +531,15 @@ private[client] object NewHostConnectionPool {
 
           def onPull(): Unit = () // emitRequests makes sure not to push too early
 
-          override def onDownstreamFinish(): Unit =
-            withSlot(_.debug("Connection cancelled"))
+          override def onDownstreamFinish(cause: Throwable): Unit =
+            withSlot { slot =>
+              slot.debug("Connection cancelled")
+              // Let's use StreamTcpException for now.
+              // FIXME: after moving to Akka 2.6.x only, we can use cancelation cause propagation which would probably also report
+              // a StreamTcpException here
+              slot.onConnectionFailed(new StreamTcpException("Connection was cancelled (caused by a failure of the underlying HTTP connection)"))
+              responseIn.cancel()
+            }
 
           /** Helper that makes sure requestOut is pulled before pushing */
           private def emitRequest(request: HttpRequest): Unit =
@@ -546,7 +553,7 @@ private[client] object NewHostConnectionPool {
                   requestOut.setHandler(connection)
                 }
 
-                override def onDownstreamFinish(): Unit = connection.onDownstreamFinish()
+                override def onDownstreamFinish(cause: Throwable): Unit = connection.onDownstreamFinish(cause)
               })
         }
         def openConnection(slot: Slot): SlotConnection = {
@@ -581,7 +588,7 @@ private[client] object NewHostConnectionPool {
                 onConnectionAttemptFailed(currentEmbargoLevel)
                 sl.onConnectionAttemptFailed(cause)
               }
-          })(ExecutionContexts.sameThreadExecutionContext)
+          })(ExecutionContexts.parasitic)
 
           slotCon
         }
@@ -594,9 +601,9 @@ private[client] object NewHostConnectionPool {
           log.debug("Pool upstream failed with {}", ex)
           super.onUpstreamFailure(ex)
         }
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           log.debug("Pool downstream cancelled")
-          super.onDownstreamFinish()
+          super.onDownstreamFinish(cause)
         }
         override def postStop(): Unit = {
           slots.foreach(_.shutdown())

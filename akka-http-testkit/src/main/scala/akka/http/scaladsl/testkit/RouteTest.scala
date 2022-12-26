@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -16,7 +16,7 @@ import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.settings.ServerSettings
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.SystemMaterializer
+import akka.stream.{ Materializer, SystemMaterializer }
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ConstantFun
@@ -24,7 +24,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.DynamicVariable
 
@@ -47,9 +47,9 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     val config = if (source.isEmpty) ConfigFactory.empty() else ConfigFactory.parseString(source)
     config.withFallback(ConfigFactory.load())
   }
-  implicit val system = createActorSystem()
-  implicit def executor = system.dispatcher
-  implicit val materializer = SystemMaterializer(system).materializer
+  implicit val system: ActorSystem = createActorSystem()
+  implicit def executor: ExecutionContextExecutor = system.dispatcher
+  implicit val materializer: Materializer = SystemMaterializer(system).materializer
 
   def cleanUp(): Unit = TestKit.shutdownActorSystem(system)
 

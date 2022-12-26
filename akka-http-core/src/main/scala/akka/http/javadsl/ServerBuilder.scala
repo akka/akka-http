@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl
@@ -152,7 +152,7 @@ object ServerBuilder {
     materializer: Materializer
   ) extends ServerBuilder {
     private implicit def executionContext: ExecutionContext = system.classicSystem.dispatcher
-    private def http: scaladsl.HttpExt = scaladsl.Http(system)
+    private def http: scaladsl.HttpExt = scaladsl.Http(system.classicSystem)
 
     def onInterface(newInterface: String): ServerBuilder = copy(interface = newInterface)
     def onPort(newPort: Int): ServerBuilder = copy(port = newPort)
@@ -185,6 +185,6 @@ object ServerBuilder {
     def connectionSource(): Source[IncomingConnection, CompletionStage[ServerBinding]] =
       http.bindImpl(interface, port, context.asScala, settings.asScala, log)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContexts.sameThreadExecutionContext).toJava).asJava
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContexts.parasitic).toJava).asJava
   }
 }

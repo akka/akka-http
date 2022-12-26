@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -10,6 +10,7 @@ import akka.http.javadsl.marshalling.Marshaller
 import akka.http.javadsl.model.{ HttpEntity, _ }
 import akka.http.javadsl.server.Route
 import akka.http.javadsl.unmarshalling.Unmarshaller
+import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.server.{ Directives => D }
 import akka.stream.javadsl.Source
@@ -25,7 +26,7 @@ abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
   def entityAsSourceOf[T](um: Unmarshaller[ByteString, T], support: EntityStreamingSupport,
                           inner: java.util.function.Function[Source[T, NotUsed], Route]): Route = RouteAdapter {
     val umm = D.asSourceOf(um.asScala, support.asScala)
-    D.entity(umm) { s: akka.stream.scaladsl.Source[T, NotUsed] =>
+    D.entity(umm) { (s: akka.stream.scaladsl.Source[T, NotUsed]) =>
       inner(s.asJava).delegate
     }
   }
@@ -46,7 +47,7 @@ abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
     import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
     // don't try this at home:
     val mm = m.asScalaCastOutput[akka.http.scaladsl.model.RequestEntity].map(_.httpEntity.asInstanceOf[akka.http.scaladsl.model.RequestEntity])
-    implicit val mmm = fromEntityStreamingSupportAndEntityMarshaller[T, M](support.asScala, mm, null)
+    implicit val mmm: ToResponseMarshaller[akka.stream.scaladsl.Source[T, M]] = fromEntityStreamingSupportAndEntityMarshaller[T, M](support.asScala, mm, null)
     val response = ToResponseMarshallable(source.asScala)
     D.complete(response)
   }

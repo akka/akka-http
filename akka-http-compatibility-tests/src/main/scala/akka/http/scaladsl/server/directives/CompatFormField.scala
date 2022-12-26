@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -13,12 +13,5 @@ object CompatFormField {
   def oneParameterRoute: Route =
     oneParameter { num =>
       complete(num.toString)
-    }
-
-  def twoParameters: Directive[(String, Int)] =
-    formFields(("name", "age".as[Int]))
-  def twoParametersRoute: Route =
-    twoParameters { (name, age) =>
-      complete(s"$name $age")
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -40,7 +40,7 @@ class WithPriorKnowledgeSpec extends AkkaSpecWithMaterializer("""
       val source =
         Source.queue[String](1000, OverflowStrategy.fail)
           .map(str => ByteString(Base64.getDecoder.decode(str)))
-          .via(Tcp().outgoingConnection(host, port))
+          .via(Tcp(system).outgoingConnection(host, port))
           .toMat(fromServer.sink)(Keep.left)
           .run()
 

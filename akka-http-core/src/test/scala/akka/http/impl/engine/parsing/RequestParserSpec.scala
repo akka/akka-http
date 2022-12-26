@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.stream.TLSProtocol._
 import org.scalatest.matchers.Matcher
@@ -44,11 +43,10 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
     akka.http.parsing.max-header-value-length = 32
     akka.http.parsing.max-uri-length = 40
     akka.http.parsing.max-content-length = infinite""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
   val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, requestEntityAcceptance = Expected)
-  implicit val materializer = ActorMaterializer()
 
   s"The request parsing logic should (mode: $mode)" - {
     "properly parse a request" - {
@@ -776,7 +774,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
         }
         .concatSubstreams
         .flatMapConcat { x =>
-          Source.fromFuture {
+          Source.future {
             x match {
               case Right(request) => compactEntity(request.entity).fast.map(x => Right(request.withEntity(x)))
               case Left(error)    => FastFuture.successful(Left(error))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -16,7 +16,7 @@ object HttpHeaderParserTestBed extends App {
     akka.http.parsing.max-header-name-length = 20
     akka.http.parsing.max-header-value-length = 21
     akka.http.parsing.header-cache.Host = 300""")
-  val system = ActorSystem("HttpHeaderParserTestBed", testConf)
+  val system: ActorSystem = ActorSystem("HttpHeaderParserTestBed", testConf)
 
   val parser = HttpHeaderParser.prime {
     HttpHeaderParser.unprimed(ParserSettings(system), system.log, warnOnIllegalHeader = info => system.log.warning(info.formatPretty))

@@ -6,6 +6,9 @@ on:
     branches: [ main ]
     tags-ignore: [ v* ]
 
+permissions:
+  contents: read
+
 concurrency:
   # Only run once for latest commit per ref and cancel other (previous) runs.
   group: ci-${{ github.ref }}
@@ -14,21 +17,21 @@ concurrency:
 jobs:
   formatting-check:
     name: Checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Scala on JDK 8
-        uses: olafurpg/setup-scala@v13
-        with:
-          java-version: adopt@1.8
+        uses: actions/checkout@v3.1.0
 
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK 17
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: temurin:1.17
 
       - name: Cache Build Target
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.11
         with:
           path: project/**/target
           key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
@@ -39,48 +42,60 @@ jobs:
       - name: Check for missing formatting
         run: git diff --exit-code --color
 
-      - name: FOSSA policy check
-        if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == 'akka/akka-http' }}
-        run: |-
-          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/spectrometer/master/install.sh | bash
-          fossa analyze && fossa test
-        env:
-          FOSSA_API_KEY: "${{secrets.FOSSA_API_KEY}}"
-
   compile-and-test:
     name: Compile and test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
-      matrix:
-        SCALA_VERSION: [2.12, 2.13]
-        JABBA_JDK: [1.8, 1.11]
+      matrix: # align with publish-test-reports.yml
+        SCALA_VERSION: [2.12, 2.13, 3.1]
+        JDK_VERSION: ["1.8", "1.11", "1.17"]
+        include:
+          - JDK_VERSION: 1.8
+            JVM_NAME: temurin:1.8
+            extraOpts: '-J-Xmx2048M'
+          - JDK_VERSION: 1.11
+            JVM_NAME: temurin:1.11
+            extraOpts: ''
+          - JDK_VERSION: 1.17
+            JVM_NAME: temurin:1.17
+            extraOpts: ''
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
 
-      - name: Set up JDK ${{ matrix.JABBA_JDK }}
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@${{ matrix.JABBA_JDK }}
-
       - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
+        uses: coursier/cache-action@v6.4.0
+
+      - name: Set up JDK ${{ matrix.JDK_VERSION }}
+        uses: coursier/setup-action@v1.3.0
+        with:
+          jvm: ${{ matrix.JVM_NAME }}
 
       - name: Cache Build Target
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.11
         with:
           path: project/**/target
           key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
 
+      - name: Compile everything
+        run: sbt ++${{ matrix.SCALA_VERSION }} Test/compile ${{ matrix.extraOpts }}
+
       # Quick testing for PR validation
-      - name: Validate pull request for JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}
+      - name: Validate pull request for JDK ${{ matrix.JDK_VERSION }}, Scala ${{ matrix.SCALA_VERSION }}
         if: ${{ github.event_name == 'pull_request' }}
-        run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 -Dakka.build.scalaVersion=${{ matrix.SCALA_VERSION }} Test/compile validatePullRequest
+        run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 ++${{ matrix.SCALA_VERSION }} validatePullRequest ${{ matrix.extraOpts }}
 
       # Full testing for pushes
-      - name: Run all tests JDK ${{ matrix.JABBA_JDK }}, Scala ${{ matrix.SCALA_VERSION }}
+      - name: Run all tests JDK ${{ matrix.JDK_VERSION }}, Scala ${{ matrix.SCALA_VERSION }}
         if: ${{ github.event_name == 'push' }}
-        run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 -Dakka.build.scalaVersion=${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues Test/compile test
+        run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 ++${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues test ${{ matrix.extraOpts }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3.1.1
+        if: success() || failure()        # run this step even if previous step failed
+        with:
+          name: 'test-results-${{ matrix.JDK_VERSION }}-${{ matrix.SCALA_VERSION }}'
+          path: '**/target/test-reports/*.xml'

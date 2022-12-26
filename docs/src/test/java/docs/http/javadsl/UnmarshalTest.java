@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -7,9 +7,6 @@ package docs.http.javadsl;
 import static org.junit.Assert.assertEquals;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 
-import akka.util.ByteString;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import org.junit.Test;
 
 //#imports

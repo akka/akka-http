@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -13,10 +13,11 @@ import akka.http.scaladsl.model.HttpEntity.Chunk
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings, `Content-Encoding` }
 import akka.http.scaladsl.server.Directives._
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.testkit.TestKit
 import akka.util.ByteString
+
 import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
@@ -30,6 +31,8 @@ import org.scalatest.wordspec.AnyWordSpec
 @nowarn("msg=synchronous compression with `encode` is not supported in the future any more")
 class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with BeforeAndAfterAll with ScalaFutures {
 
+  import akka.http.ccompat.ImplicitUtils._
+
   val maxContentLength = 800
   // Protect network more than memory:
   val decodeMaxSize = 1600
@@ -41,12 +44,12 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
     akka.http.server.parsing.max-content-length = $maxContentLength
     akka.http.routing.decode-max-size = $decodeMaxSize
     """)
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: Materializer = Materializer.createMaterializer(system)
   val random = new scala.util.Random(42)
 
-  implicit val defaultPatience = PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
+  implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   "a normal route" should {
     val route = path("noDirective") {
@@ -66,7 +69,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
 
     "not accept entities bigger than configured with akka.http.parsing.max-content-length" in {
       Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength + 1)))
-        .futureValue.status shouldEqual StatusCodes.PayloadTooLarge
+        .futureValue.status shouldEqual StatusCodes.ContentTooLarge
     }
   }
 
@@ -102,7 +105,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
       data.size should be > decodeMaxSize
 
       Http().singleRequest(request)
-        .futureValue.status shouldEqual StatusCodes.PayloadTooLarge
+        .futureValue.status shouldEqual StatusCodes.ContentTooLarge
     }
   }
 
@@ -124,7 +127,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
     "reject a small request that decodes into a large chunked entity" in {
       val request = Post(s"http:/${binding.localAddress}/noDirective", "x").withHeaders(`Content-Encoding`(HttpEncoding("custom")))
       val response = Http().singleRequest(request).futureValue
-      response.status shouldEqual StatusCodes.PayloadTooLarge
+      response.status shouldEqual StatusCodes.ContentTooLarge
     }
   }
 
@@ -146,7 +149,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
     "reject a small request that decodes into a large non-chunked streaming entity" in {
       val request = Post(s"http:/${binding.localAddress}/noDirective", "x").withHeaders(`Content-Encoding`(HttpEncoding("custom")))
       val response = Http().singleRequest(request).futureValue
-      response.status shouldEqual StatusCodes.PayloadTooLarge
+      response.status shouldEqual StatusCodes.ContentTooLarge
     }
   }
 

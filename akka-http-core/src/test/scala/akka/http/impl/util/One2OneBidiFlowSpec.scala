@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -7,18 +7,16 @@ package akka.http.impl.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
 class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
-  implicit val materializer = ActorMaterializer()
 
   "A One2OneBidiFlow" must {
 

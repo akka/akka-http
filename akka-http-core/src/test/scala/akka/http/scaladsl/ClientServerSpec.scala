@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -695,7 +695,7 @@ abstract class ClientServerSpecBase(http2: Boolean) extends AkkaSpecWithMaterial
 Host: example.com
 
 """))
-          .via(Tcp().outgoingConnection(hostname, port))
+          .via(Tcp(system).outgoingConnection(hostname, port))
           .runWith(Sink.reduce[ByteString](_ ++ _))
         Try(Await.result(result, 2.seconds).utf8String) match {
           case scala.util.Success(body)                => fail(body)
@@ -717,7 +717,8 @@ Host: example.com
 
       // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
       val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
-      val sslConfig = AkkaSSLConfig().withSettings(sslConfigSettings)
+      @nowarn("msg=deprecated")
+      val sslConfig = AkkaSSLConfig.apply().withSettings(sslConfigSettings)
       val sslContext = {
         val certStore = KeyStore.getInstance(KeyStore.getDefaultType)
         certStore.load(null, null)
@@ -879,6 +880,42 @@ Host: example.com
       }
     }
 
+    "properly complete a simple request/response cycle when `max-content-length` is set to 0" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        override def configOverrides = """
+            akka.http.client.parsing.max-content-length = 0
+            akka.http.server.parsing.max-content-length = 0
+        """
+
+        val (clientOut, clientIn) = openNewClientConnection()
+        val (serverIn, serverOut) = acceptConnection()
+
+        val clientOutSub = clientOut.expectSubscription()
+        clientOutSub.expectRequest()
+        clientOutSub.sendNext(HttpRequest(uri = "/abc", entity = ""))
+
+        val serverInSub = serverIn.expectSubscription()
+        serverInSub.request(1)
+        serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
+
+        val serverOutSub = serverOut.expectSubscription()
+        serverOutSub.expectRequest()
+        serverOutSub.sendNext(HttpResponse(entity = ""))
+
+        val clientInSub = clientIn.expectSubscription()
+        clientInSub.request(1)
+        val response = clientIn.expectNext()
+        toStrict(response.entity) shouldEqual HttpEntity("")
+
+        clientOutSub.sendComplete()
+        serverIn.expectComplete()
+        serverOutSub.expectCancellation()
+        clientIn.expectComplete()
+
+        binding.foreach(_.unbind())
+      }
+    }
+
     "be able to deal with eager closing of the request stream on the client side" in Utils.assertAllStagesStopped {
       new TestSetup {
         val (clientOut, clientIn) = openNewClientConnection()
@@ -930,7 +967,7 @@ Host: example.com
     "produce a useful error message when connecting to an endpoint speaking wrong protocol" in Utils.assertAllStagesStopped {
       val settings = ConnectionPoolSettings(system).withUpdatedConnectionSettings(_.withIdleTimeout(100.millis))
 
-      val binding = Tcp().bindAndHandle(Flow[ByteString].map(_ => ByteString("hello world!")), "127.0.0.1", 0).futureValue
+      val binding = Tcp(system).bindAndHandle(Flow[ByteString].map(_ => ByteString("hello world!")), "127.0.0.1", 0).futureValue
       val uri = "http://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
 
       val ex = the[IllegalResponseException] thrownBy Await.result(Http().singleRequest(HttpRequest(uri = uri, method = HttpMethods.POST), settings = settings), 30.seconds)

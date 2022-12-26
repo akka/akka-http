@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -76,12 +76,12 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
-  def withHeaders(headers: immutable.Seq[HttpHeader]): Self
-
-  /** Returns a copy of this message with the list of headers set to the given ones. */
   @since213
   def withHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
     withHeaders(firstHeader +: otherHeaders.toList)
+
+  /** Returns a copy of this message with the list of headers set to the given ones. */
+  def withHeaders(headers: immutable.Seq[HttpHeader]): Self
 
   /**
    * Returns a new message that contains all of the given default headers which didn't already
@@ -89,6 +89,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
    */
   @pre213
   def withDefaultHeaders(defaultHeaders: HttpHeader*): Self = withDefaultHeaders(defaultHeaders.toList)
+
+  @since213
+  def withDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
+    withDefaultHeaders(firstHeader +: otherHeaders.toList)
 
   /**
    * Returns a new message that contains all of the given default headers which didn't already
@@ -99,10 +103,6 @@ sealed trait HttpMessage extends jm.HttpMessage {
       if (headers.isEmpty) defaultHeaders
       else defaultHeaders.foldLeft(headers) { (acc, h) => if (headers.exists(_ is h.lowercaseName)) acc else h +: acc }
     }
-
-  @since213
-  def withDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
-    withDefaultHeaders(firstHeader +: otherHeaders.toList)
 
   /** Returns a copy of this message with the attributes set to the given ones. */
   def withAttributes(headers: Map[AttributeKey[_], _]): Self
@@ -216,10 +216,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Java API */
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = withHeaders(this.headers ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
   /** Java API */
-  def withHeaders(headers: JIterable[jm.HttpHeader]): Self = {
-    import JavaMapping.Implicits._
-    withHeaders(headers.asScala.toVector.map(_.asScala))
-  }
+  def withHeaders(headers: JIterable[jm.HttpHeader]): Self =
+    withHeaders(headers.asScala.toVector.map(x => JavaMapping.toScala(x)))
   /** Java API */
   def getAttribute[T](attributeKey: jm.AttributeKey[T]): Optional[T] =
     Util.convertOption(attribute(attributeKey))
@@ -455,9 +453,9 @@ object HttpRequest {
           s"Cannot establish effective URI of request to `$uri`, request has a relative URI and $detail",
           "consider setting `akka.http.server.default-host-header`")
       val Host(hostHeaderHost, hostHeaderPort) = hostHeader match {
-        case OptionVal.None                 => if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
         case OptionVal.Some(x) if x.isEmpty => if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
         case OptionVal.Some(x)              => x
+        case _                              => if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
       }
       val defaultScheme =
         if (isWebsocket) Uri.websocketScheme(securedConnection)

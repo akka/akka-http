@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers._
 import akka.parboiled2._
 
 // see grammar at http://tools.ietf.org/html/rfc6455#section-4.3
-private[parser] trait WebSocketHeaders { this: Parser with CommonRules with CommonActions =>
+private[parser] trait WebSocketHeaders { this: Parser with CommonRules with CommonActions with StringBuilding =>
   import CharacterClasses._
   import Base64Parsing.rfc2045Alphabet
 

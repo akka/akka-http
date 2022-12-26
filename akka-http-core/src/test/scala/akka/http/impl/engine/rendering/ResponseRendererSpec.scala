@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -17,7 +17,6 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.util.ByteString
 import akka.stream.scaladsl._
-import akka.stream.ActorMaterializer
 import HttpEntity._
 import akka.http.impl.engine.rendering.ResponseRenderingContext.CloseRequested
 import akka.http.impl.util.Rendering.CrLf
@@ -31,10 +30,9 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
 
   val ServerOnTheMove = StatusCodes.custom(330, "Server on the move")
-  implicit val materializer = ActorMaterializer()
 
   "The response preparation logic should properly render" - {
     "a response with no body," - {

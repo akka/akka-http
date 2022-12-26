@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.marshallers.jackson;
 
+import akka.stream.SystemMaterializer;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.typesafe.config.Config;
@@ -19,7 +20,6 @@ import akka.http.javadsl.server.ExceptionHandler;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.settings.RoutingSettings;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
 import org.junit.Test;
@@ -53,7 +53,7 @@ public class JacksonTest extends JUnitRouteTest {
   public void failingToUnmarshallShouldProvideFailureDetails() throws Exception {
     ActorSystem sys = ActorSystem.create("test");
     try {
-      Materializer materializer = ActorMaterializer.create(sys);
+      Materializer materializer = SystemMaterializer.get(sys).materializer();
       CompletionStage<SomeData> unmarshalled = Jackson.unmarshaller(SomeData.class).unmarshal(invalidEntity, system());
 
 

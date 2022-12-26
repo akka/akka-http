@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -33,7 +33,7 @@ private[http] final class FrameEventRenderer extends GraphStage[FlowShape[FrameE
 
           push(out, renderStart(start))
 
-        case f: FrameData =>
+        case _: FrameData =>
           fail(out, new IllegalStateException("unexpected FrameData (need FrameStart first)"))
       }
     }

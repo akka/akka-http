@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -82,7 +82,7 @@ private[http2] sealed abstract class MessageRendering[R <: HttpMessage] extends 
     val trailingHeadersFrame =
       r.attribute(AttributeKeys.trailer) match {
         case Some(trailer) if trailer.headers.nonEmpty => OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, trailer.headers, None))
-        case None                                      => OptionVal.None
+        case _                                         => OptionVal.None
       }
 
     Http2SubStream(r.entity, headersFrame, trailingHeadersFrame, r.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))

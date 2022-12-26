@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client.pool
@@ -332,7 +332,7 @@ private[pool] object SlotState {
       WaitingForEndOfResponseEntity(ongoingRequest, ongoingResponse, waitingForEndOfRequestEntity = false)
     }
   }
-  final case object WaitingForEndOfRequestEntity extends ConnectedState {
+  case object WaitingForEndOfRequestEntity extends ConnectedState {
     final override def isIdle = false
 
     override def onRequestEntityCompleted(ctx: SlotContext): SlotState =

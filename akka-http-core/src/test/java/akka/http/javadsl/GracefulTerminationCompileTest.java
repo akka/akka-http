@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl;
@@ -8,8 +8,6 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.japi.function.Function;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;

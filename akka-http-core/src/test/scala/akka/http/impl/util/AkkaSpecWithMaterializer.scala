@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.stream.{ ActorMaterializer, SystemMaterializer }
+import akka.stream.{ Materializer, SystemMaterializer }
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
@@ -25,7 +25,7 @@ abstract class AkkaSpecWithMaterializer(configOverrides: String)
 
   def this() = this("")
 
-  implicit val materializer = SystemMaterializer(system).materializer
+  implicit val materializer: Materializer = SystemMaterializer(system).materializer
 
   override protected def beforeTermination(): Unit =
     // don't log anything during shutdown, especially not AbruptTerminationExceptions
@@ -33,7 +33,7 @@ abstract class AkkaSpecWithMaterializer(configOverrides: String)
       // shutdown materializer first, otherwise it will only be shutdown during
       // main system guardian being shutdown which will be after the logging has
       // reverted to stdout logging that cannot be intercepted
-      materializer.asInstanceOf[ActorMaterializer].shutdown()
+      materializer.shutdown()
       Http().shutdownAllConnectionPools()
       // materializer shutdown is async but cannot be watched
       Thread.sleep(10)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -23,7 +23,7 @@ import akka.testkit._
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
   // operations touch files, can be randomly hit by slowness
-  implicit val routeTestTimeout = RouteTestTimeout(3.seconds.dilated)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   // need to serve from the src directory, when sbt copies the resource directory over to the
   // target directory it will resolve symlinks in the process

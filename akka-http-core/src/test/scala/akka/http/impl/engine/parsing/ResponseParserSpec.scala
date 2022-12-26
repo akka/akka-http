@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -386,7 +386,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AkkaSpe
       generalRawMultiParseTo(GET, expected: _*)
     def generalRawMultiParseTo(requestMethod: HttpMethod, expected: Either[ResponseOutput, HttpResponse]*): Matcher[Seq[String]] =
       equal(expected.map(strictEqualify))
-        .matcher[Seq[Either[ResponseOutput, StrictEqualHttpResponse]]] compose { input: Seq[String] =>
+        .matcher[Seq[Either[ResponseOutput, StrictEqualHttpResponse]]] compose { (input: Seq[String]) =>
           collectBlocking {
             rawParse(requestMethod, input: _*)
               .mapAsync(1) {

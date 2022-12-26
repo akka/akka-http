@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -7,6 +7,7 @@ package akka.http.javadsl.model;
 import akka.http.impl.model.JavaQuery;
 import akka.http.impl.model.UriJavaAccessor;
 import akka.http.scaladsl.model.*;
+import akka.http.javadsl.model.HttpCharset;
 import akka.japi.Pair;
 import akka.parboiled2.CharPredicate;
 import akka.parboiled2.ParserInput$;

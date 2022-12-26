@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{ TextMessage, BinaryMessage, Message }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.util.ByteString
 
@@ -22,9 +21,8 @@ import scala.util.{ Failure, Success }
  * An example App that runs a quick test against the websocket server at wss://echo.websocket.org
  */
 object EchoTestClientApp extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   def delayedCompletion(delay: FiniteDuration): Source[Nothing, NotUsed] =
     Source.single(1)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -27,7 +27,7 @@ sealed abstract class EntityTagRange extends jm.headers.EntityTagRange with Valu
 object EntityTagRange {
   def apply(tags: EntityTag*) = Default(immutable.Seq(tags: _*))
 
-  implicit val tagsRenderer = Renderer.defaultSeqRenderer[EntityTag] // cache
+  implicit val tagsRenderer: Renderer[immutable.Iterable[EntityTag]] = Renderer.defaultSeqRenderer[EntityTag] // cache
 
   case object `*` extends EntityTagRange {
     def render[R <: Rendering](r: R): r.type = r ~~ '*'

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -156,6 +156,7 @@ private[http] object WebSocket {
               (Source.single(first) ++ remaining)
                 .collect { case b: BinaryMessagePart if b.data.nonEmpty => b.data }
             )
+          case _ => throw new IllegalStateException("Unexpected type value") // compiler completeness check pleaser
         }
 
     def prepareMessages: Flow[MessagePart, Message, NotUsed] =
@@ -271,16 +272,14 @@ private[http] object WebSocket {
 
     val shape = new FlowShape(in, out)
 
-    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      setHandler(out, new OutHandler {
+    def createLogic(effectiveAttributes: Attributes): GraphStageLogic with InHandler with OutHandler =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
         override def onPull(): Unit = pull(in)
-      })
-      setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
         override def onUpstreamFinish(): Unit = emit(out, UserHandlerCompleted, () => completeStage())
         override def onUpstreamFailure(ex: Throwable): Unit = emit(out, UserHandlerErredOut(ex), () => completeStage())
-      })
-    }
+        setHandlers(in, out, this)
+      }
   }
 
   case object Tick

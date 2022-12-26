@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -24,8 +24,6 @@ import scala.collection.immutable
 private[http] object RoutingJavaMapping {
 
   object Implicits {
-    import scala.language.implicitConversions
-
     implicit def convertToScala[J](j: J)(implicit mapping: J2SMapping[J]): mapping.S = mapping.toScala(j)
     implicit def convertSeqToScala[J](j: Seq[J])(implicit mapping: J2SMapping[J]): immutable.Seq[mapping.S] =
       j.map(mapping.toScala(_)).toList

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -15,7 +15,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     "foo" / "bar" / "X" ~ IntNumber.? / ("edit" | "create")
 
   val route: Route =
-    path(matcher) { i: Option[Int] =>
+    path(matcher) { (i: Option[Int]) =>
       complete(s"Matched X${i.getOrElse("")}")
     }
   //#path-matcher

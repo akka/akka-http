@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
 import akka.http.scaladsl.marshalling._
@@ -16,9 +15,10 @@ import akka.stream.scaladsl._
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
+import spray.json.{ DefaultJsonProtocol, RootJsonFormat }
 
 class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
-  implicit override val patience = PatienceConfig(5.seconds.dilated(system), 200.millis)
+  implicit override val patience: PatienceConfig = PatienceConfig(5.seconds.dilated(system), 200.millis)
 
   //#models
   case class Tweet(uid: Int, txt: String)
@@ -35,8 +35,8 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     extends akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
     with spray.json.DefaultJsonProtocol {
 
-    implicit val tweetFormat = jsonFormat2(Tweet.apply)
-    implicit val measurementFormat = jsonFormat2(Measurement.apply)
+    implicit val tweetFormat: RootJsonFormat[Tweet] = jsonFormat2(Tweet.apply)
+    implicit val measurementFormat: RootJsonFormat[Measurement] = jsonFormat2(Measurement.apply)
   }
 
   "spray-json-response-streaming" in {
@@ -118,7 +118,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
 
     // flatten the Future[Source[]] into a Source[]:
     val source: Source[Tweet, Future[NotUsed]] =
-      Source.fromFutureSource(unmarshalled)
+      Source.futureSource(unmarshalled)
 
     //#json-streaming-client-example
     // tests ------------------------------------------------------------
@@ -278,7 +278,10 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
               .runFold(0) { (cnt, _) => cnt + 1 }
 
           complete {
-            measurementsSubmitted.map(n => Map("msg" -> s"""Total metrics received: $n"""))
+            // FIXME: workaround for Scala 3 which cannot figure out the right implicit for some reason
+            // Needs same name to avoid ambiguity in Scala 2
+            implicit val mapFormat: RootJsonFormat[Map[String, String]] = DefaultJsonProtocol.mapFormat
+            measurementsSubmitted.map((n: Int) => Map[String, String]("msg" -> s"""Total metrics received: $n"""))
           }
         }
       }

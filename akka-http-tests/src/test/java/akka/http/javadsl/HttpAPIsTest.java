@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl;
@@ -29,11 +29,13 @@ public class HttpAPIsTest extends JUnitRouteTest {
     // fails if there are no test cases
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings({"unused", "deprecation"})
   public void compileOnly() throws Exception {
     final Http http = Http.get(system());
 
     final ConnectionContext connectionContext = ConnectionContext.https(SSLContext.getDefault());
+    final ConnectionContext clientConnectionContext = ConnectionContext.httpsClient(SSLContext.getDefault());
+    final ConnectionContext serverConnectionContext = ConnectionContext.httpsServer(SSLContext.getDefault());
     final HttpConnectionContext httpContext = ConnectionContext.noEncryption();
     final HttpsConnectionContext httpsContext = ConnectionContext.https(SSLContext.getDefault());
 
@@ -116,7 +118,7 @@ public class HttpAPIsTest extends JUnitRouteTest {
     connect.effectiveHttpsConnectionContext(http.defaultClientHttpsContext()); // usage by us internally
   }
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings({"unused", "deprecation"})
   public void compileOnlyBinding() throws Exception {
     final Http http = Http.get(system());
     final HttpsConnectionContext httpsConnectionContext = null;

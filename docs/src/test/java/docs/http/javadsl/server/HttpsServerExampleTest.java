@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectionContext;
-import com.typesafe.sslconfig.akka.AkkaSSLConfig;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 

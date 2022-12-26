@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -11,6 +11,8 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.engine.server.ServerTerminator
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ AttributeKey, HttpEntity, HttpHeader }
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpEntity.LastChunk
@@ -22,14 +24,12 @@ import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Source
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.InHandler
-import akka.stream.stage.StageLogging
-import akka.stream.stage.TimerGraphStageLogic
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler, StageLogging, TimerGraphStageLogic }
 import akka.util.{ ByteString, OptionVal }
 
+import scala.annotation.nowarn
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
@@ -109,12 +109,12 @@ private[http2] object ConfigurablePing {
     def sendingPing(): Unit = ()
     def pingAckOverdue(): Boolean = false
   }
-  final class EnabledPingState(tickInterval: FiniteDuration, pingEveryNTickWithoutData: Long) extends PingState {
+  final class EnabledPingState(_tickInterval: FiniteDuration, pingEveryNTickWithoutData: Long) extends PingState {
     private var ticksWithoutData = 0L
     private var ticksSincePing = 0L
     private var pingInFlight = false
 
-    def tickInterval(): Option[FiniteDuration] = Some(tickInterval)
+    def tickInterval(): Option[FiniteDuration] = Some(_tickInterval)
 
     def onDataFrameSeen(): Unit = {
       ticksWithoutData = 0L
@@ -197,7 +197,8 @@ private[http2] object ConfigurablePing {
  *                              on the server end of a connection.
  */
 @InternalApi
-private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean)
+  extends GraphStageWithMaterializedValue[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream], ServerTerminator] {
   stage =>
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
@@ -211,8 +212,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
   def completionTimeout: FiniteDuration
 
-  def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ServerTerminator) = {
+    object Logic extends TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper with ServerTerminator {
       logic =>
 
       import Http2Demux.CompletionTimeout
@@ -220,12 +221,35 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart] = stage.wrapTrailingHeaders(headers)
 
       override def isServer: Boolean = stage.isServer
+
       override def settings: Http2CommonSettings = http2Settings
+
       override def isUpgraded: Boolean = upgraded
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
+
       // cache debug state at the beginning to avoid that this has to be queried all the time
       override lazy val isDebugEnabled: Boolean = super.isDebugEnabled
+
+      private val terminationPromise = Promise[Http.HttpTerminated]()
+      private var terminating: Boolean = false
+      private var lastIdBeforeTermination: Int = 0
+      private val terminateCallback = getAsyncCallback[FiniteDuration](triggerTermination)
+      override def terminate(deadline: FiniteDuration)(implicit ex: ExecutionContext): Future[Http.HttpTerminated] = {
+        terminateCallback.invoke(deadline)
+        terminationPromise.future
+      }
+      private def triggerTermination(deadline: FiniteDuration): Unit =
+        // check if we are already terminating, otherwise start termination
+        if (!terminating) {
+          log.debug(s"Termination of this connection was triggered. Sending GOAWAY and waiting for open requests to complete for $CompletionTimeout.")
+          terminating = true
+          pushGOAWAY(ErrorCode.NO_ERROR, "Voluntary connection close.")
+          lastIdBeforeTermination = lastStreamId()
+          completeIfDone()
+          if (!isClosed(frameOut))
+            scheduleOnce(CompletionTimeout, deadline)
+        }
 
       def frameOutFinished(): Unit = {
         // make sure we clean up/fail substreams with a custom failure before stage is canceled
@@ -238,7 +262,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         push(frameOut, event)
       }
 
-      val multiplexer = createMultiplexer(StreamPrioritizer.First)
+      val multiplexer: Http2Multiplexer with OutHandler = createMultiplexer(StreamPrioritizer.First)
       setHandler(frameOut, multiplexer)
 
       val pingState = ConfigurablePing.PingState(http2Settings)
@@ -258,14 +282,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         }
 
         pullFrameIn()
-        pull(substreamIn)
+        // applyRemoteSettings may or may not have pulled `substreamIn` already
+        tryPullSubStreams()
 
         // both client and server must send a settings frame as first frame
         multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))
 
         pingState.tickInterval().foreach(interval =>
           // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
-          schedulePeriodically(ConfigurablePing.Tick, interval)
+          scheduleWithFixedDelay(ConfigurablePing.Tick, interval, interval)
         )
       }
 
@@ -306,7 +331,14 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           frame match {
             case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ => multiplexer.updateConnectionLevelWindow(increment)
             case p: PriorityFrame => multiplexer.updatePriority(p)
-            case s: StreamFrameEvent => handleStreamEvent(s)
+            case s: StreamFrameEvent =>
+              if (!terminating)
+                handleStreamEvent(s)
+              else if (s.streamId <= lastIdBeforeTermination)
+                handleStreamEvent(s)
+              else
+                // make clear that we are not accepting any more data on other streams
+                multiplexer.pushControlFrame(RstStreamFrame(s.streamId, ErrorCode.REFUSED_STREAM))
 
             case SettingsFrame(settings) =>
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
@@ -340,6 +372,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           pullFrameIn()
         }
 
+        @nowarn("msg=deprecated")
         override def onUpstreamFailure(ex: Throwable): Unit = {
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
@@ -361,6 +394,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             // handle every unhandled exception
             case NonFatal(e) =>
               super.onUpstreamFailure(e)
+
+            case other =>
+              throw other // compiler completeness check pleaser
           }
         }
       })
@@ -377,14 +413,26 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       override def onAllDataFlushed(): Unit = completeIfDone()
 
       private def completeIfDone(): Unit = {
-        val noMoreOutgoingStreams = isClosed(substreamIn) && activeStreamCount() == 0
+        val noMoreOutgoingStreams = (terminating || isClosed(substreamIn)) && activeStreamCount() == 0
         def allOutgoingDataFlushed = isClosed(frameOut) || multiplexer.hasFlushedAllData
         if (noMoreOutgoingStreams && allOutgoingDataFlushed) {
-          cancel(frameIn)
-          complete(frameOut)
-          // Using complete here (instead of a simpler `completeStage`) will make sure the buffer can be
-          // drained by the user before completely shutting down the stage finally.
-          bufferedSubStreamOutput.complete()
+          log.debug("Closing connection after all streams are done and all data has been flushed.")
+          if (isServer)
+            completeStage()
+          else {
+            cancel(frameIn)
+            complete(frameOut)
+            cancel(substreamIn)
+
+            // Using complete here (instead of a simpler `completeStage`) will make sure the buffer can be
+            // drained by the user before completely shutting down the stage finally.
+            // This is only relevant on the client side where `activeStreamCount` can already be 0 because
+            // from the HTTP/2 implementation side all streams have been handled, i.e. all responses have been
+            // dispatched. However, some of the dispatched responses might still be stuck in the buffer for the user
+            // to be fetched. To avoid losing them, we schedule completion here and rely on the final completion of the buffer
+            // to terminate the whole stage.
+            bufferedSubStreamOutput.complete()
+          }
         }
       }
 
@@ -455,13 +503,19 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           }
         case CompletionTimeout =>
           info("Timeout: Peer didn't finish in-flight requests. Closing pending HTTP/2 streams. Increase this timeout via the 'completion-timeout' setting.")
+
+          shutdownStreamHandling()
           completeStage()
+        case other => throw new IllegalArgumentException(s"Unexpected time key $other") // compiler completeness check pleaser
       }
 
       override def postStop(): Unit = {
         shutdownStreamHandling()
+        terminationPromise.success(Http.HttpConnectionTerminated)
       }
     }
+    (Logic, Logic)
+  }
 }
 
 /**

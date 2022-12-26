@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -389,13 +389,13 @@ object Rejections {
     supported:   java.lang.Iterable[MediaType],
     contentType: Optional[ContentType]): UnsupportedRequestContentTypeRejection =
     s.UnsupportedRequestContentTypeRejection(
-      supported = supported.asScala.map(m => scaladsl.model.ContentTypeRange(m.asScala)).toSet,
-      contentType = contentType.asScala.map(_.asScala))
+      supported = supported.asScala.map((m: MediaType) => scaladsl.model.ContentTypeRange(m.asScala)).toSet,
+      contentType = contentType.asScala.map((c: ContentType) => c.asScala))
 
   // for backwards compatibility
   def unsupportedRequestContentType(supported: java.lang.Iterable[MediaType]): UnsupportedRequestContentTypeRejection =
     s.UnsupportedRequestContentTypeRejection(
-      supported = supported.asScala.map(m => scaladsl.model.ContentTypeRange(m.asScala)).toSet,
+      supported = supported.asScala.map((m: MediaType) => scaladsl.model.ContentTypeRange(m.asScala)).toSet,
       contentType = None)
 
   def unsupportedRequestEncoding(supported: HttpEncoding): UnsupportedRequestEncodingRejection =
@@ -414,15 +414,15 @@ object Rejections {
   def unacceptedResponseContentType(
     supportedContentTypes: java.lang.Iterable[ContentType],
     supportedMediaTypes:   java.lang.Iterable[MediaType]): UnacceptedResponseContentTypeRejection = {
-    val s1: Set[Alternative] = supportedContentTypes.asScala.map(_.asScala).map(ct => ContentNegotiator.Alternative(ct)).toSet
-    val s2: Set[Alternative] = supportedMediaTypes.asScala.map(_.asScala).map(mt => ContentNegotiator.Alternative(mt)).toSet
+    val s1: Set[Alternative] = supportedContentTypes.asScala.map((c: ContentType) => c.asScala).map(ct => ContentNegotiator.Alternative(ct)).toSet
+    val s2: Set[Alternative] = supportedMediaTypes.asScala.map((m: MediaType) => m.asScala).map(mt => ContentNegotiator.Alternative(mt)).toSet
     s.UnacceptedResponseContentTypeRejection(s1 ++ s2)
   }
 
   def unacceptedResponseEncoding(supported: HttpEncoding) =
     s.UnacceptedResponseEncodingRejection(supported.asScala)
   def unacceptedResponseEncoding(supported: java.lang.Iterable[HttpEncoding]) =
-    s.UnacceptedResponseEncodingRejection(supported.asScala.map(_.asScala).toSet)
+    s.UnacceptedResponseEncodingRejection(supported.asScala.map((h: HttpEncoding) => h.asScala).toSet)
 
   def authenticationCredentialsMissing(challenge: HttpChallenge): AuthenticationFailedRejection =
     s.AuthenticationFailedRejection(s.AuthenticationFailedRejection.CredentialsMissing, challenge.asScala)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -14,7 +14,7 @@ import akka.util.ConstantFun
 import scala.util.control.NonFatal
 import akka.http.impl.util.SingletonException
 import akka.parboiled2._
-import akka.shapeless._
+import akka.parboiled2.support.hlist._
 import akka.http.scaladsl.model._
 
 /**
@@ -75,6 +75,7 @@ private[http] class HeaderParser(
       error match {
         case IllegalUriException(info) => info
         case NonFatal(e)               => ErrorInfo.fromCompoundString(e.getMessage)
+        case ex                        => throw new IllegalStateException("Unexpected error", ex) // compiler completeness check pleaser
       }
     }
   def ruleNotFound(ruleName: String): Result = HeaderParser.RuleNotFound
@@ -105,7 +106,7 @@ private[http] object HeaderParser {
 
   object EmptyCookieException extends SingletonException("Cookie header contained no parsable cookie values.")
 
-  def lookupParser(headerName: String, settings: Settings = DefaultSettings): Option[String => HeaderParser#Result] =
+  def lookupParser(headerName: String, settings: Settings = DefaultSettings): Option[String => HeaderParser.Result] =
     dispatch.lookup(headerName).map { runner => (value: String) =>
       import akka.parboiled2.EOI
       val v = value + EOI // this makes sure the parser isn't broken even if there's no trailing garbage in this value
@@ -121,7 +122,7 @@ private[http] object HeaderParser {
       }
     }
 
-  def parseFull(headerName: String, value: String, settings: Settings = DefaultSettings): HeaderParser#Result =
+  def parseFull(headerName: String, value: String, settings: Settings = DefaultSettings): HeaderParser.Result =
     lookupParser(headerName, settings).map(_(value)).getOrElse(HeaderParser.RuleNotFound)
 
   val (dispatch, ruleNames) = DynamicRuleDispatch[HeaderParser, HttpHeader :: HNil](

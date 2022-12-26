@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -50,7 +50,7 @@ private[http2] object FrameLogger {
 
       bytes
         .take(num)
-        .map(_ formatted "%02x")
+        .map("%02x" format _)
         .mkString(" ") + ellipsis
     }
 

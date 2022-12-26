@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ArrayBlockingQueue, TimeUnit }
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.impl.util._
@@ -23,12 +22,10 @@ import akka.testkit._
 import akka.util.ByteString
 import org.scalactic.Tolerance
 import org.scalatest.concurrent.Eventually
-import org.scalatest.Assertion
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.util.Failure
-import scala.util.Success
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.util.{ Failure, Success, Try }
 
 class GracefulTerminationSpec
   extends AkkaSpecWithMaterializer("""
@@ -38,9 +35,9 @@ class GracefulTerminationSpec
     akka.http.client.log-unencrypted-network-bytes = 200
                                                    """)
   with Tolerance with Eventually {
-  implicit lazy val dispatcher = system.dispatcher
+  implicit lazy val dispatcher: ExecutionContext = system.dispatcher
 
-  implicit override val patience = PatienceConfig(5.seconds.dilated(system), 200.millis)
+  implicit override val patience: PatienceConfig = PatienceConfig(5.seconds.dilated(system), 200.millis)
 
   "Unbinding" should {
     "not allow new connections" in new TestSetup {
@@ -93,7 +90,7 @@ class GracefulTerminationSpec
             // start reading the response
             val responseEntity = r1.futureValue.entity.dataBytes
               .via(Framing.delimiter(ByteString(","), 20))
-              .runWith(TestSink.probe[ByteString])(SystemMaterializer(clientSystem).materializer)
+              .runWith(TestSink[ByteString]())(SystemMaterializer(clientSystem).materializer)
             responseEntity.requestNext().utf8String should ===("reply1")
 
             val termination = serverBinding.terminate(hardDeadline = 1.second)
@@ -123,7 +120,7 @@ class GracefulTerminationSpec
       // start reading the response
       val response = r1.futureValue.entity.dataBytes
         .via(Framing.delimiter(ByteString(","), 20))
-        .runWith(TestSink.probe[ByteString])
+        .runWith(TestSink[ByteString]())
       response.requestNext().utf8String should ===("reply1")
 
       try {
@@ -160,7 +157,12 @@ class GracefulTerminationSpec
       ensureServerDeliveredRequest(r1)
       val terminateFuture = serverBinding.terminate(hardDeadline = time)
 
-      r1.futureValue.status should ===(StatusCodes.ServiceUnavailable)
+      Try(r1.futureValue) match {
+        // either, the connection manages to get a 503 error code out
+        case Success(r)  => r.status should ===(StatusCodes.ServiceUnavailable)
+        // or, the connection was already torn down in which case we might get an error based on a retry
+        case Failure(ex) => ex.getMessage.contains("Connection refused") shouldBe true
+      }
 
       Await.result(terminateFuture, 2.seconds)
       Await.result(serverBinding.whenTerminated, 2.seconds)
@@ -172,6 +174,9 @@ class GracefulTerminationSpec
 
       ensureServerDeliveredRequest(r1) // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
+      // avoid race condition between termination and sending out response
+      // FIXME: https://github.com/akka/akka-http/issues/4060
+      Thread.sleep(500)
       reply(_ => HttpResponse(StatusCodes.OK))
 
       r1.futureValue.status should ===(StatusCodes.OK)
@@ -184,7 +189,9 @@ class GracefulTerminationSpec
 
       ensureServerDeliveredRequest(r1) // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
-
+      // avoid race condition between termination and sending out response
+      // FIXME: https://github.com/akka/akka-http/issues/4060
+      Thread.sleep(500)
       reply(_ => HttpResponse(StatusCodes.OK))
       r1.futureValue.status should ===(StatusCodes.OK)
 
@@ -253,7 +260,13 @@ class GracefulTerminationSpec
           Future.successful(reply(_ => HttpResponse(StatusCodes.OK)))
         }
 
-        r1.futureValue.status should ===(StatusCodes.ImATeapot)
+        Try(r1.futureValue) match {
+          // either, the connection manages to send out the configured status
+          case Success(r)  => r.status should ===(StatusCodes.ImATeapot) // the injected 503 response
+
+          // or, the connection was already torn down in which case we might get an error based on a retry
+          case Failure(ex) => ex.getMessage.contains("Connection refused") shouldBe true
+        }
 
         Await.result(serverBinding.whenTerminated, 3.seconds)
       }
@@ -271,9 +284,16 @@ class GracefulTerminationSpec
           Future.successful(reply(_ => HttpResponse(StatusCodes.OK)))
         }
 
-        // the user handler will not receive this request and we will emit the 503 automatically
-        r1.futureValue.status should ===(StatusCodes.EnhanceYourCalm) // the injected 503 response
-        r1.futureValue.entity.toStrict(1.second).futureValue.data.utf8String should ===("Chill out, man!")
+        // the user handler will not receive this request and we will emit the termination response
+        Try(r1.futureValue) match {
+          // either, the connection manages to send out the configured response
+          case Success(r) =>
+            r.status should ===(StatusCodes.EnhanceYourCalm) // the injected 503 response
+            r.entity.toStrict(1.second).futureValue.data.utf8String should ===("Chill out, man!")
+
+          // or, the connection was already torn down in which case we might get an error based on a retry
+          case Failure(ex) => ex.getMessage.contains("Connection refused") shouldBe true
+        }
 
         Await.result(serverBinding.whenTerminated, 3.seconds)
       }
@@ -281,8 +301,8 @@ class GracefulTerminationSpec
 
   }
 
-  private def ensureConnectionIsClosed(r: Future[HttpResponse]): Assertion =
-    (the[StreamTcpException] thrownBy Await.result(r, 1.second)).getMessage should endWith("Connection refused")
+  private def ensureConnectionIsClosed(r: Future[HttpResponse]): StreamTcpException =
+    the[StreamTcpException] thrownBy Await.result(r, 1.second)
 
   class TestSetup(overrideResponse: Option[HttpResponse] = None) {
     val counter = new AtomicInteger()

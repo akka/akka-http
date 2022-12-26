@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -7,7 +7,6 @@ package akka.http.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpMethods._
-import akka.stream.ActorMaterializer
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -24,8 +23,7 @@ class ClientSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = infinite""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 

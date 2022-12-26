@@ -1,17 +1,15 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
 
-import akka.stream.ActorMaterializer
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.testkit.AkkaSpec
 
 class FormDataSpec extends AkkaSpec {
-  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   val formData = FormData(Map("surname" -> "Smith", "age" -> "42"))

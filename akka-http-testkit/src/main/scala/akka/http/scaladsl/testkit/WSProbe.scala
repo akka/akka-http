@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -128,7 +128,7 @@ object WSProbe {
         case _ => throw new AssertionError(s"""Expected BinaryMessage("$bytes") but got TextMessage""")
       }
 
-      def expectNoMessage(): Unit = subscriber.expectNoMsg()
+      def expectNoMessage(): Unit = subscriber.expectNoMessage()
       def expectNoMessage(max: FiniteDuration): Unit = subscriber.expectNoMessage(max)
 
       def expectCompletion(): Unit = subscriber.expectComplete()

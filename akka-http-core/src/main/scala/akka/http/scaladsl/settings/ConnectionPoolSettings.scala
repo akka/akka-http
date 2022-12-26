@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -38,13 +38,13 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
    * the first matching set of overrides is selected.
    */
   private[akka] def forHost(host: String): ConnectionPoolSettings =
-    hostOverrides.collectFirst { case (regex, overrides) if regex.pattern.matcher(host).matches() => overrides }.getOrElse(this)
+    self.hostOverrides.collectFirst { case (regex, overrides) if regex.pattern.matcher(host).matches() => overrides }.getOrElse(this)
 
   /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
    */
   @deprecated("Deprecated in favor of connectionSettings.transport", "10.1.0")
-  def transport: ClientTransport = connectionSettings.transport
+  def transport: ClientTransport = self.connectionSettings.transport
 
   /** The time after which the pool will drop an entity automatically if it wasn't read or discarded */
   @ApiMayChange
@@ -53,10 +53,11 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   // ---
 
   @ApiMayChange
-  def withHostOverrides(hostOverrides: immutable.Seq[(String, ConnectionPoolSettings)]): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides.map { case (h, s) => ConnectionPoolSettingsImpl.hostRegex(h) -> s })
+  def withHostOverrides(hostOverrides: immutable.Seq[(String, ConnectionPoolSettings)]): ConnectionPoolSettings =
+    self.copy(hostOverrides = hostOverrides.map { case (h, s) => ConnectionPoolSettingsImpl.hostRegex(h) -> s })
 
   @ApiMayChange
-  def appendHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides :+ (ConnectionPoolSettingsImpl.hostRegex(hostPattern) -> settings))
+  def appendHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = self.copy(hostOverrides = self.hostOverrides :+ (ConnectionPoolSettingsImpl.hostRegex(hostPattern) -> settings))
 
   override def withMaxConnections(n: Int): ConnectionPoolSettings = self.copyDeep(_.withMaxConnections(n), maxConnections = n)
   override def withMinConnections(n: Int): ConnectionPoolSettings = self.copyDeep(_.withMinConnections(n), minConnections = n)
@@ -78,7 +79,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
    * `withUpdatedConnectionSettings(_.withTransport(newTransport))`.
    */
   def withTransport(newValue: ClientTransport): ConnectionPoolSettings =
-    withUpdatedConnectionSettings(_.withTransport(newValue))
+    self.withUpdatedConnectionSettings(_.withTransport(newValue))
 
   def withUpdatedConnectionSettings(f: ClientConnectionSettings => ClientConnectionSettings): ConnectionPoolSettings
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -10,7 +10,6 @@ import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.directives.Credentials
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.ActorSystem
-import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.common.EntityStreamingSupport
@@ -18,6 +17,8 @@ import akka.http.scaladsl.common.EntityStreamingSupport
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.io.StdIn
+import akka.http.scaladsl.common.JsonEntityStreamingSupport
+import spray.json.RootJsonFormat
 
 object TestServer extends App {
   val testConf: Config = ConfigFactory.parseString("""
@@ -26,16 +27,15 @@ object TestServer extends App {
     akka.stream.materializer.debug.fuzzing-mode = off
     """)
 
-  implicit val system = ActorSystem("ServerTest", testConf)
+  implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
   implicit val ec: ExecutionContext = system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   import spray.json.DefaultJsonProtocol._
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
   final case class Tweet(message: String)
-  implicit val tweetFormat = jsonFormat1(Tweet)
+  implicit val tweetFormat: RootJsonFormat[Tweet] = jsonFormat1(Tweet)
 
-  implicit val jsonStreaming = EntityStreamingSupport.json()
+  implicit val jsonStreaming: JsonEntityStreamingSupport = EntityStreamingSupport.json()
 
   import ScalaXmlSupport._
   import Directives._

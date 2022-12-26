@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http
@@ -244,7 +244,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     runOn(loadGenerator) {
       info(s"${id} => running: $cmd")
       import akka.pattern.ask
-      implicit val timeout = Timeout(30.minutes) // we don't want to timeout here
+      implicit val timeout: Timeout = Timeout(30.minutes) // we don't want to timeout here
 
       val res = (loadGeneratorActor ? LoadGenCommand(cmd)).mapTo[LoadGenResults]
       val results = Await.result(res, timeout.duration)

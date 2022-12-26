@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -20,7 +20,7 @@ object MyRejectionHandler {
   import Directives._
 
   object MyApp extends App {
-    implicit def myRejectionHandler =
+    def myRejectionHandler =
       RejectionHandler.newBuilder()
         .handle {
           case MissingCookieRejection(cookieName) =>
@@ -41,11 +41,12 @@ object MyRejectionHandler {
         .handleNotFound { complete((NotFound, "Not here!")) }
         .result()
 
-    implicit val system = ActorSystem()
+    implicit val system: ActorSystem = ActorSystem()
 
-    val route: Route =
+    val route: Route = handleRejections(myRejectionHandler) {
       // ... some route structure
       null // #hide
+    }
 
     Http().newServerAt("localhost", 8080).bind(route)
   }
@@ -59,7 +60,7 @@ object HandleNotFoundWithThePath {
   import akka.http.scaladsl.server._
   import Directives._
 
-  implicit def myRejectionHandler =
+  implicit def myRejectionHandler: RejectionHandler =
     RejectionHandler.newBuilder()
       .handleNotFound {
         extractUnmatchedPath { p =>
@@ -97,7 +98,7 @@ class RejectionHandlerExamplesSpec extends RoutingSpec with CompileOnlySpec {
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.server.RejectionHandler
 
-    implicit def myRejectionHandler =
+    implicit def myRejectionHandler: RejectionHandler =
       RejectionHandler.default
         .mapRejectionResponse {
           case res @ HttpResponse(_, _, ent: HttpEntity.Strict, _) =>
@@ -131,7 +132,7 @@ class RejectionHandlerExamplesSpec extends RoutingSpec with CompileOnlySpec {
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.server.RejectionHandler
 
-    implicit def myRejectionHandler =
+    implicit def myRejectionHandler: RejectionHandler =
       RejectionHandler.default
         .mapRejectionResponse {
           case res @ HttpResponse(_, _, ent: HttpEntity.Strict, _) =>
@@ -167,7 +168,7 @@ class RejectionHandlerExamplesSpec extends RoutingSpec with CompileOnlySpec {
     import akka.http.scaladsl.server._
     import akka.http.scaladsl.model.StatusCodes.BadRequest
 
-    implicit def myRejectionHandler = RejectionHandler.newBuilder().handle {
+    implicit def myRejectionHandler: RejectionHandler = RejectionHandler.newBuilder().handle {
       case MissingCookieRejection(_) => complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
     }.result()
 

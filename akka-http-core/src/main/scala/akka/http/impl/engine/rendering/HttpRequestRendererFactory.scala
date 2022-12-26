@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -121,7 +121,7 @@ private[http] class HttpRequestRendererFactory(
       val stream = ctx.sendEntityTrigger match {
         case None => headerPart ++ body
         case Some(future) =>
-          val barrier = Source.fromFuture(future).drop(1).asInstanceOf[Source[ByteString, Any]]
+          val barrier = Source.future(future).drop(1).asInstanceOf[Source[ByteString, Any]]
           (headerPart ++ barrier ++ body).recoverWithRetries(-1, { case HttpResponseParser.OneHundredContinueError => Source.empty })
       }
       RequestRenderingOutput.Streamed(stream)

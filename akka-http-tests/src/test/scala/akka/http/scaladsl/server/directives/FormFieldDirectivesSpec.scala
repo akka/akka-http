@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -13,9 +13,11 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.impl.util.BenchUtils
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import scala.xml.NodeSeq
 
 class FormFieldDirectivesSpec extends RoutingSpec {
-  implicit val nodeSeqUnmarshaller =
+  implicit val nodeSeqUnmarshaller: FromEntityUnmarshaller[NodeSeq] =
     ScalaXmlSupport.nodeSeqUnmarshaller(`text/xml`, `text/html`, `text/plain`)
 
   val nodeSeq: xml.NodeSeq = <b>yes</b>

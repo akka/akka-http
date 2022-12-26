@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -16,11 +16,11 @@ import akka.http.scaladsl.model.StatusCodes;
 import akka.japi.pf.PFBuilder;
 import akka.pattern.CircuitBreaker;
 import akka.testkit.javadsl.TestKit;
+import org.junit.Ignore;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
 import static akka.http.javadsl.server.PathMatchers.*;
-import static scala.compat.java8.JFunction.func;
 
 //#onComplete
 import static akka.http.javadsl.server.Directives.complete;
@@ -57,7 +57,7 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
                 (a, b) -> onComplete(
                         () -> CompletableFuture.supplyAsync(() -> a / b),
                         maybeResult -> maybeResult
-                                .map(func(result -> complete("The result was " + result)))
+                                .map(result -> complete("The result was " + result))
                                 .recover(new PFBuilder<Throwable, Route>()
                                         .matchAny(ex -> complete(StatusCodes.InternalServerError(),
                                                 "An error occurred: " + ex.getMessage())
@@ -126,6 +126,9 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
         //#completeOrRecoverWith
     }
 
+    // The test has a race condition because CircuitBreakers do not guarantee certain happens-before relationships
+    // between triggering and reporting errors for ongoing calls. This test fails a lot so disabling for now.
+    @Ignore
     @Test
     public void testOnCompleteWithBreaker() throws InterruptedException {
         //#onCompleteWithBreaker
@@ -133,15 +136,15 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
         // import static akka.http.javadsl.server.PathMatchers.*;
 
         final int maxFailures = 1;
-        final FiniteDuration callTimeout = FiniteDuration.create(5, TimeUnit.SECONDS);
-        final FiniteDuration resetTimeout = FiniteDuration.create(1, TimeUnit.SECONDS);
+        final Duration callTimeout = Duration.ofSeconds(5);
+        final Duration resetTimeout = Duration.ofSeconds(1);
         final CircuitBreaker breaker = CircuitBreaker.create(system().scheduler(), maxFailures, callTimeout, resetTimeout);
 
         final Route route = path(segment("divide").slash(integerSegment()).slash(integerSegment()),
                 (a, b) -> onCompleteWithBreaker(breaker,
                         () -> CompletableFuture.supplyAsync(() -> a / b),
                         maybeResult -> maybeResult
-                                .map(func(result -> complete("The result was " + result)))
+                                .map(result -> complete("The result was " + result))
                                 .recover(new PFBuilder<Throwable, Route>()
                                         .matchAny(ex -> complete(StatusCodes.InternalServerError(),
                                                 "An error occurred: " + ex.toString())

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -8,11 +8,13 @@ import akka.http.scaladsl.model._
 import headers._
 import akka.http.scaladsl.server._
 import directives.HeaderDirectivesSpec.XCustomHeader
-
 import org.scalatest.Inside
+
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 import scala.util.Try
 
+@nowarn("msg=deprecated")
 class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The headerValuePF directive" should {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -14,7 +14,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.ActorMaterializerHelper
 import akka.stream.scaladsl._
 
 import scala.collection.immutable
@@ -74,7 +73,7 @@ trait MultipartUnmarshallers {
               FastFuture.failed(new RuntimeException("Content-Type with a multipart media type must have a 'boundary' parameter"))
             case Some(boundary) =>
               import BodyPartParser._
-              val effectiveParserSettings = Option(parserSettings).getOrElse(ParserSettings(ActorMaterializerHelper.downcast(mat).system))
+              val effectiveParserSettings = Option(parserSettings).getOrElse(ParserSettings(mat.system))
               val parser = new BodyPartParser(defaultContentType, boundary, log, effectiveParserSettings)
 
               entity match {

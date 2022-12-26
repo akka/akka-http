@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.impl.engine.client.HttpsProxyGraphStage
@@ -13,7 +12,8 @@ import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, HttpsProxySettings }
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{ Flow, Keep, Source, Tcp }
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Flow, Keep, Tcp }
 import akka.util.ByteString
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -47,7 +47,7 @@ object ClientTransport {
   }
 
   private def connectToAddress(address: InetSocketAddress, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
-    Tcp().outgoingConnection(address, settings.localAddress,
+    Tcp(system.classicSystem).outgoingConnection(address, settings.localAddress,
       settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
       .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
   }
@@ -120,22 +120,15 @@ object ClientTransport {
     override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
       implicit val ec: ExecutionContext = system.dispatcher
 
-      initFutureFlow { () =>
-        lookup(host, port).map { address =>
-          connectToAddress(address, settings)
-        }
-      }.mapMaterializedValue(_.flatten)
-    }
-
-    // TODO: replace with lazyFutureFlow when support for Akka 2.5.x is dropped
-    private def initFutureFlow[M](flowFactory: () => Future[Flow[ByteString, ByteString, M]])(implicit ec: ExecutionContext): Flow[ByteString, ByteString, Future[M]] = {
       Flow[ByteString].prepend(Source.single(ByteString()))
-        .viaMat(
-          Flow.lazyInitAsync(flowFactory)
-            .mapMaterializedValue(_.map(_.get))
-            // buffer needed because HTTP client expects demand before it does request (which is reasonable for buffered TCP connections)
-            .buffer(1, OverflowStrategy.backpressure)
-        )(Keep.right)
+        .viaMat(Flow.lazyFutureFlow(() =>
+          lookup(host, port).map { address =>
+            connectToAddress(address, settings)
+          }
+        ))((_, right) => right.flatten)
+        // buffer needed because HTTP client expects demand before it does request (which is reasonable for buffered TCP connections)
+        .buffer(1, OverflowStrategy.backpressure)
+
     }
   }
 }

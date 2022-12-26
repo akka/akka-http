@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs
@@ -8,7 +8,7 @@ import java.lang.reflect.Method
 
 import akka.annotation.ApiMayChange
 import org.reflections.Reflections
-import org.reflections.scanners.{ MethodAnnotationsScanner, TypeAnnotationsScanner }
+import org.reflections.scanners.{ MethodAnnotationsScanner, Scanners, TypeAnnotationsScanner }
 import org.reflections.util.{ ClasspathHelper, ConfigurationBuilder }
 import org.scalatest.Assertion
 
@@ -48,8 +48,8 @@ class ApiMayChangeDocCheckerSpec extends AnyWordSpec with Matchers {
     val reflections = new Reflections(new ConfigurationBuilder()
       .setUrls(ClasspathHelper.forPackage("akka.http"))
       .setScanners(
-        new TypeAnnotationsScanner(),
-        new MethodAnnotationsScanner()))
+        Scanners.TypesAnnotated,
+        Scanners.MethodsAnnotated))
     val source = Source.fromFile("docs/src/main/paradox/compatibility-guidelines.md")
     try {
       val docPage = source.getLines().toList

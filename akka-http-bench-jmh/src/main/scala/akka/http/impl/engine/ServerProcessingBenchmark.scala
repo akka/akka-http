@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine
@@ -12,9 +12,7 @@ import akka.http.impl.engine.server.HttpServerBluePrint
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.TLSPlacebo
@@ -28,7 +26,6 @@ class ServerProcessingBenchmark extends CommonBenchmark {
 
   var httpFlow: Flow[ByteString, ByteString, Any] = _
   implicit var system: ActorSystem = _
-  implicit var mat: ActorMaterializer = _
 
   @Benchmark
   @OperationsPerInvocation(10000)
@@ -53,7 +50,6 @@ class ServerProcessingBenchmark extends CommonBenchmark {
         """)
         .withFallback(ConfigFactory.load())
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
-    mat = ActorMaterializer()
     httpFlow =
       Flow[HttpRequest].map(_ => response) join
         (HttpServerBluePrint(ServerSettings(system), NoLogging, false, Http().dateHeaderRendering) atop

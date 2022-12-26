@@ -1,0 +1,2 @@
+# Changed internal ServerTerminator from abstract class to trait
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.server.GracefulTerminatorStage$ConnectionTerminator")

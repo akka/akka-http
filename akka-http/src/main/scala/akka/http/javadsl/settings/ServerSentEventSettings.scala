@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -27,9 +27,15 @@ abstract class ServerSentEventSettings private[akka] () { self: ServerSentEventS
    */
   def maxLineSize: Int
 
+  /**
+   * Should events with empty data field be passed to the application.
+   */
+  def emitEmptyEvents: Boolean
+
   // ---
 
   def withMaxEventSize(newValue: Int): ServerSentEventSettings = self.copy(maxEventSize = newValue)
   def withLineLength(newValue: Int): ServerSentEventSettings = self.copy(maxLineSize = newValue)
+  def withEmitEmptyEvents(newValue: Boolean): ServerSentEventSettings = self.copy(emitEmptyEvents = newValue)
 }
 

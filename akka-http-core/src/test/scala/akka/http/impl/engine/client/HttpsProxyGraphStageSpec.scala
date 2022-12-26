@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -197,9 +197,9 @@ class HttpsProxyGraphStageSpec extends AkkaSpecWithMaterializer {
 
         val flowUnderTest = proxyGraphStage.join(proxyFlow)
 
-        val (source, sink) = TestSource.probe[ByteString]
+        val (source, sink) = TestSource[ByteString]()
           .via(flowUnderTest)
-          .toMat(TestSink.probe)(Keep.both)
+          .toMat(TestSink())(Keep.both)
           .run()
 
         fn(source, flowInProbe, flowOutProbe, sink)

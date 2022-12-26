@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -123,7 +123,7 @@ class FutureDirectivesSpec extends RoutingSpec with Inside with TestKitBase {
       occurrences = 1,
       message = BasicRouteSpecs.defaultExnHandler500Error("XXX")
     ).intercept {
-        Get() ~> onSuccess(Future.failed(TestException)) { echoComplete } ~> check {
+        Get() ~> onSuccess(Future.failed[Int](TestException)) { echoComplete } ~> check {
           status shouldEqual StatusCodes.InternalServerError
         }
       }
@@ -137,7 +137,7 @@ class FutureDirectivesSpec extends RoutingSpec with Inside with TestKitBase {
       occurrences = 1,
       message = BasicRouteSpecs.defaultExnHandler500Error("XXX")
     ).intercept {
-        Get() ~> onSuccess(Future.failed(TestException)) { throwTestException("EX when ") } ~> check {
+        Get() ~> onSuccess(Future.failed[Unit](TestException)) { throwTestException("EX when ") } ~> check {
           status shouldEqual StatusCodes.InternalServerError
           responseAs[String] shouldEqual "There was an internal server error."
         }

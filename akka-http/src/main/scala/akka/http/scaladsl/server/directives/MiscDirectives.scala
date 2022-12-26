@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -9,6 +9,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.directives.BasicDirectives._
 import akka.http.scaladsl.server.RequestEntityExpectedRejection
 import headers._
+
+import scala.annotation.nowarn
 
 /**
  * @groupname misc Miscellaneous directives
@@ -107,6 +109,7 @@ object MiscDirectives extends MiscDirectives {
   import RouteDirectives._
   import RouteResult._
 
+  @nowarn("msg=deprecated")
   private val _extractClientIP: Directive1[RemoteAddress] =
     headerValuePF { case `X-Forwarded-For`(Seq(address, _*)) => address } |
       headerValuePF { case `X-Real-Ip`(address) => address } |

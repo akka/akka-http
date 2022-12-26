@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -14,6 +14,7 @@ import akka.http.scaladsl.model._
 import StatusCodes._
 import HttpMethods._
 import Directives._
+import akka.actor.ActorRef
 import akka.stream.scaladsl.Source
 import org.scalatest.exceptions.TestFailedException
 import headers.`X-Forwarded-Proto`
@@ -101,7 +102,7 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
       case object Command
       val service = TestProbe()
       val handler = TestProbe()
-      implicit def serviceRef = service.ref
+      implicit def serviceRef: ActorRef = service.ref
       implicit val askTimeout: Timeout = 1.second.dilated
 
       val result =

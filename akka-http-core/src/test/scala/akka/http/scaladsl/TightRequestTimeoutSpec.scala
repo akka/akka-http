@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl._
-import akka.stream.{ OverflowStrategy, ActorMaterializer }
+import akka.stream.OverflowStrategy
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
@@ -26,9 +26,8 @@ class TightRequestTimeoutSpec extends AnyWordSpec with Matchers with BeforeAndAf
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = 10ms""")
 
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer = ActorMaterializer()
-  implicit val patience = PatienceConfig(3.seconds.dilated)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val patience: PatienceConfig = PatienceConfig(3.seconds.dilated)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 

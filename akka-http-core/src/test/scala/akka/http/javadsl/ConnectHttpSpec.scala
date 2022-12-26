@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl
@@ -9,9 +9,12 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.annotation.nowarn
+
 class ConnectHttpSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   val httpContext = ConnectionContext.noEncryption()
+  @nowarn("msg=deprecated")
   val httpsContext = ConnectionContext.https(null)
 
   val successResponse = HttpResponse.create().withStatus(200)

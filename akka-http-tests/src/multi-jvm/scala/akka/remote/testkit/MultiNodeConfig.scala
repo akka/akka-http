@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testkit
@@ -22,7 +22,7 @@ import akka.testkit.TestEvent._
 import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
 import akka.actor.RootActorPath
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.{ Logging, LogSource, LoggingAdapter }
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -261,13 +261,13 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     this(config.myself, ActorSystem(MultiNodeSpec.getCallerName(classOf[MultiNodeSpec]), ConfigFactory.load(config.config)),
       config.roles, config.deployments)
 
-  val log: LoggingAdapter = Logging(system, this.getClass)
+  val log: LoggingAdapter = Logging(system, this.getClass)(LogSource.fromClass)
 
   /**
    * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
    * enclosing `within` block or QueryTimeout.
    */
-  implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
+  implicit def awaitHelper[T](w: Awaitable[T]): AwaitHelper[T] = new AwaitHelper(w)
   class AwaitHelper[T](w: Awaitable[T]) {
     def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
   }

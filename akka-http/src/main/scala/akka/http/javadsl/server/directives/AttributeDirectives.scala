@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -20,7 +20,7 @@ abstract class AttributeDirectives extends HeaderDirectives {
    * If no attribute is found the request is rejected with a [[akka.http.javadsl.server.MissingAttributeRejection]].
    */
   def attribute[T](key: AttributeKey[T], inner: jf.Function[T, Route]) = RouteAdapter {
-    D.attribute(toScala(key)) { value: T =>
+    D.attribute(toScala(key)) { (value: T) =>
       inner.apply(value).delegate
     }
   }

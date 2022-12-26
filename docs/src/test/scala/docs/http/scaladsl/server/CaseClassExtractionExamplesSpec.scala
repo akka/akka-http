@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -68,7 +68,7 @@ class CaseClassExtractionExamplesSpec extends RoutingSpec with Inside {
   "example 4 test" in {
     val route =
       (path("color" / Segment) &
-        parameters("r".as[Int], "g".as[Int], "b".as[Int])).as(Color) { color =>
+        parameters("r".as[Int], "g".as[Int], "b".as[Int])).as(Color.apply _) { color =>
           // ... route working with the `color` instance
           doSomethingWith(color) // #hide
         }

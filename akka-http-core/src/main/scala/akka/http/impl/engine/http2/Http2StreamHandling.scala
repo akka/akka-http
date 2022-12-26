@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -29,7 +29,7 @@ import scala.util.control.NoStackTrace
  * Mixed into the Http2ServerDemux graph logic.
  */
 @InternalApi
-private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper =>
+private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper { self =>
   // required API from demux
   def isServer: Boolean
   def multiplexer: Http2Multiplexer
@@ -149,7 +149,21 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private def updateState(streamId: Int, handle: StreamState => StreamState, event: String, eventArg: AnyRef = null): Unit =
     updateStateAndReturn(streamId, x => (handle(x), ()), event, eventArg)
 
+  // Calling multiplexer.enqueueOutStream directly out of the state machine is not allowed, because it might try to
+  // reenter the state machine with `pullNextState`. This call defers enqueuing until the current state machine operation
+  // is done.
+  private var deferredStreamToEnqueue: Int = -1
+  private def enqueueOutStream(streamId: Int): Unit = if (stateMachineRunning) {
+    require(deferredStreamToEnqueue == -1, "Only one stream can be enqueued during a single state change")
+    deferredStreamToEnqueue = streamId
+  } else
+    multiplexer.enqueueOutStream(streamId)
+
+  private var stateMachineRunning = false
   private def updateStateAndReturn[R](streamId: Int, handle: StreamState => (StreamState, R), event: String, eventArg: AnyRef = null): R = {
+    require(!stateMachineRunning, "State machine already running")
+    stateMachineRunning = true
+
     val oldState = streamFor(streamId)
 
     val (newState, ret) = handle(oldState)
@@ -162,8 +176,17 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
 
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName} after handling [$event${if (eventArg ne null) s"($eventArg)" else ""}]")
+
+    stateMachineRunning = false
+    if (deferredStreamToEnqueue != -1) {
+      val streamId = deferredStreamToEnqueue
+      deferredStreamToEnqueue = -1
+      if (streamStates.contains(streamId))
+        multiplexer.enqueueOutStream(streamId)
+    }
     ret
   }
+
   /** Called to cleanup any state when the connection is torn down */
   def shutdownStreamHandling(): Unit = updateAllStates({ id => id.shutdown(); Closed }, "shutdownStreamHandling")
 
@@ -212,7 +235,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
    *   * Open -> HalfClosedRemoteSendingData: on receiving response DATA with endStream = true before request has been fully sent out (uncommon)
    *   * HalfClosedRemoteSendingData -> Closed: on sending out request DATA with endStream = true
    */
-  sealed abstract class StreamState { _: Product =>
+  sealed abstract class StreamState { self: Product =>
     def handle(event: StreamFrameEvent): StreamState
 
     def stateName: String = productPrefix
@@ -327,7 +350,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
     override def incrementWindow(delta: Int): StreamState = copy(extraInitialWindow = extraInitialWindow + delta)
   }
-  trait Sending extends StreamState { _: Product =>
+  trait Sending extends StreamState { self: Product =>
     protected def outStream: OutStream
 
     override def pullNextFrame(maxSize: Int): (StreamState, PullFrameResult) = {
@@ -342,7 +365,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         }
 
       val nextState =
-        if (outStream.isDone) handleOutgoingEnded()
+        if (outStream.isDone) this.handleOutgoingEnded()
         else this
 
       (nextState, res)
@@ -385,10 +408,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         // We're not planning on sending any data on this stream anymore, so we don't care about window updates.
         this
       case _ =>
-        expectIncomingStream(event, Closed, HalfClosedLocal, correlationAttributes)
+        expectIncomingStream(event, Closed, HalfClosedLocal(_), correlationAttributes)
     }
   }
-  sealed abstract class ReceivingData extends StreamState { _: Product =>
+  sealed abstract class ReceivingData extends StreamState { self: Product =>
     def handle(event: StreamFrameEvent): StreamState = event match {
       case d: DataFrame =>
         outstandingConnectionLevelWindow -= d.sizeInWindow
@@ -425,7 +448,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     protected def incrementWindow(delta: Int): StreamState
     protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit
   }
-  sealed abstract class ReceivingDataWithBuffer(afterEndStreamReceived: StreamState) extends ReceivingData { _: Product =>
+  sealed abstract class ReceivingDataWithBuffer(afterEndStreamReceived: StreamState) extends ReceivingData { self: Product =>
     protected def buffer: IncomingStreamBuffer
 
     override protected def onDataFrame(dataFrame: DataFrame): StreamState = {
@@ -530,7 +553,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     outlet.setHandler(this)
 
     def onPull(): Unit = incomingStreamPulled(streamId)
-    override def onDownstreamFinish(): Unit = {
+    override def onDownstreamFinish(cause: Throwable): Unit = {
       debug(s"Incoming side of stream [$streamId]: cancelling because downstream finished")
       multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.CANCEL))
       // FIXME: go through state machine and don't manipulate vars directly here
@@ -668,7 +691,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def enqueueIfPossible(): Unit =
       if (canSend && !isEnqueued) {
         isEnqueued = true
-        multiplexer.enqueueOutStream(streamId)
+        enqueueOutStream(streamId)
       }
 
     def registerIncomingData(inlet: SubSinkInlet[_]): Unit = {
@@ -731,7 +754,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       endStreamSent = true
       maybeInlet match {
         case OptionVal.Some(inlet) => inlet.cancel()
-        case OptionVal.None        => // nothing to clean up
+        case _                     => // nothing to clean up
       }
     }
 
@@ -756,6 +779,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
           if (headers.nonEmpty && !trailer.isEmpty)
             log.warning("Found both an attribute with trailing headers, and headers in the `LastChunk`. This is not supported.")
           trailer = OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer, shouldRenderAutoHeaders = false, dateHeaderRendering = DateHeaderRendering.Unavailable), None))
+        case _ => throw new IllegalArgumentException("Unexpected stream element") // compiler completeness check pleaser
       }
 
       maybePull()

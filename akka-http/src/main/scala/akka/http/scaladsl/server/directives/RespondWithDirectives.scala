@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -41,6 +41,10 @@ trait RespondWithDirectives {
   def respondWithHeaders(responseHeaders: HttpHeader*): Directive0 =
     respondWithHeaders(responseHeaders.toList)
 
+  @since213
+  def respondWithHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
+    respondWithHeaders(firstHeader +: otherHeaders.toList)
+
   /**
    * Unconditionally adds the given response headers to all HTTP responses of its inner Route.
    *
@@ -48,10 +52,6 @@ trait RespondWithDirectives {
    */
   def respondWithHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
     mapResponseHeaders(responseHeaders.toList ++ _)
-
-  @since213
-  def respondWithHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
-    respondWithHeaders(firstHeader +: otherHeaders.toList)
 
   /**
    * Adds the given response headers to all HTTP responses of its inner Route,
@@ -69,8 +69,9 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  def respondWithDefaultHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
-    mapResponse(_.withDefaultHeaders(responseHeaders))
+  @since213
+  def respondWithDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
+    respondWithDefaultHeaders(firstHeader +: otherHeaders.toList)
 
   /**
    * Adds the given response headers to all HTTP responses of its inner Route,
@@ -78,10 +79,8 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  @since213
-  def respondWithDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
-    respondWithDefaultHeaders(firstHeader +: otherHeaders.toList)
-
+  def respondWithDefaultHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
+    mapResponse(_.withDefaultHeaders(responseHeaders))
 }
 
 object RespondWithDirectives extends RespondWithDirectives

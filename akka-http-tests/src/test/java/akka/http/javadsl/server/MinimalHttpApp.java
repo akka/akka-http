@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server;
@@ -12,6 +12,10 @@ import akka.http.scaladsl.Http;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Deprecated: See akka.http.javadsl.server.HttpApp
+ */
+@Deprecated
 public class MinimalHttpApp extends HttpApp {
 
   CompletableFuture<Done> shutdownTrigger = new CompletableFuture<>();

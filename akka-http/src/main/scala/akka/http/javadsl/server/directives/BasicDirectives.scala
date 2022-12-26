@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -84,17 +84,17 @@ abstract class BasicDirectives {
 
   def mapRouteResultFuture(f: JFunction[CompletionStage[RouteResult], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
     D.mapRouteResultFuture(stage =>
-      f(toJava(stage.fast.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext))).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) {
+      f(toJava(stage.fast.map(_.asJava)(ExecutionContexts.parasitic))).toScala.fast.map(_.asScala)(ExecutionContexts.parasitic)) {
       inner.get.delegate
     }
   }
 
   def mapRouteResultWith(f: JFunction[RouteResult, CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResultWith(r => f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
+    D.mapRouteResultWith(r => f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.parasitic)) { inner.get.delegate }
   }
 
   def mapRouteResultWithPF(f: PartialFunction[RouteResult, CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResultWith(r => f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
+    D.mapRouteResultWith(r => f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.parasitic)) { inner.get.delegate }
   }
 
   /**
@@ -148,7 +148,7 @@ abstract class BasicDirectives {
   }
 
   def recoverRejectionsWith(f: JFunction[JIterable[Rejection], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.recoverRejectionsWith(rs => f.apply(Util.javaArrayList(rs.map(_.asJava))).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
+    D.recoverRejectionsWith(rs => f.apply(Util.javaArrayList(rs.map(_.asJava))).toScala.fast.map(_.asScala)(ExecutionContexts.parasitic)) { inner.get.delegate }
   }
 
   /**

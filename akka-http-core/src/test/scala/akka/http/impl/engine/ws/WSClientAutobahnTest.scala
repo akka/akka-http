@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -10,16 +10,14 @@ import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import spray.json._
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.ws._
 
 object WSClientAutobahnTest extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   val Agent = "akka-http"
   val Parallelism = 4

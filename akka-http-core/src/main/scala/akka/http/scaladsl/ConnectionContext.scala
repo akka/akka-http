@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -77,6 +77,7 @@ object ConnectionContext {
       case Some((host, port)) => createSSLEngine(host, port)
     }: Option[(String, Int)] => SSLEngine))
 
+  @nowarn("msg=deprecated")
   @deprecated("use httpsClient, httpsServer, or the lower-level SSLEngine-based constructor", "10.2.0")
   def https(
     sslContext:          SSLContext,
@@ -113,6 +114,7 @@ final class HttpsConnectionContext private[http] (private[http] val sslContextDa
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
   protected[http] override final def defaultPort: Int = 443
 
+  @nowarn("msg=deprecated")
   @deprecated("prefer ConnectionContext.httpsClient or ConnectionContext.httpsServer", "10.2.0")
   def this(
     sslContext:          SSLContext,
@@ -149,7 +151,7 @@ sealed class HttpConnectionContext extends akka.http.javadsl.HttpConnectionConte
   protected[http] override final def defaultPort: Int = 80
 }
 
-final object HttpConnectionContext extends HttpConnectionContext {
+object HttpConnectionContext extends HttpConnectionContext {
   /** Java API */
   def getInstance() = this
 

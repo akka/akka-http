@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -32,7 +32,7 @@ trait Encoder {
     mapper.transformDataBytes(t, Flow.fromGraph(singleUseEncoderFlow()))
 
   def encoderFlow: Flow[ByteString, ByteString, NotUsed] =
-    Flow.setup { (_, _) => Flow.fromGraph(singleUseEncoderFlow()) }
+    Flow.fromMaterializer { (_, _) => Flow.fromGraph(singleUseEncoderFlow()) }
       .mapMaterializedValue(_ => NotUsed)
 
   @InternalApi
@@ -65,6 +65,7 @@ object Encoder {
   val DefaultFilter: HttpMessage => Boolean = {
     case req: HttpRequest                    => isCompressible(req)
     case res @ HttpResponse(status, _, _, _) => isCompressible(res) && status.allowsEntity
+    case _                                   => throw new IllegalStateException("Unexpected type of request key") // compiler completeness check pleaser
   }
   private[coding] def isCompressible(msg: HttpMessage): Boolean =
     msg.entity.contentType.mediaType.isCompressible

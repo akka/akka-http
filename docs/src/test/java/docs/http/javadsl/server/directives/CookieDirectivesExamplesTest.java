@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -96,6 +96,7 @@ public class CookieDirectivesExamplesTest extends JUnitRouteTest {
         Optional.empty(),
         false,
         false,
+        Optional.empty(),
         Optional.empty()));
 
     testRoute(route).run(HttpRequest.GET("/"))

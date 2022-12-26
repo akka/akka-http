@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -282,7 +282,7 @@ abstract class PathDirectives extends ParameterDirectives {
     D.ignoreTrailingSlash { inner.get.delegate }
   }
 
-  private def unmarshal[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]) = { element: String =>
+  private def unmarshal[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]) = { (element: String) =>
     D.extractRequestContext { ctx =>
       import ctx.executionContext
       import ctx.materializer

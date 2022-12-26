@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -18,8 +18,8 @@ import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.http.javadsl.model.ws.WebSocketUpgradeResponse;
 import akka.http.javadsl.settings.ClientConnectionSettings;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -37,9 +37,9 @@ public class WebSocketClientExampleTest {
   // compile only test
   public void testSingleWebSocketRequest() {
     //#single-WebSocket-request
-    ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
-    Http http = Http.get(system);
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
+    final Http http = Http.get(system);
 
     // print each incoming text message
     // would throw exception on non strict or binary message
@@ -92,7 +92,7 @@ public class WebSocketClientExampleTest {
   public void halfClosedWebSocketClosingExample() {
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
     final Http http = Http.get(system);
 
     //#half-closed-WebSocket-closing
@@ -114,7 +114,7 @@ public class WebSocketClientExampleTest {
 
   public void halfClosedWebSocketWorkingExample() {
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
     final Http http = Http.get(system);
 
     //#half-closed-WebSocket-working
@@ -140,7 +140,7 @@ public class WebSocketClientExampleTest {
 
   public void halfClosedWebSocketFiniteWorkingExample() {
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
     final Http http = Http.get(system);
 
     //#half-closed-WebSocket-finite
@@ -189,7 +189,7 @@ public class WebSocketClientExampleTest {
   public void testWebSocketClientFlow() {
     //#WebSocket-client-flow
     ActorSystem system = ActorSystem.create();
-    Materializer materializer = ActorMaterializer.create(system);
+    Materializer materializer = SystemMaterializer.get(system).materializer();
     Http http = Http.get(system);
 
     // print each incoming text message
@@ -246,7 +246,7 @@ public class WebSocketClientExampleTest {
     //#https-proxy-singleWebSocket-request-example
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
 
     final Flow<Message, Message, NotUsed> flow =
       Flow.fromSinkAndSource(
@@ -274,7 +274,7 @@ public class WebSocketClientExampleTest {
   public void testSingleWebSocketRequestWithHttpsProxyExampleWithAuth() {
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    final Materializer materializer = SystemMaterializer.get(system).materializer();
 
     final Flow<Message, Message, NotUsed> flow =
       Flow.fromSinkAndSource(
@@ -302,7 +302,7 @@ public class WebSocketClientExampleTest {
         materializer);
 
     //#auth-https-proxy-singleWebSocket-request-example
-}
-
-
   }
+
+
+}

@@ -29,7 +29,7 @@ come from Play and want to try Akka HTTP, we collected a @ref[side-by-side compa
 ## Using Akka HTTP
 
 Akka HTTP is provided as independent modules from Akka itself under its own release cycle. Akka HTTP is @ref[compatible](compatibility-guidelines.md)
-with Akka 2.5, Akka 2.6 and  any later 2.x versions released during the lifetime of Akka HTTP 10.2.x. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
+with Akka >= $akka.minimum.version$ and future Akka 2.x versions that are released during the lifetime of Akka HTTP 10.4.x. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
 choose an Akka version to run against and add a manual dependency to `akka-stream` of the chosen version.
 
 @@dependency [sbt,Gradle,Maven] {

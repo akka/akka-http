@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -91,9 +91,17 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
               registerUser(name).map[ToResponseMarshallable] {
                 case Registered(_) => HttpEntity.Empty
                 case AlreadyRegistered =>
-                  import spray.json.DefaultJsonProtocol._
                   import SprayJsonSupport._
-                  StatusCodes.BadRequest -> Map("error" -> "User already Registered")
+
+                  // FIXME: Scala 3 workaround, which cannot figure out the implicit itself
+                  // Needs to avoid importing more implicits accidentally from DefaultJsonProtocol to avoid ambiguity in
+                  // Scala 2
+                  implicit val mapFormat: spray.json.RootJsonFormat[Map[String, String]] = {
+                    import spray.json.DefaultJsonProtocol
+                    import DefaultJsonProtocol._
+                    DefaultJsonProtocol.mapFormat
+                  }
+                  StatusCodes.BadRequest -> Map[String, String]("error" -> "User already Registered")
               }
             }
           }

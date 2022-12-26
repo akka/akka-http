@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -54,7 +54,7 @@ private[http] object ByteStringSinkProbe {
       }
       def expectNoBytes(): Unit = {
         ensureRequested()
-        probe.expectNoMsg()
+        probe.expectNoMessage()
       }
       def expectNoBytes(timeout: FiniteDuration): Unit = {
         ensureRequested()

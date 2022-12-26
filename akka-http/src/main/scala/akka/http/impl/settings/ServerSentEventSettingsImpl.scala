@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
@@ -10,8 +10,9 @@ import com.typesafe.config.Config
 
 @InternalApi
 private[http] final case class ServerSentEventSettingsImpl(
-  maxEventSize: Int,
-  maxLineSize:  Int
+  maxEventSize:    Int,
+  maxLineSize:     Int,
+  emitEmptyEvents: Boolean
 ) extends akka.http.scaladsl.settings.ServerSentEventSettings {
   require(maxLineSize > 0, "max-line-size must be greater than 0")
   require(maxEventSize > maxLineSize, "max-event-size must be greater than max-line-size")
@@ -23,6 +24,7 @@ private[http] final case class ServerSentEventSettingsImpl(
 object ServerSentEventSettingsImpl extends SettingsCompanionImpl[ServerSentEventSettingsImpl]("akka.http.sse") {
   def fromSubConfig(root: Config, c: Config) = ServerSentEventSettingsImpl(
     c.getInt("max-event-size"),
-    c.getInt("max-line-size")
+    c.getInt("max-line-size"),
+    c.getBoolean("emit-empty-events"),
   )
 }

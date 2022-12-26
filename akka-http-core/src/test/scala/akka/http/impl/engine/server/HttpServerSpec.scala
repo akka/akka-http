@@ -1,13 +1,11 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
 
 import scala.annotation.nowarn
-
 import java.net.{ InetAddress, InetSocketAddress }
-
 import akka.event.LoggingAdapter
 import akka.http.ParsingErrorHandler
 import akka.http.impl.engine.ws.ByteStringSinkProbe
@@ -22,8 +20,8 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.stream.testkit._
-import akka.stream.ActorMaterializer
 import akka.stream.Attributes
+import akka.stream.Materializer
 import akka.stream.Outlet
 import akka.stream.SourceShape
 import akka.stream.stage.GraphStage
@@ -48,7 +46,7 @@ class HttpServerSpec extends AkkaSpec(
      akka.http.server.log-unencrypted-network-bytes = 100
      akka.http.server.request-timeout = infinite
   """) with Inside with WithLogCapturing { spec =>
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: Materializer = Materializer.createMaterializer(system)
 
   "The server implementation" should {
     "deliver an empty request as soon as all headers are received" in assertAllStagesStopped(new TestSetup {
@@ -1345,7 +1343,7 @@ class HttpServerSpec extends AkkaSpec(
                 responses.sendError(error.asInstanceOf[Exception])
 
                 expectResponseWithWipedDate(
-                  s"""HTTP/1.1 413 Payload Too Large
+                  s"""HTTP/1.1 413 Content Too Large
                       |Server: akka-http/test
                       |Date: XXXX
                       |Connection: close
@@ -1369,7 +1367,7 @@ class HttpServerSpec extends AkkaSpec(
                 responses.sendError(error.asInstanceOf[Exception])
 
                 expectResponseWithWipedDate(
-                  s"""HTTP/1.1 413 Payload Too Large
+                  s"""HTTP/1.1 413 Content Too Large
                     |Server: akka-http/test
                     |Date: XXXX
                     |Connection: close
@@ -1583,7 +1581,6 @@ class HttpServerSpec extends AkkaSpec(
   }
   class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
     implicit def system = spec.system
-    implicit def materializer = spec.materializer
 
     override def settings = {
       val s = super.settings

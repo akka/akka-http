@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -19,9 +19,11 @@ import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
 
+@nowarn("msg=deprecated")
 class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eventually {
   import system.dispatcher
 

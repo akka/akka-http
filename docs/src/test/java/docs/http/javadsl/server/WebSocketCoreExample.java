@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -26,7 +26,6 @@ import akka.http.scaladsl.model.AttributeKeys;
 import akka.japi.JavaPartialFunction;
 import akka.japi.function.Function;
 
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;

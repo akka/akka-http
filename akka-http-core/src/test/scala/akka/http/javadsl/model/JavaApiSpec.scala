@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model
@@ -43,11 +43,11 @@ class JavaApiSpec extends AnyFreeSpec with Matchers {
       }
       "pathSegments" in {
         Uri.create("/abc/def/ghi/jkl")
-          .pathSegments().asScala.toSeq must contain inOrderOnly ("abc", "def", "ghi", "jkl")
+          .pathSegments().asScala.toSeq must contain inOrderElementsOf Seq("abc", "def", "ghi", "jkl")
       }
       "access parameterMap" in {
         Uri.create("/abc?name=blub&age=28")
-          .query().toMap.asScala must contain allOf ("name" -> "blub", "age" -> "28")
+          .query().toMap.asScala must contain allElementsOf Seq("name" -> "blub", "age" -> "28")
       }
       "access parameters" in {
         val mutable.Seq(param1, param2, param3) =

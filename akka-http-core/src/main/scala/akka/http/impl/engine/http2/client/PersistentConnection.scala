@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.client
@@ -13,7 +13,7 @@ import akka.http.scaladsl.settings.Http2ClientSettings
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.TimerGraphStageLogic
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, StageLogging }
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet, StreamTcpException }
 import akka.util.PrettyDuration
 
 import java.util.concurrent.ThreadLocalRandom
@@ -109,7 +109,7 @@ private[http2] object PersistentConnection {
         requestOut.setHandler(new OutHandler {
           override def onPull(): Unit =
             requestOutPulled = true
-          override def onDownstreamFinish(): Unit = ()
+          override def onDownstreamFinish(cause: Throwable): Unit = ()
         })
         responseIn.setHandler(new InHandler {
           override def onPush(): Unit = throw new IllegalStateException("no response push expected while connecting")
@@ -133,8 +133,10 @@ private[http2] object PersistentConnection {
           }
         }
         val onFailed = getAsyncCallback[Throwable] { cause =>
+          // If the materialized value is failed, then the stream should be broken by design.
+          // Nevertheless also kick our ends of the stream.
           responseIn.cancel()
-          requestOut.fail(new RuntimeException("connection broken", cause))
+          requestOut.fail(new StreamTcpException("connection broken"))
 
           if (connectsLeft.contains(0)) {
             failStage(new RuntimeException(s"Connection failed after $maxAttempts attempts", cause))
@@ -163,6 +165,8 @@ private[http2] object PersistentConnection {
           case EmbargoEnded(connectsLeft, nextEmbargo) =>
             log.debug("Reconnecting after backoff")
             connect(connectsLeft, nextEmbargo)
+          case other => throw new IllegalArgumentException(s"Unexpected timer key $other") // compiler completeness check pleaser
+
         }
       }
 
@@ -178,7 +182,7 @@ private[http2] object PersistentConnection {
             if (!isAvailable(requestIn)) pull(requestIn)
             else dispatchRequest(grab(requestIn))
 
-          override def onDownstreamFinish(): Unit = onDisconnected()
+          override def onDownstreamFinish(cause: Throwable): Unit = onDisconnected()
         })
         responseIn.setHandler(new InHandler {
           override def onPush(): Unit = {
@@ -232,10 +236,10 @@ private[http2] object PersistentConnection {
           responseIn.cancel()
           failStage(ex)
         }
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           requestOut.complete()
           responseIn.cancel()
-          super.onDownstreamFinish()
+          super.onDownstreamFinish(cause)
         }
       }
     }

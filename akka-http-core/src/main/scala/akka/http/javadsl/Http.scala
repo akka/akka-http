@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl
@@ -33,12 +33,12 @@ import akka.stream.scaladsl.Keep
 object Http extends ExtensionId[Http] with ExtensionIdProvider {
   override def get(system: ActorSystem): Http = super.get(system)
   override def get(system: ClassicActorSystemProvider): Http = super.get(system)
-  def lookup() = Http
+  def lookup = Http
   def createExtension(system: ExtendedActorSystem): Http = new Http(system)
 }
 
 class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
-  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => ec }
+  import akka.dispatch.ExecutionContexts.{ parasitic => ec }
 
   import language.implicitConversions
   private implicit def completionStageCovariant[T, U >: T](in: CompletionStage[T]): CompletionStage[U] = in.asInstanceOf[CompletionStage[U]]
@@ -811,7 +811,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     delegate.createDefaultClientHttpsContext()
 
   private def adaptTupleFlow[T, Mat](scalaFlow: stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[scaladsl.model.HttpResponse], T), Mat]): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Mat] = {
-    implicit def id[X] = JavaMapping.identity[X]
+    implicit def id[X]: JavaMapping[X, X] = JavaMapping.identity[X]
     JavaMapping.toJava(scalaFlow)(JavaMapping.flowMapping[Pair[HttpRequest, T], (scaladsl.model.HttpRequest, T), Pair[Try[HttpResponse], T], (Try[scaladsl.model.HttpResponse], T), Mat, Mat])
   }
 

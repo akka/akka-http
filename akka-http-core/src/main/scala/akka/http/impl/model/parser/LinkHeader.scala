@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -12,7 +12,7 @@ import akka.parboiled2.Parser
 import akka.http.scaladsl.model.{ ParsingException, IllegalUriException }
 import akka.http.scaladsl.model.headers._
 
-private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActions =>
+private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActions with StringBuilding =>
   import CharacterClasses._
 
   // http://tools.ietf.org/html/rfc5988#section-5
@@ -25,14 +25,14 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
   }
 
   def `link-param` = rule(
-    ws("rel") ~ ws('=') ~ `relation-types` ~> LinkParams.rel
-      | ws("anchor") ~ ws('=') ~ ws('"') ~ UriReference('"') ~ ws('"') ~> LinkParams.anchor
-      | ws("rev") ~ ws('=') ~ `relation-types` ~> LinkParams.rev
-      | ws("hreflang") ~ ws('=') ~ language ~> LinkParams.hreflang
-      | ws("media") ~ ws('=') ~ word ~> LinkParams.media
-      | ws("title") ~ ws('=') ~ word ~> LinkParams.title
-      | ws("title*") ~ ws('=') ~ word ~> LinkParams.`title*` // support full `ext-value` notation from http://tools.ietf.org/html/rfc5987#section-3.2.1
-      | ws("type") ~ ws('=') ~ (ws('"') ~ `link-media-type` ~ ws('"') | `link-media-type`) ~> LinkParams.`type`)
+    ws("rel") ~ ws('=') ~ `relation-types` ~> LinkParams.rel.apply _
+      | ws("anchor") ~ ws('=') ~ ws('"') ~ UriReference('"') ~ ws('"') ~> LinkParams.anchor.apply _
+      | ws("rev") ~ ws('=') ~ `relation-types` ~> LinkParams.rev.apply _
+      | ws("hreflang") ~ ws('=') ~ language ~> LinkParams.hreflang.apply _
+      | ws("media") ~ ws('=') ~ word ~> LinkParams.media.apply _
+      | ws("title") ~ ws('=') ~ word ~> LinkParams.title.apply _
+      | ws("title*") ~ ws('=') ~ word ~> LinkParams.`title*`.apply _ // support full `ext-value` notation from http://tools.ietf.org/html/rfc5987#section-3.2.1
+      | (ws("type") ~ ws('=') ~ (ws('"') ~ `link-media-type` ~ ws('"') | `link-media-type`) ~> LinkParams.`type`.apply _))
   // TODO: support `link-extension`
 
   def `relation-types` = rule(
@@ -79,5 +79,6 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
       case Seq((x: LinkParams.`type`), tail @ _*)   => sanitize(tail, if (seenType) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS, seenType = true)
       case Seq(head, tail @ _*)                     => sanitize(tail, result :+ head, seenRel, seenMedia, seenTitle, seenTitleS, seenType)
       case Nil                                      => result
+      case _                                        => throw new IllegalArgumentException("Unexpected params") // compiler completeness check pleaser
     }
 }

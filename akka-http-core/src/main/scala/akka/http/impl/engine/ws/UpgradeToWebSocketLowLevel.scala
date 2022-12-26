@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -11,11 +11,14 @@ import akka.http.scaladsl.model.ws.UpgradeToWebSocket
 import akka.http.scaladsl.model.ws.WebSocketUpgrade
 import akka.stream.{ FlowShape, Graph }
 
+import scala.annotation.nowarn
+
 /**
  * Currently internal API to handle FrameEvents directly.
  *
  * INTERNAL API
  */
+@nowarn("msg=deprecated")
 @InternalApi
 private[http] abstract class UpgradeToWebSocketLowLevel extends InternalCustomHeader("UpgradeToWebSocket") with UpgradeToWebSocket with WebSocketUpgrade {
   /**

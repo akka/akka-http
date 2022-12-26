@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -18,16 +18,6 @@ class CompatFormFieldSpec extends RoutingSpec {
         }
         req ~> CompatFormField.oneParameterRoute ~> check {
           responseAs[String] shouldEqual "12"
-        }
-      }
-      "for two parameters" in {
-        val req = Post("/", FormData("name" -> "Aloisia", "age" -> "12"))
-        req ~> CompatFormField.twoParameters(echoComplete2) ~> check {
-          responseAs[String] shouldEqual "Aloisia 12"
-        }
-
-        req ~> CompatFormField.twoParametersRoute ~> check {
-          responseAs[String] shouldEqual "Aloisia 12"
         }
       }
     } else

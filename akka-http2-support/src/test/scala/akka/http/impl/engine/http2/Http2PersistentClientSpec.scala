@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -15,7 +15,7 @@ import akka.http.scaladsl.settings.Http2ClientSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{ ClientTransport, Http }
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.{ KillSwitches, UniqueKillSwitch }
+import akka.stream.{ KillSwitches, StreamTcpException, UniqueKillSwitch }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
@@ -44,10 +44,11 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
      akka.http.client.http2.completion-timeout=100ms
   """) with ScalaFutures {
   override def failOnSevereMessages: Boolean = true
+  private val notSevere = Set("ChannelReadable", "WriteAck")
   override protected def isSevere(event: Logging.LogEvent): Boolean =
     event.level <= Logging.WarningLevel &&
       // fix for https://github.com/akka/akka-http/issues/3732 / https://github.com/akka/akka/issues/29330
-      !event.message.toString.contains("ChannelReadable")
+      !notSevere.exists(cand => event.message.toString.contains(cand))
 
   case class RequestId(id: String) extends RequestResponseAssociation
   val requestIdAttr = AttributeKey[RequestId]("requestId")
@@ -364,7 +365,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       })
 
     val killProbe = TestProbe()
-    def killConnection(): Unit = killProbe.expectMsgType[UniqueKillSwitch].abort(new RuntimeException("connection was killed"))
+    def killConnection(): Unit = killProbe.expectMsgType[UniqueKillSwitch].abort(new StreamTcpException("connection was killed"))
 
     object server {
       private lazy val requestProbe = TestProbe()

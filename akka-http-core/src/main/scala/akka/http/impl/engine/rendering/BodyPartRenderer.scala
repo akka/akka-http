@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -56,6 +56,7 @@ private[http] object BodyPartRenderer {
                 case Strict(_, data)           => chunkStream((r ~~ data).get)
                 case Default(_, _, data)       => bodyPartChunks(data)
                 case IndefiniteLength(_, data) => bodyPartChunks(data)
+                case _                         => throw new IllegalArgumentException("Unexpected entity") // compiler completeness check pleaser
               }
 
             renderBoundary(r, boundary, suppressInitialCrLf = !firstBoundaryRendered)
@@ -139,7 +140,7 @@ private[http] object BodyPartRenderer {
   def randomBoundary(length: Int = 18, random: java.util.Random = ThreadLocalRandom.current()): String = {
     val array = new Array[Byte](length)
     random.nextBytes(array)
-    Base64.custom.encodeToString(array, false)
+    Base64.custom().encodeToString(array, false)
   }
 
   /**

@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
@@ -14,11 +13,10 @@ import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.http.scaladsl.model.ws._
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Source }
-
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import HttpMethods._
 
+import scala.annotation.nowarn
 import scala.io.StdIn
 
 object TestServer extends App {
@@ -30,13 +28,15 @@ object TestServer extends App {
     akka.actor.serialize-messages = off
     akka.actor.default-dispatcher.throughput = 1000
     """)
-  implicit val system = ActorSystem("ServerTest", testConf)
+  implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
 
+  @nowarn("msg=deprecated")
   val settings = ActorMaterializerSettings(system)
     .withFuzzing(false)
     //    .withSyncProcessingLimit(Int.MaxValue)
     .withInputBuffer(128, 128)
-  implicit val fm = ActorMaterializer(settings)
+  @nowarn("msg=deprecated")
+  implicit val fm: ActorMaterializer = ActorMaterializer(settings)
   try {
     val binding = Http().newServerAt("localhost", 9001).bindSync {
       case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) =>

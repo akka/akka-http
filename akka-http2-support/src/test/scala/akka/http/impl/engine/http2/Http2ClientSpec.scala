@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -42,9 +42,10 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import javax.net.ssl.SSLContext
-import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.collection.immutable
 
 /**
  * This tests the http2 client protocol logic.
@@ -60,7 +61,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.client.http2.log-frames = on
     akka.http.client.http2.completion-timeout = 500ms
   """)
-  with WithInPendingUntilFixed with Eventually {
+  with Eventually {
 
   override implicit val patience = PatienceConfig(5.seconds, 5.seconds)
   override def failOnSevereMessages: Boolean = true
@@ -403,7 +404,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val chunksIn =
           user.expectResponse()
             .entity.asInstanceOf[Chunked]
-            .chunks.runWith(TestSink.probe[ChunkStreamPart](system.classicSystem))
+            .chunks.runWith(TestSink[ChunkStreamPart]()(system.classicSystem))
         val data1 = ByteString("abcdef")
         network.sendDATA(TheStreamId, endStream = false, data1)
         chunksIn.request(2)
@@ -932,7 +933,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   }
 
   protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {
-    implicit def ec = system.dispatcher
+    implicit def ec: ExecutionContext = system.dispatcher
 
     private lazy val responseIn = TestSubscriber.probe[HttpResponse]()
     private lazy val requestOut = TestPublisher.probe[HttpRequest]()

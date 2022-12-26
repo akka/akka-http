@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -10,9 +10,10 @@ import scala.collection.immutable.TreeMap
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.parboiled2._
-import akka.shapeless._
+import akka.parboiled2.support.hlist._
 
-private[parser] trait CommonRules { this: HeaderParser with Parser with StringBuilding =>
+private[parser] trait CommonRules { this: Parser with StringBuilding =>
+  protected def maxCommentParsingDepth: Int
   import CharacterClasses._
 
   // ******************************************************************************************
@@ -226,7 +227,7 @@ private[parser] trait CommonRules { this: HeaderParser with Parser with StringBu
 
   // http://tools.ietf.org/html/rfc6750#section-2.1
   def `oauth2-bearer-token` = rule {
-    ignoreCase("bearer") ~ OWS ~ `token68` ~> OAuth2BearerToken
+    ignoreCase("bearer") ~ OWS ~ `token68` ~> (OAuth2BearerToken(_))
   }
 
   def `generic-credentials` = rule {
@@ -371,11 +372,11 @@ private[parser] trait CommonRules { this: HeaderParser with Parser with StringBu
 
   def `other-content-range` = rule { `other-range-unit` ~ `other-range-resp` }
 
-  def `other-range-resp` = rule { capture(zeroOrMore(ANY)) ~> ContentRange.Other }
+  def `other-range-resp` = rule { capture(zeroOrMore(ANY)) ~> (ContentRange.Other(_)) }
 
   def `other-range-set` = rule { oneOrMore(VCHAR) ~ OWS }
 
-  def `other-range-unit` = rule { token ~> RangeUnits.Other }
+  def `other-range-unit` = rule { token ~> (RangeUnits.Other(_)) }
 
   def `other-ranges-specifier` = rule { `other-range-unit` ~ ws('=') ~ `other-range-set` }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -18,7 +18,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.stream.scaladsl._
-import akka.stream.ActorMaterializer
 import HttpEntity._
 import HttpMethods._
 import akka.testkit._
@@ -29,10 +28,8 @@ class RequestRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfterA
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-
-  implicit val materializer = ActorMaterializer()
 
   "The request preparation logic should" - {
     "properly render an unchunked" - {

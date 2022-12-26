@@ -18,8 +18,8 @@ package akka.http.javadsl.unmarshalling.sse;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.HttpEntity;
-import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshallingSpec;
@@ -36,7 +36,7 @@ public class EventStreamUnmarshallingTest extends JUnitSuite {
     public void testFromEventsStream() throws Exception {
         ActorSystem system = ActorSystem.create();
         try {
-            Materializer mat = ActorMaterializer.create(system);
+            Materializer mat = SystemMaterializer.get(system).materializer();
 
             List<ServerSentEvent> events = EventStreamUnmarshallingSpec.eventsAsJava();
             HttpEntity entity = EventStreamUnmarshallingSpec.entity();

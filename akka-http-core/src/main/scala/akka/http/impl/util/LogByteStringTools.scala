@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -64,7 +64,7 @@ private[akka] object LogByteStringTools {
 
   def printByteString(bytes: ByteString, maxBytes: Int = MaxBytesPrinted, addPrefix: Boolean = true, indent: String = " "): String = {
     def formatBytes(bs: ByteString): Iterator[String] = {
-      def asHex(b: Byte): String = b formatted "%02X"
+      def asHex(b: Byte): String = "%02X" format b
 
       def formatLine(bs: ByteString): String = {
         val hex = bs.map(asHex).mkString(" ")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -9,7 +9,6 @@ import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.net.SocketException
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.impl.util.AkkaSpecWithMaterializer
@@ -22,6 +21,7 @@ import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.Try
@@ -29,6 +29,7 @@ import scala.util.Try
 class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eventually {
   import system.dispatcher
 
+  @nowarn("msg=deprecated")
   class MinimalApp extends HttpApp {
 
     val shutdownPromise = Promise[Done]()

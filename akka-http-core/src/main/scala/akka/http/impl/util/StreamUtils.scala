@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -9,7 +9,6 @@ import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.util.FastFuture
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -73,7 +72,7 @@ private[http] object StreamUtils {
           materializationPromise.trySuccess(())
           killResult.future.value match {
             case Some(res) => handleKill(res)
-            case None      => killResult.future.onComplete(killCallback.invoke)(ExecutionContexts.sameThreadExecutionContext)
+            case None      => killResult.future.onComplete(killCallback.invoke)(ExecutionContexts.parasitic)
           }
         }
 
@@ -185,7 +184,7 @@ private[http] object StreamUtils {
   object OneTimeValve {
     def apply(): OneTimeValve = new OneTimeValve {
       val promise = Promise[Unit]()
-      val _source = Source.fromFuture(promise.future).drop(1) // we are only interested in the completion event
+      val _source = Source.future(promise.future).drop(1) // we are only interested in the completion event
 
       def source[T]: Source[T, NotUsed] = _source.asInstanceOf[Source[T, NotUsed]] // safe, because source won't generate any elements
       def open(): Unit = promise.success(())
@@ -198,6 +197,7 @@ private[http] object StreamUtils {
    * Returns a flow that is almost identity but delays propagation of cancellation from downstream to upstream.
    */
   def delayCancellation[T](cancelAfter: Duration): Flow[T, T, NotUsed] = Flow.fromGraph(new DelayCancellationStage(cancelAfter))
+  /** INTERNAL API */
   final class DelayCancellationStage[T](cancelAfter: Duration) extends SimpleLinearGraphStage[T] {
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with ScheduleSupport with InHandler with OutHandler with StageLogging {
       setHandlers(in, out, this)
@@ -207,7 +207,7 @@ private[http] object StreamUtils {
 
       var timeout: OptionVal[Cancellable] = OptionVal.None
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         cancelAfter match {
           case finite: FiniteDuration =>
             log.debug(s"Delaying cancellation for $finite")
@@ -237,7 +237,7 @@ private[http] object StreamUtils {
 
       override def postStop(): Unit = timeout match {
         case OptionVal.Some(x) => x.cancel()
-        case OptionVal.None    => // do nothing
+        case _                 => // do nothing
       }
     }
   }
@@ -260,7 +260,7 @@ private[http] object StreamUtils {
   def statefulAttrsMap[T, U](functionConstructor: Attributes => T => U): Flow[T, U, NotUsed] =
     Flow[T].via(ExposeAttributes[T, U](functionConstructor))
 
-  trait ScheduleSupport { self: GraphStageLogic =>
+  trait ScheduleSupport extends GraphStageLogic { self =>
     /**
      * Schedule a block to be run once after the given duration in the context of this graph stage.
      */
@@ -330,19 +330,6 @@ private[http] object StreamUtils {
         val (newData, whenCompleted) = streamOp(x.data)
         x.copy(data = newData).asInstanceOf[T] -> whenCompleted
     }
-
-  /**
-   * Small helper necessary to deal with errors happening during IO operations like FileIO.toPath.
-   * In these operations, a failure during writing data will be turn into a successful IOResult containing
-   * a nested failure.
-   *
-   * Here we make sure to unnest errors.
-   *
-   * Can be removed when https://github.com/akka/akka/issues/23951 is finally fixed.
-   */
-  def handleIOResult(ioResult: IOResult): Future[IOResult] =
-    if (ioResult.wasSuccessful) FastFuture.successful(ioResult)
-    else FastFuture.failed(ioResult.getError)
 
   def encodeErrorAndComplete[T](f: Throwable => T): Flow[T, T, NotUsed] =
     Flow[T].recoverWithRetries(1, {

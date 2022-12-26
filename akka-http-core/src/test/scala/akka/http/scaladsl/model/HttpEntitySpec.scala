@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -82,7 +82,7 @@ class HttpEntitySpec extends AkkaSpecWithMaterializer {
       "Infinite data stream" in {
         val neverCompleted = Promise[ByteString]()
         intercept[TimeoutException] {
-          Await.result(Default(tpe, 42, Source.fromFuture(neverCompleted.future)).toStrict(100.millis), awaitAtMost)
+          Await.result(Default(tpe, 42, Source.future(neverCompleted.future)).toStrict(100.millis), awaitAtMost)
         }.getMessage should be("HttpEntity.toStrict timed out after 100 milliseconds while still waiting for outstanding data")
       }
     }
@@ -273,7 +273,7 @@ class HttpEntitySpec extends AkkaSpecWithMaterializer {
     }
 
   def renderStrictDataAs(dataRendering: String): Matcher[Strict] =
-    Matcher { strict: Strict =>
+    Matcher { (strict: Strict) =>
       val expectedRendering = s"${strict.productPrefix}(${strict.contentType},$dataRendering)"
       MatchResult(
         strict.toString == expectedRendering,

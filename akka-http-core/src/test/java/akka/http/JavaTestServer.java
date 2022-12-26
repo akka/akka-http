@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http;
@@ -14,8 +14,6 @@ import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.WebSocket;
 import akka.japi.JavaPartialFunction;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 

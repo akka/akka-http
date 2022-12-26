@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -37,8 +37,8 @@ private[http] object One2OneBidiFlow {
    */
   def apply[I, O](
     maxPending:                Int,
-    outputTruncationException: Int => Throwable = OutputTruncationException,
-    unexpectedOutputException: Any => Throwable = UnexpectedOutputException): BidiFlow[I, I, O, O, NotUsed] =
+    outputTruncationException: Int => Throwable = OutputTruncationException(_),
+    unexpectedOutputException: Any => Throwable = UnexpectedOutputException(_)): BidiFlow[I, I, O, O, NotUsed] =
     BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending, outputTruncationException, unexpectedOutputException))
 
   /*
@@ -78,7 +78,7 @@ private[http] object One2OneBidiFlow {
         override def onPull(): Unit =
           if (insideWrappedFlow < maxPending || maxPending == -1) pull(in)
           else pullSuppressed = true
-        override def onDownstreamFinish(): Unit = cancel(in)
+        override def onDownstreamFinish(cause: Throwable): Unit = cancel(in)
       })
 
       setHandler(fromWrapped, new InHandler {
@@ -101,7 +101,7 @@ private[http] object One2OneBidiFlow {
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pull(fromWrapped)
-        override def onDownstreamFinish(): Unit = cancel(fromWrapped)
+        override def onDownstreamFinish(cause: Throwable): Unit = cancel(fromWrapped)
       })
     }
   }

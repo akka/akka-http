@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine
@@ -17,7 +17,6 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -47,7 +46,6 @@ class StreamServerProcessingBenchmark extends CommonBenchmark {
   var httpFlow: Flow[ByteString, ByteString, Any] = _
 
   implicit var system: ActorSystem = _
-  implicit var mat: ActorMaterializer = _
 
   @Benchmark
   def benchRequestProcessing(): Unit = {
@@ -73,7 +71,6 @@ class StreamServerProcessingBenchmark extends CommonBenchmark {
         """)
         .withFallback(ConfigFactory.load())
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
-    mat = ActorMaterializer()
 
     val bytesPerChunk = totalBytes.toInt / numChunks.toInt
     totalExpectedBytes = numRequestsPerConnection.toInt * bytesPerChunk * numChunks.toInt

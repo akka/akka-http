@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -29,7 +29,7 @@ import scala.util.{ Failure, Success }
  */
 // "Hasta la vista, baby."
 @InternalApi
-private[http] abstract class ServerTerminator {
+private[http] trait ServerTerminator {
   /**
    * Initiate the termination sequence of this server.
    */
@@ -203,7 +203,6 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
       // true, if a request was delivered to the user-handler, and no response was sent yet
       // in that case, if the termination timeout triggers, we will need to render a synthetic response to the client.
       var pendingUserHandlerResponse: Boolean = false
-      var pendingTerminationResponse: Boolean = false
 
       override def preStart(): Unit = {
         val terminateSignal = getAsyncCallback[FiniteDuration] { deadline =>
@@ -315,9 +314,6 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
           override def onPull(): Unit = {
             if (pendingUserHandlerResponse) {
               if (isAvailable(fromUser)) pull(fromUser)
-            } else if (pendingTerminationResponse) {
-              pendingTerminationResponse = false
-              push(toNet, settings.terminationDeadlineExceededResponse)
             }
           }
         })

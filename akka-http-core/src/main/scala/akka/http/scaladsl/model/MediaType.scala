@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -131,12 +131,12 @@ object MediaType {
     val _params = params
     new Binary(renderValue(mainType, subType, params), mainType, subType, comp, fileExtensions) {
       override def params = _params
-      override def isApplication = mainType == "application"
-      override def isAudio = mainType == "audio"
-      override def isImage = mainType == "image"
-      override def isMessage = mainType == "message"
-      override def isText = mainType == "text"
-      override def isVideo = mainType == "video"
+      override def isApplication = this.mainType == "application"
+      override def isAudio = this.mainType == "audio"
+      override def isImage = this.mainType == "image"
+      override def isMessage = this.mainType == "message"
+      override def isText = this.mainType == "text"
+      override def isVideo = this.mainType == "video"
     }
   }
 
@@ -148,12 +148,12 @@ object MediaType {
     val _params = params
     new WithFixedCharset(renderValue(mainType, subType, params), mainType, subType, charset, fileExtensions) {
       override def params = _params
-      override def isApplication = mainType == "application"
-      override def isAudio = mainType == "audio"
-      override def isImage = mainType == "image"
-      override def isMessage = mainType == "message"
-      override def isText = mainType == "text"
-      override def isVideo = mainType == "video"
+      override def isApplication = this.mainType == "application"
+      override def isAudio = this.mainType == "audio"
+      override def isImage = this.mainType == "image"
+      override def isMessage = this.mainType == "message"
+      override def isText = this.mainType == "text"
+      override def isVideo = this.mainType == "video"
     }
   }
 
@@ -165,12 +165,12 @@ object MediaType {
     val _params = params
     new NonMultipartWithOpenCharset(renderValue(mainType, subType, params), mainType, subType, fileExtensions) {
       override def params = _params
-      override def isApplication = mainType == "application"
-      override def isAudio = mainType == "audio"
-      override def isImage = mainType == "image"
-      override def isMessage = mainType == "message"
-      override def isText = mainType == "text"
-      override def isVideo = mainType == "video"
+      override def isApplication = this.mainType == "application"
+      override def isAudio = this.mainType == "audio"
+      override def isImage = this.mainType == "image"
+      override def isMessage = this.mainType == "message"
+      override def isText = this.mainType == "text"
+      override def isVideo = this.mainType == "video"
     }
   }
 
@@ -320,7 +320,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
     mediaType
   }
 
-  private def register[T <: MediaType](mediaType: T): T = {
+  private def register(mediaType: MediaType): mediaType.type = {
     registerFileExtensions(mediaType)
     register(mediaType.mainType.toRootLowerCase -> mediaType.subType.toRootLowerCase, mediaType)
   }

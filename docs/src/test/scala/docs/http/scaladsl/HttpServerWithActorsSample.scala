@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
@@ -53,6 +53,7 @@ object HttpServerWithActorsSample {
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
   import spray.json.DefaultJsonProtocol
   import spray.json.DeserializationException
+  import spray.json.JsonFormat
   import spray.json.JsString
   import spray.json.JsValue
   import spray.json.RootJsonFormat
@@ -75,7 +76,7 @@ object HttpServerWithActorsSample {
       }
     }
 
-    implicit val jobFormat = jsonFormat4(Job)
+    implicit val jobFormat: RootJsonFormat[Job] = jsonFormat4(Job.apply)
   }
   //#akka-typed-json
 

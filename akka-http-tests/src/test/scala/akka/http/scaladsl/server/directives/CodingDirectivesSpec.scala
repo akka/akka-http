@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -27,7 +27,7 @@ import scala.concurrent.duration._
 
 class CodingDirectivesSpec extends RoutingSpec with Inside {
 
-  implicit val routeTestTimeout = RouteTestTimeout(3.seconds.dilated)
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   val echoRequestContent: Route = { ctx => ctx.complete(ctx.request.entity.dataBytes.utf8String) }
 

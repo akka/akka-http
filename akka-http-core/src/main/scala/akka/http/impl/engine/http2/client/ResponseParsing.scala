@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -100,6 +100,8 @@ private[http2] object ResponseParsing {
           val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
           validateHeader(httpHeader)
           rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)
+
+        case _ => throw new IllegalStateException("Unexpected remaining header") // compiler completeness check pleaser
       }
 
     rec(subStream.initialHeaders.keyValuePairs)

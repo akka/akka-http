@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -12,7 +12,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 
 @DoNotInherit
-trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings =>
+trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings with akka.http.scaladsl.settings.Http2ServerSettings.Http2ServerSettingsImpl =>
   def getRequestEntityChunkSize: Int = requestEntityChunkSize
   def withRequestEntityChunkSize(newRequestEntityChunkSize: Int): Http2ServerSettings
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -31,7 +31,7 @@ private[http] object Http2FrameParsing {
         val read0 = SettingIdentifier.byId(id) match {
           case OptionVal.Some(s) =>
             Setting(s, value) :: read
-          case OptionVal.None =>
+          case _ =>
             log.debug("Ignoring unknown setting identifier {}", id)
             read
         }
@@ -185,7 +185,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean, log: LoggingA
           val maybeframe = FrameType.byId(tpe) match {
             case OptionVal.Some(ft) =>
               Some(parseFrame(ft, flags, streamId, new ByteReader(payload), log))
-            case OptionVal.None =>
+            case _ =>
               log.debug("Ignoring unknown frame type {}", tpe)
               None
           }

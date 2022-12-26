@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
 
 import java.io.File
-
 import akka.NotUsed
 import akka.http.scaladsl.model.{ Multipart, _ }
 import akka.http.scaladsl.server.{ MissingFormFieldRejection, Route, RoutingSpec }
@@ -15,13 +14,16 @@ import akka.util.ByteString
 import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
 
+  import akka.http.ccompat.ImplicitUtils._
+
   // tests touches filesystem, so reqs may take longer than the default of 1.second to complete
-  implicit val routeTimeout = RouteTestTimeout(6.seconds.dilated)
+  implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
 
   "the storeUploadedFile directive" should {
     val data = s"<int>${"42" * 1000000}</int>" // ~2MB of data
@@ -483,6 +485,7 @@ class MockFailingWritePath extends java.nio.file.Path { selfPath =>
   import java.nio.file.{ AccessMode, CopyOption, DirectoryStream, FileStore, FileSystem, LinkOption, OpenOption, Path, PathMatcher, WatchEvent, WatchKey, WatchService }
   import java.{ lang, util }
 
+  @nowarn("msg=never used")
   override def getFileSystem: FileSystem =
     new FileSystem {
       override def provider(): FileSystemProvider = new FileSystemProvider {

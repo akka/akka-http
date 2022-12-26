@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshallers.sprayjson
@@ -12,10 +12,11 @@ import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import spray.json.{ JsValue, PrettyPrinter, JsonPrinter, DefaultJsonProtocol }
 
 import scala.collection.immutable.ListMap
+import spray.json.RootJsonFormat
 
 class SprayJsonSupportSpec extends JsonSupportSpec {
   object EmployeeJsonProtocol extends DefaultJsonProtocol {
-    implicit val employeeFormat = jsonFormat5(Employee.apply)
+    implicit val employeeFormat: RootJsonFormat[Employee] = jsonFormat5(Employee.apply)
   }
   import EmployeeJsonProtocol._
 

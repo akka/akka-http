@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -10,6 +10,8 @@ import scala.util.Try
 import akka.testkit.AkkaSpec
 import akka.http.scaladsl.model.headers.`User-Agent`
 import com.typesafe.config.ConfigFactory
+
+import scala.annotation.nowarn
 
 class ConnectionPoolSettingsSpec extends AkkaSpec {
   "ConnectionPoolSettings" should {
@@ -148,6 +150,7 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
       settings.minConnections shouldEqual 2
     }
 
+    @nowarn("msg=never used")
     def expectError(configString: String): String = Try(config(configString)) match {
       case Failure(cause) => cause.getMessage
       case Success(_)     => fail("Expected a failure when max-open-requests is not a power of 2")

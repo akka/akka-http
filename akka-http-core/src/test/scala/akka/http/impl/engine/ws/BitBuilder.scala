@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -94,7 +94,7 @@ class BitSpecParser(val input: ParserInput) extends parboiled2.Parser {
   def zero: Rule1[BitElement] = rule { '0' ~ push(Zero) ~ ws }
   def one: Rule1[BitElement] = rule { '1' ~ push(One) ~ ws }
   def multi: Rule1[Multibit] = rule {
-    capture(oneOrMore('x' ~ ws)) ~> (_.count(_ == 'x')) ~ '=' ~ value ~ ws ~> Multibit
+    capture(oneOrMore('x' ~ ws)) ~> (_.count(_ == 'x')) ~ '=' ~ value ~ ws ~> Multibit.apply _
   }
   def value: Rule1[Long] = rule {
     capture(oneOrMore(CharPredicate.HexDigit)) ~> ((str: String) => java.lang.Long.parseLong(str, 16))

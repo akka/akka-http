@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -7,10 +7,10 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.CommonBenchmark
+import akka.http.impl.engine.server.ServerTerminator
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
-import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source }
 import akka.util.ByteString
@@ -27,7 +27,6 @@ import scala.concurrent.{ Await, ExecutionContext, Future }
 class H2ClientServerBenchmark extends CommonBenchmark with H2RequestResponseBenchmark {
   var httpFlow: Flow[HttpRequest, HttpResponse, Any] = _
   implicit var system: ActorSystem = _
-  implicit var mat: ActorMaterializer = _
 
   val numRequests = 1000
 
@@ -61,19 +60,20 @@ class H2ClientServerBenchmark extends CommonBenchmark with H2RequestResponseBenc
     initRequestResponse()
 
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
-    mat = ActorMaterializer()
     val settings = implicitly[ServerSettings]
     val log = system.log
     implicit val ec = system.dispatcher
     val http1 = Flow[SslTlsInbound].mapAsync(1)(_ => {
       Future.failed[SslTlsOutbound](new IllegalStateException("Failed h2 detection"))
+    }).mapMaterializedValue(_ => new ServerTerminator {
+      override def terminate(deadline: FiniteDuration)(implicit ex: ExecutionContext): Future[Http.HttpTerminated] = ???
     })
     val http2 =
       Http2Blueprint.handleWithStreamIdHeader(1)(req => {
         req.discardEntityBytes().future.map(_ => response)
       })(system.dispatcher)
-        .join(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))
-    val server: Flow[ByteString, ByteString, NotUsed] = Http2.priorKnowledge(http1, http2)
+        .joinMat(Http2Blueprint.serverStackTls(settings, log, NoOpTelemetry, Http().dateHeaderRendering))(Keep.right)
+    val server: Flow[ByteString, ByteString, Any] = Http2.priorKnowledge(http1, http2)
     val client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] = Http2Blueprint.clientStack(ClientConnectionSettings(system), log, NoOpTelemetry)
     httpFlow = client.join(server)
   }

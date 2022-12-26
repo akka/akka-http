@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -52,6 +52,7 @@ public class MiscDirectivesTest extends JUnitRouteTest {
       .assertEntity("Path too long!");
   }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testClientIpExtraction() throws UnknownHostException {
     TestRoute route = testRoute(extractClientIP(ip -> complete(ip.toString())));
@@ -88,7 +89,7 @@ public class MiscDirectivesTest extends JUnitRouteTest {
 
     route
       .run(withEntityOfSize(501))
-      .assertStatusCode(StatusCodes.PAYLOAD_TOO_LARGE);
+      .assertStatusCode(StatusCodes.CONTENT_TOO_LARGE);
 
   }
 

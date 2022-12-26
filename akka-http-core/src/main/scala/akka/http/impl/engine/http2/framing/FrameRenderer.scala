@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -92,6 +92,7 @@ private[http2] object FrameRenderer {
 
               renderNext(remaining)
             case Nil =>
+            case _   => throw new IllegalArgumentException("Unexpected remaining") // compiler completeness check pleaser
           }
 
         renderNext(settings)

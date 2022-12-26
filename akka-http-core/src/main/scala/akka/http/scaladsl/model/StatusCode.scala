@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -141,9 +141,11 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val Gone                         = reg(c(410)("Gone", "The resource requested is no longer available and will not be available again."))
   val LengthRequired               = reg(c(411)("Length Required", "The request did not specify the length of its content, which is required by the requested resource."))
   val PreconditionFailed           = reg(c(412)("Precondition Failed", "The server does not meet one of the preconditions that the requester put on the request."))
-  val PayloadTooLarge              = reg(c(413)("Payload Too Large", "The request payload is larger than the server is willing or able to process."))
-  @deprecated("deprecated in favor of PayloadTooLarge", "10.1.11")
-  val RequestEntityTooLarge        = PayloadTooLarge
+  val ContentTooLarge              = reg(c(413)("Content Too Large", "The request content is larger than the server is willing or able to process."))
+  @deprecated("deprecated in favor of ContentTooLarge", "10.4.0")
+  val PayloadTooLarge              = ContentTooLarge
+  @deprecated("deprecated in favor of ContentTooLarge", "10.4.0")
+  val RequestEntityTooLarge        = ContentTooLarge
   val UriTooLong                   = reg(c(414)("URI Too Long", "The URI provided was too long for the server to process."))
   @deprecated("deprecated in favor of UriTooLong", "10.1.11")
   val RequestUriTooLong            = UriTooLong
@@ -155,7 +157,9 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val ImATeapot                    = reg(c(418)("I'm a teapot", "The resulting entity body MAY be short and stout."))
   val EnhanceYourCalm              = reg(c(420)("Enhance Your Calm", "You are being rate-limited.")) // Twitter only
   val MisdirectedRequest           = reg(c(421)("Misdirected Request", "The request was directed at a server that is not able to produce a response.")) // HTTP/2 only. https://tools.ietf.org/html/rfc7540#section-9.1.2
-  val UnprocessableEntity          = reg(c(422)("Unprocessable Entity", "The request was well-formed but was unable to be followed due to semantic errors."))
+  val UnprocessableContent          = reg(c(422)("Unprocessable Content", "The request was well-formed but was unable to be followed due to semantic errors."))
+  @deprecated("deprecated in favor of UnprocessableContent", "10.4.0")
+  val UnprocessableEntity          = UnprocessableContent
   val Locked                       = reg(c(423)("Locked", "The resource that is being accessed is locked."))
   val FailedDependency             = reg(c(424)("Failed Dependency", "The request failed due to failure of a previous request."))
   val TooEarly                     = reg(c(425)("Too Early", "The server is unwilling to risk processing a request that might be replayed.")) // RFC 8470

@@ -1,14 +1,13 @@
 /*
- * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
 
 import java.io.File
-
 import akka.Done
 import akka.annotation.ApiMayChange
-import akka.http.impl.util.StreamUtils
+import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.server.{ Directive, Directive1, MissingFormFieldRejection }
 import akka.http.scaladsl.model.{ ContentType, Multipart }
 import akka.util.ByteString
@@ -52,8 +51,7 @@ trait FileUploadDirectives {
           val uploadedF: Future[(FileInfo, File)] =
             bytes
               .runWith(FileIO.toPath(dest.toPath))
-              .flatMap(StreamUtils.handleIOResult)
-              .map(_ => (fileInfo, dest))
+              .map(_ => (fileInfo, dest))(ExecutionContexts.parasitic)
               .recoverWith {
                 case ex =>
                   dest.delete()
@@ -76,7 +74,6 @@ trait FileUploadDirectives {
     entity(as[Multipart.FormData]).flatMap { formData =>
       extractRequestContext.flatMap { ctx =>
         implicit val mat = ctx.materializer
-        implicit val ec = ctx.executionContext
 
         val uploaded: Source[(FileInfo, File), Any] = formData.parts
           .mapConcat { part =>
@@ -91,8 +88,7 @@ trait FileUploadDirectives {
             val dest = destFn(fileInfo)
 
             part.entity.dataBytes.runWith(FileIO.toPath(dest.toPath))
-              .flatMap(StreamUtils.handleIOResult)
-              .map(_ => (fileInfo, dest))
+              .map(_ => (fileInfo, dest))(ExecutionContexts.parasitic)
           }
 
         val uploadedF = uploaded.runWith(Sink.seq[(FileInfo, File)])

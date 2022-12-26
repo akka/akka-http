@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -86,7 +86,7 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
       .assertStatusCode(StatusCodes.OK);
 
     testRoute(route).run(withEntityOfSize.apply(501))
-      .assertStatusCode(StatusCodes.PAYLOAD_TOO_LARGE);
+      .assertStatusCode(StatusCodes.CONTENT_TOO_LARGE);
     //#withSizeLimitExample
   }
 
@@ -111,7 +111,7 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
             .assertStatusCode(StatusCodes.OK);
 
     testRoute(route).run(withEntityOfSize.apply(801))
-            .assertStatusCode(StatusCodes.PAYLOAD_TOO_LARGE);
+            .assertStatusCode(StatusCodes.CONTENT_TOO_LARGE);
     //#withSizeLimitExampleNested
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package io.akka.integrationtest.http
@@ -13,7 +13,6 @@ import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.ccompat._
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit._
 import headers._
@@ -42,11 +41,9 @@ class HttpModelIntegrationSpec extends AnyWordSpec with Matchers with BeforeAndA
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
-
-  implicit val materializer = ActorMaterializer()
 
   "External HTTP libraries" should {
 

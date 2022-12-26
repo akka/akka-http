@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -51,7 +51,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   def rawPathPrefix[L](pm: PathMatcher[L]): Directive[L] = {
     implicit val LIsTuple = pm.ev
     extract(ctx => pm(ctx.unmatchedPath)).flatMap {
-      case Matched(rest, values) => tprovide(values) & mapRequestContext(_ withUnmatchedPath rest)
+      case Matched(rest, values) => tprovide(values)(LIsTuple) & mapRequestContext(_ withUnmatchedPath rest)
       case Unmatched             => reject
     }
   }
@@ -90,7 +90,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   def pathSuffix[L](pm: PathMatcher[L]): Directive[L] = {
     implicit val LIsTuple = pm.ev
     extract(ctx => pm(ctx.unmatchedPath.reverse)).flatMap {
-      case Matched(rest, values) => tprovide(values) & mapRequestContext(_.withUnmatchedPath(rest.reverse))
+      case Matched(rest, values) => tprovide(values)(LIsTuple) & mapRequestContext(_.withUnmatchedPath(rest.reverse))
       case Unmatched             => reject
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.marshalling
@@ -66,7 +66,7 @@ object Marshaller {
   // TODO make sure these are actually usable in a sane way
   def wrapEntity[A, C](f: function.BiFunction[ExecutionContext, C, A], m: Marshaller[A, RequestEntity], mediaType: MediaType): Marshaller[C, RequestEntity] = {
     val scalaMarshaller = m.asScalaCastOutput
-    fromScala(scalaMarshaller.wrapWithEC(mediaType.asScala) { ctx => c: C => f(ctx, c) }(ContentTypeOverrider.forEntity))
+    fromScala(scalaMarshaller.wrapWithEC(mediaType.asScala) { ctx => (c: C) => f(ctx, c) }(ContentTypeOverrider.forEntity))
   }
 
   def wrapEntity[A, C, E <: RequestEntity](f: function.Function[C, A], m: Marshaller[A, E], mediaType: MediaType): Marshaller[C, RequestEntity] = {

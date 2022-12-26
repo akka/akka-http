@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -13,7 +13,7 @@ import akka.http.scaladsl.settings.ParserSettings
 import akka.stream.TLSProtocol.SessionBytes
 import akka.stream.scaladsl.{ GraphDSL, RunnableGraph, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, Attributes, ClosedShape }
+import akka.stream.{ Attributes, ClosedShape }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
@@ -24,8 +24,6 @@ class ResponseParsingMergeSpec extends AkkaSpec {
   "The ResponseParsingMerge stage" should {
 
     "not lose entity truncation errors on upstream finish" in {
-      implicit val mat = ActorMaterializer()
-
       val inBypassProbe = TestPublisher.manualProbe[OutgoingConnectionBlueprint.BypassData]()
       val inSessionBytesProbe = TestPublisher.manualProbe[SessionBytes]()
       val responseProbe = TestSubscriber.manualProbe[List[ParserOutput.ResponseOutput]]()

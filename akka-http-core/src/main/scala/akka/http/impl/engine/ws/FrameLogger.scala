@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -44,7 +44,7 @@ private[ws] object FrameLogger {
       val num = math.min(maxBytes, bytes.size)
       val ellipsis = if (num < bytes.size) s" [... ${bytes.size - num} more bytes]" else ""
       val first = bytes.take(num)
-      val h = first.map(_ formatted "%02x").mkString(" ")
+      val h = first.map("%02x" format _).mkString(" ")
       val ascii = first.map(LogByteStringTools.asASCII).mkString
       s"$WHITE$h$RESET | $WHITE$ascii$RESET$ellipsis"
     }

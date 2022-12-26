@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -52,7 +52,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
 
   // overloads for idiomatic Scala use
   def withWebsocketSettings(newValue: WebSocketSettings): ClientConnectionSettings = self.copy(websocketSettings = newValue)
-  def withWebsocketRandomFactory(newValue: () => Random): ClientConnectionSettings = withWebsocketSettings(websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+  def withWebsocketRandomFactory(newValue: () => Random): ClientConnectionSettings = withWebsocketSettings(self.websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
     override def get(): Random = newValue()
   }))
   def withUserAgentHeader(newValue: Option[`User-Agent`]): ClientConnectionSettings = self.copy(userAgentHeader = newValue)
@@ -66,7 +66,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def withTransport(newTransport: ClientTransport): ClientConnectionSettings = self.copy(transport = newTransport)
 
   // Scala-only lenses
-  def mapHttp2Settings(f: Http2ClientSettings => Http2ClientSettings): ClientConnectionSettings = withHttp2Settings(f(http2Settings))
+  def mapHttp2Settings(f: Http2ClientSettings => Http2ClientSettings): ClientConnectionSettings = withHttp2Settings(f(self.http2Settings))
 
   /**
    * Returns a new instance with the given local address set if the given override is `Some(address)`, otherwise

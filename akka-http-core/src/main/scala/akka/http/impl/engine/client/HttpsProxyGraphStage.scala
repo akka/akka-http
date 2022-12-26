@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -168,7 +168,7 @@ private final class HttpsProxyGraphStage(
         }
       }
 
-      override def onDownstreamFinish(): Unit = cancel(sslIn)
+      override def onDownstreamFinish(cause: Throwable): Unit = cancel(sslIn)
 
     })
 
@@ -177,7 +177,7 @@ private final class HttpsProxyGraphStage(
         pull(bytesIn)
       }
 
-      override def onDownstreamFinish(): Unit = cancel(bytesIn)
+      override def onDownstreamFinish(cause: Throwable): Unit = cancel(bytesIn)
 
     })
 

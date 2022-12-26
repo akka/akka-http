@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -40,7 +40,7 @@ import scala.concurrent.duration.FiniteDuration;
 import akka.actor.AbstractActor;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import static akka.pattern.PatternsCS.pipe;
+import static akka.pattern.Patterns.pipe;
 
 //#single-request-in-actor-example
 

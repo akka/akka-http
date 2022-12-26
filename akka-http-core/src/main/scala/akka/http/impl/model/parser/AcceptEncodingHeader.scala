@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -7,7 +7,7 @@ package akka.http.impl.model.parser
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 
-private[parser] trait AcceptEncodingHeader { this: Parser with CommonRules with CommonActions =>
+private[parser] trait AcceptEncodingHeader { this: Parser with CommonRules with CommonActions with StringBuilding =>
 
   // http://tools.ietf.org/html/rfc7231#section-5.3.4
   def `accept-encoding` = rule {
@@ -23,8 +23,8 @@ private[parser] trait AcceptEncodingHeader { this: Parser with CommonRules with 
     }
   }
 
-  def codings = rule { ws('*') ~ push(HttpEncodingRange.`*`) | token ~> getEncoding }
+  def codings = rule { ws('*') ~ push(HttpEncodingRange.`*`) | token ~> getEncoding _ }
 
-  private val getEncoding: String => HttpEncodingRange =
-    name => HttpEncodingRange(HttpEncodings.getForKeyCaseInsensitive(name) getOrElse HttpEncoding.custom(name))
+  private def getEncoding(name: String): HttpEncodingRange =
+    HttpEncodingRange(HttpEncodings.getForKeyCaseInsensitive(name) getOrElse HttpEncoding.custom(name))
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import static akka.http.javadsl.server.Directives.*;
 
+@SuppressWarnings("deprecation")
 public class CodingDirectivesTest extends JUnitRouteTest {
 
   @Test

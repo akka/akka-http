@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -190,7 +190,7 @@ object RejectionHandler {
         case MalformedRequestContentRejection(msg, throwable) => {
           val rejectionMessage = "The request content was malformed:\n" + msg
           throwable match {
-            case _: EntityStreamSizeException => rejectRequestEntityAndComplete((PayloadTooLarge, rejectionMessage))
+            case _: EntityStreamSizeException => rejectRequestEntityAndComplete((ContentTooLarge, rejectionMessage))
             case _                            => rejectRequestEntityAndComplete((BadRequest, rejectionMessage))
           }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -131,7 +131,7 @@ private[http] object ServerBuilder {
     system:       ClassicActorSystemProvider,
     materializer: Materializer
   ) extends ServerBuilder {
-    private val http: scaladsl.HttpExt = scaladsl.Http(system)
+    private val http: scaladsl.HttpExt = scaladsl.Http(system.classicSystem)
 
     def onInterface(newInterface: String): ServerBuilder = copy(interface = newInterface)
     def onPort(newPort: Int): ServerBuilder = copy(port = newPort)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -11,5 +11,5 @@ import akka.testkit._
 case class RouteTestTimeout(duration: FiniteDuration)
 
 object RouteTestTimeout {
-  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(1.second.dilated)
+  implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(1.second.dilated)
 }

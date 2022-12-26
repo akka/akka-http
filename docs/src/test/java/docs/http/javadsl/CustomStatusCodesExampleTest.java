@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -80,7 +80,7 @@ public class CustomStatusCodesExampleTest extends JUnitRouteTest {
     final HttpResponse response = Http.get(system)
       .singleRequest(HttpRequest
         .GET("http://" + host + ":" + port + "/"),
-        ConnectionContext.https(SSLContext.getDefault()),
+        ConnectionContext.httpsClient(SSLContext.getDefault()),
         clientSettings,
         system.log())
       .toCompletableFuture()

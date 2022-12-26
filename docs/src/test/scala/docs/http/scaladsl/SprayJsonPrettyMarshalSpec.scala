@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
@@ -20,8 +20,8 @@ class SprayJsonPrettyMarshalSpec extends RoutingSpec with CompileOnlySpec {
 
     object PrettyJsonFormatSupport {
       import DefaultJsonProtocol._
-      implicit val printer = PrettyPrinter
-      implicit val prettyPrintedItemFormat = jsonFormat2(PrettyPrintedItem)
+      implicit val printer: JsonPrinter = PrettyPrinter
+      implicit val prettyPrintedItemFormat: RootJsonFormat[PrettyPrintedItem] = jsonFormat2(PrettyPrintedItem.apply)
     }
 
     // use it wherever json (un)marshalling is needed

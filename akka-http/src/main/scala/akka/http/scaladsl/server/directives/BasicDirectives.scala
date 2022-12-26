@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -17,7 +17,7 @@ import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.Uri.Path
 import akka.util.ConstantFun.scalaIdentityFunction
-import akka.stream.{ ActorMaterializerHelper, Materializer }
+import akka.stream.Materializer
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.server.util.Tuple
 import akka.http.scaladsl.util.FastFuture
@@ -260,7 +260,7 @@ trait BasicDirectives {
    * @group basic
    */
   def extractActorSystem: Directive1[ActorSystem] = extract { ctx =>
-    ActorMaterializerHelper.downcast(ctx.materializer).system
+    ctx.materializer.system
   }
 
   /**
@@ -402,6 +402,8 @@ trait BasicDirectives {
           throw IllegalRequestException(
             StatusCodes.RequestTimeout,
             ErrorInfo(s"Request timed out after $timeout while waiting for entity data", "Consider increasing the timeout for toStrict"))
+        case EntityStreamException(info) =>
+          throw IllegalRequestException(StatusCodes.BadRequest, info)
       }.flatMap { strictEntity =>
         val newCtx = ctx.mapRequest(_.withEntity(strictEntity))
         inner(())(newCtx)

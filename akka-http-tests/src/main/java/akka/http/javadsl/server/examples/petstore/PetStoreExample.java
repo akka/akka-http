@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.examples.petstore;
@@ -12,7 +12,6 @@ import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.StatusCodes;
 //#imports
 import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
 
 import java.io.IOException;
 //#imports

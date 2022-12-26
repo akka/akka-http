@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http
@@ -10,6 +10,8 @@ package sse
 import akka.actor.ActorSystem
 import akka.stream.{ ActorMaterializer, Materializer }
 import org.scalatest.{ BeforeAndAfterAll, Suite }
+
+import scala.annotation.nowarn
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
@@ -18,6 +20,7 @@ trait BaseUnmarshallingSpec extends BeforeAndAfterAll { this: Suite =>
   protected implicit val system: ActorSystem =
     ActorSystem()
 
+  @nowarn("msg=deprecated")
   protected implicit val mat: Materializer =
     ActorMaterializer()
 

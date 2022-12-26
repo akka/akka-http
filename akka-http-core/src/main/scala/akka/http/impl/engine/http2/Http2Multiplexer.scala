@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -123,9 +123,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       /** Network pulls in new frames */
       def onPull(): Unit = updateState(_.onPull())
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         frameOutFinished()
-        super.onDownstreamFinish()
+        super.onDownstreamFinish(cause)
       }
 
       private var _state: MultiplexerState = Idle

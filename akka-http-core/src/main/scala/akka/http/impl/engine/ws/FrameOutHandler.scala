@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -66,6 +66,7 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
             setHandler(in, new WaitingForPeerCloseFrame())
             push(out, FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
           case Tick => pull(in) // ignore
+          case _    => throw new IllegalStateException("Unexpected element type") // compiler completeness check pleaser
         }
 
       override def onUpstreamFinish(): Unit = {

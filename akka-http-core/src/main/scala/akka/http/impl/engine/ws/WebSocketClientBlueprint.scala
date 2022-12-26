@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -166,5 +166,5 @@ private[http] object WebSocketClientBlueprint {
   def simpleTls: BidiFlow[SslTlsInbound, ByteString, ByteString, SendBytes, NotUsed] =
     BidiFlow.fromFlowsMat(
       Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) => bytes },
-      Flow[ByteString].map(SendBytes))(Keep.none)
+      Flow[ByteString].map(SendBytes(_)))(Keep.none)
 }

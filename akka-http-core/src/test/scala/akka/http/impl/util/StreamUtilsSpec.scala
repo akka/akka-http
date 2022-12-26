@@ -1,21 +1,19 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
 
-import akka.stream.{ ActorMaterializer, Attributes }
+import akka.stream.Attributes
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
 
 class StreamUtilsSpec extends AkkaSpec with ScalaFutures {
-  implicit val materializer = ActorMaterializer()
 
   "captureTermination" should {
     "signal completion" when {

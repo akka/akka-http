@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
 
 import java.util.function.Supplier
-
 import akka.http.javadsl.server.Route
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.annotation.nowarn
+
+@nowarn("msg=never used")
 class RouteJavaScalaDslConversionSpec extends AnyWordSpec {
 
   "Routes" must {

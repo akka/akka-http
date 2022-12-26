@@ -1,0 +1,16 @@
+# Popped up in 10.4.0 mima validation, changed in #3837 should be excluded by 10.2.4.backwards.excludes/3811-http-internals.excludes but isn't for some reason
+# so filter again, all internal
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#Closed.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#CollectingIncomingData.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#HalfClosedLocal.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#IncomingStreamBuffer.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#HalfClosedLocalWaitingForPeerStream.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#HalfClosedRemoteSendingData.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#HalfClosedRemoteWaitingForOutgoingStream.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#Idle.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#Open.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#OpenSendingData.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#OpenReceivingDataFirst.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#OutStream.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#OutStreamImpl.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#Open.this")

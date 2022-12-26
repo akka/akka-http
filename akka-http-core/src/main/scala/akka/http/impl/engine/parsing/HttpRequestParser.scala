@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -191,7 +191,7 @@ private[http] final class HttpRequestParser(
               Handshake.Server.websocketUpgrade(headers, hostHeaderPresent, websocketSettings, headerParser.log) match {
                 case OptionVal.Some(upgrade) =>
                   RequestStart(method, uri, protocol, attributes.updated(AttributeKeys.webSocketUpgrade, upgrade), upgrade :: allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
-                case OptionVal.None =>
+                case _ => // OptionVal.None
                   RequestStart(method, uri, protocol, attributes, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
               }
             } else RequestStart(method, uri, protocol, attributes, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
@@ -209,7 +209,7 @@ private[http] final class HttpRequestParser(
             setCompletionHandling(HttpMessageParser.CompletionOk)
             startNewMessage(input, bodyStart)
           } else if (!method.isEntityAccepted) {
-            failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
+            failMessageStart(UnprocessableContent, s"${method.name} requests must not have an entity")
           } else if (contentLength <= input.size - bodyStart) {
             val cl = contentLength.toInt
             emitRequestStart(strictEntity(cth, input, bodyStart, cl))
@@ -221,7 +221,7 @@ private[http] final class HttpRequestParser(
           }
         } else {
           if (!method.isEntityAccepted) {
-            failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
+            failMessageStart(UnprocessableContent, s"${method.name} requests must not have an entity")
           } else {
             if (clh.isEmpty) {
               emitRequestStart(chunkedEntity(cth), headers)

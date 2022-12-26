@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.marshallers.jackson;
@@ -19,10 +19,11 @@ import akka.util.ByteString;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 public class Jackson {
   private static final ObjectMapper defaultObjectMapper =
-    new ObjectMapper().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
+      JsonMapper.builder().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY).build();
 
   /**
    * INTERNAL API

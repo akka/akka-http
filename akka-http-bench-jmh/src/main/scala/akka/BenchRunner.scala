@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -25,7 +25,7 @@ object BenchRunner {
     val opts = new CommandLineOptions(args2: _*)
     val results = new Runner(opts).run()
 
-    val report = results.asScala.map { result: RunResult =>
+    val report = results.asScala.map { (result: RunResult) =>
       val bench = result.getParams.getBenchmark
       val params = result.getParams.getParamsKeys.asScala.map(key => s"$key=${result.getParams.getParam(key)}").mkString("_")
       val score = result.getAggregatedResult.getPrimaryResult.getScore.round

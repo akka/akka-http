@@ -1,16 +1,14 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
 
 import java.util.OptionalLong
-
 import language.implicitConversions
 import java.io.File
 import java.nio.file.{ Files, Path }
 import java.lang.{ Iterable => JIterable }
-
 import scala.util.control.NonFatal
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -28,10 +26,10 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
-
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.{ DoNotInherit, InternalApi }
 
+import scala.annotation.nowarn
 import scala.compat.java8.FutureConverters
 
 /**
@@ -76,7 +74,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
    */
   def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] = {
     import akka.http.impl.util._
-    val config = fm.asInstanceOf[ActorMaterializer].system.settings.config
+    val config = fm.system.settings.config
     toStrict(timeout, config.getPossiblyInfiniteBytes("akka.http.parsing.max-to-strict-bytes"))
   }
 
@@ -291,9 +289,9 @@ object HttpEntity {
   implicit def apply(bytes: Array[Byte]): HttpEntity.Strict = apply(ContentTypes.`application/octet-stream`, bytes)
   implicit def apply(data: ByteString): HttpEntity.Strict = apply(ContentTypes.`application/octet-stream`, data)
   def apply(contentType: ContentType.NonBinary, string: String): HttpEntity.Strict =
-    if (string.isEmpty) empty(contentType) else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
+    if (string.isEmpty) empty(contentType) else apply(contentType, ByteString.fromArrayUnsafe(string.getBytes(contentType.charset.nioCharset)))
   def apply(contentType: ContentType.WithFixedCharset, string: String): HttpEntity.Strict =
-    if (string.isEmpty) empty(contentType) else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
+    if (string.isEmpty) empty(contentType) else apply(contentType, ByteString.fromArrayUnsafe(string.getBytes(contentType.charset.nioCharset)))
   def apply(contentType: ContentType, bytes: Array[Byte]): HttpEntity.Strict =
     if (bytes.length == 0) empty(contentType) else apply(contentType, ByteString(bytes))
   def apply(contentType: ContentType, data: ByteString): HttpEntity.Strict =
@@ -634,12 +632,13 @@ object HttpEntity {
     override val shape = FlowShape.of(in, out)
     override protected val initialAttributes: Attributes = Limitable.limitableDefaults
 
-    override def createLogic(attributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+    override def createLogic(_attributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
       private var maxBytes = -1L
       private var bytesLeft = Long.MaxValue
 
+      @nowarn("msg=deprecated") // we need getFirst semantics
       override def preStart(): Unit = {
-        attributes.getFirst[SizeLimit] match {
+        _attributes.getFirst[SizeLimit] match {
           case Some(limit: SizeLimit) if limit.isDisabled =>
           // "no limit"
           case Some(SizeLimit(bytes, cl @ Some(contentLength))) =>

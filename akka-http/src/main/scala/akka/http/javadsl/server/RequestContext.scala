@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -49,18 +49,18 @@ class RequestContext private (val delegate: scaladsl.server.RequestContext) {
 
   def complete[T](value: T, marshaller: Marshaller[T, HttpResponse]): CompletionStage[RouteResult] = {
     delegate.complete(ToResponseMarshallable(value)(marshaller))
-      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
+      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.parasitic).toJava
   }
 
   def completeWith(response: HttpResponse): CompletionStage[RouteResult] = {
     delegate.complete(response.asScala)
-      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
+      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.parasitic).toJava
   }
 
   @varargs def reject(rejections: Rejection*): CompletionStage[RouteResult] = {
     val scalaRejections = rejections.map(_.asScala)
     delegate.reject(scalaRejections: _*)
-      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
+      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.parasitic).toJava
   }
 
   def redirect(uri: Uri, redirectionType: StatusCode): CompletionStage[RouteResult] = {
@@ -69,7 +69,7 @@ class RequestContext private (val delegate: scaladsl.server.RequestContext) {
 
   def fail(error: Throwable): CompletionStage[RouteResult] =
     delegate.fail(error)
-      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
+      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.parasitic).toJava
 
   def withRequest(req: HttpRequest): RequestContext = wrap(delegate.withRequest(req.asScala))
   def withExecutionContext(ec: ExecutionContextExecutor): RequestContext = wrap(delegate.withExecutionContext(ec))

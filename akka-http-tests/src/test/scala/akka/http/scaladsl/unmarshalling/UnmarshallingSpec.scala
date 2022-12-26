@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -11,7 +11,6 @@ import org.scalatest.BeforeAndAfterAll
 import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaType.WithFixedCharset
-import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
@@ -23,8 +22,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class UnmarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
-  implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   override val testConfig = ConfigFactory.load()
 

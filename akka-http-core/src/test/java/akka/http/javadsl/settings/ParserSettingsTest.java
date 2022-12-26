@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings;
@@ -10,6 +10,7 @@ import org.scalatestplus.junit.JUnitSuite;
 
 public class ParserSettingsTest extends JUnitSuite {
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testCreateWithActorSystem() {
         ActorSystem sys = ActorSystem.create("test");

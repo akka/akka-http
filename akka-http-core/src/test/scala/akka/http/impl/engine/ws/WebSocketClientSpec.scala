@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -358,7 +358,7 @@ class WebSocketClientSpec extends AkkaSpecWithMaterializer("akka.http.client.web
       val netIn = TestPublisher.probe[ByteString]()
 
       val graph =
-        RunnableGraph.fromGraph(GraphDSL.create(clientLayer) { implicit b => client =>
+        RunnableGraph.fromGraph(GraphDSL.createGraph(clientLayer) { implicit b => client =>
           import GraphDSL.Implicits._
           Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
           client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) => x } ~> netOut.sink

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -8,10 +8,9 @@ import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
 import javax.net.ssl._
 import akka.actor._
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.http2.Http2
@@ -35,6 +34,7 @@ import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.util.ManifestInfo
+
 import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
@@ -55,7 +55,7 @@ import scala.concurrent.duration._
  */
 @nowarn("msg=DefaultSSLContextCreation in package scaladsl is deprecated")
 @DoNotInherit
-class HttpExt private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
+class HttpExt @InternalStableApi /* constructor signature is hardcoded in Telemetry */ private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
 
   akka.http.Version.check(system.settings.config)
@@ -127,13 +127,13 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         .watchTermination() { (termWatchBefore, termWatchAfter) =>
           // flag termination when the user handler has gotten (or has emitted) termination
           // signals in both directions
-          termWatchBefore.flatMap(_ => termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
+          termWatchBefore.flatMap(_ => termWatchAfter)(ExecutionContexts.parasitic)
         }
         .joinMat(baseFlow)(Keep.both)
     )
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
-    Tcp()
+    Tcp(system)
       .bind(
         interface,
         port,
@@ -268,7 +268,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
               // See https://github.com/akka/akka/issues/17992
               case NonFatal(ex) => Done
-            }(ExecutionContexts.sameThreadExecutionContext)
+            }(ExecutionContexts.parasitic)
         } catch {
           case NonFatal(e) =>
             log.error(e, "Could not materialize handling flow for {}", incoming)
@@ -809,7 +809,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     // The user should keep control over how much parallelism is required.
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
-      case (request, userContext) => poolInterface(request).transform(response => Success(response -> userContext))(ExecutionContexts.sameThreadExecutionContext)
+      case (request, userContext) => poolInterface(request).transform(response => Success(response -> userContext))(ExecutionContexts.parasitic)
     }
   }
 
@@ -820,6 +820,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private[http] def sslTlsServerStage(connectionContext: ConnectionContext) =
     sslTlsStage(connectionContext, Server, None)
 
+  @nowarn("msg=deprecated")
   private def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)]) =
     connectionContext match {
       case hctx: HttpsConnectionContext =>
@@ -924,7 +925,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * Note: rather than unbinding explicitly you can also use [[addToCoordinatedShutdown]] to add this task to Akka's coordinated shutdown.
      */
     def unbind(): Future[Done] =
-      unbindAction().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+      unbindAction().map(_ => Done)(ExecutionContexts.parasitic)
 
     /**
      * Triggers "graceful" termination request being handled on this connection.
@@ -973,7 +974,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
       require(hardDeadline > Duration.Zero, "deadline must be greater than 0, was: " + hardDeadline)
 
       _whenTerminationSignalIssued.trySuccess(hardDeadline.fromNow)
-      val terminated = unbindAction().flatMap(_ => terminateAction(hardDeadline))(ExecutionContexts.sameThreadExecutionContext)
+      val terminated = unbindAction().flatMap(_ => terminateAction(hardDeadline))(ExecutionContexts.parasitic)
       _whenTerminated.completeWith(terminated)
       whenTerminated
     }
@@ -1013,7 +1014,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
         unbind()
       }
       shutdown.addTask(CoordinatedShutdown.PhaseServiceRequestsDone, s"http-terminate-${localAddress}") { () =>
-        terminate(hardTerminationDeadline).map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+        terminate(hardTerminationDeadline).map(_ => Done)(ExecutionContexts.parasitic)
       }
       this
     }
@@ -1105,7 +1106,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   def apply()(implicit system: ClassicActorSystemProvider): HttpExt = super.apply(system)
   override def apply(system: ActorSystem): HttpExt = super.apply(system)
 
-  def lookup() = Http
+  def lookup = Http
 
   def createExtension(system: ExtendedActorSystem): HttpExt =
     new HttpExt(system.settings.config getConfig "akka.http")(system)
@@ -1160,7 +1161,7 @@ trait DefaultSSLContextCreation {
   def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     val config = sslConfig.config
 
-    val log = Logging(system, getClass)
+    val log = Logging(system, getClass)(LogSource.fromClass)
     val mkLogger = new AkkaLoggerFactory(system)
 
     // initial ssl context!

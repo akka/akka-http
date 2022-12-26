@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -18,6 +18,8 @@ import scala.annotation.nowarn
 
 @nowarn("msg=use remote-address-attribute instead")
 class MiscDirectivesSpec extends RoutingSpec {
+
+  import akka.http.ccompat.ImplicitUtils._
 
   "the extractClientIP directive" should {
     "extract from a X-Forwarded-For header" in {
@@ -105,7 +107,7 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
 
       Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.PayloadTooLarge
+        status shouldEqual StatusCodes.ContentTooLarge
         entityAs[String] should include("exceeded size limit")
       }
     }
@@ -123,7 +125,7 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
 
       Post("/abc", formDataOfSize(128)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.PayloadTooLarge
+        status shouldEqual StatusCodes.ContentTooLarge
         responseAs[String] shouldEqual "The request content was malformed:\n" +
           "EntityStreamSizeException: incoming entity size (134) " +
           "exceeded size limit (64 bytes)! " +
@@ -148,7 +150,7 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
 
       Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.PayloadTooLarge
+        status shouldEqual StatusCodes.ContentTooLarge
         entityAs[String] should include("exceeded size limit")
       }
 
@@ -166,7 +168,7 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
 
       Post("/abc", entityOfSize(401)) ~> Route.seal(route2) ~> check {
-        status shouldEqual StatusCodes.PayloadTooLarge
+        status shouldEqual StatusCodes.ContentTooLarge
         entityAs[String] should include("exceeded size limit")
       }
     }
