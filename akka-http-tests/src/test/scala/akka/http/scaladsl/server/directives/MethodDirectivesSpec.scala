@@ -8,9 +8,6 @@ import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, StatusCodes, HttpMet
 import akka.http.scaladsl.server._
 import akka.stream.scaladsl.Source
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-
 class MethodDirectivesSpec extends RoutingSpec {
 
   "get | put" should {
@@ -41,7 +38,7 @@ class MethodDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
 
         val lengthF = response._3.dataBytes.runFold(0)((c, _) => c + 1)
-        val length = Await.result(lengthF, Duration(100, "millis"))
+        val length = lengthF.futureValue
         length shouldEqual 0
       }
     }
