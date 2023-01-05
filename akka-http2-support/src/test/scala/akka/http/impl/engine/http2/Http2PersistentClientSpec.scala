@@ -260,8 +260,8 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
           // need some demand on response side, otherwise, no requests will be pulled in
           client.responsesIn.request(1)
           if (withBackoff) {
-            // not immediate when using backoff
-            client.responsesIn.expectNoMessage(clientSettings.http2Settings.baseConnectionBackoff / 2)
+            // not immediate when using backoff, 4 retries before failing, backoff is 300-800ms (so at least 1.2s)
+            client.responsesIn.expectNoMessage(clientSettings.http2Settings.baseConnectionBackoff * 4)
           }
           client.responsesIn.expectError()
           client.requestsOut.expectCancellation()
