@@ -19,7 +19,7 @@ object Dependencies {
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
 
-  val scalaTestVersion = "3.2.9"
+  val scalaTestVersion = "3.2.12"
   val specs2Version = "4.10.6"
   val scalaCheckVersion = "1.15.4"
 
