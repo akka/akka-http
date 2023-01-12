@@ -234,7 +234,7 @@ private[http] class HttpResponseRendererFactory(
           }
 
           def renderContentLengthHeader(contentLength: Long) =
-            if (status.allowsEntity) r ~~ ContentLengthBytes ~~ contentLength ~~ CrLf else r
+            if (ctx.requestMethod.contentLengthAllowed(status)) r ~~ ContentLengthBytes ~~ contentLength ~~ CrLf else r
 
           def headersAndEntity(entityBytes: => Source[ByteString, Any]): StrictOrStreamed =
             if (noEntity) {

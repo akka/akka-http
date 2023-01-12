@@ -58,7 +58,32 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
         }
       }
 
-      "status 304 and a few headers" in new TestSetup() {
+      "status 204 and a few headers (does not add content-length)" in new TestSetup() {
+        HttpResponse(204, List(RawHeader("X-Fancy", "of course"), Age(0))) should renderTo {
+          """HTTP/1.1 204 No Content
+            |X-Fancy: of course
+            |Age: 0
+            |Server: akka-http/1.0.0
+            |Date: Thu, 25 Aug 2011 09:10:29 GMT
+            |
+            |"""
+        }
+      }
+
+      "status 205 and a few headers (adds content-length)" in new TestSetup() {
+        HttpResponse(205, List(RawHeader("X-Fancy", "of course"), Age(0))) should renderTo {
+          """HTTP/1.1 205 Reset Content
+            |X-Fancy: of course
+            |Age: 0
+            |Server: akka-http/1.0.0
+            |Date: Thu, 25 Aug 2011 09:10:29 GMT
+            |Content-Length: 0
+            |
+            |"""
+        }
+      }
+
+      "status 304 and a few headers (does not add content-length)" in new TestSetup() {
         HttpResponse(304, List(RawHeader("X-Fancy", "of course"), Age(0))) should renderTo {
           """HTTP/1.1 304 Not Modified
             |X-Fancy: of course
@@ -69,6 +94,7 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
             |"""
         }
       }
+
       "a custom status code and no headers" in new TestSetup() {
         HttpResponse(ServerOnTheMove) should renderTo {
           """HTTP/1.1 330 Server on the move
@@ -97,6 +123,18 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
         override def currentTimeMillis() = initial + extraMillis
       }
 
+      "no Content-Length on CONNECT method" in new TestSetup() {
+        ResponseRenderingContext(
+          requestMethod = HttpMethods.CONNECT,
+          response = HttpResponse(headers = List(Age(30), Connection("Keep-Alive")))) should renderTo(
+            """HTTP/1.1 200 OK
+              |Age: 30
+              |Server: akka-http/1.0.0
+              |Date: Thu, 25 Aug 2011 09:10:29 GMT
+              |
+              |""", close = false)
+      }
+
       "to a transparent HEAD request (Strict response entity)" in new TestSetup() {
         ResponseRenderingContext(
           requestMethod = HttpMethods.HEAD,
@@ -108,7 +146,6 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
               |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
               |Content-Type: text/plain; charset=UTF-8
-              |Content-Length: 23
               |
               |""", close = false)
       }
@@ -159,7 +196,6 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
               |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
               |Content-Type: text/plain; charset=UTF-8
-              |Content-Length: 100
               |
               |""", close = false)
       }
@@ -661,7 +697,7 @@ class ResponseRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfter
                  |Server: akka-http/1.0.0
                  |Date: Thu, 25 Aug 2011 09:10:29 GMT
                  |${renCH.fold("")(_.toString + "\n")}Content-Type: text/plain; charset=UTF-8
-                 |${if (resCD) "" else "Content-Length: 6\n"}
+                 |${if (headReq || resCD) "" else "Content-Length: 6\n"}
                  |${if (headReq) "" else "ENTITY"}""", close))
     }
   }

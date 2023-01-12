@@ -46,7 +46,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
   implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, requestEntityAcceptance = Expected)
+  val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, requestEntityAcceptance = Expected, contentLengthAllowed = true)
 
   s"The request parsing logic should (mode: $mode)" - {
     "properly parse a request" - {

@@ -1,4 +1,12 @@
+# IntelliJ
 /.idea
+
+# VS Code
+**/metals.sbt
+**/.bloop
+.metals
+settings.json
+
 .DS_Store
 target
 
