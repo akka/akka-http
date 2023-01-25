@@ -33,7 +33,7 @@ object Http2ServerTest extends App {
     akka.actor.serialize-messages = off
     #akka.actor.default-dispatcher.throughput = 1000
     akka.actor.default-dispatcher.fork-join-executor.parallelism-max=8
-    akka.http.server.preview.enable-http2 = true
+    akka.http.server.enable-http2 = true
                                                    """)
   implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
   implicit val ec: ExecutionContext = system.dispatcher

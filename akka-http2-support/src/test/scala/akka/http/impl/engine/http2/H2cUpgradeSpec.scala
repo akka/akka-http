@@ -17,7 +17,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class H2cUpgradeSpec extends AkkaSpecWithMaterializer("""
-    akka.http.server.preview.enable-http2 = on
+    akka.http.server.enable-http2 = on
     akka.http.server.http2.log-frames = on
   """) {
 
