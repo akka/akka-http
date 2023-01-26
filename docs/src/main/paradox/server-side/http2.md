@@ -1,18 +1,11 @@
-# Server-Side HTTP/2 (Preview)
-
-@@@ warning
-
-Server-Side HTTP/2 support in akka-http is currently available as a preview.
-This means it is ready to be evaluated, but the APIs and behavior are likely to change.
-
-@@@
+# Server-Side HTTP/2
 
 ## Enable HTTP/2 support
 
 HTTP/2 can then be enabled through configuration:
 
 ```
-akka.http.server.preview.enable-http2 = on
+akka.http.server.enable-http2 = on
 ```
 
 ## Use `newServerAt(...).bind()` and HTTPS

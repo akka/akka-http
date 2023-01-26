@@ -56,6 +56,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def terminationDeadlineExceededResponse: HttpResponse
   def parsingErrorHandler: String
   def streamCancellationDelay: FiniteDuration
+  def http2Enabled: Boolean
 
   /* Java APIs */
 
@@ -110,6 +111,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
     self.copy(terminationDeadlineExceededResponse = response.asScala)
   override def withParsingErrorHandler(newValue: String): ServerSettings = self.copy(parsingErrorHandler = newValue)
   override def withStreamCancellationDelay(newValue: FiniteDuration): ServerSettings = self.copy(streamCancellationDelay = newValue)
+  override def withHttp2Enabled(enabled: Boolean): ServerSettings = self.copy(http2Enabled = enabled)
 
   // overloads for Scala idiomatic use
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue)
@@ -131,7 +133,6 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def mapPreviewServerSettings(f: PreviewServerSettings => PreviewServerSettings): ServerSettings = withPreviewServerSettings(f(this.previewServerSettings))
   def mapWebsocketSettings(f: WebSocketSettings => WebSocketSettings): ServerSettings = withWebsocketSettings(f(this.websocketSettings))
   def mapTimeouts(f: ServerSettings.Timeouts => ServerSettings.Timeouts): ServerSettings = withTimeouts(f(this.timeouts))
-
   /**
    * INTERNAL API
    *

@@ -19,11 +19,13 @@ import com.typesafe.config.Config
 abstract class PreviewServerSettings private[akka] () extends akka.http.javadsl.settings.PreviewServerSettings {
   self: PreviewServerSettingsImpl =>
 
+  @deprecated(message = "Use ServerSettings.http2Enabled instead", since = "10.5.0")
   override def enableHttp2: Boolean
 
   // --
 
   // override for more specific return type
+  @deprecated(message = "Use ServerSettings.withHttp2Enabled instead", since = "10.5.0")
   override def withEnableHttp2(newValue: Boolean): PreviewServerSettings = self.copy(enableHttp2 = newValue)
 
 }
