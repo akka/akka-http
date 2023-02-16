@@ -70,7 +70,7 @@ private[http2] object FrameLogger {
         case GoAwayFrame(lastStreamId, errorCode, debug) =>
           LogEntry(0, "GOAY", s"lastStreamId = $lastStreamId, errorCode = $errorCode, debug = ${debug.utf8String}")
 
-        case ParsedHeadersFrame(streamId, endStream, kvPairs, prio) =>
+        case ParsedHeadersFrame(streamId, endStream, kvPairs, prio, _) =>
           val prioInfo = if (prio.isDefined) display(entryForFrame(prio.get)) + " " else ""
           val kvInfo = kvPairs.map {
             case (key, value) => s"$key -> $value"

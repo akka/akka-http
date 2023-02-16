@@ -211,7 +211,7 @@ private[http] object Http2Blueprint {
    *
    * To make use of parallelism requests and responses need to be associated (other than by ordering), suggestion
    * is to add a special (virtual) header containing the streamId (or any other kind of token) is added to the HttRequest
-   * that must be reproduced in an HttpResponse. This can be done automatically for the `bind`` API but for
+   * that must be reproduced in an HttpResponse. This can be done automatically for the `bind` API but for
    * `bindFlow` the user needs to take of this manually.
    */
   def httpLayer(settings: ServerSettings, log: LoggingAdapter, dateHeaderRendering: DateHeaderRendering): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
@@ -220,12 +220,14 @@ private[http] object Http2Blueprint {
     // HttpHeaderParser is not thread safe and should not be called concurrently,
     // the internal trie, however, has built-in protection and will do copy-on-write
     val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log)
-    BidiFlow.fromFlows(
-      Flow[HttpResponse].map(new ResponseRendering(settings, log, dateHeaderRendering)),
-      Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs =>
-        val headerParser = masterHttpHeaderParser.createShallowCopy()
-        RequestParsing.parseRequest(headerParser, settings, attrs)
-      }))
+    RequestErrorFlow().atop(
+      BidiFlow.fromFlows(
+        Flow[HttpResponse].map(new ResponseRendering(settings, log, dateHeaderRendering)),
+        Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs =>
+          val headerParser = masterHttpHeaderParser.createShallowCopy()
+          RequestParsing.parseRequest(headerParser, settings, attrs)
+        }))
+    )
   }
 
   /**

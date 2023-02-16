@@ -6,7 +6,6 @@ package akka.http.impl.engine.http2
 
 import javax.net.ssl.SSLSession
 import akka.annotation.InternalApi
-import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model
@@ -16,10 +15,11 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.util.ByteString
 import akka.util.OptionVal
-import scala.annotation.nowarn
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
+import scala.util.control.NoStackTrace
 
 /**
  * INTERNAL API
@@ -27,8 +27,12 @@ import scala.collection.immutable.VectorBuilder
 @InternalApi
 private[http2] object RequestParsing {
 
+  sealed trait ParseRequestResult
+  final case class OkRequest(request: HttpRequest) extends ParseRequestResult
+  final case class BadRequest(info: ErrorInfo, streamId: Int) extends ParseRequestResult
+
   @nowarn("msg=use remote-address-attribute instead")
-  def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, streamAttributes: Attributes): Http2SubStream => HttpRequest = {
+  def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, streamAttributes: Attributes): Http2SubStream => ParseRequestResult = {
 
     val remoteAddressHeader: Option[`Remote-Address`] =
       if (serverSettings.remoteAddressHeader) {
@@ -145,17 +149,17 @@ private[http2] object RequestParsing {
               if (contentType.isEmpty)
                 rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, OptionVal.Some(ContentType.get(value)), contentLength, cookies, true, headers)
               else
-                malformedRequest("HTTP message must not contain more than one content-type header")
+                parseError("HTTP message must not contain more than one content-type header", "content-type")
 
             case ":status" =>
-              malformedRequest("Pseudo-header ':status' is for responses only; it cannot appear in a request")
+              parseError("Pseudo-header ':status' is for responses only; it cannot appear in a request", ":status")
 
             case "content-length" =>
               if (contentLength == -1) {
                 val contentLengthValue = ContentLength.get(value).toLong
-                if (contentLengthValue < 0) malformedRequest("HTTP message must not contain a negative content-length header")
+                if (contentLengthValue < 0) parseError("HTTP message must not contain a negative content-length header", "content-length")
                 rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLengthValue, cookies, true, headers)
-              } else malformedRequest("HTTP message must not contain more than one content-length header")
+              } else parseError("HTTP message must not contain more than one content-length header", "content-length")
 
             case "cookie" =>
               // Compress cookie headers as described here https://tools.ietf.org/html/rfc7540#section-8.1.2.5
@@ -172,10 +176,20 @@ private[http2] object RequestParsing {
           }
         }
 
-      val incomingHeaders = subStream.initialHeaders.keyValuePairs.toIndexedSeq
-      if (incomingHeaders.size > serverSettings.parserSettings.maxHeaderCount)
-        malformedRequest(s"HTTP message contains more than the configured limit of ${serverSettings.parserSettings.maxHeaderCount} headers")
-      else rec(incomingHeaders, 0)
+      try {
+        subStream.initialHeaders.headerParseErrorDetails match {
+          case Some(details) =>
+            // header errors already found in decompression
+            BadRequest(details, subStream.streamId)
+          case None =>
+            val incomingHeaders = subStream.initialHeaders.keyValuePairs.toIndexedSeq
+            if (incomingHeaders.size > serverSettings.parserSettings.maxHeaderCount)
+              parseError(s"HTTP message contains more than the configured limit of ${serverSettings.parserSettings.maxHeaderCount} headers")
+            else OkRequest(rec(incomingHeaders, 0))
+        }
+      } catch {
+        case bre: ParsingException => BadRequest(bre.info, subStream.streamId)
+      }
     }
   }
 
@@ -190,24 +204,29 @@ private[http2] object RequestParsing {
   }
 
   private[http2] def checkRequiredPseudoHeader(name: String, value: AnyRef): Unit =
-    if (value eq null) malformedRequest(s"Mandatory pseudo-header '$name' missing")
+    if (value eq null) parseError(s"Mandatory pseudo-header '$name' missing", name)
   private[http2] def checkUniquePseudoHeader(name: String, value: AnyRef): Unit =
-    if (value ne null) malformedRequest(s"Pseudo-header '$name' must not occur more than once")
+    if (value ne null) parseError(s"Pseudo-header '$name' must not occur more than once", name)
   private[http2] def checkNoRegularHeadersBeforePseudoHeader(name: String, seenRegularHeader: Boolean): Unit =
-    if (seenRegularHeader) malformedRequest(s"Pseudo-header field '$name' must not appear after a regular header")
-  private[http2] def malformedRequest(msg: String): Nothing =
-    throw new Http2ProtocolException(s"Malformed request: $msg")
+    if (seenRegularHeader) parseError(s"Pseudo-header field '$name' must not appear after a regular header", name)
+
   private[http2] def validateHeader(httpHeader: HttpHeader) = httpHeader.lowercaseName match {
     case "connection" =>
       // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
-      malformedRequest("Header 'Connection' must not be used with HTTP/2")
+      parseError("Header 'Connection' must not be used with HTTP/2", "Connection")
     case "transfer-encoding" =>
       // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
-      malformedRequest("Header 'Transfer-Encoding' must not be used with HTTP/2")
+      parseError("Header 'Transfer-Encoding' must not be used with HTTP/2", "Transfer-encoding")
     case "te" =>
       // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
-      if (httpHeader.value.compareToIgnoreCase("trailers") != 0) malformedRequest(s"Header 'TE' must not contain value other than 'trailers', value was '${httpHeader.value}")
+      if (httpHeader.value.compareToIgnoreCase("trailers") != 0) parseError(s"Header 'TE' must not contain value other than 'trailers', value was '${httpHeader.value}", "TE")
     case _ => // ok
   }
+
+  private[http2] def parseError(summary: String, headerName: String): Nothing =
+    throw new ParsingException(ErrorInfo(s"Malformed request: $summary").withErrorHeaderName(headerName)) with NoStackTrace
+
+  private def parseError(summary: String): Nothing =
+    throw new ParsingException(ErrorInfo(s"Malformed request: $summary")) with NoStackTrace
 
 }

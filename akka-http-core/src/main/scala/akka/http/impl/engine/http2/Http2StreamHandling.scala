@@ -271,7 +271,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
       nextStateStream:       IncomingStreamBuffer => StreamState,
       correlationAttributes: Map[AttributeKey[_], _]             = Map.empty): StreamState =
       event match {
-        case frame @ ParsedHeadersFrame(streamId, endStream, _, _) =>
+        case frame @ ParsedHeadersFrame(streamId, endStream, _, _, _) =>
           if (endStream) {
             dispatchSubstream(frame, Left(ByteString.empty), correlationAttributes)
             nextStateEmpty
@@ -778,7 +778,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
         case HttpEntity.LastChunk(_, headers) =>
           if (headers.nonEmpty && !trailer.isEmpty)
             log.warning("Found both an attribute with trailing headers, and headers in the `LastChunk`. This is not supported.")
-          trailer = OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer, shouldRenderAutoHeaders = false, dateHeaderRendering = DateHeaderRendering.Unavailable), None))
+          trailer = OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, HttpMessageRendering.renderHeaders(headers, log, isServer, shouldRenderAutoHeaders = false, dateHeaderRendering = DateHeaderRendering.Unavailable), None, None))
         case _ => throw new IllegalArgumentException("Unexpected stream element") // compiler completeness check pleaser
       }
 
