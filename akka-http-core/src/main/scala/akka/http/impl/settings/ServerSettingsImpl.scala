@@ -122,7 +122,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
       terminationDeadlineExceededResponseFrom(c),
       c.getString("parsing.error-handler"),
       c.getFiniteDuration("stream-cancellation-delay"),
-      c.getBoolean("enable-http2")
+      c.getBoolean("enable-http2") || c.getBoolean("preview.enable-http2")
     )
   }
 
