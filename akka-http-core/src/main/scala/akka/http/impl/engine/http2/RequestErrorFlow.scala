@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
