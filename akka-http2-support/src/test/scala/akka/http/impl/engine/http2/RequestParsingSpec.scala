@@ -13,10 +13,12 @@ import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.{ ByteString, OptionVal }
 import org.scalatest.{ Inside, Inspectors }
 import FrameEvent._
+import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.http2.RequestParsing.ParseRequestResult
 import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.AkkaSpecWithMaterializer
+import org.scalatest.exceptions.TestFailedException
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -71,7 +73,7 @@ class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspe
         case RequestParsing.BadRequest(info, _) => fail(s"Failed parsing request: $info")
       }
 
-    def parseExpectError[T](
+    def parseExpectError(
       keyValuePairs:  Seq[(String, String)],
       data:           Source[ByteString, Any] = Source.empty,
       attributes:     Attributes              = Attributes(),
@@ -80,6 +82,20 @@ class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspe
       parse(keyValuePairs, data, attributes, uriParsingMode, settings) match {
         case RequestParsing.OkRequest(req)      => fail("Unexpectedly succeeded parsing request")
         case RequestParsing.BadRequest(info, _) => info
+      }
+
+    def parseExpectProtocolError(
+      keyValuePairs:  Seq[(String, String)],
+      data:           Source[ByteString, Any] = Source.empty,
+      attributes:     Attributes              = Attributes(),
+      uriParsingMode: Uri.ParsingMode         = Uri.ParsingMode.Relaxed,
+      settings:       ServerSettings          = ServerSettings(system)): Http2ProtocolException =
+      try {
+        parse(keyValuePairs, data, attributes, uriParsingMode, settings)
+        fail("expected parsing to throw")
+      } catch {
+        case futureValueEx: TestFailedException if futureValueEx.getCause.isInstanceOf[Http2ProtocolException] =>
+          futureValueEx.getCause.asInstanceOf[Http2ProtocolException]
       }
 
     "follow RFC7540" should {
@@ -459,13 +475,13 @@ class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspe
       "reject requests without a mandatory pseudo-headers" in {
         val mandatoryPseudoHeaders = Seq(":method", ":scheme", ":path")
         forAll(mandatoryPseudoHeaders) { (name: String) =>
-          val info = parseExpectError(
+          val ex = parseExpectProtocolError(
             keyValuePairs = Vector(
               ":scheme" -> "https",
               ":method" -> "GET",
               ":path" -> "/"
             ).filter(_._1 != name))
-          info.summary should ===(s"Malformed request: Mandatory pseudo-header '$name' missing")
+          ex.getMessage should ===(s"Malformed request: Mandatory pseudo-header '$name' missing")
         }
       }
 
@@ -473,14 +489,14 @@ class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspe
         val pseudoHeaders = Seq(":method" -> "POST", ":scheme" -> "http", ":path" -> "/other", ":authority" -> "example.org")
         forAll(pseudoHeaders) {
           case (name: String, alternative: String) =>
-            val info = parseExpectError(
+            val ex = parseExpectProtocolError(
               keyValuePairs = Vector(
                 ":scheme" -> "https",
                 ":method" -> "GET",
                 ":authority" -> "akka.io",
                 ":path" -> "/"
               ) :+ (name -> alternative))
-            info.summary should ===(s"Malformed request: Pseudo-header '$name' must not occur more than once")
+            ex.getMessage should ===(s"Malformed request: Pseudo-header '$name' must not occur more than once")
         }
       }
 

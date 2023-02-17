@@ -204,9 +204,9 @@ private[http2] object RequestParsing {
   }
 
   private[http2] def checkRequiredPseudoHeader(name: String, value: AnyRef): Unit =
-    if (value eq null) parseError(s"Mandatory pseudo-header '$name' missing", name)
+    if (value eq null) protocolError(s"Mandatory pseudo-header '$name' missing")
   private[http2] def checkUniquePseudoHeader(name: String, value: AnyRef): Unit =
-    if (value ne null) parseError(s"Pseudo-header '$name' must not occur more than once", name)
+    if (value ne null) protocolError(s"Pseudo-header '$name' must not occur more than once")
   private[http2] def checkNoRegularHeadersBeforePseudoHeader(name: String, seenRegularHeader: Boolean): Unit =
     if (seenRegularHeader) parseError(s"Pseudo-header field '$name' must not appear after a regular header", name)
 
@@ -222,6 +222,10 @@ private[http2] object RequestParsing {
       if (httpHeader.value.compareToIgnoreCase("trailers") != 0) parseError(s"Header 'TE' must not contain value other than 'trailers', value was '${httpHeader.value}", "TE")
     case _ => // ok
   }
+
+  // parse errors lead to BadRequest response while Protocol
+  private[http2] def protocolError(summary: String): Nothing =
+    throw new Http2Compliance.Http2ProtocolException(s"Malformed request: $summary")
 
   private[http2] def parseError(summary: String, headerName: String): Nothing =
     throw new ParsingException(ErrorInfo(s"Malformed request: $summary").withErrorHeaderName(headerName)) with NoStackTrace
