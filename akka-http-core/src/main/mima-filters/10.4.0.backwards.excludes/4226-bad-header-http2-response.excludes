@@ -1,0 +1,6 @@
+# internals only
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.FrameEvent#ParsedHeadersFrame.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.FrameEvent#ParsedHeadersFrame.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.http2.FrameEvent$ParsedHeadersFrame$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.FrameEvent#ParsedHeadersFrame.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.http2.FrameEvent#ParsedHeadersFrame.unapply")
