@@ -49,8 +49,6 @@ private[http2] final class RequestErrorFlow extends GraphStage[BidiShape[HttpRes
         grab(requestIn) match {
           case RequestParsing.OkRequest(request) => push(requestOut, request)
           case notOk: RequestParsing.BadRequest =>
-            // FIXME is emit safe here?
-            // FIXME details vs summary?
             emit(responseOut, HttpResponse(StatusCodes.BadRequest, entity = notOk.info.summary).addAttribute(Http2.streamId, notOk.streamId))
             pull(requestIn)
         }
@@ -59,7 +57,6 @@ private[http2] final class RequestErrorFlow extends GraphStage[BidiShape[HttpRes
       override def onPull(): Unit = pull(requestIn)
     })
     setHandlers(responseIn, responseOut, new InHandler with OutHandler {
-      // FIXME did we detach so we need to check if we can push?
       override def onPush(): Unit = push(responseOut, grab(responseIn))
       override def onPull(): Unit = if (!hasBeenPulled(responseIn)) pull(responseIn)
     })
