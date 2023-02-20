@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2
 import akka.http.impl.engine.HttpIdleTimeoutException
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
-import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
+import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpProtocols, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -110,6 +110,17 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       clientRequestsOut.expectCancellation()
       // expect idle timeout exception to propagate to user
       clientResponsesIn.expectError() shouldBe a[HttpIdleTimeoutException]
+    }
+
+    "return bad request response when header parsing fails" in new TestSetup {
+      val badRequest = HttpRequest(
+        // easiest valid way to cause parsing to fail - unknown method
+        method = HttpMethod.custom("UNKNOWN_TO_SERVER"),
+        uri = "http://www.example.com/test"
+      )
+      sendClientRequest(badRequest)
+      val response = expectClientResponse()
+      response.status should be(StatusCodes.BadRequest)
     }
   }
 
