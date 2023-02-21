@@ -31,7 +31,6 @@ jobs:
 
       - name: Publish Artifacts to Sonatype / Maven
         run: |
-          mv .jvmopts-ghactions .jvmopts
           sbt ci-release
         env:
           CI_SONATYPE_RELEASE: "; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
