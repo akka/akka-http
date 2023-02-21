@@ -57,7 +57,6 @@ jobs:
 
       - name: Publish Documentation
         run: |
-          mv .jvmopts-ghactions .jvmopts
           eval "$(ssh-agent -s)" && echo $SCP_SECRET | base64 -d > /tmp/id_rsa && chmod 600 /tmp/id_rsa && ssh-add /tmp/id_rsa && sbt -Dakka.genjavadoc.enabled=true publishRsync
         env:
           SCP_SECRET: ${{ secrets.SCP_SECRET }}
