@@ -17,7 +17,7 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1") // for 
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.45")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.47")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.9.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.30")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.10.4")
