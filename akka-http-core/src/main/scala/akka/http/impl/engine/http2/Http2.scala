@@ -70,11 +70,13 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
       else if (connectionContext.isSecure) settings.defaultHttpsPort
       else settings.defaultHttpPort
 
+    val handlerWithErrorHandling = withErrorHandling(log, handler)
+
     val http1: HttpImplementation =
-      Flow[HttpRequest].mapAsync(settings.pipeliningLimit)(handleUpgradeRequests(handler, settings, log))
+      Flow[HttpRequest].mapAsync(settings.pipeliningLimit)(handleUpgradeRequests(handlerWithErrorHandling, settings, log))
         .joinMat(GracefulTerminatorStage(system, settings) atop http.serverLayer(settings, log = log))(Keep.right)
     val http2: HttpImplementation =
-      Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handler)(system.dispatcher)
+      Http2Blueprint.handleWithStreamIdHeader(settings.http2Settings.maxConcurrentStreams)(handlerWithErrorHandling)(system.dispatcher)
         .joinMat(Http2Blueprint.serverStackTls(settings, log, telemetry, Http().dateHeaderRendering))(Keep.right)
 
     val masterTerminator = new MasterServerTerminator(log)
@@ -114,6 +116,21 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
           timeout => masterTerminator.terminate(timeout)(fm.executionContext)
         ))(fm.executionContext)
       }.to(Sink.ignore).run()
+  }
+
+  private def withErrorHandling(log: LoggingAdapter, handler: HttpRequest => Future[HttpResponse]): HttpRequest => Future[HttpResponse] = { request =>
+    try {
+      handler(request).recover {
+        case NonFatal(ex) => handleHandlerError(log, ex)
+      }(ExecutionContexts.parasitic)
+    } catch {
+      case NonFatal(ex) => Future.successful(handleHandlerError(log, ex))
+    }
+  }
+
+  private def handleHandlerError(log: LoggingAdapter, ex: Throwable): HttpResponse = {
+    log.error(ex, "Internal server error, sending 500 response")
+    HttpResponse(StatusCodes.InternalServerError)
   }
 
   private def prepareServerAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) = {
