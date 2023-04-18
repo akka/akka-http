@@ -12,13 +12,15 @@ import org.reflections.scanners.{ MethodAnnotationsScanner, Scanners, TypeAnnota
 import org.reflections.util.{ ClasspathHelper, ConfigurationBuilder }
 import org.scalatest.Assertion
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.io.Source
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.annotation.nowarn
 
+@nowarn("msg=deprecated") // JavaConverters deprecated
 class ApiMayChangeDocCheckerSpec extends AnyWordSpec with Matchers {
+  import scala.collection.JavaConverters._
 
   def prettifyName(clazz: Class[_]): String = {
     clazz.getCanonicalName.replaceAll("\\$minus", "-").split("\\$")(0)
