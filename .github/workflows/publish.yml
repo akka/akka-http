@@ -35,6 +35,7 @@ jobs:
         env:
           CI_SONATYPE_RELEASE: "; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          PGP_PASSPHRASE: $${ secrets.PGP_PASSPHRASE }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
 
