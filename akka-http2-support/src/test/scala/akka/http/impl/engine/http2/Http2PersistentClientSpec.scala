@@ -44,7 +44,11 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
      akka.http.client.http2.completion-timeout=100ms
   """) with ScalaFutures {
   override def failOnSevereMessages: Boolean = true
-  private val notSevere = Set("ChannelReadable", "WriteAck")
+  private val notSevere = Set("ChannelReadable", "WriteAck",
+    // previous test case shutting stuff down race condition
+    // https://github.com/akka/akka-http/issues/4244
+    "Unexpected termination of TLS actor"
+  )
   override protected def isSevere(event: Logging.LogEvent): Boolean =
     event.level <= Logging.WarningLevel &&
       // fix for https://github.com/akka/akka-http/issues/3732 / https://github.com/akka/akka/issues/29330
