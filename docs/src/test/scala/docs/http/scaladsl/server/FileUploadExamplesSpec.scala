@@ -4,20 +4,20 @@
 
 package docs.http.scaladsl.server
 
-import java.io.File
-
 import akka.Done
 import akka.actor.ActorRef
+import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
+import akka.http.scaladsl.server.RoutingSpec
 import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl._
-import akka.http.scaladsl.model.Multipart
-import akka.http.scaladsl.server.RoutingSpec
 import akka.util.ByteString
 import docs.CompileOnlySpec
 
-import scala.concurrent.duration._
+import java.io.File
+import java.nio.file.Files
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class FileUploadExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
@@ -38,9 +38,9 @@ class FileUploadExamplesSpec extends RoutingSpec with CompileOnlySpec {
             case b: BodyPart if b.name == "file" =>
               // stream into a file as the chunks of it arrives and return a future
               // file to where it got stored
-              val file = File.createTempFile("upload", "tmp")
-              b.entity.dataBytes.runWith(FileIO.toPath(file.toPath)).map(_ =>
-                (b.name -> file))
+              val path = Files.createTempFile("upload", "tmp")
+              b.entity.dataBytes.runWith(FileIO.toPath(path)).map(_ =>
+                (b.name -> path.toFile))
 
             case b: BodyPart =>
               // collect form field values

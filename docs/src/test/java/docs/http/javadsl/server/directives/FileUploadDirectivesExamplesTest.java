@@ -7,9 +7,9 @@ package docs.http.javadsl.server.directives;
 import akka.http.impl.engine.rendering.BodyPartRenderer;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.server.directives.FileInfo;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
@@ -23,35 +23,11 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import static scala.compat.java8.JFunction.func;
-
-//#storeUploadedFile
-import static akka.http.javadsl.server.Directives.complete;
-import static akka.http.javadsl.server.Directives.storeUploadedFile;
-
-//#storeUploadedFile
-//#storeUploadedFiles
-import static akka.http.javadsl.server.Directives.complete;
-import static akka.http.javadsl.server.Directives.storeUploadedFiles;
-
-//#storeUploadedFiles
-//#fileUpload
-import static akka.http.javadsl.server.Directives.extractRequestContext;
-import static akka.http.javadsl.server.Directives.fileUpload;
-import static akka.http.javadsl.server.Directives.onSuccess;
-
-//#fileUpload
-//#fileUploadAll
-import static akka.http.javadsl.server.Directives.extractRequestContext;
-import static akka.http.javadsl.server.Directives.fileUploadAll;
-import static akka.http.javadsl.server.Directives.onSuccess;
 
 //#fileUploadAll
 
@@ -67,7 +43,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
     //#storeUploadedFile
     final Function<FileInfo, File> temporaryDestination = (info) -> {
       try {
-        return File.createTempFile(info.getFileName(), ".tmp");
+        return Files.createTempFile(info.getFileName(), ".tmp").toFile();
       } catch (Exception e) {
         return null;
       }
@@ -101,7 +77,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
     //#storeUploadedFiles
     final Function<FileInfo, File> temporaryDestination = info -> {
       try {
-        return File.createTempFile(info.getFileName(), ".tmp");
+        return Files.createTempFile(info.getFileName(), ".tmp").toFile();
       } catch (Exception e) {
         return null;
       }
@@ -243,7 +219,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
 
     File tempFile = null;
     try {
-      tempFile = File.createTempFile(prefix, suffix);
+      tempFile = Files.createTempFile(prefix, suffix).toFile();
       tempFile.deleteOnExit();
       Files.write(tempFile.toPath(), Arrays.asList("2,3,5", "7,11,13,17,23", "29,31,37"), Charset.forName("UTF-8"));
     } catch (Exception e) {
