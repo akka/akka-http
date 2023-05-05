@@ -23,14 +23,11 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import static scala.compat.java8.JFunction.func;
 
 //#storeUploadedFile
 import static akka.http.javadsl.server.Directives.complete;
@@ -67,7 +64,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
     //#storeUploadedFile
     final Function<FileInfo, File> temporaryDestination = (info) -> {
       try {
-        return File.createTempFile(info.getFileName(), ".tmp");
+        return Files.createTempFile(info.getFileName(), ".tmp").toFile();
       } catch (Exception e) {
         return null;
       }
@@ -101,7 +98,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
     //#storeUploadedFiles
     final Function<FileInfo, File> temporaryDestination = info -> {
       try {
-        return File.createTempFile(info.getFileName(), ".tmp");
+        return Files.createTempFile(info.getFileName(), ".tmp").toFile();
       } catch (Exception e) {
         return null;
       }
@@ -243,7 +240,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
 
     File tempFile = null;
     try {
-      tempFile = File.createTempFile(prefix, suffix);
+      tempFile = Files.createTempFile(prefix, suffix).toFile();
       tempFile.deleteOnExit();
       Files.write(tempFile.toPath(), Arrays.asList("2,3,5", "7,11,13,17,23", "29,31,37"), Charset.forName("UTF-8"));
     } catch (Exception e) {

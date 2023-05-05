@@ -8,12 +8,20 @@ import java.io.File
 import akka.NotUsed
 import akka.http.scaladsl.model.{ Multipart, _ }
 import akka.http.scaladsl.server.{ MissingFormFieldRejection, Route, RoutingSpec }
+import akka.http.scaladsl.model.Multipart
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.MissingFormFieldRejection
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.testkit._
+import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 
+import java.io.File
+import java.nio.file.Files
 import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -34,7 +42,7 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
           @volatile var file: Option[File] = None
 
           def tempDest(fileInfo: FileInfo): File = {
-            val dest = File.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp")
+            val dest = Files.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp").toFile
             file = Some(dest)
             dest
           }
@@ -91,7 +99,7 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
           @volatile var files: Seq[File] = Nil
 
           def tempDest(fileInfo: FileInfo): File = {
-            val dest = File.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp")
+            val dest = Files.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp").toFile
             files = files :+ dest
             dest
           }
@@ -477,13 +485,33 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
 
 /** Mock Path implementation that allows to create a FileChannel that fails writes */
 class MockFailingWritePath extends java.nio.file.Path { selfPath =>
+  import java.lang
   import java.net.URI
-  import java.nio.{ ByteBuffer, MappedByteBuffer }
-  import java.nio.channels.{ FileChannel, FileLock, ReadableByteChannel, SeekableByteChannel, WritableByteChannel }
-  import java.nio.file.attribute.{ BasicFileAttributes, FileAttribute, FileAttributeView, UserPrincipalLookupService }
+  import java.nio.ByteBuffer
+  import java.nio.MappedByteBuffer
+  import java.nio.channels.FileChannel
+  import java.nio.channels.FileLock
+  import java.nio.channels.ReadableByteChannel
+  import java.nio.channels.SeekableByteChannel
+  import java.nio.channels.WritableByteChannel
+  import java.nio.file.AccessMode
+  import java.nio.file.CopyOption
+  import java.nio.file.DirectoryStream
+  import java.nio.file.FileStore
+  import java.nio.file.FileSystem
+  import java.nio.file.LinkOption
+  import java.nio.file.OpenOption
+  import java.nio.file.Path
+  import java.nio.file.PathMatcher
+  import java.nio.file.WatchEvent
+  import java.nio.file.WatchKey
+  import java.nio.file.WatchService
+  import java.nio.file.attribute.BasicFileAttributes
+  import java.nio.file.attribute.FileAttribute
+  import java.nio.file.attribute.FileAttributeView
+  import java.nio.file.attribute.UserPrincipalLookupService
   import java.nio.file.spi.FileSystemProvider
-  import java.nio.file.{ AccessMode, CopyOption, DirectoryStream, FileStore, FileSystem, LinkOption, OpenOption, Path, PathMatcher, WatchEvent, WatchKey, WatchService }
-  import java.{ lang, util }
+  import java.util
 
   @nowarn("msg=never used")
   override def getFileSystem: FileSystem =
