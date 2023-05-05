@@ -21,15 +21,29 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.nio.file.Files;
 
 import static akka.http.javadsl.server.PathMatchers.longSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
+
+//#simple-upload
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entity;
+import static akka.http.javadsl.server.Directives.onSuccess;
+import static akka.http.javadsl.server.Directives.path;
+
+//#simple-upload
+
+//#stream-csv-upload
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entity;
+import static akka.http.javadsl.server.Directives.onComplete;
+import static akka.http.javadsl.server.Directives.path;
 
 //#stream-csv-upload
 

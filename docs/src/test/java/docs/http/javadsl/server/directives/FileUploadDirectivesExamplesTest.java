@@ -7,9 +7,9 @@ package docs.http.javadsl.server.directives;
 import akka.http.impl.engine.rendering.BodyPartRenderer;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.Route;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.server.directives.FileInfo;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
@@ -28,6 +28,27 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+//#storeUploadedFile
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.storeUploadedFile;
+
+//#storeUploadedFile
+//#storeUploadedFiles
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.storeUploadedFiles;
+
+//#storeUploadedFiles
+//#fileUpload
+import static akka.http.javadsl.server.Directives.extractRequestContext;
+import static akka.http.javadsl.server.Directives.fileUpload;
+import static akka.http.javadsl.server.Directives.onSuccess;
+
+//#fileUpload
+//#fileUploadAll
+import static akka.http.javadsl.server.Directives.extractRequestContext;
+import static akka.http.javadsl.server.Directives.fileUploadAll;
+import static akka.http.javadsl.server.Directives.onSuccess;
 
 //#fileUploadAll
 
