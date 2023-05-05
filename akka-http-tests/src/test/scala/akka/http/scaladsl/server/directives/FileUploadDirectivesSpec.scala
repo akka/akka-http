@@ -4,7 +4,10 @@
 
 package akka.http.scaladsl.server.directives
 
+import java.io.File
 import akka.NotUsed
+import akka.http.scaladsl.model.{ Multipart, _ }
+import akka.http.scaladsl.server.{ MissingFormFieldRejection, Route, RoutingSpec }
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.MissingFormFieldRejection
@@ -12,6 +15,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
@@ -23,6 +27,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
+
+  import akka.http.ccompat.ImplicitUtils._
 
   // tests touches filesystem, so reqs may take longer than the default of 1.second to complete
   implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
