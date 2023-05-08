@@ -59,7 +59,7 @@ public class WebSocketClientExampleTest {
 
     final Pair<CompletionStage<WebSocketUpgradeResponse>, CompletionStage<Done>> pair =
       http.singleWebSocketRequest(
-        WebSocketRequest.create("ws://echo.websocket.org"),
+        WebSocketRequest.create("ws://ws.ifelse.io"),
         flow,
         materializer
       );
@@ -205,7 +205,7 @@ public class WebSocketClientExampleTest {
 
 
     Flow<Message, Message, CompletionStage<WebSocketUpgradeResponse>> webSocketFlow =
-      http.webSocketClientFlow(WebSocketRequest.create("ws://echo.websocket.org"));
+      http.webSocketClientFlow(WebSocketRequest.create("ws://ws.ifelse.io"));
 
 
     Pair<CompletionStage<WebSocketUpgradeResponse>, CompletionStage<Done>> pair =

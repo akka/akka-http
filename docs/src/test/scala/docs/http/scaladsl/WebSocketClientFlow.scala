@@ -32,7 +32,7 @@ object WebSocketClientFlow {
     val outgoing = Source.single(TextMessage("hello world!"))
 
     // flow to use (note: not re-usable!)
-    val webSocketFlow = Http().webSocketClientFlow(WebSocketRequest("ws://echo.websocket.org"))
+    val webSocketFlow = Http().webSocketClientFlow(WebSocketRequest("ws://ws.ifelse.io"))
 
     // the materialized value is a tuple with
     // upgradeResponse is a Future[WebSocketUpgradeResponse] that
