@@ -424,7 +424,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         .renderedTo("""<http://example.com/TheBook/chapter2>; rel=previous; title="previous chapter"""")
 
       """Link: </>; rel="http://example.net/foo"""" =!= Link(Uri("/"), LinkParams.rel("http://example.net/foo"))
-        .renderedTo("</>; rel=http://example.net/foo")
+        .renderedTo("""</>; rel="http://example.net/foo"""")
 
       """Link: <http://example.org/>; rel="start http://example.net/relation/other"""" =!= Link(
         Uri("http://example.org/"),
