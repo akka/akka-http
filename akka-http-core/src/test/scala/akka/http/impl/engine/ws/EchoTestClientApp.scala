@@ -18,7 +18,7 @@ import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 
 /**
- * An example App that runs a quick test against the websocket server at wss://echo.websocket.org
+ * An example App that runs a quick test against the websocket server at wss://ws.ifelse.io
  */
 object EchoTestClientApp extends App {
   implicit val system: ActorSystem = ActorSystem()
@@ -52,7 +52,7 @@ object EchoTestClientApp extends App {
 
   def echoClient = Flow.fromSinkAndSourceMat(sink, source)(Keep.left)
 
-  val (upgrade, res) = Http().singleWebSocketRequest("wss://echo.websocket.org", echoClient)
+  val (upgrade, res) = Http().singleWebSocketRequest("wss://ws.ifelse.io", echoClient)
   res onComplete {
     case Success(res) =>
       println("Run successful. Got these elements:")
