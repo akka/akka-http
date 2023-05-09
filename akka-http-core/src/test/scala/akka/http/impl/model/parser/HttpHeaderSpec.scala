@@ -432,6 +432,9 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
 
       // only one 'rel=' is allowed, http://tools.ietf.org/html/rfc5988#section-5.3 requires any subsequent ones to be skipped
       "Link: </>; rel=prev; rel=next" =!=> "</>; rel=prev"
+
+      // make sure we still parse unquoted rel uri
+      """Link: <http://example.org/>; rel=http://example.net/relation/other""" =!=> """<http://example.org/>; rel="http://example.net/relation/other""""
     }
 
     "Origin" in {
