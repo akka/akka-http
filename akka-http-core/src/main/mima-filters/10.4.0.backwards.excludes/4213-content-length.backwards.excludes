@@ -1,0 +1,6 @@
+# HttpMethod is marked `private[http]` so can be excluded
+# All changes are on auto-generated case-class methods, caused by adding a parameter to the case class
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.model.HttpMethod.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpMethod.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpMethod.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpMethod.this")

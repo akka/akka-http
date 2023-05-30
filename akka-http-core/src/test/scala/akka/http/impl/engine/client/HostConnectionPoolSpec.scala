@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -200,7 +200,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
 
           conn1.pushResponse(HttpResponse(entity = HttpEntity.Default(ContentTypes.`application/octet-stream`, 100, Source.empty)))
           val res = expectResponse()
-          res.entity.contentLengthOption.get shouldEqual 100
+          res.entity.contentLengthOption.get shouldEqual 0
 
           // HEAD requests do not require to consume entity
 
@@ -217,7 +217,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
 
           conn1.pushResponse(HttpResponse(entity = HttpEntity.Default(ContentTypes.`application/octet-stream`, 100, Source.empty)))
           val res = expectResponse()
-          res.entity.contentLengthOption.get shouldEqual 100
+          res.entity.contentLengthOption.get shouldEqual 0
 
           // HEAD requests do not require consumption of entity but users might do anyway
           res.entity.discardBytes()

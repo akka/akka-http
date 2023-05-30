@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
 package client
 
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.http2.RequestParsing._
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
@@ -15,8 +16,8 @@ import akka.http.scaladsl.model.headers.`Tls-Session-Info`
 import akka.http.scaladsl.settings.ParserSettings
 import akka.stream.Attributes
 import akka.util.OptionVal
-import javax.net.ssl.SSLSession
 
+import javax.net.ssl.SSLSession
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 
@@ -75,23 +76,23 @@ private[http2] object ResponseParsing {
           if (contentType.isEmpty)
             rec(remainingHeaders.tail, status, OptionVal.Some(contentTypeValue), contentLength, seenRegularHeader, headers)
           else
-            malformedRequest("HTTP message must not contain more than one content-type header")
+            malformedResponse("HTTP message must not contain more than one content-type header")
 
         case ("content-type", ct: String) =>
           if (contentType.isEmpty) {
-            val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
+            val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedResponse(s"Invalid content-type: '$ct'"))
             rec(remainingHeaders.tail, status, OptionVal.Some(contentTypeValue), contentLength, seenRegularHeader, headers)
-          } else malformedRequest("HTTP message must not contain more than one content-type header")
+          } else malformedResponse("HTTP message must not contain more than one content-type header")
 
         case ("content-length", length: String) =>
           if (contentLength == -1) {
             val contentLengthValue = length.toLong
-            if (contentLengthValue < 0) malformedRequest("HTTP message must not contain a negative content-length header")
+            if (contentLengthValue < 0) malformedResponse("HTTP message must not contain a negative content-length header")
             rec(remainingHeaders.tail, status, contentType, contentLengthValue, seenRegularHeader, headers)
-          } else malformedRequest("HTTP message must not contain more than one content-length header")
+          } else malformedResponse("HTTP message must not contain more than one content-length header")
 
         case (name, _) if name.startsWith(":") =>
-          malformedRequest(s"Unexpected pseudo-header '$name' in response")
+          malformedResponse(s"Unexpected pseudo-header '$name' in response")
 
         case (_, httpHeader: HttpHeader) =>
           rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)
@@ -106,4 +107,7 @@ private[http2] object ResponseParsing {
 
     rec(subStream.initialHeaders.keyValuePairs)
   }
+
+  private def malformedResponse(msg: String): Nothing =
+    throw throw new Http2ProtocolException(s"Malformed response: $msg")
 }

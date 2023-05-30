@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.hpack
@@ -11,6 +11,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.http2._
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.scaladsl.model.ParsingException
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
@@ -82,9 +83,12 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
         decoder.decode(ByteStringInputStream(payload), Receiver)
         decoder.endHeaderBlock() // TODO: do we have to check the result here?
 
-        push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo))
+        push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo, None))
       } catch {
-        case ex: IOException =>
+        case ex: ParsingException =>
+          // push details further and let RequestErrorFlow handle responding with bad request
+          push(eventsOut, ParsedHeadersFrame(streamId, endStream, Seq.empty, prioInfo, Some(ex.info)))
+        case _: IOException =>
           // this is signalled by the decoder when it failed, we want to react to this by rendering a GOAWAY frame
           fail(eventsOut, new Http2Compliance.Http2ProtocolException(ErrorCode.COMPRESSION_ERROR, "Decompression failed."))
       }

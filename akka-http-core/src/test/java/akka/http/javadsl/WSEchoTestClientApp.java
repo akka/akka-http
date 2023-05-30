@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl;
@@ -69,7 +69,7 @@ public class WSEchoTestClientApp {
 
             CompletionStage<List<String>> result =
                 Http.get(system).singleWebSocketRequest(
-                    WebSocketRequest.create("ws://echo.websocket.org"),
+                    WebSocketRequest.create("ws://ws.ifelse.io"),
                     echoClient,
                     materializer
                 ).second();

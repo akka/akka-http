@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -183,7 +183,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
            log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
-    if (settings.previewServerSettings.enableHttp2)
+    if (settings.http2Enabled)
       log.warning(s"Binding with a connection source not supported with HTTP/2. Falling back to HTTP/1.1 for port [$port]")
 
     val fullLayer: ServerLayerBidiFlow = fuseServerBidiFlow(settings, connectionContext, log)
@@ -233,7 +233,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] = {
-    if (settings.previewServerSettings.enableHttp2)
+    if (settings.http2Enabled)
       log.warning(s"Binding with a connection source not supported with HTTP/2. Falling back to HTTP/1.1 for port [$port].")
 
     val fullLayer: Flow[ByteString, ByteString, (Future[Done], ServerTerminator)] =
@@ -346,7 +346,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 0,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] = {
-    if (settings.previewServerSettings.enableHttp2) {
+    if (settings.http2Enabled) {
       log.debug("Binding server using HTTP/2")
 
       val definitiveSettings =

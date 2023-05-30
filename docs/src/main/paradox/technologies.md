@@ -25,8 +25,8 @@ and @ref[Client Websocket Support](client-side/websocket-support.md) for more in
 
 ## HTTP/2
 
-Akka HTTP provides server-side HTTP/2 support currently in a preview version. See @ref[Server HTTP/2 Support](server-side/http2.md)
-for more information.
+Akka HTTP provides server and client side HTTP/2 support. See @ref[Server HTTP/2 Support](server-side/http2.md) and 
+@ref[Client HTTP/2 Support](client-side/http2.md) for more information.
 
 ## DNS
 

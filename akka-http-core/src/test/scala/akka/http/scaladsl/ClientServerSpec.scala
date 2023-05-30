@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -50,7 +50,7 @@ class ClientServerHttp2EnabledSpec extends ClientServerSpecBase(http2 = true)
 
 abstract class ClientServerSpecBase(http2: Boolean) extends AkkaSpecWithMaterializer(
   s"""
-     akka.http.server.preview.enable-http2 = $http2
+     akka.http.server.enable-http2 = $http2
      akka.http.server.request-timeout = infinite
      akka.http.server.log-unencrypted-network-bytes = 200
      akka.http.client.log-unencrypted-network-bytes = 200

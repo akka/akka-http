@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -498,7 +498,6 @@ class HttpServerSpec extends AkkaSpec(
                |Server: akka-http/test
                |Date: XXXX
                |Content-Type: text/plain; charset=UTF-8
-               |Content-Length: 4
                |
                |""")
       }
@@ -524,7 +523,6 @@ class HttpServerSpec extends AkkaSpec(
                |Server: akka-http/test
                |Date: XXXX
                |Content-Type: text/plain; charset=UTF-8
-               |Content-Length: 4
                |
                |""")
       }

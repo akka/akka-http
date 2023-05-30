@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl;
@@ -25,7 +25,7 @@ public class Http2JavaServerTest {
       "akka.actor.serialize-messages = off\n" +
       "#akka.actor.default-dispatcher.throughput = 1000\n" +
       "akka.actor.default-dispatcher.fork-join-executor.parallelism-max=8\n" +
-      "akka.http.server.preview.enable-http2 = on\n"
+      "akka.http.server.enable-http2 = on\n"
     );
     ActorSystem system = ActorSystem.create("ServerTest", testConf);
 

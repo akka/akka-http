@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
@@ -50,7 +50,8 @@ private[akka] final case class ServerSettingsImpl(
   defaultHttpsPort:                    Int,
   terminationDeadlineExceededResponse: HttpResponse,
   parsingErrorHandler:                 String,
-  streamCancellationDelay:             FiniteDuration
+  streamCancellationDelay:             FiniteDuration,
+  http2Enabled:                        Boolean
 ) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
@@ -120,7 +121,8 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
       c.getInt("default-https-port"),
       terminationDeadlineExceededResponseFrom(c),
       c.getString("parsing.error-handler"),
-      c.getFiniteDuration("stream-cancellation-delay")
+      c.getFiniteDuration("stream-cancellation-delay"),
+      c.getBoolean("enable-http2") || c.getBoolean("preview.enable-http2")
     )
   }
 

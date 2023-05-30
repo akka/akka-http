@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.hpack
 
 import akka.annotation.InternalApi
-import akka.http.impl.engine.http2.RequestParsing.malformedRequest
+import akka.http.impl.engine.http2.RequestParsing
+import akka.http.impl.engine.http2.RequestParsing.parseError
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import model.{ HttpHeader, HttpMethod, HttpMethods, IllegalUriException, ParsingException, StatusCode, Uri }
@@ -26,7 +27,7 @@ private[akka] object Http2HeaderParsing {
     override def parse(name: String, value: String, parserSettings: ParserSettings): HttpMethod =
       HttpMethods.getForKey(value)
         .orElse(parserSettings.customMethods(value))
-        .getOrElse(malformedRequest(s"Unknown HTTP method: '$value'"))
+        .getOrElse(RequestParsing.parseError(s"Unknown HTTP method: '$value'", ":method"))
   }
   object PathAndQuery extends HeaderParser[(Uri.Path, Option[String])](":path") {
     override def parse(name: String, value: String, parserSettings: ParserSettings): (Uri.Path, Option[String]) =
@@ -50,7 +51,11 @@ private[akka] object Http2HeaderParsing {
   }
   object ContentType extends HeaderParser[model.ContentType]("content-type") {
     override def parse(name: String, value: String, parserSettings: ParserSettings): model.ContentType =
-      model.ContentType.parse(value).right.getOrElse(malformedRequest(s"Invalid content-type: '$value'"))
+      model.ContentType.parse(value) match {
+        case Right(tpe) => tpe
+        case Left(_) =>
+          parseError(s"Invalid content-type: '$value'", "content-type")
+      }
   }
   object ContentLength extends Verbatim("content-length")
   object Cookie extends Verbatim("cookie")

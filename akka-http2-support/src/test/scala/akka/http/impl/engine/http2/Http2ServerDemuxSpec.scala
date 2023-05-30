@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2021-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -45,7 +45,7 @@ class Http2ServerDemuxSpec extends AkkaSpecWithMaterializer("""
       // The request is taken from the HTTP/1.1 request that had the Upgrade
       // header and is passed to the handler code 'directly', bypassing the demux stage,
       // so the first thing the demux stage sees of this request is the response:
-      val response = ParsedHeadersFrame(streamId = 1, endStream = true, Seq((":status", "200")), None)
+      val response = ParsedHeadersFrame(streamId = 1, endStream = true, Seq((":status", "200")), None, None)
       substreamProducer.sendNext(new Http2SubStream(
         response,
         OptionVal.None,

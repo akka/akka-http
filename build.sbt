@@ -29,7 +29,12 @@ inThisBuild(Def.settings(
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
-  licenses := Seq(("BUSL-1.1", url("https://raw.githubusercontent.com/akka/akka-http/main/LICENSE.txt"))), // FIXME change s/main/v10.5.0/ when released
+  licenses := {
+    val tagOrBranch =
+      if (version.value.endsWith("SNAPSHOT")) "main"
+      else "v" + version.value
+    Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/akka-http/${tagOrBranch}/LICENSE")))
+  },
   description := "Akka Http: Modern, fast, asynchronous, streaming-first HTTP server and client.",
   testOptions ++= Seq(
     Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
@@ -474,8 +479,9 @@ lazy val docs = project("docs")
         s"https://doc.akka.io/api/akka-http/$v"
       },
       "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${AkkaDependency.docs.link}",
-      "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",
-      "algolia.docsearch.index_name" -> "akka-http",
+      "algolia.docsearch.app_id" -> "XUXZ6LW9B1",
+      "algolia.docsearch.api_key" -> "5b6260148e92f7c5e38338fcf7eaa3e0",
+      "algolia.docsearch.index_name" -> "akka_http_docs",
       "google.analytics.account" -> "UA-21117439-1",
       "google.analytics.domain.name" -> "akka.io",
       "github.base_url" -> GitHub.url(version.value, isSnapshot.value),

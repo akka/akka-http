@@ -19,7 +19,7 @@ object Dependencies {
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
 
-  val scalaTestVersion = "3.2.9"
+  val scalaTestVersion = "3.2.12"
   val specs2Version = "4.10.6"
   val scalaCheckVersion = "1.15.4"
 
@@ -27,7 +27,7 @@ object Dependencies {
 
   val scala212Version = "2.12.17"
   val scala213Version = "2.13.10"
-  val scala3Version = "3.1.3"
+  val scala3Version = "3.2.2"
   val allScalaVersions = Seq(scala213Version, scala212Version, scala3Version)
 
   val Versions = Seq(
@@ -43,13 +43,8 @@ object Dependencies {
   }
 
   object Compile {
-    val scalaXml      = {
-      val xml = "org.scala-lang.modules" %% "scala-xml" // Scala License
-      ScalaVersionDependentModuleID.versioned {
-        case v if v.startsWith("2.") => xml % "1.3.0"
-        case _ => xml % "2.0.1"
-      }
-    }
+    val scalaXml      =  "org.scala-lang.modules" %% "scala-xml" % "2.1.0" // Scala License
+
 
 
     // For akka-http spray-json support
@@ -67,7 +62,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.10"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.10.1"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion      % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.10.2"            % "test" // WTFPL
     }
@@ -87,7 +82,7 @@ object Dependencies {
       val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.3"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
-      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-15" % (scalaTestVersion + ".0") % "test"
+      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-16" % (scalaTestVersion + ".0") % "test"
       val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
       // HTTP/2

@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.caching
 
 import java.util.Random
 import java.util.concurrent.CountDownLatch
-
 import akka.actor.ActorSystem
 import akka.http.caching.scaladsl.CachingSettings
 import akka.testkit.TestKit
+import akka.testkit.TestProbe
 import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.duration._
@@ -113,8 +113,10 @@ class ExpiringLfuCacheSpec extends AnyWordSpec with Matchers with BeforeAndAfter
       Await.result(cache(2, () => Future.successful("B")), 3.seconds) should be("B")
       Await.result(cache.get(3, () => "C"), 3.seconds) should be("C")
       cache.get(4, () => "D")
-      Thread.sleep(50)
-      cache.size should be(3)
+      val probe = TestProbe()
+      probe.awaitAssert({
+        cache.size should be(3)
+      })
     }
     "not cache exceptions" in {
       val cache = lfuCache[String]()

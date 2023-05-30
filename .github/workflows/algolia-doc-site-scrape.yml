@@ -1,0 +1,28 @@
+name: Akka.io Doc Site Algolia indexing
+
+on:
+  # once it works
+  #schedule:
+  #  - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: 'read'
+
+jobs:
+  scrape_index:
+    name: Update search index
+    runs-on: ubuntu-22.04
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Scrape
+        uses: darrenjennings/algolia-docsearch-action@75b0f6d28d82eff3dd76f57a96a99490df11a250
+        with:
+          algolia_application_id: 'XUXZ6LW9B1'
+          algolia_api_key: '${{ secrets.ALGOLIA_API_KEY }}'
+          file: '.algolia-search-index-config.json'

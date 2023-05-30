@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.directives.FileInfo
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream.scaladsl.Framing
 import akka.testkit.TestDuration
 import akka.util.ByteString
-import java.io.File
-
-import akka.http.scaladsl.server.RoutingSpec
 import docs.CompileOnlySpec
 
+import java.io.File
+import java.nio.file.Files
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -31,7 +31,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec 
     //#storeUploadedFile
 
     def tempDestination(fileInfo: FileInfo): File =
-      File.createTempFile(fileInfo.fileName, ".tmp")
+      Files.createTempFile(fileInfo.fileName, ".tmp").toFile
 
     val route =
       storeUploadedFile("csv", tempDestination) {
@@ -60,7 +60,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec 
     //#storeUploadedFiles
 
     def tempDestination(fileInfo: FileInfo): File =
-      File.createTempFile(fileInfo.fileName, ".tmp")
+      Files.createTempFile(fileInfo.fileName, ".tmp").toFile
 
     val route =
       storeUploadedFiles("csv", tempDestination) { files =>

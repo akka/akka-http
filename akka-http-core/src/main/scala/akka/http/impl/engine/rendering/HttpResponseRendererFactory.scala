@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -234,7 +234,7 @@ private[http] class HttpResponseRendererFactory(
           }
 
           def renderContentLengthHeader(contentLength: Long) =
-            if (status.allowsEntity) r ~~ ContentLengthBytes ~~ contentLength ~~ CrLf else r
+            if (ctx.requestMethod.contentLengthAllowed(status)) r ~~ ContentLengthBytes ~~ contentLength ~~ CrLf else r
 
           def headersAndEntity(entityBytes: => Source[ByteString, Any]): StrictOrStreamed =
             if (noEntity) {

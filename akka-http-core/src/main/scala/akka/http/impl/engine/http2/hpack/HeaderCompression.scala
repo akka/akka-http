@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.hpack
@@ -37,7 +37,7 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
       case ack @ SettingsAckFrame(s) =>
         applySettings(s)
         push(eventsOut, ack)
-      case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) =>
+      case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo, _) =>
         // When ending the stream without any payload, use a DATA frame rather than
         // a HEADERS frame to work around https://github.com/golang/go/issues/47851.
         if (endStream && kvs.isEmpty) push(eventsOut, DataFrame(streamId, endStream, ByteString.empty))

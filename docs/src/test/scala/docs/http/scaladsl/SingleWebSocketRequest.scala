@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
@@ -39,7 +39,7 @@ object SingleWebSocketRequest {
     // completes or fails when the connection succeeds or fails
     // and closed is a Future[Done] representing the stream completion from above
     val (upgradeResponse, closed) =
-      Http().singleWebSocketRequest(WebSocketRequest("ws://echo.websocket.org"), flow)
+      Http().singleWebSocketRequest(WebSocketRequest("ws://ws.ifelse.io"), flow)
 
     val connected = upgradeResponse.map { upgrade =>
       // just like a regular http request we can access response status which is available via upgrade.response.status

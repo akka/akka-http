@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
 
 import akka.testkit.AkkaSpec
+import com.typesafe.config.ConfigFactory
 
 class ServerSettingsSpec extends AkkaSpec {
   "ServerSettings" should {
@@ -22,6 +23,18 @@ class ServerSettingsSpec extends AkkaSpec {
         serverSettings.withParserSettings(parserSettings)
       }
       e.getMessage should include("does not contain the server-specific settings")
+    }
+
+    "use old preview setting value by default" in {
+      {
+        val serverSettings = ServerSettings(system)
+        serverSettings.http2Enabled should ===(false)
+      }
+
+      {
+        val serverSettings = ServerSettings(ConfigFactory.load("http2-preview-fallback.conf"))
+        serverSettings.http2Enabled should ===(true)
+      }
     }
   }
 }

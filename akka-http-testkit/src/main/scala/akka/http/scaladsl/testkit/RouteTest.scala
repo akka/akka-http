@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
 
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ClassicActorSystemProvider }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
@@ -205,8 +205,21 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
       }
   }
 }
-private[http] object RouteTest {
-  def runRouteClientServer(request: HttpRequest, route: Route, serverSettings: ServerSettings)(implicit system: ActorSystem): Future[HttpResponse] = {
+object RouteTest {
+
+  /**
+   * Turn the route into a function for testing, but do not handle exceptions in any way, instead, they are bubbled
+   * out as is to the caller.
+   */
+  def toFunctionPassThroughExceptions(route: Route)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] = {
+    val routingLog = RoutingLog(system.classicSystem.log)
+    val routingSettings = RoutingSettings(system)
+    val parserSettings = ParserSettings.forServer
+    implicit val ec: ExecutionContextExecutor = system.classicSystem.dispatcher
+    Route.createAsyncHandler(route, routingLog, routingSettings, parserSettings)
+  }
+
+  private[http] def runRouteClientServer(request: HttpRequest, route: Route, serverSettings: ServerSettings)(implicit system: ActorSystem): Future[HttpResponse] = {
     import system.dispatcher
     for {
       binding <- Http().newServerAt("127.0.0.1", 0).withSettings(settings = serverSettings).bind(route)

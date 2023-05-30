@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -8,6 +8,7 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
+import akka.http.scaladsl.model.ErrorInfo
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -99,12 +100,15 @@ private[http] object FrameEvent {
   /**
    * Convenience (logical) representation of a parsed HEADERS frame with zero, one or
    * many CONTINUATIONS Frames into a single, decompressed object.
+   *
+   * @param headerParseErrorDetails Only used server side, passes header errors from decompression into error response logic
    */
   final case class ParsedHeadersFrame(
-    streamId:      Int,
-    endStream:     Boolean,
-    keyValuePairs: Seq[(String, AnyRef)],
-    priorityInfo:  Option[PriorityFrame]
+    streamId:                Int,
+    endStream:               Boolean,
+    keyValuePairs:           Seq[(String, AnyRef)],
+    priorityInfo:            Option[PriorityFrame],
+    headerParseErrorDetails: Option[ErrorInfo]
   ) extends StreamFrameEvent
 
 }

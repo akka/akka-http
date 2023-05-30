@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -17,7 +17,7 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 class WithPriorKnowledgeSpec extends AkkaSpecWithMaterializer("""
-    akka.http.server.preview.enable-http2 = on
+    akka.http.server.enable-http2 = on
     akka.http.server.http2.log-frames = on
   """) {
 

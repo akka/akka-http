@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -35,7 +35,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
   // FIXME: would rather use remote-address-attribute, but that doesn't work with HTTP/2
   // see https://github.com/akka/akka-http/issues/3707
   """akka.http.server.remote-address-attribute = on
-     akka.http.server.preview.enable-http2 = on
+     akka.http.server.enable-http2 = on
      akka.http.client.http2.log-frames = on
      akka.http.client.http2.max-persistent-attempts = 5
      akka.http.client.log-unencrypted-network-bytes = 100
@@ -44,7 +44,11 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
      akka.http.client.http2.completion-timeout=100ms
   """) with ScalaFutures {
   override def failOnSevereMessages: Boolean = true
-  private val notSevere = Set("ChannelReadable", "WriteAck")
+  private val notSevere = Set("ChannelReadable", "WriteAck",
+    // previous test case shutting stuff down race condition
+    // https://github.com/akka/akka-http/issues/4244
+    "Unexpected termination of TLS actor"
+  )
   override protected def isSevere(event: Logging.LogEvent): Boolean =
     event.level <= Logging.WarningLevel &&
       // fix for https://github.com/akka/akka-http/issues/3732 / https://github.com/akka/akka/issues/29330
@@ -260,8 +264,8 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
           // need some demand on response side, otherwise, no requests will be pulled in
           client.responsesIn.request(1)
           if (withBackoff) {
-            // not immediate when using backoff
-            client.responsesIn.expectNoMessage(clientSettings.http2Settings.baseConnectionBackoff / 2)
+            // not immediate when using backoff, 4 retries before failing, backoff is 300-800ms (so at least 1.2s)
+            client.responsesIn.expectNoMessage(clientSettings.http2Settings.baseConnectionBackoff * 4)
           }
           client.responsesIn.expectError()
           client.requestsOut.expectCancellation()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -78,10 +78,10 @@ private[http2] sealed abstract class MessageRendering[R <: HttpMessage] extends 
     HttpMessageRendering.renderHeaders(r.headers, headerPairs, peerIdHeader, log, isServer = r.isResponse, shouldRenderAutoHeaders = true, dateHeaderRendering)
 
     val streamId = nextStreamId(r)
-    val headersFrame = ParsedHeadersFrame(streamId, endStream = r.entity.isKnownEmpty, headerPairs.result(), None)
+    val headersFrame = ParsedHeadersFrame(streamId, endStream = r.entity.isKnownEmpty, headerPairs.result(), None, None)
     val trailingHeadersFrame =
       r.attribute(AttributeKeys.trailer) match {
-        case Some(trailer) if trailer.headers.nonEmpty => OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, trailer.headers, None))
+        case Some(trailer) if trailer.headers.nonEmpty => OptionVal.Some(ParsedHeadersFrame(streamId, endStream = true, trailer.headers, None, None))
         case _                                         => OptionVal.None
       }
 

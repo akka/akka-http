@@ -31,11 +31,11 @@ jobs:
 
       - name: Publish Artifacts to Sonatype / Maven
         run: |
-          mv .jvmopts-ghactions .jvmopts
           sbt ci-release
         env:
           CI_SONATYPE_RELEASE: "; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
 
@@ -58,7 +58,6 @@ jobs:
 
       - name: Publish Documentation
         run: |
-          mv .jvmopts-ghactions .jvmopts
           eval "$(ssh-agent -s)" && echo $SCP_SECRET | base64 -d > /tmp/id_rsa && chmod 600 /tmp/id_rsa && ssh-add /tmp/id_rsa && sbt -Dakka.genjavadoc.enabled=true publishRsync
         env:
           SCP_SECRET: ${{ secrets.SCP_SECRET }}

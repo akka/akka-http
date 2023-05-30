@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -27,12 +27,24 @@ public final class HttpMethods {
 
     /**
      * Create a custom method type.
+     * @deprecated The created method will compute the presence of Content-Length headers based on deprecated logic (before issue #4213).
      */
+    @Deprecated
     public static HttpMethod custom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
         //This cast is safe as implementation of RequestEntityAcceptance only exists in Scala
         akka.http.scaladsl.model.RequestEntityAcceptance scalaRequestEntityAcceptance
           = (akka.http.scaladsl.model.RequestEntityAcceptance) requestEntityAcceptance;
         return akka.http.scaladsl.model.HttpMethod.custom(value, safe, idempotent, scalaRequestEntityAcceptance);
+    }
+
+    /**
+     * Create a custom method type.
+     */
+    public static HttpMethod custom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance, boolean contentLengthAllowed) {
+        //This cast is safe as implementation of RequestEntityAcceptance only exists in Scala
+        akka.http.scaladsl.model.RequestEntityAcceptance scalaRequestEntityAcceptance
+          = (akka.http.scaladsl.model.RequestEntityAcceptance) requestEntityAcceptance;
+        return akka.http.scaladsl.model.HttpMethod.custom(value, safe, idempotent, scalaRequestEntityAcceptance, contentLengthAllowed);
     }
 
     /**

@@ -1,27 +1,27 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshallers.xml
 
-import java.io.File
-import java.nio.file.Files
-
-import org.xml.sax.SAXParseException
-
-import scala.xml.NodeSeq
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import org.scalatest.Inside
-import akka.util.ByteString
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.http.scaladsl.model._
-import akka.testkit._
-import MediaTypes._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
+import akka.testkit._
+import akka.util.ByteString
+import org.scalatest.Inside
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import org.xml.sax.SAXParseException
+
+import java.io.File
+import java.nio.file.Files
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.xml.NodeSeq
 
 class ScalaXmlSupportSpec extends AnyFreeSpec with Matchers with ScalatestRouteTest with Inside {
   import ScalaXmlSupport._
@@ -98,7 +98,7 @@ class ScalaXmlSupportSpec extends AnyFreeSpec with Matchers with ScalatestRouteT
     }
 
   def withTempFile[T](content: String)(f: File => T): T = {
-    val file = File.createTempFile("xxe", ".txt")
+    val file = Files.createTempFile("xxe", ".txt").toFile
     try {
       Files.write(file.toPath, content.getBytes("UTF-8"))
       f(file)

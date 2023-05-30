@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -55,7 +55,7 @@ class TelemetrySpiCypherSpec extends TelemetrySpiSpec(true)
 
 abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterializer(
   """
-     akka.http.server.preview.enable-http2 = on
+     akka.http.server.enable-http2 = on
      akka.actor.serialize-messages = false
      akka.http.http2-telemetry-class = "akka.http.impl.engine.http2.TestTelemetryImpl"
   """) with ScalaFutures with BeforeAndAfterAll {

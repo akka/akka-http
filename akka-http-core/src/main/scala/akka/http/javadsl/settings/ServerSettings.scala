@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -56,6 +56,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def getTerminationDeadlineExceededResponse: akka.http.javadsl.model.HttpResponse
   def getParsingErrorHandler: String
   def getStreamCancellationDelay: FiniteDuration
+  def http2Enabled: Boolean
 
   // ---
 
@@ -87,6 +88,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
     self.copy(terminationDeadlineExceededResponse = response.asScala)
   def withParsingErrorHandler(newValue: String): ServerSettings = self.copy(parsingErrorHandler = parsingErrorHandler)
   def withStreamCancellationDelay(newValue: FiniteDuration): ServerSettings = self.copy(streamCancellationDelay = newValue)
+  def withHttp2Enabled(enabled: Boolean): ServerSettings = self.copy(http2Enabled = enabled)
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings] {

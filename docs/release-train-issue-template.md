@@ -17,11 +17,12 @@ Key links:
 ### Cutting the release
 
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
-- [ ] For minor or major versions, update the Change date in the LICENSE file and update the `licenses` url in the build.
+- [ ] Update the Change date in the LICENSE file.
 - [ ] For minor or major versions, add a release notes entry in `docs/src/main/paradox/release-notes/`.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka-http/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka-http/milestones?direction=asc&sort=due_date)
 - [ ] Make sure all important PRs have been merged
+- [ ] For recent dependency updates or changes on a minor release branch the Fossa validation can be triggered from the GitHub actions "Dependency License Scanning" (Manually choosing the release branch)
 - [ ] Update the revision in Fossa in the Akka Group for the Akka umbrella version, e.g. `22.10`. Note that the revisions for the release is udpated by Akka Group > Projects > Edit. For recent dependency updates the Fossa validation can be triggered from the GitHub actions "Dependency License Scanning".
 - [ ] Wait until [main build finished](https://github.com/akka/akka-http/actions) after merging the latest PR
 - [ ] Update the [draft release](https://github.com/akka/akka-http/releases) with the next tag version `v$VERSION$`, title and release description. Use the `Publish release` button, which will create the tag.
@@ -52,6 +53,8 @@ Key links:
          cd ~/www
          git push origin master
          ```
+
+  - [ ] If this updated 'current' docs - trigger a re-index of the docs for search through [Run workflow for the scraper](https://github.com/akka/akka-http/actions/workflows/algolia-doc-site-scrape.yml)
   - [ ] Update version in _config.yml in https://github.com/akka/akka.io
 
 ### Announcements

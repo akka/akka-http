@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -7,9 +7,6 @@ package akka.http.scaladsl.server.directives
 import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, StatusCodes, HttpMethods }
 import akka.http.scaladsl.server._
 import akka.stream.scaladsl.Source
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 class MethodDirectivesSpec extends RoutingSpec {
 
@@ -41,7 +38,7 @@ class MethodDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
 
         val lengthF = response._3.dataBytes.runFold(0)((c, _) => c + 1)
-        val length = Await.result(lengthF, Duration(100, "millis"))
+        val length = lengthF.futureValue
         length shouldEqual 0
       }
     }

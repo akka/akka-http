@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
@@ -79,7 +79,7 @@ class ModelSpec extends AkkaSpec {
     // a method that extracts basic HTTP credentials from a request
     def credentialsOfRequest(req: HttpRequest): Option[User] =
       for {
-        Authorization(BasicHttpCredentials(user, pass)) <- req.header[Authorization]
+        case Authorization(BasicHttpCredentials(user, pass)) <- req.header[Authorization]
       } yield User(user, pass)
     //#headers
 

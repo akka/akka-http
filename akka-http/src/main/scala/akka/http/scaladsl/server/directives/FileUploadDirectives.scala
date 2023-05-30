@@ -1,24 +1,29 @@
 /*
- * Copyright (C) 2015-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
 
-import java.io.File
 import akka.Done
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
-import akka.http.scaladsl.server.{ Directive, Directive1, MissingFormFieldRejection }
-import akka.http.scaladsl.model.{ ContentType, Multipart }
+import akka.http.javadsl
+import akka.http.scaladsl.model.ContentType
+import akka.http.scaladsl.model.Multipart
+import akka.http.scaladsl.server.RouteResult
+import akka.http.scaladsl.server.Directive
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.MissingFormFieldRejection
+import akka.stream.scaladsl._
 import akka.util.ByteString
 
+import java.io.File
+import java.nio.file.Files
 import scala.collection.immutable
-import scala.concurrent.{ Future, Promise }
-import akka.stream.scaladsl._
-import akka.http.javadsl
-import akka.http.scaladsl.server.RouteResult
-
-import scala.util.{ Failure, Success }
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * @groupname fileupload File upload directives
@@ -108,8 +113,8 @@ trait FileUploadDirectives {
   def fileUpload(fieldName: String): Directive1[(FileInfo, Source[ByteString, Any])] =
     entity(as[Multipart.FormData]).flatMap { formData =>
       Directive[Tuple1[(FileInfo, Source[ByteString, Any])]] { inner => ctx =>
-        import ctx.materializer
         import ctx.executionContext
+        import ctx.materializer
 
         // We complete the directive through this promise as soon as we encounter the
         // selected part. This way the inner directive can consume it, after which we will
@@ -162,7 +167,7 @@ trait FileUploadDirectives {
       implicit val ec = ctx.executionContext
 
       def tempDest(fileInfo: FileInfo): File = {
-        val dest = File.createTempFile("akka-http-upload", ".tmp")
+        val dest = Files.createTempFile("akka-http-upload", ".tmp").toFile
         dest.deleteOnExit()
         dest
       }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.nio.file.Files;
 
 import static akka.http.javadsl.server.PathMatchers.longSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
@@ -65,7 +66,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
             if ("file".equals(bodyPart.getName())) {
               // stream into a file as the chunks of it arrives and return a CompletionStage
               // file to where it got stored
-              final File file = File.createTempFile("upload", "tmp");
+              final File file = Files.createTempFile("upload", "tmp").toFile();
               return bodyPart.getEntity().getDataBytes()
                 .runWith(FileIO.toPath(file.toPath()), materializer)
                 .thenApply(ignore ->

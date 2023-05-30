@@ -1,24 +1,25 @@
 /*
- * Copyright (C) 2009-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 package directives
 
-import java.io.File
-
-import akka.http.scaladsl.settings.RoutingSettings
-import akka.http.scaladsl.testkit.RouteTestTimeout
-
-import scala.concurrent.duration._
-import scala.util.Properties
-import org.scalatest.{ Inside, Inspectors }
+import akka.http.impl.util._
 import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.impl.util._
-import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.testkit._
+import org.scalatest.Inside
+import org.scalatest.Inspectors
+
+import java.io.File
+import java.nio.file.Files
+import scala.concurrent.duration._
+import scala.util.Properties
 
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
@@ -48,7 +49,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       Get() ~> getFromFile(Properties.javaHome) ~> check { handled shouldEqual false }
     }
     "return the file content with the MediaType matching the file extension" in {
-      val file = File.createTempFile("akka Http Test", ".PDF")
+      val file = Files.createTempFile("akka Http Test", ".PDF").toFile
       try {
         writeAllText("This is PDF", file)
         Get() ~> getFromFile(file.getPath) ~> check {
@@ -60,7 +61,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       } finally file.delete
     }
     "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in {
-      val file = File.createTempFile("akkaHttpTest", null)
+      val file = Files.createTempFile("akkaHttpTest", null).toFile
       try {
         writeAllText("Some content", file)
         Get() ~> getFromFile(file) ~> check {
@@ -71,7 +72,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
 
     "return a single range from a file" in {
-      val file = File.createTempFile("akkaHttpTest", null)
+      val file = Files.createTempFile("akkaHttpTest", null).toFile
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         Get() ~> addHeader(Range(ByteRange(0, 10))) ~> getFromFile(file) ~> check {
@@ -83,7 +84,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
 
     "return multiple ranges from a file at once" in {
-      val file = File.createTempFile("akkaHttpTest", null)
+      val file = Files.createTempFile("akkaHttpTest", null).toFile
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         val rangeHeader = Range(ByteRange(1, 10), ByteRange.suffix(10))
@@ -99,7 +100,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
 
     "properly handle zero-byte files" in {
-      val file = File.createTempFile("akkaHttpTest", null)
+      val file = Files.createTempFile("akkaHttpTest", null).toFile
       try {
         Get() ~> getFromFile(file) ~> check {
           mediaType shouldEqual NoMediaType
@@ -109,7 +110,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
 
     "support precompressed files with registered MediaType" in {
-      val file = File.createTempFile("akkaHttpTest", ".svgz")
+      val file = Files.createTempFile("akkaHttpTest", ".svgz").toFile
       try {
         writeAllText("123", file)
         Get() ~> getFromFile(file) ~> check {
@@ -121,7 +122,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
 
     "support files with registered MediaType and .gz suffix" in {
-      val file = File.createTempFile("akkaHttpTest", ".js.gz")
+      val file = Files.createTempFile("akkaHttpTest", ".js.gz").toFile
       try {
         writeAllText("456", file)
         Get() ~> getFromFile(file) ~> check {
