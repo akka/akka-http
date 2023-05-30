@@ -4,8 +4,6 @@ import akka.event._
 import akka.http.scaladsl.server.RoutingSpec
 import akka.testkit.EventFilter
 
-import scala.collection.mutable.ListBuffer
-
 class MdcLoggingDirectivesSpec extends RoutingSpec {
 
   "The `withMarkerLoggingAdapter` directive" should {
@@ -55,13 +53,17 @@ class MdcLoggingDirectivesSpec extends RoutingSpec {
       }
     }
     "include the entries in the LoggingEvents" in {
-      val buf = ListBuffer.empty[Logging.Info2]
-      val filter = EventFilter.custom {
-        case e: Logging.Info2 =>
-          buf.append(e)
-          true
-        case _ => false
+      class EF(n: Int) extends EventFilter(n) {
+        @volatile
+        var buf = Vector.empty[Logging.Info2]
+        override protected def matches(event: Logging.LogEvent): Boolean = event match {
+          case e: Logging.Info2 =>
+            buf :+= e
+            true
+          case _ => false
+        }
       }
+      val filter = new EF(3)
       filter.intercept {
         Get() ~> withMdcEntries("user_id" -> "1234", "request_id" -> "abcd") {
           extractLog { log1 =>
@@ -76,10 +78,10 @@ class MdcLoggingDirectivesSpec extends RoutingSpec {
           }
         } ~> check {
           response shouldEqual Ok
-          buf.size shouldBe 3
-          val l1 = buf(0)
-          val l2 = buf(1)
-          val l3 = buf(2)
+          filter.buf.size shouldBe 3
+          val l1 = filter.buf(0)
+          val l2 = filter.buf(1)
+          val l3 = filter.buf(2)
           l1.message shouldBe "test 1"
           l1.mdc shouldBe Map("user_id" -> "1234", "request_id" -> "abcd")
           l2.message shouldBe "test 2"
