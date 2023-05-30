@@ -57,8 +57,10 @@ class MdcLoggingDirectivesSpec extends RoutingSpec {
     "include the entries in the LoggingEvents" in {
       val buf = ListBuffer.empty[Logging.Info2]
       val filter = EventFilter.custom {
-        case e: Logging.Info2 => buf.append(e).nonEmpty
-        case _                => false
+        case e: Logging.Info2 =>
+          buf.append(e)
+          true
+        case _ => false
       }
       filter.intercept {
         Get() ~> withMdcEntries("user_id" -> "1234", "request_id" -> "abcd") {
