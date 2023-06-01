@@ -105,9 +105,10 @@ abstract class TestRouteResult(_result: Future[RouteResult], awaitAtMost: Finite
   /**
    * Returns the first header of the response which is of the given class.
    */
-  def header[T >: Null <: HttpHeader](clazz: Class[T]): T =
-    response.header(ClassTag(clazz))
+  def header[T >: Null <: HttpHeader](clazz: Class[T]): T = {
+    response.header(ClassTag[T](clazz))
       .getOrElse(doFail(s"Expected header of type ${clazz.getSimpleName} but wasn't found."))
+  }
 
   /**
    * Expects the route to have been rejected, returning the list of rejections, or empty list if the route

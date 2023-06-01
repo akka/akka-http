@@ -80,6 +80,14 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
       request.header[DifferentHeader] should ===(Some(h))
     }
 
+    "be able to be extracted using response.header(headerName) syntax" in {
+      val h = DifferentHeader("Hello")
+      val request = HttpRequest().addHeader(h)
+      request.header("different") should ===(Some(h))
+      // case insensitive
+      request.header("DIFFERENT") should ===(Some(h))
+    }
+
     "be able to match from RawHeader" in {
 
       //#matching-in-routes
