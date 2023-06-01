@@ -424,7 +424,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         .renderedTo("""<http://example.com/TheBook/chapter2>; rel=previous; title="previous chapter"""")
 
       """Link: </>; rel="http://example.net/foo"""" =!= Link(Uri("/"), LinkParams.rel("http://example.net/foo"))
-        .renderedTo("</>; rel=http://example.net/foo")
+        .renderedTo("""</>; rel="http://example.net/foo"""")
 
       """Link: <http://example.org/>; rel="start http://example.net/relation/other"""" =!= Link(
         Uri("http://example.org/"),
@@ -432,6 +432,9 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
 
       // only one 'rel=' is allowed, http://tools.ietf.org/html/rfc5988#section-5.3 requires any subsequent ones to be skipped
       "Link: </>; rel=prev; rel=next" =!=> "</>; rel=prev"
+
+      // make sure we still parse unquoted rel uri
+      """Link: <http://example.org/>; rel=http://example.net/relation/other""" =!=> """<http://example.org/>; rel="http://example.net/relation/other""""
     }
 
     "Origin" in {
