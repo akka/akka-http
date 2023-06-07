@@ -5,6 +5,7 @@
 package akka.http.impl.util
 
 import akka.annotation.InternalApi
+import akka.http.ccompat._
 import akka.util.ByteString
 
 /**

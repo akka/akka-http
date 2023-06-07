@@ -4,6 +4,7 @@
 
 package akka.http.impl.model.parser
 
+import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 import CacheDirectives._
 

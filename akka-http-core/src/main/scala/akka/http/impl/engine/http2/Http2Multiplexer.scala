@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.ccompat._
+
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent._
