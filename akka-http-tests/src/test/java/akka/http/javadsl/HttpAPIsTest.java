@@ -32,12 +32,11 @@ public class HttpAPIsTest extends JUnitRouteTest {
   @SuppressWarnings({"unused", "deprecation"})
   public void compileOnly() throws Exception {
     final Http http = Http.get(system());
-
-    final ConnectionContext connectionContext = ConnectionContext.https(SSLContext.getDefault());
+    
     final ConnectionContext clientConnectionContext = ConnectionContext.httpsClient(SSLContext.getDefault());
     final ConnectionContext serverConnectionContext = ConnectionContext.httpsServer(SSLContext.getDefault());
     final HttpConnectionContext httpContext = ConnectionContext.noEncryption();
-    final HttpsConnectionContext httpsContext = ConnectionContext.https(SSLContext.getDefault());
+    final HttpsConnectionContext httpsContext = ConnectionContext.httpsServer(SSLContext.getDefault());
 
     String host = "";
     int port = 9090;
