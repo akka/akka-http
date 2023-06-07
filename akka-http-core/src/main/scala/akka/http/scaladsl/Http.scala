@@ -37,9 +37,6 @@ import akka.util.ManifestInfo
 
 import scala.annotation.nowarn
 import com.typesafe.config.Config
-import com.typesafe.sslconfig.akka._
-import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
-import com.typesafe.sslconfig.ssl.ConfigSSLContextBuilder
 
 import scala.concurrent._
 import scala.util.{ Success, Try }
@@ -55,8 +52,7 @@ import scala.concurrent.duration._
  */
 @nowarn("msg=DefaultSSLContextCreation in package scaladsl is deprecated")
 @DoNotInherit
-class HttpExt @InternalStableApi /* constructor signature is hardcoded in Telemetry */ private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
-  with DefaultSSLContextCreation {
+class HttpExt @InternalStableApi /* constructor signature is hardcoded in Telemetry */ private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension {
 
   akka.http.Version.check(system.settings.config)
   akka.AkkaVersion.require("akka-http", akka.http.Version.supportedAkkaVersion)
@@ -826,7 +822,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
       case hctx: HttpsConnectionContext =>
         hctx.sslContextData match {
           case Left(ssl) =>
-            TLS(ssl.sslContext, ssl.sslConfig, ssl.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
+            TLS(ssl.sslContext, ssl.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
           case Right(engineCreator) =>
             TLS(() => engineCreator(hostInfo), TLSClosing.eagerClose)
         }
@@ -1125,89 +1121,5 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
         case d             => AfterDelay(d, FailStage)
       }
     })
-}
-
-/**
- * TLS configuration for an HTTPS server binding or client connection.
- * For the sslContext please refer to the com.typeasfe.ssl-config library.
- * The remaining four parameters configure the initial session that will
- * be negotiated, see [[akka.stream.TLSProtocol.NegotiateNewSession]] for details.
- */
-@deprecated("use ConnectionContext.httpsServer and httpsClient directly", since = "10.2.0")
-trait DefaultSSLContextCreation {
-
-  protected def system: ActorSystem
-  def sslConfig = AkkaSSLConfig(system)
-
-  // --- log warnings ---
-  private[this] def log = system.log
-
-  @deprecated("AkkaSSLConfig usage is deprecated", since = "10.2.0")
-  def validateAndWarnAboutLooseSettings() = ()
-  // --- end of log warnings ---
-
-  @deprecated("use ConnectionContext.httpServer instead", since = "10.2.0")
-  def createDefaultClientHttpsContext(): HttpsConnectionContext =
-    createClientHttpsContext(AkkaSSLConfig(system))
-
-  @deprecated("use ConnectionContext.httpServer instead", since = "10.2.0")
-  def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
-    log.warning("Automatic server-side configuration is not supported yet, will attempt to use client-side settings. " +
-      "Instead it is recommended to construct the Servers HttpsConnectionContext manually (via SSLContext).")
-    createClientHttpsContext(sslConfig)
-  }
-
-  @deprecated("use ConnectionContext.httpClient(sslContext) instead", since = "10.2.0")
-  def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
-    val config = sslConfig.config
-
-    val log = Logging(system, getClass)(LogSource.fromClass)
-    val mkLogger = new AkkaLoggerFactory(system)
-
-    // initial ssl context!
-    val sslContext = if (sslConfig.config.default) {
-      log.debug("buildSSLContext: ssl-config.default is true, using default SSLContext")
-      sslConfig.validateDefaultTrustManager(config)
-      SSLContext.getDefault
-    } else {
-      // break out the static methods as much as we can...
-      val keyManagerFactory = sslConfig.buildKeyManagerFactory(config)
-      val trustManagerFactory = sslConfig.buildTrustManagerFactory(config)
-      new ConfigSSLContextBuilder(mkLogger, config, keyManagerFactory, trustManagerFactory).build()
-    }
-
-    // protocols!
-    val defaultParams = sslContext.getDefaultSSLParameters
-    val defaultProtocols = defaultParams.getProtocols
-    val protocols = sslConfig.configureProtocols(defaultProtocols, config)
-    defaultParams.setProtocols(protocols)
-
-    // ciphers!
-    val defaultCiphers = defaultParams.getCipherSuites
-    val cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, config)
-    defaultParams.setCipherSuites(cipherSuites)
-
-    // auth!
-    import com.typesafe.sslconfig.ssl.{ ClientAuth => SslClientAuth }
-    val clientAuth = config.sslParametersConfig.clientAuth match {
-      case SslClientAuth.Default => None
-      case SslClientAuth.Want    => Some(TLSClientAuth.Want)
-      case SslClientAuth.Need    => Some(TLSClientAuth.Need)
-      case SslClientAuth.None    => Some(TLSClientAuth.None)
-    }
-
-    // hostname!
-    if (!sslConfig.config.loose.disableHostnameVerification) {
-      defaultParams.setEndpointIdentificationAlgorithm("https")
-    }
-
-    new HttpsConnectionContext(
-      sslContext,
-      Some(sslConfig),
-      Some(cipherSuites.toList),
-      Some(defaultProtocols.toList),
-      clientAuth,
-      Some(defaultParams))
-  }
 
 }

@@ -9,7 +9,6 @@ import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.stream.TLSClientAuth
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import javax.net.ssl.{ SSLContext, SSLEngine, SSLParameters }
 import scala.compat.java8.OptionConverters
@@ -48,47 +47,6 @@ object ConnectionContext {
   def httpsClient(createEngine: akka.japi.function.Function2[String, Integer, SSLEngine]): HttpsConnectionContext =
     scaladsl.ConnectionContext.httpsClient((host, port) => createEngine(host, port))
 
-  // ConnectionContext
-  /** Used to serve HTTPS traffic. */
-  @Deprecated @deprecated("use httpsServer, httpsClient or the method that takes a custom factory", since = "10.2.0")
-  def https(sslContext: SSLContext): HttpsConnectionContext = // ...
-    //#https-context-creation
-    scaladsl.ConnectionContext.https(sslContext)
-
-  /** Used to serve HTTPS traffic. */
-  @Deprecated @deprecated("use httpsServer, httpsClient or the method that takes a custom factory", since = "10.2.0")
-  def https(
-    sslContext:          SSLContext,
-    sslConfig:           Optional[AkkaSSLConfig],
-    enabledCipherSuites: Optional[JCollection[String]],
-    enabledProtocols:    Optional[JCollection[String]],
-    clientAuth:          Optional[TLSClientAuth],
-    sslParameters:       Optional[SSLParameters]) = // ...
-    //#https-context-creation
-    scaladsl.ConnectionContext.https(
-      sslContext,
-      OptionConverters.toScala(sslConfig),
-      OptionConverters.toScala(enabledCipherSuites).map(Util.immutableSeq(_)),
-      OptionConverters.toScala(enabledProtocols).map(Util.immutableSeq(_)),
-      OptionConverters.toScala(clientAuth),
-      OptionConverters.toScala(sslParameters))
-
-  /** Used to serve HTTPS traffic. */
-  @Deprecated @deprecated("use httpsServer, httpsClient or the method that takes a custom factory", since = "10.2.0")
-  def https(
-    sslContext:          SSLContext,
-    enabledCipherSuites: Optional[JCollection[String]],
-    enabledProtocols:    Optional[JCollection[String]],
-    clientAuth:          Optional[TLSClientAuth],
-    sslParameters:       Optional[SSLParameters]) =
-    scaladsl.ConnectionContext.https(
-      sslContext,
-      None,
-      OptionConverters.toScala(enabledCipherSuites).map(Util.immutableSeq(_)),
-      OptionConverters.toScala(enabledProtocols).map(Util.immutableSeq(_)),
-      OptionConverters.toScala(clientAuth),
-      OptionConverters.toScala(sslParameters))
-
   /** Used to serve HTTP traffic. */
   def noEncryption(): HttpConnectionContext =
     scaladsl.ConnectionContext.noEncryption()
@@ -97,18 +55,11 @@ object ConnectionContext {
 @DoNotInherit
 abstract class ConnectionContext {
   def isSecure: Boolean
-  @Deprecated
-  @deprecated("Not always available", since = "10.2.0")
-  def sslConfig: Option[AkkaSSLConfig]
 }
 
 @DoNotInherit
 abstract class HttpConnectionContext extends akka.http.javadsl.ConnectionContext {
   override final def isSecure = false
-
-  @Deprecated
-  @deprecated("Not always available", since = "10.2.0")
-  override def sslConfig: Option[AkkaSSLConfig] = None
 }
 
 @DoNotInherit
