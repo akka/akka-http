@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.File
+import java.nio.file.Files
 
 import akka.NotUsed
 import akka.http.scaladsl.model.{ Multipart, _ }
@@ -32,7 +33,7 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
           @volatile var file: Option[File] = None
 
           def tempDest(fileInfo: FileInfo): File = {
-            val dest = File.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp")
+            val dest = Files.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp").toFile
             file = Some(dest)
             dest
           }
@@ -89,7 +90,7 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
           @volatile var files: Seq[File] = Nil
 
           def tempDest(fileInfo: FileInfo): File = {
-            val dest = File.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp")
+            val dest = Files.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp").toFile
             files = files :+ dest
             dest
           }

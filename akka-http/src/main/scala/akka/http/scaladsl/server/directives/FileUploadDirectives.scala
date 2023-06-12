@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.File
+import java.nio.file.Files
 
 import akka.Done
 import akka.annotation.ApiMayChange
@@ -166,7 +167,7 @@ trait FileUploadDirectives {
       implicit val ec = ctx.executionContext
 
       def tempDest(fileInfo: FileInfo): File = {
-        val dest = File.createTempFile("akka-http-upload", ".tmp")
+        val dest = Files.createTempFile("akka-http-upload", ".tmp").toFile
         dest.deleteOnExit()
         dest
       }

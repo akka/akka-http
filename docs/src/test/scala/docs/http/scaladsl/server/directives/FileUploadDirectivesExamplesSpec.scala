@@ -11,6 +11,7 @@ import akka.stream.scaladsl.Framing
 import akka.testkit.TestDuration
 import akka.util.ByteString
 import java.io.File
+import java.nio.file.Files
 
 import akka.http.scaladsl.server.RoutingSpec
 import docs.CompileOnlySpec
@@ -31,7 +32,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec 
     //#storeUploadedFile
 
     def tempDestination(fileInfo: FileInfo): File =
-      File.createTempFile(fileInfo.fileName, ".tmp")
+      Files.createTempFile(fileInfo.fileName, ".tmp").toFile
 
     val route =
       storeUploadedFile("csv", tempDestination) {
@@ -60,7 +61,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec 
     //#storeUploadedFiles
 
     def tempDestination(fileInfo: FileInfo): File =
-      File.createTempFile(fileInfo.fileName, ".tmp")
+      Files.createTempFile(fileInfo.fileName, ".tmp").toFile
 
     val route =
       storeUploadedFiles("csv", tempDestination) { files =>

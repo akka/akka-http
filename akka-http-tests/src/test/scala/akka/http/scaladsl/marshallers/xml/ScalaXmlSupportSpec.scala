@@ -98,7 +98,7 @@ class ScalaXmlSupportSpec extends AnyFreeSpec with Matchers with ScalatestRouteT
     }
 
   def withTempFile[T](content: String)(f: File => T): T = {
-    val file = File.createTempFile("xxe", ".txt")
+    val file = Files.createTempFile("xxe", ".txt").toFile
     try {
       Files.write(file.toPath, content.getBytes("UTF-8"))
       f(file)
