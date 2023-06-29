@@ -31,7 +31,7 @@ inThisBuild(Def.settings(
   startYear := Some(2014),
   releaseNotesURL := (
     if (isSnapshot.value) None
-    else Some(url(s"https://github.com/akka/akka-grpc/releases/tag/v${version.value}"))
+    else Some(url(s"https://github.com/akka/akka-http/releases/tag/v${version.value}"))
     ),
   licenses := {
     val tagOrBranch =
