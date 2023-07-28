@@ -18,6 +18,8 @@ import scala.concurrent.duration.Duration
 @InternalApi
 private[akka] final case class WebSocketSettingsImpl(
   randomFactory:            () => Random,
+  receiveIdleTimeout:       Duration,
+  sendIdleTimeout:          Duration,
   periodicKeepAliveMode:    String,
   periodicKeepAliveMaxIdle: Duration,
   periodicKeepAliveData:    () => ByteString,
@@ -57,6 +59,8 @@ private[akka] object WebSocketSettingsImpl { // on purpose not extending Setting
     val c = inner
     WebSocketSettingsImpl(
       Randoms.SecureRandomInstances,
+      c.getPotentiallyInfiniteDuration("receive-idle-timeout"),
+      c.getPotentiallyInfiniteDuration("send-idle-timeout"),
       c.getString("periodic-keep-alive-mode"), // mode could be extended to be a factory of pings, if we'd need control over the data field
       c.getPotentiallyInfiniteDuration("periodic-keep-alive-max-idle"),
       NoPeriodicKeepAliveData,

@@ -42,6 +42,7 @@ private[http] object WebSocket {
     masking(serverSide, websocketSettings.randomFactory) atop
       FrameLogger.logFramesIfEnabled(websocketSettings.logFrames) atop
       frameHandling(serverSide, closeTimeout, log) atop
+      idleTimeout(websocketSettings) atop
       periodicKeepAlive(websocketSettings) atop
       messageAPI(serverSide, closeTimeout)
 
@@ -89,6 +90,21 @@ private[http] object WebSocket {
   private[this] final val PongFullFrame: FrameStart = FrameEvent.fullFrame(Opcode.Pong, None, ByteString.empty, fin = true)
   private[this] final val mkDirectAnswerPong = () => DirectAnswer(PongFullFrame)
 
+  /** The layer that transparently monitors data flow in both directions and fails the flow
+   *  with [[akka.stream.StreamIdleTimeoutException]] if elements are not passed within configured time.
+   *  */
+  def idleTimeout(settings: WebSocketSettings): BidiFlow[FrameHandler.Output, FrameHandler.Output, FrameOutHandler.Input, FrameOutHandler.Input, NotUsed] = {
+    val receiveIdleTimeoutFlow = settings.receiveIdleTimeout match {
+      case receiveIdleTimeout: FiniteDuration => Flow[FrameHandler.Output].idleTimeout(receiveIdleTimeout)
+      case _ => Flow[FrameHandler.Output].map(identity)
+    }
+    val sendIdleTimeoutFlow = settings.sendIdleTimeout match {
+      case sendIdleTimeout: FiniteDuration => Flow[Input].idleTimeout(sendIdleTimeout)
+      case _ => Flow[Input].map(identity)
+    }
+
+    BidiFlow.fromFlows(receiveIdleTimeoutFlow, sendIdleTimeoutFlow)
+  }
   /**
    * The layer that implements all low-level frame handling, like handling control frames, collecting messages
    * from frames, decoding text messages, close handling, etc.

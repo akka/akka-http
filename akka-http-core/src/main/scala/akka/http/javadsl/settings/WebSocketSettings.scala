@@ -21,6 +21,8 @@ import scala.concurrent.duration.Duration
 @DoNotInherit
 trait WebSocketSettings { self: WebSocketSettingsImpl =>
   def getRandomFactory: Supplier[Random]
+  def receiveIdleTimeout: Duration
+  def sendIdleTimeout: Duration
   def periodicKeepAliveMode: String
   def periodicKeepAliveMaxIdle: Duration
   /**
