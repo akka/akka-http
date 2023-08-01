@@ -6,6 +6,14 @@ route logic easy and convenient. This "route test DSL" is made available with th
 
 ## Dependency
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Gradle,Maven] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
 To use Akka HTTP TestKit, add the module to your project:
 
 @@dependency [sbt,Gradle,Maven] {
