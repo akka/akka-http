@@ -94,16 +94,19 @@ private[http] object WebSocket {
    *  with [[akka.stream.StreamIdleTimeoutException]] if elements are not passed within configured time.
    *  */
   def idleTimeout(settings: WebSocketSettings): BidiFlow[FrameHandler.Output, FrameHandler.Output, FrameOutHandler.Input, FrameOutHandler.Input, NotUsed] = {
-    val receiveIdleTimeoutFlow = settings.receiveIdleTimeout match {
-      case receiveIdleTimeout: FiniteDuration => Flow[FrameHandler.Output].idleTimeout(receiveIdleTimeout)
-      case _ => Flow[FrameHandler.Output].map(identity)
-    }
-    val sendIdleTimeoutFlow = settings.sendIdleTimeout match {
-      case sendIdleTimeout: FiniteDuration => Flow[Input].idleTimeout(sendIdleTimeout)
-      case _ => Flow[Input].map(identity)
-    }
+    if (settings.receiveIdleTimeout == Duration.Inf && settings.sendIdleTimeout == Duration.Inf) BidiFlow.identity
+    else {
+      val receiveIdleTimeoutFlow = settings.receiveIdleTimeout match {
+        case receiveIdleTimeout: FiniteDuration => Flow[FrameHandler.Output].idleTimeout(receiveIdleTimeout)
+        case _ => Flow[FrameHandler.Output]
+      }
+      val sendIdleTimeoutFlow = settings.sendIdleTimeout match {
+        case sendIdleTimeout: FiniteDuration => Flow[Input].idleTimeout(sendIdleTimeout)
+        case _ => Flow[Input]
+      }
 
-    BidiFlow.fromFlows(receiveIdleTimeoutFlow, sendIdleTimeoutFlow)
+      BidiFlow.fromFlows(receiveIdleTimeoutFlow, sendIdleTimeoutFlow)
+    }
   }
   /**
    * The layer that implements all low-level frame handling, like handling control frames, collecting messages

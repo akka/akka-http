@@ -27,7 +27,7 @@ class WebSocketServerReceiveIdleTimeoutSpec extends AkkaSpecWithMaterializer(
 
   "A WebSocket server" must {
 
-    "terminate the handler flow with an error when elements are not received within receive-idle-timeout" in Utils.assertAllStagesStopped {
+    "terminate the handler flow with an akka.stream.StreamIdleTimeoutException when elements are not received within receive-idle-timeout" in Utils.assertAllStagesStopped {
       import system.dispatcher
       val handlerTermination = Promise[Done]()
       val handler = Flow[Message].map(identity).watchTermination() { (_, terminationFuture) =>
@@ -37,20 +37,18 @@ class WebSocketServerReceiveIdleTimeoutSpec extends AkkaSpecWithMaterializer(
         }
       }
 
-      val bindingFuture = Http().newServerAt("localhost", 0)
+      val binding = Http().newServerAt("localhost", 0)
         .bindSync({
-          _.attribute(webSocketUpgrade).get.handleMessages(handler.recover { case ex => {
+          _.attribute(webSocketUpgrade).get.handleMessages(handler.recover { case ex =>
             handlerTermination.failure(ex)
             TextMessage("dummy")
-          }
           }, None)
-        })
-      val binding = Await.result(bindingFuture, 3.seconds.dilated)
+        }).futureValue(timeout(3.seconds.dilated))
       val myPort = binding.localAddress.getPort
 
       Source.maybe.via(Http().webSocketClientFlow(WebSocketRequest("ws://127.0.01:" + myPort))).to(Sink.ignore).run()
 
-      handlerTermination.future.failed.futureValue
+      handlerTermination.future.failed.futureValue shouldBe a[akka.stream.StreamIdleTimeoutException]
       binding.unbind()
     }
   }
