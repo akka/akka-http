@@ -7,7 +7,7 @@ resolvers += Resolver.sonatypeRepo("releases") // to more quickly obtain paradox
 resolvers += Resolver.jcenterRepo
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.2")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.3")
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.3")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "4.1.1")
 addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
@@ -19,7 +19,7 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.51")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.10.0")
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.30")
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.31")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.10.4")
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.11")
 
