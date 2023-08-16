@@ -14,6 +14,16 @@ using [Jackson], which is also the library used for providing @ref[JSON support]
 
 The custom XML (un)marshalling code shown above requires that you depend on the `jackson-dataformat-xml` library.
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Gradle,Maven] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependency as below.
+
 @@dependency [sbt,Gradle,Maven] {
   group="com.fasterxml.jackson.dataformat"
   artifact="jackson-dataformat-xml"

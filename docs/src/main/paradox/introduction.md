@@ -32,6 +32,16 @@ Akka HTTP is provided as independent modules from Akka itself under its own rele
 with Akka >= $akka.minimum.version$ and future Akka 2.x versions that are released during the lifetime of Akka HTTP 10.4.x. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
 choose an Akka version to run against and add a manual dependency to `akka-stream` of the chosen version.
 
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Gradle,Maven] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
+Additionally, add the dependencies as below.
+
 @@dependency [sbt,Gradle,Maven] {
   symbol1=AkkaVersion
   value1=$akka.version$

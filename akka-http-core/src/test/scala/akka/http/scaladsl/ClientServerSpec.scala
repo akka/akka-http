@@ -13,9 +13,6 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.{ Success, Try }
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import com.typesafe.sslconfig.ssl.SSLConfigSettings
-import com.typesafe.sslconfig.ssl.SSLLooseConfig
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging.LogEvent
@@ -36,10 +33,11 @@ import akka.stream.testkit._
 import akka.stream._
 import akka.testkit._
 import akka.util.ByteString
+
 import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import javax.net.ssl.{ SSLContext, TrustManagerFactory }
+import javax.net.ssl.{ SSLContext, SSLEngine, TrustManagerFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
 
@@ -708,17 +706,13 @@ Host: example.com
       }
     }
 
-    "complete a request/response over https, disabling hostname verification with SSLConfigSettings" in Utils.assertAllStagesStopped {
+    "complete a request/response over https, disabling hostname verification" in Utils.assertAllStagesStopped {
       val serverConnectionContext = ExampleHttpContexts.exampleServerContext
       val handlerFlow: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = "Okay") }
       val serverBinding =
         Http().newServerAt("localhost", 0).enableHttps(serverConnectionContext).bindFlow(handlerFlow)
           .futureValue
 
-      // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
-      val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
-      @nowarn("msg=deprecated")
-      val sslConfig = AkkaSSLConfig.apply().withSettings(sslConfigSettings)
       val sslContext = {
         val certStore = KeyStore.getInstance(KeyStore.getDefaultType)
         certStore.load(null, null)
@@ -733,9 +727,12 @@ Host: example.com
         context
       }
 
-      // This approach is deprecated, but we still want to check it works
-      @nowarn("msg=deprecated")
-      val clientConnectionContext = ConnectionContext.https(sslContext, Some(sslConfig))
+      val engine = sslContext.createSSLEngine()
+
+      // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
+      engine.setUseClientMode(true)
+
+      val clientConnectionContext = ConnectionContext.httpsClient((_, _) => engine)
 
       val request = HttpRequest(uri = s"https:/${serverBinding.localAddress}")
       Http()
