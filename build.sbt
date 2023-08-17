@@ -29,9 +29,13 @@ inThisBuild(Def.settings(
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
+  releaseNotesURL := (
+    if (isSnapshot.value) None
+    else Some(url(s"https://github.com/akka/akka-http/releases/tag/v${version.value}"))
+    ),
   licenses := {
     val tagOrBranch =
-      if (version.value.endsWith("SNAPSHOT")) "main"
+      if (isSnapshot.value) "main"
       else "v" + version.value
     Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/akka-http/${tagOrBranch}/LICENSE")))
   },

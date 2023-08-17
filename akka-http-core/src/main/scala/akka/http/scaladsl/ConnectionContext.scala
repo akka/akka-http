@@ -10,7 +10,6 @@ import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.TLSClientAuth
 import akka.stream.TLSProtocol._
 import scala.annotation.nowarn
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import javax.net.ssl._
 
 import scala.collection.JavaConverters._
@@ -77,24 +76,12 @@ object ConnectionContext {
       case Some((host, port)) => createSSLEngine(host, port)
     }: Option[(String, Int)] => SSLEngine))
 
-  @nowarn("msg=deprecated")
-  @deprecated("use httpsClient, httpsServer, or the lower-level SSLEngine-based constructor", "10.2.0")
-  def https(
-    sslContext:          SSLContext,
-    sslConfig:           Option[AkkaSSLConfig]         = None,
-    enabledCipherSuites: Option[immutable.Seq[String]] = None,
-    enabledProtocols:    Option[immutable.Seq[String]] = None,
-    clientAuth:          Option[TLSClientAuth]         = None,
-    sslParameters:       Option[SSLParameters]         = None) =
-    new HttpsConnectionContext(Left(DeprecatedSslContextParameters(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)))
-
   def noEncryption() = HttpConnectionContext
 }
 
 @deprecated("here to be able to keep supporting the old API", since = "10.2.0")
 private[http] case class DeprecatedSslContextParameters(
   sslContext:          SSLContext,
-  sslConfig:           Option[AkkaSSLConfig],
   enabledCipherSuites: Option[immutable.Seq[String]],
   enabledProtocols:    Option[immutable.Seq[String]],
   clientAuth:          Option[TLSClientAuth],
@@ -106,7 +93,7 @@ private[http] case class DeprecatedSslContextParameters(
 /**
  *  Context with all information needed to set up a HTTPS connection
  *
- * This constructor is INTERNAL API, use ConnectionContext.https instead
+ * This constructor is INTERNAL API, use ConnectionContext.httpsClient instead
  */
 @InternalApi
 @nowarn("msg=since 10.2.0")
@@ -114,19 +101,7 @@ final class HttpsConnectionContext private[http] (private[http] val sslContextDa
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
   protected[http] override final def defaultPort: Int = 443
 
-  @nowarn("msg=deprecated")
-  @deprecated("prefer ConnectionContext.httpsClient or ConnectionContext.httpsServer", "10.2.0")
-  def this(
-    sslContext:          SSLContext,
-    sslConfig:           Option[AkkaSSLConfig]         = None,
-    enabledCipherSuites: Option[immutable.Seq[String]] = None,
-    enabledProtocols:    Option[immutable.Seq[String]] = None,
-    clientAuth:          Option[TLSClientAuth]         = None,
-    sslParameters:       Option[SSLParameters]         = None
-  ) = this(Left(DeprecatedSslContextParameters(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)))
-
   @deprecated("not always available", "10.2.0") def sslContext: SSLContext = sslContextData.left.get.sslContext
-  @deprecated("here for binary compatibility", since = "10.2.0") def sslConfig: Option[AkkaSSLConfig] = sslContextData.left.get.sslConfig
   @deprecated("here for binary compatibility", since = "10.2.0") def enabledCipherSuites: Option[immutable.Seq[String]] = sslContextData.left.get.enabledCipherSuites
   @deprecated("here for binary compatibility", since = "10.2.0") def enabledProtocols: Option[immutable.Seq[String]] = sslContextData.left.get.enabledProtocols
   @deprecated("here for binary compatibility", since = "10.2.0") def clientAuth: Option[TLSClientAuth] = sslContextData.left.get.clientAuth

@@ -12,7 +12,6 @@ import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.util.Try
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import akka.{ NotUsed, stream }
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
 import akka.event.LoggingAdapter
@@ -797,18 +796,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def setDefaultClientHttpsContext(context: HttpsConnectionContext): Unit =
     delegate.setDefaultClientHttpsContext(context.asScala)
-
-  @deprecated("use ConnectionContext.httpsServer", since = "10.2.0")
-  def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
-    delegate.createServerHttpsContext(sslConfig)
-
-  @deprecated("use ConnectionContext.httpsClient", since = "10.2.0")
-  def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
-    delegate.createClientHttpsContext(sslConfig)
-
-  @deprecated("use ConnectionContext.httpsClient", since = "10.2.0")
-  def createDefaultClientHttpsContext(): HttpsConnectionContext =
-    delegate.createDefaultClientHttpsContext()
 
   private def adaptTupleFlow[T, Mat](scalaFlow: stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[scaladsl.model.HttpResponse], T), Mat]): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Mat] = {
     implicit def id[X]: JavaMapping[X, X] = JavaMapping.identity[X]

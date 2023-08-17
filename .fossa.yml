@@ -1,10 +1,8 @@
 version: 3
 # https://github.com/fossas/fossa-cli/blob/master/docs/references/files/fossa-yml.md
 
-targets:
+paths:
   # exclude non-distributed projects from dependency scanning
   exclude:
-    - type: scala
-      path: akka-http-bench-jmh
-    - type: scala
-      path: akka-http-compatibility-tests
+    - akka-http-bench-jmh
+    - akka-http-compatibility-tests

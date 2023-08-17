@@ -266,8 +266,15 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
           if (withBackoff) {
             // not immediate when using backoff, 4 retries before failing, backoff is 300-800ms (so at least 1.2s)
             client.responsesIn.expectNoMessage(clientSettings.http2Settings.baseConnectionBackoff * 4)
+            // total max backoff for 4 tries with the random factor could actually worst case be something
+            // like 600 + 800 + 800 + 800 - those 1200 ms = 1800 ms, but no way to pass a timeout to expectError
+            awaitAssert({
+              client.responsesIn.expectError()
+            }, 1800.millis)
+          } else {
+            // directly
+            client.responsesIn.expectError()
           }
-          client.responsesIn.expectError()
           client.requestsOut.expectCancellation()
 
         }
