@@ -258,7 +258,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
         .map(x => {
           Await.result(Future {
             Thread.sleep(200)
-          }, Duration.apply(3, TimeUnit.SECONDS))
+          }, 3.seconds)
           x
         })
         .via(Http().webSocketClientFlow(
@@ -277,13 +277,9 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
       val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
         _.attribute(webSocketUpgrade).get.handleMessagesWithSinkSource(
           Sink.ignore,
-          Source(1 to 10).map(_ => TextMessage("dummy"))
-            .map(x => {
-              Await.result(Future {
-                Thread.sleep(200)
-              }, Duration.apply(3, TimeUnit.SECONDS))
-              x
-            })
+          Source(1 to 10)
+            .delay(100.millis, OverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1))
+            .map(_ => TextMessage("dummy"))
         )
       })
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
