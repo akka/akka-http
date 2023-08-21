@@ -248,19 +248,14 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
 
     "fail the materialized future with akka.stream.StreamIdleTimeoutException if elements are not received within receive-idle-timeout" in {
       val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
-        _.attribute(webSocketUpgrade).get.handleMessages(Flow.apply, None)
+        _.attribute(webSocketUpgrade).get.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.maybe[Message]), None)
       })
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
       import system.dispatcher
       val future = Source(1 to 10).map(_ => TextMessage("dummy"))
-        .map(x => {
-          Await.result(Future {
-            Thread.sleep(200)
-          }, 3.seconds)
-          x
-        })
+        .delay(300.millis, DelayOverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1))
         .via(Http().webSocketClientFlow(
           WebSocketRequest("ws://127.0.01:" + myPort),
           settings = ClientConnectionSettings("akka.http.client.websocket.receive-idle-timeout = 1s"))
