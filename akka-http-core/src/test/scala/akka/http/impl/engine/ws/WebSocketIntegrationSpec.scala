@@ -4,8 +4,8 @@
 
 package akka.http.impl.engine.ws
 
-import scala.concurrent.{Await, Future, Promise}
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.{ Await, Promise }
+import scala.concurrent.duration.DurationInt
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.apply
 import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
@@ -263,7 +263,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
 
       whenReady(future.map(r => Success(r)).recover { case ex => Failure(ex) }) { result =>
         result.isFailure should ===(true)
-        result.asInstanceOf[Failure[_]].exception shouldBe a [akka.stream.StreamIdleTimeoutException]
+        result.asInstanceOf[Failure[_]].exception shouldBe a[akka.stream.StreamIdleTimeoutException]
       }
     }
 

@@ -16,8 +16,8 @@ import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.Promise
+import scala.util.{ Failure, Success }
 
 class WebSocketServerReceiveIdleTimeoutSpec extends AkkaSpecWithMaterializer(
   """
@@ -36,16 +36,17 @@ class WebSocketServerReceiveIdleTimeoutSpec extends AkkaSpecWithMaterializer(
       val handlerTermination = Promise[Done]()
       val handler = Flow[Message].map(identity).watchTermination() { (_, terminationFuture) =>
         terminationFuture.onComplete {
-          case Success(_) => handlerTermination.trySuccess(Done)
+          case Success(_)         => handlerTermination.trySuccess(Done)
           case Failure(exception) => handlerTermination.tryFailure(exception)
         }
       }
 
       val binding = Http().newServerAt("localhost", 0)
         .bindSync({
-          _.attribute(webSocketUpgrade).get.handleMessages(handler.recover { case ex =>
-            handlerTermination.failure(ex)
-            TextMessage("dummy")
+          _.attribute(webSocketUpgrade).get.handleMessages(handler.recover {
+            case ex =>
+              handlerTermination.failure(ex)
+              TextMessage("dummy")
           }, None)
         }).futureValue(timeout(3.seconds.dilated))
       val myPort = binding.localAddress.getPort
