@@ -10,14 +10,14 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.http.scaladsl.model.Uri.apply
 import akka.http.scaladsl.model.ws._
+import akka.stream.{ Attributes, DelayOverflowStrategy }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{ Duration, DurationInt }
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 
 class WebSocketServerSendIdleTimeoutSpec extends AkkaSpecWithMaterializer(
@@ -35,7 +35,7 @@ class WebSocketServerSendIdleTimeoutSpec extends AkkaSpecWithMaterializer(
     "terminate the handler flow with an akka.stream.StreamIdleTimeoutException when elements are not sent within send-idle-timeout" in Utils.assertAllStagesStopped {
       import system.dispatcher
       val handlerTermination = Promise[Done]()
-      val handler = Flow[Message].map(identity).watchTermination() { (_, terminationFuture) =>
+      val handler = Flow.fromSinkAndSource(Sink.ignore, Source.maybe).watchTermination() { (_, terminationFuture) =>
         terminationFuture.onComplete {
           case Success(_)         => handlerTermination.trySuccess(Done)
           case Failure(exception) => handlerTermination.tryFailure(exception)
@@ -43,19 +43,18 @@ class WebSocketServerSendIdleTimeoutSpec extends AkkaSpecWithMaterializer(
       }
 
       val binding = Http().newServerAt("localhost", 0)
-        .bindSync({
+        .bindSync(
           _.attribute(webSocketUpgrade).get.handleMessages(handler.recover {
             case ex =>
               handlerTermination.failure(ex)
               TextMessage("dummy")
           }, None)
-        }).futureValue(timeout(3.seconds.dilated))
+        ).futureValue(timeout(3.seconds.dilated))
       val myPort = binding.localAddress.getPort
 
-      Source(1 to 10).map(_ => {
-        Await.result(Future(Thread.sleep(200)), Duration(3, TimeUnit.SECONDS))
-        TextMessage("dummy")
-      })
+      Source(1 to 10)
+        .map(_ => TextMessage("dummy"))
+        .delay(200.millis, DelayOverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1))
         .via(Http().webSocketClientFlow(WebSocketRequest("ws://127.0.01:" + myPort))).to(Sink.ignore).run()
 
       handlerTermination.future.failed.futureValue shouldBe a[akka.stream.StreamIdleTimeoutException]

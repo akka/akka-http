@@ -10,6 +10,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.http.scaladsl.model.Uri.apply
 import akka.http.scaladsl.model.ws._
+import akka.stream.{ Attributes, DelayOverflowStrategy }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.testkit._
@@ -34,21 +35,25 @@ class WebSocketServerReceiveIdleTimeoutSpec extends AkkaSpecWithMaterializer(
     "terminate the handler flow with an akka.stream.StreamIdleTimeoutException when elements are not received within receive-idle-timeout" in Utils.assertAllStagesStopped {
       import system.dispatcher
       val handlerTermination = Promise[Done]()
-      val handler = Flow[Message].map(identity).watchTermination() { (_, terminationFuture) =>
-        terminationFuture.onComplete {
-          case Success(_)         => handlerTermination.trySuccess(Done)
-          case Failure(exception) => handlerTermination.tryFailure(exception)
+      val handler = Flow
+        .fromSinkAndSourceCoupled(
+          Sink.foreach(println),
+          Source(1 to 10).map(_ => TextMessage("dummy")).delay(200.millis, DelayOverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1)))
+        .watchTermination() { (_, terminationFuture) =>
+          terminationFuture.onComplete {
+            case Success(_)         => handlerTermination.trySuccess(Done)
+            case Failure(exception) => handlerTermination.tryFailure(exception)
+          }
         }
-      }
 
       val binding = Http().newServerAt("localhost", 0)
-        .bindSync({
+        .bindSync(
           _.attribute(webSocketUpgrade).get.handleMessages(handler.recover {
             case ex =>
               handlerTermination.failure(ex)
               TextMessage("dummy")
           }, None)
-        }).futureValue(timeout(3.seconds.dilated))
+        ).futureValue(timeout(3.seconds.dilated))
       val myPort = binding.localAddress.getPort
 
       Source.maybe.via(Http().webSocketClientFlow(WebSocketRequest("ws://127.0.01:" + myPort))).to(Sink.ignore).run()

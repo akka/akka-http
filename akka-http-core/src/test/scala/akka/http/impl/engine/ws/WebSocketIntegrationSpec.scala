@@ -25,7 +25,6 @@ import akka.util.ByteString
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit._
 
-import java.util.concurrent.TimeUnit
 import scala.util.{ Failure, Success }
 
 class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
@@ -273,7 +272,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
         _.attribute(webSocketUpgrade).get.handleMessagesWithSinkSource(
           Sink.ignore,
           Source(1 to 10)
-            .delay(100.millis, OverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1))
+            .delay(100.millis, DelayOverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1))
             .map(_ => TextMessage("dummy"))
         )
       })
