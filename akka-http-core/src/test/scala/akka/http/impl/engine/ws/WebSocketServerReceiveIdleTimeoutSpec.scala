@@ -37,7 +37,7 @@ class WebSocketServerReceiveIdleTimeoutSpec extends AkkaSpecWithMaterializer(
       val handlerTermination = Promise[Done]()
       val handler = Flow
         .fromSinkAndSourceCoupled(
-          Sink.foreach(println),
+          Sink.ignore,
           Source(1 to 10).map(_ => TextMessage("dummy")).delay(200.millis, DelayOverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1)))
         .watchTermination() { (_, terminationFuture) =>
           terminationFuture.onComplete {
