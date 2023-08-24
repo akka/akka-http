@@ -244,6 +244,52 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
         resTry.failed.get.getMessage should ===("Connection failed.")
       }
     }
+
+    "fail the materialized future with akka.stream.StreamIdleTimeoutException if elements are not received within receive-idle-timeout" in {
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
+        _.attribute(webSocketUpgrade).get.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.maybe[Message]), None)
+      })
+      val binding = Await.result(bindingFuture, 3.seconds.dilated)
+      val myPort = binding.localAddress.getPort
+
+      import system.dispatcher
+      val future = Source(1 to 10).map(_ => TextMessage("dummy"))
+        .delay(300.millis, DelayOverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1))
+        .via(Http().webSocketClientFlow(
+          WebSocketRequest("ws://127.0.01:" + myPort),
+          settings = ClientConnectionSettings("akka.http.client.websocket.receive-idle-timeout = 1s"))
+        ).toMat(Sink.ignore)(Keep.right).run()
+
+      whenReady(future.map(r => Success(r)).recover { case ex => Failure(ex) }) { result =>
+        result.isFailure should ===(true)
+        result.asInstanceOf[Failure[_]].exception shouldBe a[akka.stream.StreamIdleTimeoutException]
+      }
+    }
+
+    "fail the materialized future if elements are not send within send-idle-timeout" in {
+      import system.dispatcher
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
+        _.attribute(webSocketUpgrade).get.handleMessagesWithSinkSource(
+          Sink.ignore,
+          Source(1 to 10)
+            .delay(100.millis, DelayOverflowStrategy.backpressure).addAttributes(Attributes.inputBuffer(1, 1))
+            .map(_ => TextMessage("dummy"))
+        )
+      })
+      val binding = Await.result(bindingFuture, 3.seconds.dilated)
+      val myPort = binding.localAddress.getPort
+
+      val future = Source.maybe.via(
+        Http().webSocketClientFlow(
+          WebSocketRequest("ws://127.0.01:" + myPort),
+          settings = ClientConnectionSettings("akka.http.client.websocket.send-idle-timeout = 1s")
+        )
+      ).toMat(Sink.ignore)(Keep.right).run()
+
+      whenReady(future.map(r => Success(r)).recover { case ex => Failure(ex) }) { result =>
+        result.isFailure should ===(true)
+      }
+    }
   }
 
 }

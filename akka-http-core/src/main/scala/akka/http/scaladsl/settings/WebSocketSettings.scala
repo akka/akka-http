@@ -18,6 +18,8 @@ abstract class WebSocketSettings extends akka.http.javadsl.settings.WebSocketSet
   override final val getRandomFactory: Supplier[Random] = new Supplier[Random] {
     override def get(): Random = self.randomFactory()
   }
+  override def receiveIdleTimeout: Duration
+  override def sendIdleTimeout: Duration
   override def periodicKeepAliveMode: String
   override def periodicKeepAliveMaxIdle: Duration
   /**
