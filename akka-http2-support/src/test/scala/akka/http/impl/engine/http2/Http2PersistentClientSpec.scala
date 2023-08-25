@@ -32,8 +32,6 @@ class Http2PersistentClientTlsSpec extends Http2PersistentClientSpec(true)
 class Http2PersistentClientPlaintextSpec extends Http2PersistentClientSpec(false)
 
 abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMaterializer(
-  // FIXME: would rather use remote-address-attribute, but that doesn't work with HTTP/2
-  // see https://github.com/akka/akka-http/issues/3707
   """akka.http.server.remote-address-attribute = on
      akka.http.server.enable-http2 = on
      akka.http.client.http2.log-frames = on
@@ -261,18 +259,39 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
             )
               .addAttribute(requestIdAttr, RequestId("request-1"))
           )
+          // another request, queued
+          client.sendRequest(
+            HttpRequest(
+              method = HttpMethods.POST,
+              entity = "ping",
+              headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+            )
+              .addAttribute(requestIdAttr, RequestId("request-2"))
+          )
           // need some demand on response side, otherwise, no requests will be pulled in
-          client.responsesIn.request(1)
+          client.responsesIn.request(2)
           if (withBackoff) {
             // not immediate when using backoff, 4 retries before failing, backoff is 300-800ms (so at least 1.2s)
             client.responsesIn.expectNoMessage(clientSettings.http2Settings.baseConnectionBackoff * 4)
             // total max backoff for 4 tries with the random factor could actually worst case be something
             // like 600 + 800 + 800 + 800 - those 1200 ms = 1800 ms, but no way to pass a timeout to expectError
             awaitAssert({
+              val response1: HttpResponse = client.expectResponse()
+              response1.attribute(requestIdAttr) should be(Some(RequestId("request-1")))
+              response1.status should be(StatusCodes.BadGateway)
+              val response2: HttpResponse = client.expectResponse()
+              response2.attribute(requestIdAttr) should be(Some(RequestId("request-2")))
+              response2.status should be(StatusCodes.BadGateway)
               client.responsesIn.expectError()
             }, 1800.millis)
           } else {
             // directly
+            val response1: HttpResponse = client.expectResponse()
+            response1.attribute(requestIdAttr) should be(Some(RequestId("request-1")))
+            response1.status should be(StatusCodes.BadGateway)
+            val response2: HttpResponse = client.expectResponse()
+            response2.attribute(requestIdAttr) should be(Some(RequestId("request-2")))
+            response2.status should be(StatusCodes.BadGateway)
             client.responsesIn.expectError()
           }
           client.requestsOut.expectCancellation()
@@ -312,6 +331,9 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       probe.expectMsg("saw-reconnect")
 
       // max 4 attempts, giving up after that
+      val response = client.expectResponse()
+      response.attribute(requestIdAttr) should be(Some(RequestId("request-1")))
+      response.status should be(StatusCodes.BadGateway)
       client.responsesIn.expectError()
       client.requestsOut.expectCancellation()
     }

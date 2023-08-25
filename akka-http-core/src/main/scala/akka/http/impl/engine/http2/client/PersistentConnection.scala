@@ -28,6 +28,7 @@ import scala.util.{ Failure, Success }
 private[http2] object PersistentConnection {
 
   private case class EmbargoEnded(connectsLeft: Option[Int], embargo: FiniteDuration)
+  private case class DelayedFail(error: Throwable)
 
   /**
    * Wraps a connection flow with transparent reconnection support.
@@ -139,7 +140,7 @@ private[http2] object PersistentConnection {
           requestOut.fail(new StreamTcpException("connection broken"))
 
           if (connectsLeft.contains(0)) {
-            failStage(new RuntimeException(s"Connection failed after $maxAttempts attempts", cause))
+            become(ConnectionFailed(new RuntimeException(s"Connection failed after $maxAttempts attempts", cause)))
           } else {
             setHandler(requestIn, Unconnected)
             if (baseEmbargo == Duration.Zero) {
@@ -165,6 +166,8 @@ private[http2] object PersistentConnection {
           case EmbargoEnded(connectsLeft, nextEmbargo) =>
             log.debug("Reconnecting after backoff")
             connect(connectsLeft, nextEmbargo)
+          case DelayedFail(throwable) =>
+            failStage(throwable)
           case other => throw new IllegalArgumentException(s"Unexpected timer key $other") // compiler completeness check pleaser
 
         }
@@ -240,6 +243,41 @@ private[http2] object PersistentConnection {
           requestOut.complete()
           responseIn.cancel()
           super.onDownstreamFinish(cause)
+        }
+      }
+
+      private case class ConnectionFailed(error: Throwable) extends State {
+
+        private var waitingResponse: Option[HttpResponse] = None
+
+        // FIXME for how long do we fail incoming requests? Is a timer really a reasonable solution?
+        // FIXME configurable if it should be timed
+        scheduleOnce(DelayedFail(error), 1.second)
+        // initial request (triggering the failing connection) should be available already
+        handleRequest()
+
+        override def onPush(): Unit = {
+          handleRequest()
+        }
+
+        def handleRequest(): Unit = {
+          if (isAvailable(requestIn)) {
+            val request = grab(requestIn)
+            val response = errorResponse.withAttributes(request.attributes)
+            if (isAvailable(responseOut)) push(responseOut, response)
+            else waitingResponse = Some(response)
+          }
+          if (!hasBeenPulled(requestIn)) pull(requestIn)
+        }
+
+        override def onPull(): Unit = {
+          waitingResponse match {
+            case Some(response) =>
+              push(responseOut, response)
+              pull(requestIn)
+            case None =>
+            // will be pushed by next request
+          }
         }
       }
     }
