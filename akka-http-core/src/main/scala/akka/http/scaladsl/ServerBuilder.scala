@@ -61,7 +61,7 @@ trait ServerBuilder {
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
    * information about what kind of guarantees to expect.
    *
-   * Supports HTTP/2 on the same port if the akka-http2-support module is on the classpath and http2 support is enabled.
+   * Supports HTTP/2 on the same port if http2 support is enabled.
    */
   def bind(f: HttpRequest => Future[HttpResponse]): Future[ServerBinding]
 
@@ -73,7 +73,7 @@ trait ServerBuilder {
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
    * information about what kind of guarantees to expect.
    *
-   * Supports HTTP/2 on the same port if the akka-http2-support module is on the classpath and http2 support is enabled.
+   * Supports HTTP/2 on the same port if http2 support is enabled.
    */
   def bindSync(f: HttpRequest => HttpResponse): Future[ServerBinding]
 

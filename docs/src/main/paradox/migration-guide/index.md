@@ -4,6 +4,7 @@
 
 @@@ index
 
+* [migration-guide-10.6.x](migration-guide-10.6.x.md)
 * [migration-guide-10.4.x](migration-guide-10.4.x.md)
 * [migration-guide-10.2.x](migration-guide-10.2.x.md)
 * [migration-guide-10.1.x](migration-guide-10.1.x.md)
