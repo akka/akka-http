@@ -29,7 +29,6 @@ import akka.util.ByteString
 import akka.Done
 
 import javax.net.ssl.SSLEngine
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -214,15 +213,8 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
 
     var eng: Option[SSLEngine] = None
 
-    @nowarn("msg=deprecated")
     def createEngine(): SSLEngine = {
-      val engine = httpsContext.sslContextData match {
-        case Left(ssl) =>
-          val e = ssl.sslContext.createSSLEngine()
-          TlsUtils.applySessionParameters(e, ssl.firstSession)
-          e
-        case Right(e) => e(None)
-      }
+      val engine = httpsContext.sslContextData(None)
       eng = Some(engine)
       engine.setUseClientMode(false)
       Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
@@ -235,15 +227,7 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
 
   def outgoingConnection(host: String, port: Int, connectionContext: HttpsConnectionContext, clientConnectionSettings: ClientConnectionSettings, log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     def createEngine(): SSLEngine = {
-      @nowarn("msg=deprecated")
-      val engine = connectionContext.sslContextData match {
-        // TODO FIXME configure hostname verification for this case
-        case Left(ssl) =>
-          val e = ssl.sslContext.createSSLEngine(host, port)
-          TlsUtils.applySessionParameters(e, ssl.firstSession)
-          e
-        case Right(e) => e(Some((host, port)))
-      }
+      val engine = connectionContext.sslContextData(Some((host, port)))
       engine.setUseClientMode(true)
       Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
       engine

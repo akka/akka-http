@@ -10,7 +10,7 @@ import akka.http.scaladsl
 import akka.japi.Util
 import akka.stream.TLSClientAuth
 
-import javax.net.ssl.{ SSLContext, SSLEngine, SSLParameters }
+import javax.net.ssl.{ SSLContext, SSLEngine }
 import scala.compat.java8.OptionConverters
 
 object ConnectionContext {
@@ -65,21 +65,4 @@ abstract class HttpConnectionContext extends akka.http.javadsl.ConnectionContext
 @DoNotInherit
 abstract class HttpsConnectionContext extends akka.http.javadsl.ConnectionContext {
   override final def isSecure = true
-
-  /** Java API */
-  @Deprecated @deprecated("here for binary compatibility", since = "10.2.0")
-  def getEnabledCipherSuites: Optional[JCollection[String]]
-  /** Java API */
-  @Deprecated @deprecated("here for binary compatibility", since = "10.2.0")
-  def getEnabledProtocols: Optional[JCollection[String]]
-  /** Java API */
-  @Deprecated @deprecated("here for binary compatibility", since = "10.2.0")
-  def getClientAuth: Optional[TLSClientAuth]
-
-  /** Java API */
-  @Deprecated @deprecated("here for binary compatibility, not always available", since = "10.2.0")
-  def getSslContext: SSLContext
-  /** Java API */
-  @Deprecated @deprecated("here for binary compatibility", since = "10.2.0")
-  def getSslParameters: Optional[SSLParameters]
 }
