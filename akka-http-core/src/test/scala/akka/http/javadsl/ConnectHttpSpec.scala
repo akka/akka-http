@@ -11,12 +11,10 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import javax.net.ssl.SSLContext
-import scala.annotation.nowarn
 
 class ConnectHttpSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   val httpContext = ConnectionContext.noEncryption()
-  @nowarn("msg=deprecated")
   val httpsContext: HttpsConnectionContext = ConnectionContext.httpsClient(SSLContext.getDefault)
 
   val successResponse = HttpResponse.create().withStatus(200)

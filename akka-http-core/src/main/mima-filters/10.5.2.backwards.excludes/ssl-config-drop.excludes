@@ -1,3 +1,4 @@
+# deprecated or internal methods
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectionContext.https")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.createServerHttpsContext")
@@ -31,3 +32,23 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConn
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.this")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.HttpsConnectionContext$")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.createClientHttpsContext")
+
+# second round
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.getEnabledCipherSuites")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.getEnabledProtocols")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.getClientAuth")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.getSslContext")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.getSslParameters")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.DeprecatedSslContextParameters")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.DeprecatedSslContextParameters$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.sslContext")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.enabledCipherSuites")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.enabledProtocols")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.clientAuth")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.sslParameters")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.getSslContext")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.getEnabledCipherSuites")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.getEnabledProtocols")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.getClientAuth")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.getSslParameters")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.HttpsConnectionContext.this")

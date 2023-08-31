@@ -50,7 +50,6 @@ import scala.concurrent.duration._
  *
  * Use as `Http().bindAndHandle` etc. with an implicit [[ActorSystem]] in scope.
  */
-@nowarn("msg=DefaultSSLContextCreation in package scaladsl is deprecated")
 @DoNotInherit
 class HttpExt @InternalStableApi /* constructor signature is hardcoded in Telemetry */ private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension {
 
@@ -174,7 +173,6 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   @deprecated("Use Http().newServerAt(...)...connectionSource() to create a source that can be materialized to a binding.", since = "10.2.0")
-  @nowarn("msg=deprecated")
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
@@ -203,7 +201,6 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
   }
 
   // forwarder to allow internal code to call deprecated method without warning
-  @nowarn("msg=deprecated")
   private[http] def bindImpl(interface: String, port: Int,
                              connectionContext: ConnectionContext,
                              settings:          ServerSettings,
@@ -334,7 +331,6 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
    * Any other value for `parallelism` overrides the setting.
    */
   @deprecated("Use Http().newServerAt(...)...bind() to create server bindings.", since = "10.2.0")
-  @nowarn("msg=deprecated")
   def bindAndHandleAsync(
     handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
@@ -816,17 +812,11 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
   private[http] def sslTlsServerStage(connectionContext: ConnectionContext) =
     sslTlsStage(connectionContext, Server, None)
 
-  @nowarn("msg=deprecated")
   private def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)]) =
     connectionContext match {
       case hctx: HttpsConnectionContext =>
-        hctx.sslContextData match {
-          case Left(ssl) =>
-            TLS(ssl.sslContext, ssl.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
-          case Right(engineCreator) =>
-            TLS(() => engineCreator(hostInfo), TLSClosing.eagerClose)
-        }
-      case other =>
+        TLS(() => hctx.sslContextData(hostInfo), TLSClosing.eagerClose)
+      case _ =>
         TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
 
