@@ -60,7 +60,7 @@ inThisBuild(Def.settings(
 lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   parsing,
   httpCore,
-  http2Support,
+  http2Tests,
   http,
   httpCaching,
   httpTestkit,
@@ -204,14 +204,14 @@ def gustavDir(kind: String) = Def.task {
   s"www/$kind/akka-http/$ver"
 }
 
-lazy val http2Support = project("akka-http2-support")
+lazy val http2Tests = project("akka-http2-tests")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.http2"))
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.http2)
-  .settings(Dependencies.http2Support)
+  .settings(Dependencies.http2Tests)
   .settings {
     lazy val h2specPath = Def.task {
       (Test / target).value / h2specName / h2specExe
@@ -244,6 +244,7 @@ lazy val http2Support = project("akka-http2-support")
   }
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .enablePlugins(NoPublish) // only contains tests, don't release tests
   .disablePlugins(MimaPlugin) // experimental module still
 
 lazy val httpTestkit = project("akka-http-testkit")
@@ -295,7 +296,7 @@ lazy val httpTests = project("akka-http-tests")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .settings(commonSettings)
-  .dependsOn(http, http2Support % "compile->compile,test")
+  .dependsOn(http, http2Tests % "compile->compile,test")
   .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
   .enablePlugins(NoPublish) // don't release benchs
@@ -429,7 +430,7 @@ lazy val docs = project("docs")
   .addAkkaModuleDependency("akka-stream-testkit", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-testkit-typed", "provided", AkkaDependency.docs)
   .dependsOn(
-    httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
+    httpCore, http, httpXml, http2Tests, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test", httpScalafixRules % ScalafixConfig
   )
   .settings(Dependencies.docs)

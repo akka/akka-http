@@ -21,10 +21,6 @@ abstract class PreviewServerSettings private[akka] () { self: PreviewServerSetti
   /**
    * Configures the Http extension to bind using HTTP/2 if given an
    * [[akka.http.scaladsl.HttpsConnectionContext]]. Otherwise binds as plain HTTP.
-   *
-   * Please note that when using this mode of binding you MUST include
-   * `"com.typesafe.akka" %% "akka-http2-support" % AkkaHttpVersion` in your
-   * dependencies / classpath.
    */
   def enableHttp2: Boolean
 

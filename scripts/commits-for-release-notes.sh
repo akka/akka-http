@@ -33,9 +33,9 @@ echo
 git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/docs | $REPLACEMENT
 
 echo
-echo "#### akka-http2-support"
+echo "#### akka-http2-tests"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http2-support | $REPLACEMENT
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http2-tests | $REPLACEMENT
 
 echo
 echo "#### akka-http-caching"
