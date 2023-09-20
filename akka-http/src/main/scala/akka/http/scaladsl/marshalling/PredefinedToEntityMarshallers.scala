@@ -43,7 +43,18 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
 
   implicit val StringMarshaller: ToEntityMarshaller[String] = stringMarshaller(`text/plain`)
   def stringMarshaller(mediaType: MediaType.WithOpenCharset): ToEntityMarshaller[String] =
-    Marshaller.withOpenCharset(mediaType) { (s, cs) => HttpEntity(mediaType withCharset cs, s) }
+    Marshaller.withOpenCharset(mediaType) { (s, cs) =>
+      val charset = try {
+        cs.nioCharset // throws if value is invalid
+        cs
+      } catch {
+        case _: java.nio.charset.UnsupportedCharsetException =>
+          // request contained an invalid charset name, fall back to UTF-8
+          HttpCharsets.`UTF-8`
+      }
+      HttpEntity(mediaType.withCharset(charset), s)
+    }
+
   def stringMarshaller(mediaType: MediaType.WithFixedCharset): ToEntityMarshaller[String] =
     Marshaller.withFixedContentType(mediaType) { s => HttpEntity(mediaType, s) }
 

@@ -33,6 +33,11 @@ class MarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll w
     "StringMarshaller should marshal strings to `text/plain` content in UTF-8" in {
       marshal("Ha“llo") shouldEqual HttpEntity("Ha“llo")
     }
+    "StringMarshaller should marshal strings to `text/plain` content in UTF-8 when specified request accept-charset is invalid" in {
+      val response = marshalToResponse("Hallo", HttpRequest().withHeaders(Vector(`Accept-Charset`(HttpCharsetRange(HttpCharset("asd")(Nil))))))
+      response.entity.contentType.charsetOption should be(Some(HttpCharsets.`UTF-8`))
+    }
+
     "DoneMarshaller should enable marshalling of akka.Done" in {
       marshal(akka.Done) shouldEqual HttpEntity("")
     }
