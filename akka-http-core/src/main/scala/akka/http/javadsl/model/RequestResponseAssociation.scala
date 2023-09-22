@@ -6,12 +6,9 @@ package akka.http.javadsl.model
 
 import java.util.concurrent.CompletableFuture
 
-import akka.annotation.ApiMayChange
-
 /**
  * A marker trait for attribute values that should be (automatically) carried over from request to response.
  */
-@ApiMayChange
 trait RequestResponseAssociation
 
 /**
