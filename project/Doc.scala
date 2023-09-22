@@ -12,7 +12,6 @@ import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocProjectFilter }
 import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 import sbtunidoc.GenJavadocPlugin.autoImport.{ Genjavadoc, unidocGenjavadocVersion }
-import Common.isJdk8
 
 object Doc {
   val BinVer = """(\d+\.\d+)\.\d+""".r
@@ -142,9 +141,8 @@ object UnidocRoot extends AutoPlugin {
   override def requires = ScalaUnidocPlugin && CliOptions.genjavadocEnabled.ifTrue(JavaUnidocPlugin).getOrElse(plugins.JvmPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
-    JavaUnidoc / unidoc / javacOptions ++= (
-      if (isJdk8) Seq("-Xdoclint:none")
-      else Seq("-Xdoclint:none", "--ignore-source-errors")),
+    JavaUnidoc / unidoc / javacOptions ++=
+      Seq("-Xdoclint:none", "--ignore-source-errors"),
     // genjavadoc needs to generate synthetic methods since the java code uses them
     // fails since 10.0.11 disabled to get the doc gen to pass, see #1584
     // scalacOptions += "-P:genjavadoc:suppressSynthetic=false",

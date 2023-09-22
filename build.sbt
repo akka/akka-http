@@ -490,7 +490,7 @@ lazy val docs = project("docs")
     ),
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
-    ValidatePR / additionalTasks ++= (if (isJdk11orHigher) Seq(Compile / paradox) else Nil),
+    ValidatePR / additionalTasks ++= Seq(Compile / paradox),
     ThisBuild / publishRsyncHost := "akkarepo@gustav.akka.io",
     publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("docs").value),
   )
@@ -525,5 +525,10 @@ lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
 
-lazy val isJdk11orHigher: Boolean =
-  VersionNumber(sys.props("java.specification.version")).matchesSemVer(SemanticSelector(">=11"))
+val isJdk11orHigher: Boolean = {
+  val result = VersionNumber(sys.props("java.specification.version")).matchesSemVer(SemanticSelector(">=11"))
+  if (!result)
+    throw new IllegalArgumentException("JDK 11 or higher is required")
+  result
+}
+
