@@ -9,7 +9,6 @@ import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
 import akka.actor.ActorSystem
-import akka.annotation.ApiMayChange
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.impl.util.JavaMapping._
@@ -21,19 +20,17 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 /**
- * (Still unstable) SPI for implementors of custom client transports.
+ * SPI for implementors of custom client transports.
  */
 // #client-transport-definition
-@ApiMayChange
 abstract class ClientTransport {
   def connectTo(host: String, port: Int, settings: ClientConnectionSettings, system: ActorSystem): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]]
 }
 // #client-transport-definition
 
 /**
- * (Still unstable) entry point to create or access predefined client transports.
+ * Entry point to create or access predefined client transports.
  */
-@ApiMayChange
 object ClientTransport {
   def TCP: ClientTransport = scaladsl.ClientTransport.TCP.asJava
 
