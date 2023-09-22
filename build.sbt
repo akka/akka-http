@@ -110,14 +110,15 @@ lazy val root = Project(
 
 /**
  * Adds a `src/.../scala-2.13+` source directory for Scala 2.13 and newer
- * and a `src/.../scala-2.13-` source directory for Scala version older than 2.13
+ * FIXME `scala-2.13+` can be consolidated in later cleanup after the removal of Scala 2.12
  */
 def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
   config / unmanagedSourceDirectories += {
     val sourceDir = (config / sourceDirectory).value
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((e, n)) if e > 2 || (e == 2 && n >= 13) => sourceDir / "scala-2.13+"
-      case _                       => sourceDir / "scala-2.13-"
+      case _                       =>
+        throw new IllegalArgumentException(s"Unsupported Scala version [${scalaVersion.value}]")
     }
   }
 )
@@ -134,11 +135,7 @@ val scalaMacroSupport = Seq(
       case _                       =>
         Seq.empty
     }
-  },
-  libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, n)) if n < 13 => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
-    case _                       => Seq.empty
-  }),
+  }
 )
 
 lazy val parsing = project("akka-parsing")
