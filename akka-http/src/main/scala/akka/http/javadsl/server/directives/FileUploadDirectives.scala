@@ -25,7 +25,6 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    * field the request will be rejected, if there are multiple file parts with the same name, the first one will be
    * used and the subsequent ones ignored.
    */
-  @ApiMayChange
   def storeUploadedFile(fieldName: String, destFn: JFunction[FileInfo, File], inner: BiFunction[FileInfo, File, Route]): Route = RouteAdapter {
     D.storeUploadedFile(fieldName, destFn.apply) { case (info, file) => inner.apply(info, file).delegate }
   }
@@ -35,7 +34,6 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    * If there is an error writing to disk the request will be failed with the thrown exception, if there is no such
    * field the request will be rejected. Stored files are cleaned up on exit but not on failure.
    */
-  @ApiMayChange
   def storeUploadedFiles(fieldName: String, destFn: JFunction[FileInfo, File], inner: JFunction[JList[JMap.Entry[FileInfo, File]], Route]): Route = RouteAdapter {
     D.storeUploadedFiles(fieldName, destFn.apply) { files =>
       val entries = files.map { case (info, src) => new SimpleImmutableEntry(fileInfoToJava(info), src) }
@@ -59,7 +57,6 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    * Files are buffered into temporary files on disk so in-memory buffers don't overflow. The temporary
    * files are cleaned up once materialized, or on exit if the stream is not consumed.
    */
-  @ApiMayChange
   def fileUploadAll(fieldName: String, inner: JFunction[JList[JMap.Entry[FileInfo, Source[ByteString, Any]]], Route]): Route = RouteAdapter {
     D.fileUploadAll(fieldName) { files =>
       val entries = files.map { case (info, src) => new SimpleImmutableEntry(fileInfoToJava(info), src.asJava) }
