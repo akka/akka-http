@@ -48,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: # align with publish-test-reports.yml
-        SCALA_VERSION: [2.12, 2.13, 3.3]
+        SCALA_VERSION: [2.13, 3.3]
         JDK_VERSION: ["1.8", "1.11", "1.17"]
         include:
           - JDK_VERSION: 1.8

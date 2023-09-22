@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        SCALA_VERSION: [ 2.12, 2.13 ]
+        SCALA_VERSION: [ 2.13 ]
         JDK_VERSION: ["1.8", "1.11", "1.17"]
     steps:
       # https://github.com/dorny/test-reporter/releases/tag/v1.6.0
