@@ -5,7 +5,6 @@
 package akka.http.scaladsl.server.directives
 
 import akka.Done
-import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.http.javadsl
 import akka.http.scaladsl.model.ContentType
@@ -43,7 +42,6 @@ trait FileUploadDirectives {
    *
    * @group fileupload
    */
-  @ApiMayChange
   def storeUploadedFile(fieldName: String, destFn: FileInfo => File): Directive[(FileInfo, File)] =
     extractRequestContext.flatMap { ctx =>
       import ctx.executionContext
@@ -74,7 +72,6 @@ trait FileUploadDirectives {
    *
    * @group fileupload
    */
-  @ApiMayChange
   def storeUploadedFiles(fieldName: String, destFn: FileInfo => File): Directive1[immutable.Seq[(FileInfo, File)]] =
     entity(as[Multipart.FormData]).flatMap { formData =>
       extractRequestContext.flatMap { ctx =>
@@ -161,7 +158,6 @@ trait FileUploadDirectives {
    *
    * @group fileupload
    */
-  @ApiMayChange
   def fileUploadAll(fieldName: String): Directive1[immutable.Seq[(FileInfo, Source[ByteString, Any])]] =
     extractRequestContext.flatMap { ctx =>
       implicit val ec = ctx.executionContext
