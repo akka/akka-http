@@ -1,6 +1,6 @@
 # Pluggable Client Transports / HTTP(S) proxy Support
 
-The client side infrastructure has support to plug different transport mechanisms underneath (the API may still change in the future). A client side
+The client side infrastructure has support to plug different transport mechanisms underneath. A client side
 transport is represented by an instance of
 @scala[@scaladoc[akka.http.scaladsl.ClientTransport](akka.http.scaladsl.ClientTransport)]@java[@javadoc[akka.http.javadsl.ClientTransport](akka.http.javadsl.ClientTransport)]:
 

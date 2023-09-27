@@ -6,7 +6,6 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import akka.actor.ActorSystem
-import akka.annotation.ApiMayChange
 import akka.http.impl.engine.client.HttpsProxyGraphStage
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.headers.HttpCredentials
@@ -21,19 +20,17 @@ import scala.concurrent.{ ExecutionContext, Future }
 /**
  * Abstraction to allow the creation of alternative transports to run HTTP on.
  *
- * (Still unstable) SPI for implementors of custom client transports.
+ * SPI for implementors of custom client transports.
  */
 // #client-transport-definition
-@ApiMayChange
 trait ClientTransport {
   def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]]
 }
 // #client-transport-definition
 
 /**
- * (Still unstable) entry point to create or access predefined client transports.
+ * Entry point to create or access predefined client transports.
  */
-@ApiMayChange
 object ClientTransport {
   val TCP: ClientTransport = TCPTransport
 

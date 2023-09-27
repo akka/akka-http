@@ -6,7 +6,6 @@ package akka.http.javadsl.server
 
 import java.util.function.{ BiFunction, Function, Supplier }
 
-import akka.annotation.ApiMayChange
 import akka.http.javadsl.server.directives.FramedEntityStreamingDirectives
 import scala.annotation.nowarn
 
@@ -43,7 +42,6 @@ object Directives extends AllDirectives {
    * @param inner the inner route Producer
    * @return the resulting route
    */
-  @ApiMayChange
   def anyOf(first: Function[Supplier[Route], Route], second: Function[Supplier[Route], Route], inner: Supplier[Route]): Route = {
     first.apply(inner).orElse(second.apply(inner))
   }
@@ -60,7 +58,6 @@ object Directives extends AllDirectives {
    * @tparam A the type of the parameter the directives extract and the inner route takes
    * @return the resulting route
    */
-  @ApiMayChange
   def anyOf[A](first: Function[Function[A, Route], Route], second: Function[Function[A, Route], Route], inner: Function[A, Route]): Route = {
     first.apply(inner).orElse(second.apply(inner))
   }
@@ -74,7 +71,6 @@ object Directives extends AllDirectives {
    * @param inner the inner route function
    * @return the resulting route
    */
-  @ApiMayChange
   def allOf(first: Function[Supplier[Route], Route], second: Function[Supplier[Route], Route], inner: Supplier[Route]): Route = {
     first.apply(new Supplier[Route] {
       override def get(): Route =
@@ -93,7 +89,6 @@ object Directives extends AllDirectives {
    * @tparam B the type extracted from the second directive
    * @return the resulting route
    */
-  @ApiMayChange
   def allOf[A, B](first: Function[Function[A, Route], Route], second: Function[Function[B, Route], Route], inner: BiFunction[A, B, Route]): Route = {
     first.apply(new Function[A, Route] {
       override def apply(a: A): Route =
@@ -114,7 +109,6 @@ object Directives extends AllDirectives {
    * @tparam A the type extracted from the second directive
    * @return the resulting route
    */
-  @ApiMayChange
   def allOf[A](first: Function[Supplier[Route], Route], second: Function[Function[A, Route], Route], inner: Function[A, Route]): Route = {
     first.apply(new Supplier[Route] {
       override def get(): Route =
