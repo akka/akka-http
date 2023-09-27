@@ -29,4 +29,9 @@ The published artifacts are targeting Scala 2.13 and Scala 3.3.
 
 ### Akka
 
-Akka HTTP 10.4.x requires Akka version >= 2.9.0.
+Akka HTTP 10.6.x requires Akka version >= 2.9.0.
+
+### Jackson
+
+The Jackson dependency has been updated to 2.15.2 in Akka HTTP 10.6.0. That bump includes many fixes and changes to
+Jackson, but it should not introduce any incompatibility in serialized format.
