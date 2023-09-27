@@ -17,7 +17,7 @@ object Common extends AutoPlugin {
       Seq(
         "-deprecation",
         "-encoding", "UTF-8", // yes, this is 2 args
-        "-release", "8",
+        "-release", "11",
         "-unchecked",
         "-Wconf:msg=is deprecated \\(since 2\\.13\\.:s") ++
       (if (scalaVersion.value.startsWith("2."))
@@ -34,13 +34,10 @@ object Common extends AutoPlugin {
         )),
     scalacOptions ++= onlyOnScala2(Seq("-Xlint")).value,
     javacOptions ++=
-      Seq("-encoding", "UTF-8", "-Xlint:deprecation") ++ onlyOnJdk8("-source", "1.8") ++ onlyAfterJdk8("--release", "8"),
+      Seq("-encoding", "UTF-8", "-Xlint:deprecation","--release", "11"),
     // restrict to 'compile' scope because otherwise it is also passed to
     // javadoc and -target is not valid there.
     // https://github.com/sbt/sbt/issues/1785
-    Compile / compile / javacOptions ++=
-      // From jdk9 onwards this is covered by the '-release' flag above
-      onlyOnJdk8("-target", "1.8"),
 
     // in test code we often use destructing assignment, which now produces an exhaustiveness warning
     // when the type is asserted
@@ -62,10 +59,6 @@ object Common extends AutoPlugin {
   )
 
   val specificationVersion: String = sys.props("java.specification.version")
-  def isJdk8: Boolean =
-    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(s"=1.8"))
-  def onlyOnJdk8[T](values: T*): Seq[T] = if (isJdk8) values else Seq.empty[T]
-  def onlyAfterJdk8[T](values: T*): Seq[T] = if (isJdk8) Seq.empty[T] else values
   def onlyAfterScala212[T](values: Seq[T]): Def.Initialize[Seq[T]] = Def.setting {
     if (scalaMinorVersion.value >= 12) values else Seq.empty[T]
   }

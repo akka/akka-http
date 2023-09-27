@@ -17,6 +17,10 @@ using HTTP/2.
 
 The typesafe-ssl-config dependency and deprecated APIs accepting the types from it has been dropped. 
 
+## Support for Java 8 removed
+
+The published artifacts are targeting Java 11, and later. Supported Java versions are 11 and 17.
+
 ## Support for Scala 2.12 removed
 
 The published artifacts are targeting Scala 2.13 and Scala 3.3.

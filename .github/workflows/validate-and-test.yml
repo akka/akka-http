@@ -49,11 +49,8 @@ jobs:
       fail-fast: false
       matrix: # align with publish-test-reports.yml
         SCALA_VERSION: [2.13, 3.3]
-        JDK_VERSION: ["1.8", "1.11", "1.17"]
+        JDK_VERSION: ["1.11", "1.17"]
         include:
-          - JDK_VERSION: 1.8
-            JVM_NAME: temurin:1.8
-            extraOpts: '-J-Xmx2048M'
           - JDK_VERSION: 1.11
             JVM_NAME: temurin:1.11
             extraOpts: ''
