@@ -26,17 +26,15 @@ Key links:
 - [ ] Update the revision in Fossa in the Akka Group for the Akka umbrella version, e.g. `22.10`. Note that the revisions for the release is udpated by Akka Group > Projects > Edit. For recent dependency updates the Fossa validation can be triggered from the GitHub actions "Dependency License Scanning".
 - [ ] Wait until [main build finished](https://github.com/akka/akka-http/actions) after merging the latest PR
 - [ ] Update the [draft release](https://github.com/akka/akka-http/releases) with the next tag version `v$VERSION$`, title and release description. Use the `Publish release` button, which will create the tag.
-- [ ] Check that GitHub Actions release build has executed successfully (GitHub Actions will start a [CI build](https://github.com/akka/akka-http/actions) for the new tag and publish artifacts to Maven central via Sonatype)
-- [ ] Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-quickstart-scala.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/staging"`
-- [ ] Release the staging repository to Maven Central.
+- [ ] Check that GitHub Actions release build has executed successfully (GitHub Actions will start a [CI build](https://github.com/akka/akka-http/actions) for the new tag and publish artifacts to https://repo.akka.io/maven)
 
 ### Check availability
 
 - [ ] Check [API](https://doc.akka.io/api/akka-http/$VERSION$/) documentation
 - [ ] Check [reference](https://doc.akka.io/docs/akka-http/$VERSION$/) documentation. Check that the reference docs were deployed and show a version warning (see section below on how to fix the version warning).
-- [ ] Check the release on maven central: https://repo1.maven.org/maven2/com/typesafe/akka/akka-http-core_2.13/$VERSION$/
+- [ ] Check the release on https://repo.akka.io/maven/com/typesafe/akka/akka-http-core_2.13/$VERSION$/
 
-### When everything is on maven central
+### When everything is on https://repo.akka.io/maven
   - [ ] Log into `gustav.akka.io` as `akkarepo` 
     - [ ] If this updates the `current` version, run `./update-akka-http-current-version.sh $VERSION$`
     - [ ] otherwise check changes and commit the new version to the local git repository
