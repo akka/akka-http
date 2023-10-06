@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   publish-artifacts:
-    name: Publish artifacts to Sonatype
+    name: Publish artifacts
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -29,15 +29,14 @@ jobs:
       - name: Install graphviz
         run: sudo apt-get install -y graphviz
 
-      - name: Publish Artifacts to Sonatype / Maven
+      - name: Publish Artifacts
         run: |
-          sbt ci-release
+          sbt +publishSigned
         env:
-          CI_SONATYPE_RELEASE: "; sonatypePrepare; sonatypeBundleUpload; sonatypeClose"
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          PUBLISH_USER: ${{ secrets.PUBLISH_USER }}
+          PUBLISH_PASSWORD: ${{ secrets.PUBLISH_PASSWORD }}
 
   publish-docs:
     name: Publish documentation

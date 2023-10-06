@@ -17,6 +17,16 @@ using HTTP/2.
 
 The typesafe-ssl-config dependency and deprecated APIs accepting the types from it has been dropped. 
 
+## Akka repository
+
+The Akka dependencies are available from Akka's library repository. To access them there, you need to configure the URL for this repository.
+
+@@repository [sbt,Maven,Gradle] {
+id="akka-repository"
+name="Akka library repository"
+url="https://repo.akka.io/maven"
+}
+
 ## Support for Java 8 removed
 
 The published artifacts are targeting Java 11, and later. Supported Java versions are 11 and 17.

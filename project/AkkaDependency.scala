@@ -44,7 +44,7 @@ object AkkaDependency {
   }
 
   // Default version updated only when needed, https://doc.akka.io//docs/akka/current/project/downstream-upgrade-strategy.html
-  val minimumExpectedAkkaVersion = "2.9.0-M2"
+  val minimumExpectedAkkaVersion = "2.9.0-M3"
   val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
   val docs = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
 
@@ -79,6 +79,7 @@ object AkkaDependency {
               else
                 "com.typesafe.akka" %% module % akkaVersion % config
             },
+            resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
             resolvers ++= (if (akkaSnapshot) Seq("Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots") else Nil)
           )
       }

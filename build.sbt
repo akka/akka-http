@@ -83,7 +83,9 @@ lazy val root = Project(
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation, NoScala3)
-  .disablePlugins(MimaPlugin)
+  .disablePlugins(
+    MimaPlugin,
+    com.geirsson.CiReleasePlugin) // we use publishSigned, but use a pgp utility from CiReleasePlugin
   .settings(
     // Unidoc doesn't like macro definitions
     unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench, httpScalafix, httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests),
@@ -343,6 +345,7 @@ lazy val httpCaching = project("akka-http-caching")
 
 def project(name: String) =
   Project(id = name, base = file(name))
+    .disablePlugins(com.geirsson.CiReleasePlugin) // we use publishSigned, but use a pgp utility from CiReleasePlugin
 
 def httpMarshallersScalaSubproject(name: String) =
   Project(
@@ -353,6 +356,7 @@ def httpMarshallersScalaSubproject(name: String) =
   .settings(commonSettings)
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .disablePlugins(com.geirsson.CiReleasePlugin)
 
 def httpMarshallersJavaSubproject(name: String) =
   Project(
@@ -363,6 +367,7 @@ def httpMarshallersJavaSubproject(name: String) =
   .settings(commonSettings)
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .disablePlugins(com.geirsson.CiReleasePlugin)
 
 lazy val httpScalafix = project("akka-http-scalafix")
   .enablePlugins(NoPublish, NoScala3)
@@ -376,6 +381,7 @@ lazy val httpScalafixRules =
     )
     .enablePlugins(NoScala3)
     .disablePlugins(MimaPlugin) // tooling, no bin compat guaranteed
+    .disablePlugins(com.geirsson.CiReleasePlugin)
 
 lazy val httpScalafixTestInput =
   Project(id = "akka-http-scalafix-test-input", base = file("akka-http-scalafix/scalafix-test-input"))
@@ -383,6 +389,7 @@ lazy val httpScalafixTestInput =
     .addAkkaModuleDependency("akka-stream")
     .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
+    .disablePlugins(com.geirsson.CiReleasePlugin)
     .settings(
       addCompilerPlugin(scalafixSemanticdb),
       scalacOptions ++= List(
@@ -398,11 +405,13 @@ lazy val httpScalafixTestOutput =
     .addAkkaModuleDependency("akka-stream")
     .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
+    .disablePlugins(com.geirsson.CiReleasePlugin)
 
 lazy val httpScalafixTests =
   Project(id = "akka-http-scalafix-tests", base = file("akka-http-scalafix/scalafix-tests"))
     .enablePlugins(NoPublish, NoScala3)
     .disablePlugins(MimaPlugin)
+    .disablePlugins(com.geirsson.CiReleasePlugin)
     .settings(
       publish / skip := true,
       libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % Dependencies.scalafixVersion % Test cross CrossVersion.full,
@@ -499,6 +508,7 @@ lazy val docs = project("docs")
 lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akka-http-compatibility-tests"))
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin)
+  .disablePlugins(com.geirsson.CiReleasePlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(
     libraryDependencies +=(
@@ -518,6 +528,7 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
 lazy val billOfMaterials = Project("bill-of-materials", file("akka-http-bill-of-materials"))
   .enablePlugins(BillOfMaterialsPlugin)
   .disablePlugins(MimaPlugin)
+  .disablePlugins(com.geirsson.CiReleasePlugin)
   .settings(
     name := "akka-http-bom",
     bomIncludeProjects := userProjects,
