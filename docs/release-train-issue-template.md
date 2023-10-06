@@ -32,7 +32,7 @@ Key links:
 
 - [ ] Check [API](https://doc.akka.io/api/akka-http/$VERSION$/) documentation
 - [ ] Check [reference](https://doc.akka.io/docs/akka-http/$VERSION$/) documentation. Check that the reference docs were deployed and show a version warning (see section below on how to fix the version warning).
-- [ ] Check the release on https://repo.akka.io/maven/com/typesafe/akka/akka-http-core_2.13/$VERSION$/
+- [ ] Check the release on https://repo.akka.io/maven/com/typesafe/akka/akka-http-core_2.13/$VERSION$/akka-http-core_2.13-$VERSION$.pom
 
 ### When everything is on https://repo.akka.io/maven
   - [ ] Log into `gustav.akka.io` as `akkarepo` 
