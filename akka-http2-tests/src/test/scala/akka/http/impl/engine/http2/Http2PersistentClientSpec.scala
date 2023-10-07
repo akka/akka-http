@@ -263,16 +263,27 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
           )
           // need some demand on response side, otherwise, no requests will be pulled in
           client.responsesIn.request(1)
+
+          def expectFailedResponse(): Unit = {
+            val response: HttpResponse = client.expectResponse()
+            response.attribute(requestIdAttr) should be(Some(RequestId("request-1")))
+            response.status should be(StatusCodes.ServiceUnavailable)
+          }
+
           if (withBackoff) {
             // not immediate when using backoff, 4 retries before failing, backoff is 300-800ms (so at least 1.2s)
             client.responsesIn.expectNoMessage(clientSettings.http2Settings.baseConnectionBackoff * 4)
             // total max backoff for 4 tries with the random factor could actually worst case be something
             // like 600 + 800 + 800 + 800 - those 1200 ms = 1800 ms, but no way to pass a timeout to expectError
             awaitAssert({
+              // failed response then failed stream
+              expectFailedResponse()
               client.responsesIn.expectError()
             }, 1800.millis)
           } else {
             // directly
+            // failed response then failed stream
+            expectFailedResponse()
             client.responsesIn.expectError()
           }
           client.requestsOut.expectCancellation()
@@ -312,6 +323,8 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       probe.expectMsg("saw-reconnect")
 
       // max 4 attempts, giving up after that
+      val error = client.responsesIn.expectNext() // error response
+      error.status should ===(StatusCodes.ServiceUnavailable)
       client.responsesIn.expectError()
       client.requestsOut.expectCancellation()
     }
