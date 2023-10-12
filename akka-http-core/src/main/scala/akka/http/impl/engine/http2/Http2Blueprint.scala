@@ -10,7 +10,7 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.{ HttpConnectionIdleTimeoutBidi, HttpIdleTimeoutException }
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.client.ResponseParsing
-import akka.http.impl.engine.http2.framing.{ FrameRenderer, Http2FrameParsing }
+import akka.http.impl.engine.http2.framing.{ FrameRenderer, Http2FrameParsing, RSTFrameLimit }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.rendering.DateHeaderRendering
@@ -108,7 +108,7 @@ private[http] object Http2Blueprint {
       serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding(masterHttpHeaderParser, settings.parserSettings) atop
-      framing(log) atop
+      framing(settings.http2Settings, log) atop
       errorHandling(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
@@ -167,10 +167,12 @@ private[http] object Http2Blueprint {
       Flow[ByteString]
     )
 
-  def framing(log: LoggingAdapter): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
+  def framing(http2ServerSettings: Http2ServerSettings, log: LoggingAdapter): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].map(FrameRenderer.render),
-      Flow[ByteString].via(new Http2FrameParsing(shouldReadPreface = true, log)))
+      Flow[ByteString].via(new Http2FrameParsing(shouldReadPreface = true, log))
+        .via(new RSTFrameLimit(http2ServerSettings))
+    )
 
   def framingClient(log: LoggingAdapter): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
