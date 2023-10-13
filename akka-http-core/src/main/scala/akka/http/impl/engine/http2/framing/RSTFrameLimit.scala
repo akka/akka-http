@@ -12,8 +12,6 @@ import akka.http.scaladsl.settings.Http2ServerSettings
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
-import scala.concurrent.duration._
-
 /**
  * INTERNAL API
  */
@@ -28,6 +26,7 @@ private[akka] final class RSTFrameLimit(http2ServerSettings: Http2ServerSettings
   val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+    private var rstSeen = false
     private var rstCount = 0
     private var rstSpanStartNanos = 0L
 
@@ -38,14 +37,15 @@ private[akka] final class RSTFrameLimit(http2ServerSettings: Http2ServerSettings
         case frame: RstStreamFrame =>
           rstCount += 1
           val now = System.nanoTime()
-          if (rstSpanStartNanos == 0L) {
+          if (!rstSeen) {
+            rstSeen = true
             rstSpanStartNanos = now
             push(out, frame)
           } else if ((now - rstSpanStartNanos) <= maxResetsIntervalNanos) {
             if (rstCount > maxResets) {
               failStage(new Http2Compliance.Http2ProtocolException(
                 ErrorCode.ENHANCE_YOUR_CALM,
-                s"Too many RST frames per second for this connection. (Configured limit ${maxResets}/${maxResetsIntervalNanos.nanos.toSeconds} s)"))
+                s"Too many RST frames per second for this connection. (Configured limit ${maxResets}/${http2ServerSettings.maxResetsInterval.toCoarsest})"))
             } else {
               push(out, frame)
             }
