@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.impl.engine.http2.framing
 
 import akka.annotation.InternalApi
