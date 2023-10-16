@@ -88,6 +88,14 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def pingTimeout: FiniteDuration
   def withPingTimeout(timeout: FiniteDuration): Http2ServerSettings = copy(pingTimeout = timeout)
 
+  def maxResets: Int
+
+  override def withMaxResets(n: Int): Http2ServerSettings = copy(maxResets = n)
+
+  def maxResetsInterval: FiniteDuration
+
+  def withMaxResetsInterval(interval: FiniteDuration): Http2ServerSettings = copy(maxResetsInterval = interval)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalServerSettings]
   @InternalApi
@@ -110,7 +118,10 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
-    internalSettings:                  Option[Http2InternalServerSettings])
+    maxResets:                         Int,
+    maxResetsInterval:                 FiniteDuration,
+    internalSettings:                  Option[Http2InternalServerSettings]
+  )
     extends Http2ServerSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
@@ -134,7 +145,9 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
-      None // no possibility to configure internal settings with config
+      maxResets = c.getInt("max-resets"),
+      maxResetsInterval = c.getFiniteDuration("max-resets-interval"),
+      internalSettings = None, // no possibility to configure internal settings with config
     )
   }
 }
