@@ -12,6 +12,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
+import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.{ HttpAttributes, ServerTerminator }
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.AkkaSpecWithMaterializer
@@ -22,28 +23,29 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.Attributes
+import akka.stream.{ Attributes, DelayOverflowStrategy, OverflowStrategy }
 import akka.stream.Attributes.LogLevels
-import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source, SourceQueueWithComplete }
 import akka.stream.testkit.TestPublisher.{ ManualProbe, Probe }
 import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.testkit._
-import akka.util.ByteString
+import akka.util.{ ByteString, ByteStringBuilder }
 
 import scala.annotation.nowarn
 import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import java.nio.ByteOrder
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.util.Success
 
 /**
  * This tests the http2 server protocol logic.
@@ -1686,6 +1688,31 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         terminated.futureValue
       }
     }
+
+    "not allow high a frequency of resets for one connection" in StreamTestKit.assertAllStagesStopped(new TestSetup {
+
+      override def settings: ServerSettings = super.settings.withHttp2Settings(super.settings.http2Settings.withMaxResets(100).withMaxResetsInterval(2.seconds))
+
+      // covers CVE-2023-44487 with a rapid sequence of RSTs
+      override def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] = Flow[HttpRequest].buffer(1000, OverflowStrategy.backpressure).mapAsync(300) { req =>
+        // never actually reached since rst is in headers
+        req.entity.discardBytes()
+        Future.successful(HttpResponse(entity = "Ok").withAttributes(req.attributes))
+      }
+
+      network.toNet.request(100000L)
+      val request = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`, uri = "/foo")
+      val error = intercept[AssertionError] {
+        for (streamId <- 1 to 300 by 2) {
+          network.sendBytes(
+            FrameRenderer.render(HeadersFrame(streamId, true, true, network.encodeRequestHeaders(request), None))
+              ++ FrameRenderer.render(RstStreamFrame(streamId, ErrorCode.CANCEL))
+          )
+        }
+      }
+      error.getMessage should include("Too many RST frames per second for this connection.")
+      network.toNet.cancel()
+    })
   }
 
   implicit class InWithStoppedStages(name: String) {
