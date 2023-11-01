@@ -77,7 +77,5 @@ For minor or major releases:
 - [ ] Update quickstarts:
   - [ ] [Akka HTTP Java](https://github.com/akka/akka-http-quickstart-java.g8/blob/main/src/main/g8/default.properties)
   - [ ] [Akka HTTP Scala](https://github.com/akka/akka-http-quickstart-scala.g8/blob/main/src/main/g8/default.properties)
-  - [ ] [Akka gRPC Java](https://github.com/akka/akka-grpc-quickstart-java.g8/blob/main/src/main/g8/default.properties)
-  - [ ] [Akka gRPC Scala](https://github.com/akka/akka-grpc-quickstart-scala.g8/blob/main/src/main/g8/default.properties)
 
 - Close this issue
