@@ -74,4 +74,8 @@ For minor or major releases:
 - [ ] Update version for [Lightbend Supported Modules](https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html) in [private project](https://github.com/lightbend/lightbend-technology-intro-doc/blob/master/docs/modules/getting-help/examples/build.sbt)
 - [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies)
 - [ ] Update [Akka Guide samples](https://github.com/akka/akka-platform-guide)
+- [ ] Update quickstarts:
+  - [ ] [Akka HTTP Java](https://github.com/akka/akka-http-quickstart-java.g8/blob/main/src/main/g8/default.properties)
+  - [ ] [Akka HTTP Scala](https://github.com/akka/akka-http-quickstart-scala.g8/blob/main/src/main/g8/default.properties)
+
 - Close this issue
