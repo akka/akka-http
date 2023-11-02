@@ -54,7 +54,7 @@ jobs:
           body: |
             Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{github.repository}} failed!
             https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-            
+
   publish-docs:
     name: Publish documentation
     runs-on: ubuntu-22.04
@@ -77,7 +77,6 @@ jobs:
           echo $AKKA_RSYNC_GUSTAV | base64 -d > .github/id_rsa
           chmod 600 .github/id_rsa
           ssh-add .github/id_rsa
-          # using Scala 2.13 here to avoid the infamous problem with missing AskSupport in classpath
           sbt -Dakka.genjavadoc.enabled=true publishRsync
         env:
           AKKA_RSYNC_GUSTAV: ${{ secrets.AKKA_RSYNC_GUSTAV }}
