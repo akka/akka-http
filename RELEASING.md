@@ -6,7 +6,7 @@ A few more background information about the process can be found below.
 
 ### Release Automation with Github Action
 
-Akka HTTP uses Github Actions and to release artifacts automatically to Akka's library repository. For commits to the `main` branch, it directly publishes artifacts to the Sonatype snapshot repository.
+Akka HTTP uses Github Actions and to release artifacts automatically to Akka's library repository. For commits to the `main` branch, it publishes artifacts to the snapshot repository.
 
 ### Releasing only updated docs
 
