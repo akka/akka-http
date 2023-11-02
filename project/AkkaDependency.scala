@@ -31,11 +31,7 @@ object AkkaDependency {
       case None =>
         Option(System.getProperty("akka.http.build.akka.version")) match {
           case Some("main") | Some("master") => mainSnapshot
-          case Some("release-2.6") =>
-            // Don't 'downgrade' building even if akka.sources asks for it
-            // (typically for the docs that require 2.6)
-            if (defaultVersion.startsWith("2.6")) Artifact(determineLatestSnapshot("2.6"), true)
-            else Artifact(defaultVersion)
+          case Some("snapshot") => Artifact(determineLatestSnapshot(), true)
           case Some("default") => Artifact(defaultVersion)
           case Some(other) => Artifact(other, true)
           case None => Artifact(defaultVersion)
@@ -85,31 +81,18 @@ object AkkaDependency {
       }
   }
 
-  private def determineLatestSnapshot(prefix: String = ""): String = {
+  private def determineLatestSnapshot(): String = {
     import sbt.librarymanagement.Http.http
     import gigahorse.GigahorseSupport.url
     import scala.concurrent.Await
     import scala.concurrent.duration._
 
-    val snapshotVersionR = """href=".*/((\d+)\.(\d+)\.(\d+)\+(\d+)-[0-9a-f]+-SNAPSHOT)/"""".r
-
-    // FIXME what shall we do?
-
-    // akka-cluster-sharding-typed_2.13 seems to be the last nightly published by `akka-publish-nightly` so if that's there then it's likely the rest also made it
-    val body = Await.result(http.run(url("https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/akka-cluster-sharding-typed_2.13/")), 10.seconds).bodyAsString
-    val allVersions =
-      snapshotVersionR.findAllMatchIn(body)
-        .map {
-          case Groups(full, ep, maj, min, offset) =>
-            (
-              ep.toInt,
-              maj.toInt,
-              min.toInt,
-              offset.toInt
-            ) -> full
-        }
-        .filter(_._2.startsWith(prefix))
-        .toVector.sortBy(_._1)
-    allVersions.last._2
+    val versionFile = "https://doc.akka.io/docs/akka/snapshot/paradox.json"
+    val body = Await.result(http.run(url(versionFile)), 10.seconds).bodyAsString
+    val versionProperty = """"version" : """"
+    val i = body.indexOf(versionProperty)
+    if (i == -1)
+      throw new RuntimeException(s"No version in $versionFile")
+    body.substring(i).split('"')(3)
   }
 }
