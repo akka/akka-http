@@ -62,8 +62,5 @@ This has been made more consistent than previously, across all overloads and Fut
 
 ## Migration help
 
-As always, feel free to reach out via the [akka-user](https://groups.google.com/forum/#!searchin/akka-user/) mailing list or gitter channels,
-to seek help or guidance when migrating from the old APIs. 
-
 For Lightbend subscription owners it is possible to reach out to the core team for help in the migration by asking specific 
 questions via the [Lightbend customer portal](https://portal.lightbend.com/account/login).

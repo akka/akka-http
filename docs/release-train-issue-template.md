@@ -61,7 +61,6 @@ For important patch releases, and only if critical issues have been fixed:
 
 - [ ] Send a release notification to [Lightbend discuss](https://discuss.akka.io)
 - [ ] Tweet using the [@akkateam](https://twitter.com/akkateam/) account (or ask someone to) about the new release
-- [ ] Announce on [Gitter akka/akka](https://gitter.im/akka/akka)
 - [ ] Announce internally (with links to Tweet, discuss)
 
 For minor or major releases:
