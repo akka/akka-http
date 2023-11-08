@@ -48,11 +48,12 @@ object Publish extends AutoPlugin {
     sonatypeProfileName := "com.typesafe",
     beforePublishTask := beforePublish(isSnapshot.value),
     publishSigned := publishSigned.dependsOn(beforePublishTask).value,
-    publishTo := (if (isSnapshot.value)
-      Some(Resolver.file("file",  target.value / "repository")) // FIXME snapshot repo
-    else
-      Some("Cloudsmith API".at("https://maven.cloudsmith.io/lightbend/akka/"))),
-    credentials ++= (if (isSnapshot.value) Seq[Credentials]() else cloudsmithCredentials(validate = false))
+    publishTo :=
+      (if (isSnapshot.value)
+        Some("Cloudsmith API".at("https://maven.cloudsmith.io/lightbend/akka-snapshots/"))
+      else
+        Some("Cloudsmith API".at("https://maven.cloudsmith.io/lightbend/akka/"))),
+      credentials ++= cloudsmithCredentials(validate = false)
   )
 
   def cloudsmithCredentials(validate: Boolean): Seq[Credentials] = {

@@ -10,13 +10,13 @@ For a more detailed description of our process, please refer to the [CONTRIBUTIN
 
 Testing snapshot versions can help us find bugs before a release. We publish snapshot versions for every commit to the `main` branch.
 
-The latest published snapshot version is [![SonatypeSnapshots-badge][]][SonatypeSnapshots].
+Snapshot builds are available at https://repo.akka.io/snapshots. All Akka modules that belong to the same build have the same version.
 
 ### Configure repository
 
 sbt
 :   ```scala
-    resolvers += "akka-http-snapshot-repository" at "https://oss.sonatype.org/content/repositories/snapshots"
+    resolvers += "Akka library snapshot repository".at("https://repo.akka.io/snapshots")
     ```
 
 Maven
@@ -24,11 +24,13 @@ Maven
     <project>
     ...
       <repositories>
-        <repository>
-          <id>akka-http-snapshots</id>
-          <name>Akka HTTP Snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </repository>
+        <repositories>
+          <repository>
+            <id>akka-repository</id>
+            <name>Akka library snapshot repository</name>
+            <url>https://repo.akka.io/snapshots</url>
+          </repository>
+        </repositories>
       </repositories>
     ...
     </project>
@@ -38,10 +40,8 @@ Gradle
 :   ```gradle
     repositories {
       maven {
-        url  "https://oss.sonatype.org/content/repositories/snapshots"
+        url  "https://repo.akka.io/snapshots"
       }
     }
     ```
 
-[SonatypeSnapshots-badge]:  https://img.shields.io/nexus/s/https/oss.sonatype.org/com.typesafe.akka/akka-http-core_2.13.svg
-[SonatypeSnapshots]:        https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/akka-http-core_2.13/

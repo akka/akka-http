@@ -24,7 +24,7 @@ jobs:
           - JDK_VERSION: 1.17
             JVM_NAME: temurin:1.17
             extraOpts: ''
-        AKKA_VERSION: [main, default]
+        AKKA_VERSION: [main, default, snapshot]
 
     steps:
       - name: Checkout
