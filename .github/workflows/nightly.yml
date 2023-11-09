@@ -16,13 +16,16 @@ jobs:
       fail-fast: false
       matrix:
         SCALA_VERSION: [2.13, 3.3]
-        JDK_VERSION: ["1.11", "1.17"]
+        JDK_VERSION: ["1.11", "1.17", "1.21"]
         include:
           - JDK_VERSION: 1.11
             JVM_NAME: temurin:1.11
             extraOpts: ''
           - JDK_VERSION: 1.17
             JVM_NAME: temurin:1.17
+            extraOpts: ''
+          - JDK_VERSION: 1.21
+            JVM_NAME: temurin:1.21
             extraOpts: ''
         AKKA_VERSION: [main, default, snapshot]
 
@@ -36,9 +39,11 @@ jobs:
         uses: coursier/cache-action@v6.4.0
 
       - name: Set up JDK ${{ matrix.JDK_VERSION }}
-        uses: coursier/setup-action@v1.3.0
+        uses: coursier/setup-action@v1.3.4
         with:
           jvm: ${{ matrix.JVM_NAME }}
+          # FIXME default index not giving us access to JDK 21 (yet)
+          jvm-index: https://raw.githubusercontent.com/coursier/jvm-index/32d659500e6c65efb9eee91718a0fb0e797ad4ee/index.json
 
       - name: Cache Build Target
         uses: actions/cache@v3.0.11
