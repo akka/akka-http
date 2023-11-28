@@ -77,6 +77,9 @@ All predefined directives are organized into traits that form one part of the ov
 @ref[TimeoutDirectives](timeout-directives/index.md)
 :   Configure request timeouts and automatic timeout responses.
 
+@ref[MdcLoggingDirectives](mdc-logging-directives/index.md)
+:   Directives for mapped diagnostic context logging.
+
 ## List of predefined directives by trait
 
 @@toc { depth=1 }
@@ -109,5 +112,6 @@ All predefined directives are organized into traits that form one part of the ov
 * [security-directives/index](security-directives/index.md)
 * [websocket-directives/index](websocket-directives/index.md)
 * [timeout-directives/index](timeout-directives/index.md)
+* [mdc-logging-directives/index](mdc-logging-directives/index.md)
 
 @@@
