@@ -60,11 +60,9 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
   private def allModules: List[String] = List(
     "akka-parsing",
     "akka-http-core",
-    "akka-http2-tests",
     "akka-http",
     "akka-http-caching",
     "akka-http-testkit",
-    "akka-http-tests",
     "akka-http-marshallers-scala",
     "akka-http-marshallers-java",
     "akka-http-spray-json",
