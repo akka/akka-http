@@ -449,3 +449,11 @@ object Rejections {
   def rejectionError(rejection: Rejection) =
     s.RejectionError(convertToScala(rejection))
 }
+
+/**
+ * Not for user extension
+ */
+@DoNotInherit
+trait CorsRejection extends Rejection {
+  def description: String
+}

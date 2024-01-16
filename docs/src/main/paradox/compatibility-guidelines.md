@@ -29,6 +29,8 @@ Scala
     akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
     akka.http.scaladsl.OutgoingConnectionBuilder#managedPersistentHttp2
     akka.http.scaladsl.OutgoingConnectionBuilder#managedPersistentHttp2WithPriorKnowledge
+    akka.http.scaladsl.settings.ServerSentEventSettings
+    akka.http.scaladsl.settings.CorsSettings
     ```
 
 Java
@@ -43,6 +45,8 @@ Java
     akka.http.javadsl.model.RequestResponseAssociation
     akka.http.javadsl.OutgoingConnectionBuilder#managedPersistentHttp2WithPriorKnowledge
     akka.http.javadsl.OutgoingConnectionBuilder#managedPersistentHttp2
+    akka.http.javadsl.settings.ServerSentEventSettings
+    akka.http.javadsl.settings.CorsSettings
     ```    
 
 #### akka-http-caching
@@ -82,7 +86,6 @@ Scala
     akka.http.scaladsl.settings.Http2ServerSettings
     akka.http.scaladsl.settings.Http2ClientSettings
     akka.http.scaladsl.settings.PreviewServerSettings
-    akka.http.scaladsl.settings.ServerSentEventSettings
     akka.http.scaladsl.model.headers.CacheDirectives.immutableDirective
     akka.http.scaladsl.model.headers.X-Forwarded-Host
     akka.http.scaladsl.model.headers.X-Forwarded-Proto
@@ -107,7 +110,6 @@ Java
     akka.http.javadsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
     akka.http.javadsl.settings.PoolImplementation
     akka.http.javadsl.settings.PreviewServerSettings
-    akka.http.javadsl.settings.ServerSentEventSettings
     ```
   
 ## Versioning and Compatibility

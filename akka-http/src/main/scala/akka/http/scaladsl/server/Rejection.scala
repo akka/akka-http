@@ -339,3 +339,8 @@ final case class CircuitBreakerOpenRejection(cause: CircuitBreakerOpenException)
  * (Custom marshallers can of course use it as well.)
  */
 final case class RejectionError(rejection: Rejection) extends RuntimeException(rejection.toString)
+
+/**
+ * Rejection created by the CORS directives.
+ */
+final case class CorsRejection(description: String) extends jserver.CorsRejection with Rejection
