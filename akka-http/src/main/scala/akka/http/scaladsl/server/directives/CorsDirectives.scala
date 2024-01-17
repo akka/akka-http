@@ -93,7 +93,7 @@ trait CorsDirectives {
               reject(rejection)
             case _ =>
               mapResponseHeaders { oldHeaders =>
-                settingsImpl.actualResponseHeaders(origins) ++ oldHeaders.filterNot(h => headersToClean.exists(h.is))
+                settingsImpl.actualResponseHeaders(origins) ++ oldHeaders.filterNot(h => lcHeaderNamesToClean(h.lowercaseName))
               }
           }
 
@@ -127,7 +127,7 @@ object CorsDirectives extends CorsDirectives {
       rejections
     }
 
-  private val headersToClean: List[String] = List(
+  private val lcHeaderNamesToClean: Set[String] = Set(
     `Access-Control-Allow-Origin`,
     `Access-Control-Expose-Headers`,
     `Access-Control-Allow-Credentials`,
