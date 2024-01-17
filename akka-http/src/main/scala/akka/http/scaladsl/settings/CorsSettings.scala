@@ -19,27 +19,29 @@ import scala.concurrent.duration.FiniteDuration
  */
 @ApiMayChange @DoNotInherit
 trait CorsSettings extends akka.http.javadsl.settings.CorsSettings { self: CorsSettingsImpl =>
+
   /**
-   * Allow generic requests (that are outside the scope of the specification) to pass through the directive.
-   * When false strict CORS filtering is applied and any invalid request will be rejected
+   * Allow generic requests, that are outside the scope of the specification, for example lacking an `Origin` header
+   * to pass through the directive.
+   *
+   * When false strict CORS filtering is applied and any invalid request will be rejected.
    */
   override def allowGenericHttpRequests: Boolean
 
   /**
-   * Indicates whether the resource supports user credentials. If `true`, the header `Access-Control-Allow-Credentials`
-   * is set in the response, indicating that the actual request can include user credentials. Examples of user
+   * If enabled, the header `Access-Control-Allow-Credentials`
+   * is included in the response, indicating that the actual request can include user credentials. Examples of user
    * credentials are: cookies, HTTP authentication or client-side certificates.
-   *
-   * @see [[https://www.w3.org/TR/cors/#access-control-allow-credentials-response-header Access-Control-Allow-Credentials]]
    */
   override def allowCredentials: Boolean
 
   /**
    * List of origins that the CORS filter must allow.
    *
-   * Can also be set to a single `*` to allow access to the resource from any
-   * origin. Controls the content of the `Access-Control-Allow-Origin` response header: if parameter is `*` and
-   * credentials are not allowed, a `*` is set in `Access-Control-Allow-Origin`. Otherwise, the origins given in the
+   * Can also be set to a single `*` to allow access to the resource from any origin.
+   *
+   * Controls the content of the `Access-Control-Allow-Origin` response header: if parameter is `*` and
+   * credentials are not allowed, a `*` is returned in `Access-Control-Allow-Origin`. Otherwise, the origins given in the
    * `Origin` request header are echoed.
    *
    * Hostname starting with `*.` will match any sub-domain. The scheme and the port are always strictly matched.
@@ -49,9 +51,11 @@ trait CorsSettings extends akka.http.javadsl.settings.CorsSettings { self: CorsS
   override def allowedOrigins: Set[String]
 
   /**
-   * Set of request headers that are allowed when making an actual request. Controls the content of the
-   * `Access-Control-Allow-Headers` header in a preflight response. If parameter is a single `*`, the headers from
-   * `Access-Control-Request-Headers` are echoed. Otherwise the parameter list is returned as part of the header.
+   * Set of request headers that are allowed when making an actual request.
+   *
+   * Controls the content of the `Access-Control-Allow-Headers` header in a preflight response: If set to a single `*`,
+   * the headers from `Access-Control-Request-Headers` are echoed. Otherwise specified list of header names is returned
+   * as part of the header.
    */
   override def allowedHeaders: Set[String]
 

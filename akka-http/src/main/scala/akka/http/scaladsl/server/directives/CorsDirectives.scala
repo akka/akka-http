@@ -15,6 +15,7 @@ import akka.util.OptionVal
 /**
  * Directives for CORS, cross origin requests.
  *
+ * For an overview on how CORS works, see the MDN web docs page on CORS: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
  * CORS is part of the WHATWG Fetch "Living Standard" https://fetch.spec.whatwg.org/#http-cors-protocol
  *
  * @groupname cors CORS directives
