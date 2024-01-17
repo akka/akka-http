@@ -140,9 +140,9 @@ private[akka] object HttpOriginMatcher {
       val wildCardMatch = withWildcards(wildCardAllows)
 
       // strict is cheaper so start with those
-      val matcher = { origin: HttpOrigin => strictMatch(origin) || wildCardMatch(origin) }
+      val matcher = { (origin: HttpOrigin) => strictMatch(origin) || wildCardMatch(origin) }
 
-      { origins: Seq[HttpOrigin] =>
+      { (origins: Seq[HttpOrigin]) =>
         origins.exists(matcher)
       }
     }
