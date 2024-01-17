@@ -286,6 +286,10 @@ object RejectionHandler {
           headers = `Sec-WebSocket-Protocol`(supported) :: Nil))
       }
       .handle { case ValidationRejection(msg, _) => rejectRequestEntityAndComplete((BadRequest, msg)) }
+      .handleAll[CorsRejection] { rejections =>
+        val causes = rejections.map(_.description).mkString(", ")
+        rejectRequestEntityAndComplete((BadRequest, s"CORS: $causes"))
+      }
       .handle { case x => sys.error("Unhandled rejection: " + x) }
       .handleNotFound { rejectRequestEntityAndComplete((NotFound, "The requested resource could not be found.")) }
       .result()

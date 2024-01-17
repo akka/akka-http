@@ -10,14 +10,18 @@ import akka.http.scaladsl.model.HttpMethods.OPTIONS
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ HttpMethod, HttpResponse, StatusCodes }
 import akka.http.scaladsl.settings.CorsSettings
+import akka.util.OptionVal
 
 /**
  * Directives for CORS, cross origin requests.
+ *
+ * CORS is part of the WHATWG Fetch "Living Standard" https://fetch.spec.whatwg.org/#http-cors-protocol
  *
  * @groupname cors CORS directives
  * @groupprio cors 50
  */
 trait CorsDirectives {
+
   import BasicDirectives._
   import CorsDirectives._
   import RouteDirectives._
@@ -39,78 +43,89 @@ trait CorsDirectives {
   def cors(settings: CorsSettings): Directive0 = {
     val settingsImpl = settings.asInstanceOf[CorsSettingsImpl]
 
-    def validateOrigins(origins: Seq[HttpOrigin]): List[CorsRejection] =
-      if (settingsImpl.originsMatches(origins)) {
-        Nil
-      } else {
-        invalidOriginRejection(origins) :: Nil
-      }
+    def validateOrigins(origins: Seq[HttpOrigin]): OptionVal[CorsRejection] =
+      if (settingsImpl.originsMatches(origins)) OptionVal.None
+      else OptionVal.Some(invalidOriginRejection(origins))
 
-    def validateMethod(method: HttpMethod): List[CorsRejection] =
-      if (settings.allowedMethods.contains(method)) {
-        Nil
-      } else {
-        invalidMethodRejection(method) :: Nil
-      }
+    def validateMethod(method: HttpMethod): OptionVal[CorsRejection] =
+      if (settings.allowedMethods.contains(method)) OptionVal.None
+      else OptionVal.Some(invalidMethodRejection(method))
 
-    /** Return the list of invalid headers, or `Nil` if they are all valid. */
-    def validateHeaders(headers: Seq[String]): List[CorsRejection] = {
+    def validateHeaders(headers: Seq[String]): OptionVal[CorsRejection] = {
       val invalidHeaders = headers.filterNot(settingsImpl.headerNameAllowed)
-      if (invalidHeaders.isEmpty) {
-        Nil
-      } else {
-        invalidHeadersRejection(invalidHeaders) :: Nil
-      }
+      if (invalidHeaders.isEmpty) OptionVal.None
+      else OptionVal.Some(invalidHeadersRejection(invalidHeaders))
     }
 
     extractRequest.flatMap { request =>
-      import request._
-
-      (method, header[Origin].map(_.origins), header[`Access-Control-Request-Method`].map(_.method)) match {
-        case (OPTIONS, Some(origins), Some(requestMethod)) if origins.lengthCompare(1) <= 0 =>
+      val origins = request.header[Origin] match {
+        case Some(origin) => OptionVal.Some(origin.origins)
+        case None         => OptionVal.None
+      }
+      val method = request.header[`Access-Control-Request-Method`] match {
+        case Some(accessControlMethod) => OptionVal.Some(accessControlMethod.method)
+        case None                      => OptionVal.None
+      }
+      (request.method, origins, method) match {
+        case (OPTIONS, OptionVal.Some(origins), OptionVal.Some(requestMethod)) if origins.lengthCompare(1) <= 0 =>
           // pre-flight CORS request
-          val headers = header[`Access-Control-Request-Headers`].map(_.headers).getOrElse(Seq.empty)
-
-          validateOrigins(origins) ::: validateMethod(requestMethod) ::: validateHeaders(headers) match {
-            case Nil    => complete(HttpResponse(StatusCodes.OK, settingsImpl.preflightResponseHeaders(origins, headers)))
-            case causes => reject(causes: _*)
+          val headers = request.header[`Access-Control-Request-Headers`] match {
+            case Some(header) => header.headers
+            case None         => Seq.empty
           }
 
-        case (_, Some(origins), None) =>
+          val rejections = collectRejections(
+            validateOrigins(origins),
+            validateMethod(requestMethod),
+            validateHeaders(headers))
+
+          if (rejections.isEmpty) {
+            complete(HttpResponse(StatusCodes.OK, settingsImpl.preflightResponseHeaders(origins, headers)))
+          } else {
+            reject(rejections: _*)
+          }
+
+        case (_, OptionVal.Some(origins), OptionVal.None) =>
           // actual CORS request
           validateOrigins(origins) match {
-            case Nil =>
+            case OptionVal.Some(rejection) =>
+              reject(rejection)
+            case _ =>
               mapResponseHeaders { oldHeaders =>
-                settingsImpl.actualResponseHeaders(origins) ++ oldHeaders.filterNot(h => CorsDirectives.headersToClean.exists(h.is))
+                settingsImpl.actualResponseHeaders(origins) ++ oldHeaders.filterNot(h => headersToClean.exists(h.is))
               }
-            case causes =>
-              reject(causes: _*)
           }
 
         case _ =>
-          if (settings.allowGenericHttpRequests)
-            // not a valid CORS request, but allowed
-            pass
-          else
-            // not a valid CORS request, forbidden
-            reject(malformedRejection)
+          // not a valid CORS request, can be allowed through setting
+          if (settings.allowGenericHttpRequests) pass
+          else reject(malformedRejection)
       }
     }
   }
-
-  // FIXME should we keep this, fold it into the default rejection handler?
-  def corsRejectionHandler: RejectionHandler =
-    RejectionHandler
-      .newBuilder()
-      .handleAll[CorsRejection] { rejections =>
-        val causes = rejections.map(_.description).mkString(", ")
-        complete((StatusCodes.BadRequest, s"CORS: $causes"))
-      }
-      .result()
-
 }
 
 object CorsDirectives extends CorsDirectives {
+  private val NoRejections = Array.empty[Rejection]
+
+  // allocation optimized collection of multiple rejections
+  private def collectRejections(originsRejection: OptionVal[Rejection], methodRejection: OptionVal[Rejection], headerRejection: OptionVal[Rejection]): Array[Rejection] =
+    if (originsRejection.isEmpty && methodRejection.isEmpty && headerRejection.isEmpty) NoRejections
+    else {
+      def count(opt: OptionVal[_]) = if (opt.isDefined) 1 else 0
+      val rejections = Array.ofDim[Rejection](count(originsRejection) + count(methodRejection) + count(headerRejection))
+      var idx = 0
+      def addIfPresent(opt: OptionVal[Rejection]): Unit =
+        if (opt.isDefined) {
+          rejections(idx) = opt.get
+          idx += 1
+        }
+      addIfPresent(originsRejection)
+      addIfPresent(methodRejection)
+      addIfPresent(headerRejection)
+      rejections
+    }
+
   private val headersToClean: List[String] = List(
     `Access-Control-Allow-Origin`,
     `Access-Control-Expose-Headers`,

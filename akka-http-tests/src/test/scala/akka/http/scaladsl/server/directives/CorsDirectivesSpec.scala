@@ -1,9 +1,11 @@
 package akka.http.scaladsl.server.directives
 
+import akka.http.impl.settings.HttpOriginMatcher
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{ CorsRejection, Route, RoutingSpec }
 import akka.http.scaladsl.settings.CorsSettings
+import org.scalatest.Inspectors.forAll
 
 class CorsDirectivesSpec extends RoutingSpec {
   import HttpMethods._
@@ -290,12 +292,12 @@ class CorsDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "the default rejection handler" should {
+  "The default rejection handler" should {
     val settings = referenceSettings
       .withAllowGenericHttpRequests(false)
       .withAllowedOrigins(Set(exampleOrigin.toString))
       .withAllowedHeaders(Set[String]())
-    val sealedRoute = handleRejections(CorsDirectives.corsRejectionHandler) { route(settings) }
+    val sealedRoute = Route.seal(route(settings))
 
     "handle the malformed request cause" in {
       Get() ~> {
@@ -363,4 +365,90 @@ class CorsDirectivesSpec extends RoutingSpec {
         }
     }
   }
+
+  "The CORS origin matcher" should {
+    "match any origin with *" in {
+      val origins = Seq(
+        "http://localhost",
+        "http://192.168.1.1",
+        "http://test.com",
+        "http://test.com:8080",
+        "https://test.com",
+        "https://test.com:4433"
+      ).map(HttpOrigin.apply)
+
+      forAll(origins) { o => HttpOriginMatcher.matchAny.apply(Seq(o)) shouldBe true }
+      HttpOriginMatcher.matchAny(origins) shouldBe true
+    }
+
+    "match exact origins" in {
+      val positives = Seq(
+        "http://localhost",
+        "http://test.com",
+        "https://test.ch:12345"
+      ).map(HttpOrigin.apply)
+
+      val negatives = Seq(
+        "http://localhost:80",
+        "https://localhost",
+        "http://test.com:8080",
+        "https://test.ch",
+        "https://abc.test.uk.co",
+      ).map(HttpOrigin.apply)
+
+      val matcher = HttpOriginMatcher.apply(Set(
+        "http://localhost",
+        "http://test.com",
+        "https://test.ch:12345"
+      ))
+
+      forAll(positives) { o => matcher.apply(Seq(o)) shouldBe true }
+
+      forAll(negatives) { o => matcher.apply(Seq(o)) shouldBe false }
+
+      matcher(positives) shouldBe true
+      matcher(negatives) shouldBe false
+      matcher(negatives ++ positives) shouldBe true // at least one match
+      matcher(positives ++ negatives) shouldBe true // at least one match
+    }
+
+    "match sub-domains with wildcards" in {
+      val matcher = HttpOriginMatcher(
+        Set(
+          "http://test.com",
+          "https://test.ch:12345",
+          "https://*.test.uk.co",
+          "http://*.abc.com:8080",
+          "http://*abc.com", // Must start with `*.`
+          "http://abc.*.middle.com" // The wildcard can't be in the middle
+        )
+      )
+
+      val positives = Seq(
+        "http://test.com",
+        "https://test.ch:12345",
+        "https://sub.test.uk.co",
+        "https://sub1.sub2.test.uk.co",
+        "http://sub.abc.com:8080"
+      ).map(HttpOrigin.apply)
+
+      val negatives = Seq(
+        "http://test.com:8080",
+        "http://sub.test.uk.co", // must compare the scheme
+        "http://sub.abc.com", // must compare the port
+        "http://abc.test.com", // no wildcard
+        "http://sub.abc.com",
+        "http://subabc.com",
+        "http://abc.sub.middle.com",
+        "http://abc.middle.com"
+      ).map(HttpOrigin.apply)
+
+      forAll(positives) { o => matcher.apply(Seq(o)) shouldBe true }
+
+      forAll(negatives) { o => matcher.apply(Seq(o)) shouldBe false }
+      matcher(negatives ++ positives) shouldBe true
+      matcher(positives ++ negatives) shouldBe true
+    }
+  }
+
 }
