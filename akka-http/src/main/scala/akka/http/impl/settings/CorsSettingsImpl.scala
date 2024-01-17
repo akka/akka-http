@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 import akka.http.impl.util.SettingsCompanionImpl
 import akka.http.scaladsl.model.headers.{ HttpOrigin, HttpOriginRange, `Access-Control-Allow-Credentials`, `Access-Control-Allow-Headers`, `Access-Control-Allow-Methods`, `Access-Control-Allow-Origin`, `Access-Control-Expose-Headers`, `Access-Control-Max-Age` }
 import akka.http.scaladsl.model.{ HttpHeader, HttpMethod, HttpMethods }
-import akka.util.ConstantFun
+import akka.util.{ ConstantFun, OptionVal }
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -36,12 +36,6 @@ private[akka] case class CorsSettingsImpl(
     if (allowedHeaders == Set("*")) ConstantFun.anyToTrue
     else allowedHeaders.contains
 
-  private def accessControlAllowOrigin(origins: Seq[HttpOrigin]): `Access-Control-Allow-Origin` =
-    if (allowedOrigins == allowAnySet && !allowCredentials)
-      `Access-Control-Allow-Origin`.*
-    else
-      `Access-Control-Allow-Origin`.forRange(HttpOriginRange.Default(origins))
-
   private def accessControlExposeHeaders: Option[`Access-Control-Expose-Headers`] =
     if (exposedHeaders.nonEmpty)
       Some(`Access-Control-Expose-Headers`(exposedHeaders.toArray))
@@ -61,28 +55,37 @@ private[akka] case class CorsSettingsImpl(
   private def accessControlAllowMethods: `Access-Control-Allow-Methods` =
     `Access-Control-Allow-Methods`(allowedMethods.toArray)
 
-  private def accessControlAllowHeaders(requestHeaders: Seq[String]): Option[`Access-Control-Allow-Headers`] =
+  private def accessControlAllowHeaders(requestHeaders: Seq[String], baseHeaders: List[HttpHeader]): List[HttpHeader] =
     if (allowedHeaders == allowAnySet) {
-      if (requestHeaders.nonEmpty) Some(`Access-Control-Allow-Headers`(requestHeaders))
-      else None
-    } else Some(`Access-Control-Allow-Headers`(requestHeaders))
+      if (requestHeaders.nonEmpty) `Access-Control-Allow-Headers`(requestHeaders) :: baseHeaders
+      else baseHeaders
+    } else `Access-Control-Allow-Headers`(requestHeaders) :: baseHeaders
+
+  // single instance if possible
+  private val sameAccessControlAllowHeaderForAll =
+    if (allowedOrigins == allowAnySet && !allowCredentials) Some(`Access-Control-Allow-Origin`.*)
+    else None
 
   // Cache headers that are always included in a preflight response
   private val basePreflightResponseHeaders: List[HttpHeader] =
-    List(accessControlAllowMethods) ++ accessControlMaxAge ++ accessControlAllowCredentials
+    List(accessControlAllowMethods) ++ accessControlMaxAge ++ accessControlAllowCredentials ++ sameAccessControlAllowHeaderForAll
 
   // Cache headers that are always included in an actual response
   private val baseActualResponseHeaders: List[HttpHeader] =
-    accessControlExposeHeaders.toList ++ accessControlAllowCredentials
+    accessControlExposeHeaders.toList ++ accessControlAllowCredentials ++ sameAccessControlAllowHeaderForAll
+
+  private def accessControlAllowOrigin(origins: Seq[HttpOrigin], baseHeaders: List[HttpHeader]): List[HttpHeader] =
+    if (sameAccessControlAllowHeaderForAll.isDefined)
+      // we already included it in the base headers
+      baseHeaders
+    else
+      `Access-Control-Allow-Origin`.forRange(HttpOriginRange.Default(origins)) :: baseHeaders
 
   def actualResponseHeaders(origins: Seq[HttpOrigin]): List[HttpHeader] =
-    accessControlAllowOrigin(origins) :: baseActualResponseHeaders
+    accessControlAllowOrigin(origins, baseActualResponseHeaders)
 
   def preflightResponseHeaders(origins: Seq[HttpOrigin], requestHeaders: Seq[String]): List[HttpHeader] =
-    accessControlAllowHeaders(requestHeaders) match {
-      case Some(h) => h :: accessControlAllowOrigin(origins) :: basePreflightResponseHeaders
-      case None    => accessControlAllowOrigin(origins) :: basePreflightResponseHeaders
-    }
+    accessControlAllowHeaders(requestHeaders, accessControlAllowOrigin(origins, basePreflightResponseHeaders))
 }
 
 /**

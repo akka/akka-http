@@ -70,7 +70,6 @@ abstract class CorsSettings private[akka] { self: CorsSettingsImpl =>
    */
   def getAllowedMethods: JSet[HttpMethod] = self.allowedMethods.map(_.asJava).asJava
 
-
   /**
    * Set of headers (other than simple response headers) that browsers are allowed to access. If not empty, the listed
    * headers are returned as part of the `Access-Control-Expose-Headers` header in responses.

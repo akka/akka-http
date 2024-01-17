@@ -96,4 +96,5 @@ class CorsBenchmark extends Directives {
     val f = http.singleRequest(requestPreflight).flatMap(r => Unmarshal(r.entity).to[String])
     assert(Await.result(f, 1.second) == "")
   }
+
 }
