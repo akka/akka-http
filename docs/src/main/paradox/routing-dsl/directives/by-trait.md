@@ -89,6 +89,7 @@ All predefined directives are organized into traits that form one part of the ov
 * [caching-directives/index](caching-directives/index.md)
 * [coding-directives/index](coding-directives/index.md)
 * [cookie-directives/index](cookie-directives/index.md)
+* [cors-directives/index](cors-directives/index.md)
 * [debugging-directives/index](debugging-directives/index.md)
 * [execution-directives/index](execution-directives/index.md)
 * [file-and-resource-directives/index](file-and-resource-directives/index.md)

@@ -282,8 +282,9 @@ final case class `Access-Control-Allow-Methods`(methods: immutable.Seq[HttpMetho
 
 // https://www.w3.org/TR/cors/#access-control-allow-origin-response-header
 object `Access-Control-Allow-Origin` extends ModeledCompanion[`Access-Control-Allow-Origin`] {
-  val `*` = forRange(HttpOriginRange.`*`)
-  val `null` = forRange(HttpOriginRange())
+  val `*`: `Access-Control-Allow-Origin` = forRange(HttpOriginRange.`*`)
+  val `null`: `Access-Control-Allow-Origin` = forRange(HttpOriginRange())
+
   def apply(origin: HttpOrigin) = forRange(HttpOriginRange(origin))
 
   /**
