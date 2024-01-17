@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright 2016 Lomig Mégard
  */
 
 package akka.http.impl.settings
@@ -16,6 +17,8 @@ import scala.jdk.CollectionConverters._
 import scala.jdk.DurationConverters._
 
 /**
+ * This implementation is based on the akka-http-cors project by Lomig Mégard, licensed under the Apache License, Version 2.0.
+ *
  * INTERNAL API
  */
 @InternalApi

@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright 2016 Lomig Mégard
  */
 
 package akka.http.javadsl.server.directives
@@ -15,6 +16,8 @@ import java.util.function.Supplier
  *
  * For an overview on how CORS works, see the MDN web docs page on CORS: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
  * CORS is part of the WHATWG Fetch "Living Standard" https://fetch.spec.whatwg.org/#http-cors-protocol
+ *
+ * This implementation is based on the akka-http-cors project by Lomig Mégard, licensed under the Apache License, Version 2.0.
  */
 abstract class CorsDirectives extends FramedEntityStreamingDirectives {
   import akka.http.javadsl.server.RoutingJavaMapping.Implicits._

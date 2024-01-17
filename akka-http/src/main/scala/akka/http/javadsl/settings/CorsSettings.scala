@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright 2016 Lomig Mégard
  */
 
 package akka.http.javadsl.settings
@@ -15,6 +16,8 @@ import scala.jdk.DurationConverters.ScalaDurationOps
 
 /**
  * Settings for the CORS support
+ *
+ * This implementation is based on the akka-http-cors project by Lomig Mégard, licensed under the Apache License, Version 2.0.
  *
  * Not for user extension
  */
