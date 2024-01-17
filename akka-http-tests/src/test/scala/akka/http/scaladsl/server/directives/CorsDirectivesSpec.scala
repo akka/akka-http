@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.scaladsl.server.directives
 
 import akka.http.impl.settings.HttpOriginMatcher

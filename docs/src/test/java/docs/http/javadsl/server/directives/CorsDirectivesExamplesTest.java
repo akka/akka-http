@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2023 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpMethods;
