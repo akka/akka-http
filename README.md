@@ -1,8 +1,6 @@
 Akka HTTP
 =========
 
-[![akka-http-core Scala version support](https://index.scala-lang.org/akka/akka-http/akka-http-core/latest-by-scala-version.svg)](https://index.scala-lang.org/akka/akka-http/akka-http-core)
-
 The Akka HTTP modules implement a full server- and client-side HTTP stack on top
 of akka-actor and akka-stream. It's not a web-framework but rather a more
 general toolkit for providing and consuming HTTP-based services. While
@@ -25,6 +23,12 @@ The documentation is available at
 [doc.akka.io](https://doc.akka.io/docs/akka-http/current/), for
 [Scala](https://doc.akka.io/docs/akka-http/current/scala/http/) and
 [Java](https://doc.akka.io/docs/akka-http/current/java/http/).
+
+
+Current versions of all Akka libraries
+--------------------------------------
+
+The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/docs/akka-dependencies/current/) page. Releases of the Akka HTTP libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka-http/releases) page.
 
 
 Community
