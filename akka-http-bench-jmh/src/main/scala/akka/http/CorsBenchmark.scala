@@ -5,20 +5,25 @@
 
 package akka.http
 
-import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.model.headers.{ HttpOrigin, Origin, `Access-Control-Request-Method` }
-import akka.http.scaladsl.model.{ HttpMethods, HttpRequest }
+import akka.dispatch.ExecutionContexts
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.HttpOrigin
+import akka.http.scaladsl.model.headers.Origin
+import akka.http.scaladsl.model.headers.`Access-Control-Request-Method`
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.settings.CorsSettings
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
 
 /*
  * This benchmark is based on the akka-http-cors project by Lomig Mégard, licensed under the Apache License, Version 2.0.
@@ -38,73 +43,83 @@ class CorsBenchmark extends Directives {
   implicit private val system: ActorSystem = ActorSystem("CorsBenchmark", config)
   implicit private val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  private val http = Http(system)
   private val corsSettings = CorsSettings(system)
 
-  private var binding: ServerBinding = _
+  private var baselineHandler: Function[HttpRequest, Future[HttpResponse]] = _
+  private var corsDefaultHandler: Function[HttpRequest, Future[HttpResponse]] = _
+  private var corsSettingsHandler: Function[HttpRequest, Future[HttpResponse]] = _
   private var request: HttpRequest = _
   private var requestCors: HttpRequest = _
   private var requestPreflight: HttpRequest = _
 
   @Setup
   def setup(): Unit = {
-    val route = {
-      path("baseline") {
+    baselineHandler = Route.toFunction(path("baseline") {
+      get {
+        complete("ok")
+      }
+    })
+    corsDefaultHandler = Route.toFunction(path("cors") {
+      cors() {
         get {
           complete("ok")
         }
-      } ~ path("cors") {
-        cors(corsSettings) {
-          get {
-            complete("ok")
-          }
+      }
+    })
+    corsSettingsHandler = Route.toFunction(path("cors") {
+      cors(corsSettings) {
+        get {
+          complete("ok")
         }
       }
-    }
+    })
+
     val origin = Origin(HttpOrigin("http://example.com"))
 
-    binding = Await.result(http.newServerAt("127.0.0.1", 0).bind(route), 1.second)
-    val base = s"http://${binding.localAddress.getHostString}:${binding.localAddress.getPort}"
-
-    request = HttpRequest(uri = base + "/baseline")
+    val base = s"http://127.0.0.1:8080"
+    request = HttpRequest(uri = s"$base/baseline")
     requestCors = HttpRequest(
       method = HttpMethods.GET,
-      uri = base + "/cors",
+      uri = s"$base/cors",
       headers = List(origin)
     )
     requestPreflight = HttpRequest(
       method = HttpMethods.OPTIONS,
-      uri = base + "/cors",
+      uri = s"$base/cors",
       headers = List(origin, `Access-Control-Request-Method`(HttpMethods.GET))
     )
   }
 
   @TearDown
   def shutdown(): Unit = {
-    val f = for {
-      _ <- http.shutdownAllConnectionPools()
-      _ <- binding.terminate(1.second)
-      _ <- system.terminate()
-    } yield ()
-    Await.ready(f, 5.seconds)
+    Await.ready(system.terminate(), 5.seconds)
   }
 
   @Benchmark
   def baseline(): Unit = {
-    val f = http.singleRequest(request).flatMap(r => Unmarshal(r.entity).to[String])
-    assert(Await.result(f, 1.second) == "ok")
+    assert(responseBody(baselineHandler(request)) == "ok")
   }
 
   @Benchmark
   def default_cors(): Unit = {
-    val f = http.singleRequest(requestCors).flatMap(r => Unmarshal(r.entity).to[String])
-    assert(Await.result(f, 1.second) == "ok")
+    assert(responseBody(corsDefaultHandler(requestCors)) == "ok")
   }
 
   @Benchmark
   def default_preflight(): Unit = {
-    val f = http.singleRequest(requestPreflight).flatMap(r => Unmarshal(r.entity).to[String])
-    assert(Await.result(f, 1.second) == "")
+    assert(responseBody(corsDefaultHandler(requestPreflight)) == "")
   }
 
+  @Benchmark
+  def settings_cors(): Unit = {
+    assert(responseBody(corsSettingsHandler(requestCors)) == "ok")
+  }
+
+  @Benchmark
+  def settings_preflight(): Unit = {
+    assert(responseBody(corsSettingsHandler(requestPreflight)) == "")
+  }
+
+  private def responseBody(response: Future[HttpResponse]): String =
+    Await.result(response.flatMap(_.entity.toStrict(3.seconds)).map(_.data.utf8String)(ExecutionContexts.parasitic), 3.seconds)
 }
