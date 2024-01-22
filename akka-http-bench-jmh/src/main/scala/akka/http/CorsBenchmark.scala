@@ -28,11 +28,13 @@ import scala.concurrent.ExecutionContext
 /*
  * This benchmark is based on the akka-http-cors project by Lomig Mégard, licensed under the Apache License, Version 2.0.
  *
- * Reference results from run on Linux Gen 11, i5 2.60GHz:
- * Benchmark                         Mode  Cnt      Score     Error  Units
- * CorsBenchmark.baseline           thrpt   10  15352.913 ±  61.849  ops/s
- * CorsBenchmark.default_cors       thrpt   10  14097.737 ±  88.402  ops/s
- * CorsBenchmark.default_preflight  thrpt   10  13363.198 ± 243.895  ops/s
+ * Reference results from run on Linux Gen 11, i5 2.60GHz, JDK 17.0.8:
+ * Benchmark                          Mode  Cnt        Score       Error  Units
+ * CorsBenchmark.baseline            thrpt   10  2638704.917 ±  2642.203  ops/s
+ * CorsBenchmark.default_cors        thrpt   10  1811293.399 ± 11974.729  ops/s
+ * CorsBenchmark.default_preflight   thrpt   10  2637449.643 ±  7249.558  ops/s
+ * CorsBenchmark.settings_cors       thrpt   10  1878642.961 ±  4003.510  ops/s
+ * CorsBenchmark.settings_preflight  thrpt   10  2936688.186 ±  3591.821  ops/s
  */
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
