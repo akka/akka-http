@@ -45,3 +45,15 @@ Akka HTTP 10.6.x requires Akka version >= 2.9.0.
 
 The Jackson dependency has been updated to 2.15.2 in Akka HTTP 10.6.0. That bump includes many fixes and changes to
 Jackson, but it should not introduce any incompatibility in serialized format.
+
+### Built in CORS support
+
+Built in directives with CORS support @ref[has been added](../routing-dsl/directives/cors-directives/cors.md) heavily inspired
+by the pre-existing community library [akka-http-cors](https://github.com/lomigmegard/akka-http-cors).
+
+Directive API and configuration are similar and migrating should be straightforward. Some of the lower level APIs for implementing
+CORS that the library gave access to (`HttpOriginMatcher`) and the `CorsRejection` implementation 
+is simplified or not available as public API in the new Akka HTTP CORS implementation.
+
+The new configuration namespace is `akka.http.cors` instead of `akka-http-cors`, the individual setting names are the same
+however `allowed-origins`, `allowed-headers` are always lists of values with a single `["*"]` to represent match-any.
