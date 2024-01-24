@@ -25,7 +25,7 @@ jobs:
             JVM_NAME: temurin:1.17
             extraOpts: ''
           - JDK_VERSION: 1.21
-            JVM_NAME: temurin:1.21
+            JVM_NAME: temurin:1.21.0.2
             extraOpts: ''
         AKKA_VERSION: [main, default, snapshot]
 
