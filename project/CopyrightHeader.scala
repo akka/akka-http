@@ -34,6 +34,7 @@ object CopyrightHeader extends AutoPlugin {
   // We hard-code this so PR's created in year X will not suddenly in X+1.
   // Of course we should remember to update it early in the year.
   val CurrentYear = "2023"
+  val AlsoOkYear = "2024" // until we bump the above
   val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
   val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*".r
 
@@ -45,7 +46,7 @@ object CopyrightHeader extends AutoPlugin {
 
     def updateLightbendHeader(header: String): String = header match {
       case CopyrightHeaderPattern(years, null, _) =>
-        if (years != CurrentYear)
+        if (years != CurrentYear && years != AlsoOkYear)
           CopyrightPattern.replaceFirstIn(header, headerFor(years + "-" + CurrentYear))
         else
           CopyrightPattern.replaceFirstIn(header, headerFor(years))

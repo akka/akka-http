@@ -5,13 +5,12 @@
 package akka.http.javadsl.server
 
 import java.util.function.{ BiFunction, Function, Supplier }
+import akka.http.javadsl.server.directives.CorsDirectives
 
-import akka.http.javadsl.server.directives.FramedEntityStreamingDirectives
 import scala.annotation.nowarn
-
 import scala.annotation.varargs
 
-abstract class AllDirectives extends FramedEntityStreamingDirectives
+abstract class AllDirectives extends CorsDirectives
 
 /**
  * Collects all default directives into one class for simple importing of static functions.

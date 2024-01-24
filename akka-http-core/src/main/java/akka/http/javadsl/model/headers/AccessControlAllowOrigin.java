@@ -11,6 +11,13 @@ package akka.http.javadsl.model.headers;
 public abstract class AccessControlAllowOrigin extends akka.http.scaladsl.model.HttpHeader {
     public abstract HttpOriginRange range();
 
+    public static AccessControlAllowOrigin wildcard() {
+        return akka.http.scaladsl.model.headers.Access$minusControl$minusAllow$minusOrigin$.MODULE$.$times();
+    }
+    public static AccessControlAllowOrigin nullOrigin() {
+        return create(HttpOriginRange.create());
+    }
+
     public static AccessControlAllowOrigin create(HttpOriginRange range) {
         return new akka.http.scaladsl.model.headers.Access$minusControl$minusAllow$minusOrigin(((akka.http.scaladsl.model.headers.HttpOriginRange) range));
     }
