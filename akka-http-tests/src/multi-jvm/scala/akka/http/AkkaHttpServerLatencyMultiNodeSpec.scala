@@ -171,7 +171,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
         enterBarrier("startup")
 
         runOn(loadGenerator) {
-          system.actorOf(Props(classOf[HttpLoadGeneratorActor], serverPortPromise), "load-gen")
+          system.actorOf(Props(new HttpLoadGeneratorActor(serverPortPromise)), "load-gen")
         }
         enterBarrier("load-gen-ready")
 
