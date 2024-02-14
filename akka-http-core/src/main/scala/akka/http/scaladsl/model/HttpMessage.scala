@@ -6,12 +6,12 @@ package akka.http.scaladsl.model
 
 import akka.stream.scaladsl.Flow
 import akka.stream.{ FlowShape, Graph, Materializer, SystemMaterializer }
+
 import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable => JIterable }
 import java.util.Optional
 import java.util.concurrent.{ CompletionStage, Executor }
-
 import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
@@ -23,6 +23,7 @@ import akka.parboiled2.CharUtils
 import akka.util.{ ByteString, HashCode, OptionVal }
 import akka.http.ccompat.{ pre213, since213 }
 import akka.http.impl.util._
+import akka.http.javadsl.model.headers.CustomHeader
 import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.util.FastFuture._
 import headers._
@@ -136,13 +137,19 @@ sealed trait HttpMessage extends jm.HttpMessage {
     case None    => HttpEncodings.identity
   }
 
-  /** Returns the first header of the given type if there is one */
+  /**
+   * Returns the first header of the given type if there is one
+   *
+   * @throws IllegalArgumentException if headerClass is a custom header.
+   */
   def header[T >: Null <: jm.HttpHeader: ClassTag]: Option[T] = {
     val clazz = classTag[T].runtimeClass.asInstanceOf[Class[T]]
     HttpHeader.fastFind[T](clazz, headers) match {
       case OptionVal.Some(h)                     => Some(h)
       case _ if clazz == classOf[`Content-Type`] => Some(`Content-Type`(entity.contentType)).asInstanceOf[Option[T]]
-      case _                                     => None
+      case _ if classOf[CustomHeader].isAssignableFrom(clazz) =>
+        throw new IllegalArgumentException("header[T] method cannot be used to lookup custom headers. Use header(String) instead.")
+      case _ => None
     }
   }
 
@@ -207,7 +214,9 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def getHeader[T <: jm.HttpHeader](headerClass: Class[T]): Optional[T] =
     HttpHeader.fastFind[jm.HttpHeader](headerClass.asInstanceOf[Class[jm.HttpHeader]], headers) match {
       case OptionVal.Some(h) => Optional.of(h.asInstanceOf[T])
-      case _                 => Optional.empty()
+      case _ if classOf[CustomHeader].isAssignableFrom(headerClass) =>
+        throw new IllegalArgumentException("getHeader(Class) method cannot be used to lookup custom headers. Use getHeader(String) instead.")
+      case _ => Optional.empty()
     }
   /** Java API */
   def getHeaders[T <: jm.HttpHeader](headerClass: Class[T]): JIterable[T] = {
