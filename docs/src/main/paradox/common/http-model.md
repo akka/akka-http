@@ -388,7 +388,7 @@ types (such as matching a custom header against a @apidoc[RawHeader] in routing 
 @@@
 
 @@@ note { .group-java }
-Custom headers do not work with the `getHeader(Class)` method on @javadoc[HttpMessage].
+Custom headers do not work with the `getHeader(Class)` method on @apidoc[HttpMessage].
 @@@
 
 @@@ note { .group-java }
