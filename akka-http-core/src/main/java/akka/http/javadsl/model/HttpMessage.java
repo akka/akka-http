@@ -57,6 +57,8 @@ public interface HttpMessage {
     /**
      * Try to find the first header of the given class and return
      * Optional.of(header), otherwise this method returns an empty Optional.
+     *
+     * @throws IllegalArgumentException if headerClass is a custom header.
      */
     <T extends HttpHeader> Optional<T> getHeader(Class<T> headerClass);
 

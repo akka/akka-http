@@ -378,9 +378,17 @@ Java
 :   @@snip [CustomHeaderExampleTest.java](/docs/src/test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
 
 @@@ note { .group-scala }
+Custom headers do not work with the `header[T]` method on @apidoc[HttpMessage].
+@@@
+
+@@@ note { .group-scala }
 When defining custom headers, it is better to extend @apidoc[ModeledCustomHeader] instead of its parent @apidoc[CustomHeader].
 Custom headers that extend @apidoc[ModeledCustomHeader] automatically comply with the pattern matching semantics that usually apply to built-in
 types (such as matching a custom header against a @apidoc[RawHeader] in routing layers of Akka HTTP applications).
+@@@
+
+@@@ note { .group-java }
+Custom headers do not work with the `getHeader(Class)` method on @javadoc[HttpMessage].
 @@@
 
 @@@ note { .group-java }

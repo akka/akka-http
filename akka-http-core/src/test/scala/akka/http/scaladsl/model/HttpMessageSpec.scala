@@ -5,13 +5,14 @@
 package akka.http.scaladsl.model
 
 import java.net.InetAddress
-
 import akka.util.ByteString
 import headers._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.javadsl.{ model => jm }
 import akka.stream.scaladsl.TLSPlacebo
+
+import scala.util.Try
 
 class HttpMessageSpec extends AnyWordSpec with Matchers {
 
@@ -131,6 +132,27 @@ class HttpMessageSpec extends AnyWordSpec with Matchers {
       val javaRequest: jm.HttpRequest = request
       javaRequest.getAttribute(jm.AttributeKeys.sslSession).get() should be(SslSessionInfo(TLSPlacebo.dummySession))
     }
+    "throw an IllegalArgumentException when looking up a custom header via the header[T] method" in {
+      an[IllegalArgumentException] should be thrownBy HttpRequest().header[ApiTokenHeader]
+    }
+    "throw an IllegalArgumentException when looking up a custom header via the getHeader(Class) method" in {
+      an[IllegalArgumentException] should be thrownBy HttpRequest().getHeader(classOf[ApiTokenHeader])
+    }
   }
 
+  final class ApiTokenHeader(token: String) extends ModeledCustomHeader[ApiTokenHeader] {
+    override def renderInRequests = true
+
+    override def renderInResponses = true
+
+    override val companion: ModeledCustomHeaderCompanion[ApiTokenHeader] = ApiTokenHeader
+
+    override def value: String = token
+  }
+
+  object ApiTokenHeader extends ModeledCustomHeaderCompanion[ApiTokenHeader] {
+    override val name = "apiKey"
+
+    override def parse(value: String): Try[ApiTokenHeader] = Try(new ApiTokenHeader(value))
+  }
 }
