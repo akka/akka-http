@@ -17,11 +17,14 @@ lazy val root = (project in file("."))
       scalaVersion    := "2.13.12"
     )),
     name := "akka-http-native-image-test",
-    // useful for investiations
-    // javaOptions += "-agentlib:native-image-agent=config-output-dir=/Users/johan/Code/Lightbend/Akka/akka-http/akka-http-native-image-test/target/",
+    // useful for investigations, needs to be run on graalvm JDK
+    javaOptions += "-agentlib:native-image-agent=config-output-dir=target/generated-native-image-metadata",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"                % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json"     % akkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-xml"            % akkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-jackson"        % akkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-caching"        % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-actor-typed"         % akkaVersion,
       "com.typesafe.akka" %% "akka-stream"              % akkaVersion,
       "ch.qos.logback"    % "logback-classic"           % "1.2.13",

@@ -13,7 +13,7 @@ object JsonFormats extends AdditionalFormats with StandardFormats with ProductFo
   // import the default encoders for primitive types (Int, String, Lists etc)
   import DefaultJsonProtocol._
 
-  // spray-json uses reflection to extract the field names so these types require reflection metadata
+  // Note: spray-json uses reflection to extract the field names so these types require explicit reflection metadata
   implicit val userJsonFormat: RootJsonFormat[User] = jsonFormat3(User.apply)
 
   implicit val usersJsonFormat: RootJsonFormat[Users] = jsonFormat1(Users.apply)
