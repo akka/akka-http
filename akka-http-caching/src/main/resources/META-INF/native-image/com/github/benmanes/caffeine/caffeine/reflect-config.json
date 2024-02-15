@@ -133,6 +133,22 @@
     ]
   },
   {
+    "name": "com.github.benmanes.caffeine.cache.BBHeader$ReadCounterRef",
+    "fields": [
+      {
+        "name": "readCounter"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.BBHeader$ReadAndWriteCounterRef",
+    "fields": [
+      {
+        "name": "writeCounter"
+      }
+    ]
+  },
+  {
     "name":"java.lang.Thread",
     "fields":[{"name":"threadLocalRandomProbe"}]
   }
