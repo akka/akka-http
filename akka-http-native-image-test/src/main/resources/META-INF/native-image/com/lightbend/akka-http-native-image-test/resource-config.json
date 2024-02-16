@@ -1,7 +1,12 @@
 {
   "resources":{
-  "includes":[{
-    "pattern":"\\Qkeystore.p12\\E"
-  }]},
+  "includes":[
+    {
+      "pattern":"\\Qkeystore.p12\\E"
+    },
+    {
+      "pattern":"\\Qlogback.xml\\E"
+    }
+  ]},
   "bundles":[]
 }

@@ -38,8 +38,6 @@ lazy val root = (project in file("."))
     nativeImageVersion := "21.0.2",
     nativeImageOptions := Seq(
       "--no-fallback",
-      "--verbose",
-      "--initialize-at-build-time=ch.qos.logback,org.slf4j.LoggerFactory,org.slf4j.MDC",
-      "-Dlogback.configurationFile=logback.xml" // configured at build time
+      "--verbose"
     )
   )
