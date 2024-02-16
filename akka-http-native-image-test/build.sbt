@@ -18,7 +18,7 @@ lazy val root = (project in file("."))
     )),
     name := "akka-http-native-image-test",
     // useful for investigations, needs to be run on graalvm JDK
-    javaOptions += "-agentlib:native-image-agent=config-output-dir=target/generated-native-image-metadata",
+    // javaOptions += "-agentlib:native-image-agent=config-output-dir=target/generated-native-image-metadata",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http"                % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json"     % akkaHttpVersion,
