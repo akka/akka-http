@@ -47,7 +47,7 @@ jobs:
       - name: Akka HTTP native image test app build
         run: |-
           cd native-image-tests/
-          sbt nativeImage -Dakka.version=`cat ~/.version`
+          sbt nativeImage -Dakka.http.version=`cat ~/.version`
           # run the binary
           target/native-image/native-image-tests
 
