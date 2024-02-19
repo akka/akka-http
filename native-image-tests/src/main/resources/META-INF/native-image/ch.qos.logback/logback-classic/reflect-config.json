@@ -1,29 +1,5 @@
 [
   {
-    "name":"com.lightbend.User",
-    "allDeclaredFields":true,
-    "queryAllPublicMethods":true
-  },
-  {
-    "name":"com.lightbend.UserRegistry$ActionPerformed",
-    "allDeclaredFields":true,
-    "queryAllPublicMethods":true
-  },
-  {
-    "name":"com.lightbend.Users",
-    "allDeclaredFields":true,
-    "queryAllPublicMethods":true
-  },
-  {
-    "name":"com.lightbend.SomeJavaModel",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true,
-    "allDeclaredMethods" : true,
-    "allPublicMethods" : true,
-    "allDeclaredFields" : true,
-    "allPublicFields" : true
-  },
-  {
     "name":"ch.qos.logback.classic.encoder.PatternLayoutEncoder",
     "queryAllPublicMethods":true,
     "methods":[{"name":"<init>","parameterTypes":[] }]
@@ -85,4 +61,5 @@
     "name":"ch.qos.logback.core.spi.ContextAware",
     "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
   }
+
 ]

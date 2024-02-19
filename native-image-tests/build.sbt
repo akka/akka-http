@@ -16,7 +16,7 @@ lazy val root = (project in file("."))
       organization    := "com.lightbend",
       scalaVersion    := "2.13.12"
     )),
-    name := "akka-http-native-image-test",
+    name := "native-image-tests",
     // useful for investigations, needs to be run on graalvm JDK
     // javaOptions += "-agentlib:native-image-agent=config-output-dir=target/generated-native-image-metadata",
     libraryDependencies ++= Seq(

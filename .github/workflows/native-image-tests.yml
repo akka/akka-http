@@ -46,10 +46,10 @@ jobs:
 
       - name: Akka HTTP native image test app build
         run: |-
-          cd akka-http-native-image-test/
+          cd native-image-tests/
           sbt nativeImage -Dakka.version=`cat ~/.version`
           # run the binary
-          target/native-image/akka-http-native-image-test
+          target/native-image/native-image-tests
 
       - name: Email on failure
         if: ${{ failure() }}
