@@ -1,7 +1,7 @@
 # Building Native Images
 
 
-Building native images with Akka HTTP is supported, both for local and cluster actor system applications.
+Building native images with Akka HTTP is supported.
 
 For details about building native images with Akka in general, see the @extref[Akka Documentation](akka:additional/native-image.html)
 
