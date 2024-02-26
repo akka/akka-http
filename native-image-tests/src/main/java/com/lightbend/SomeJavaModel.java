@@ -3,15 +3,11 @@
  */
 package com.lightbend;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class SomeJavaModel {
     public final String name;
     public final int age;
 
-    @JsonCreator
-    public SomeJavaModel(@JsonProperty("name") String name, @JsonProperty("age") int age) {
+    public SomeJavaModel(String name, int age) {
         this.name = name;
         this.age = age;
     }

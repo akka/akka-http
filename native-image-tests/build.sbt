@@ -33,6 +33,8 @@ lazy val root = (project in file("."))
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % Test,
       "org.scalatest"     %% "scalatest"                % "3.2.15"        % Test
     ),
+    // for jackson
+    javacOptions += "-parameters",
     // GraalVM native image build
     nativeImageJvm := "graalvm-community",
     nativeImageVersion := "21.0.2",
