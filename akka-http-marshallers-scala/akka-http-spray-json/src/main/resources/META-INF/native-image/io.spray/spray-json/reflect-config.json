@@ -1,0 +1,14 @@
+[
+  {
+    "name":"[Ljava.lang.String;"
+  },
+  {
+    "name":"[Ljava.lang.reflect.Field;"
+  },
+  {
+    "name":"[Ljava.lang.reflect.Method;"
+  },
+  {
+    "name":"[Lscala.Tuple2;"
+  }
+]

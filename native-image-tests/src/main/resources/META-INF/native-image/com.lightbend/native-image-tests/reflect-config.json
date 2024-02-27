@@ -1,0 +1,26 @@
+[
+  {
+    "name":"com.lightbend.User",
+    "allDeclaredFields":true,
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.lightbend.UserRegistry$ActionPerformed",
+    "allDeclaredFields":true,
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.lightbend.Users",
+    "allDeclaredFields":true,
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.lightbend.SomeJavaModel",
+    "allDeclaredConstructors" : true,
+    "allPublicConstructors" : true,
+    "allDeclaredMethods" : true,
+    "allPublicMethods" : true,
+    "allDeclaredFields" : true,
+    "allPublicFields" : true
+  }
+]

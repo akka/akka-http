@@ -1,0 +1,155 @@
+[
+  {
+    "name": "com.github.benmanes.caffeine.cache.BLCHeader$DrainStatusRef",
+    "fields": [
+      {
+        "name": "drainStatus"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.BaseMpscLinkedArrayQueueColdProducerFields",
+    "fields": [
+      {
+        "name": "producerLimit"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.BaseMpscLinkedArrayQueueConsumerFields",
+    "fields": [
+      {
+        "name": "consumerIndex"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.BaseMpscLinkedArrayQueueProducerFields",
+    "fields": [
+      {
+        "name": "producerIndex"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.PS",
+    "fields": [
+      {
+        "name": "key"
+      },
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.PSA",
+    "fields": [
+      {
+        "name": "accessTime"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.PSAMW",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.PSMW",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.PSW",
+    "fields": [
+      {
+        "name": "writeTime"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.PSWMW",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.SSMS",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "com.github.benmanes.caffeine.cache.Caffeine",
+          "com.github.benmanes.caffeine.cache.CacheLoader",
+          "boolean"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.SSMSA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "com.github.benmanes.caffeine.cache.Caffeine",
+          "com.github.benmanes.caffeine.cache.CacheLoader",
+          "boolean"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.SSMSW",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "com.github.benmanes.caffeine.cache.Caffeine",
+          "com.github.benmanes.caffeine.cache.CacheLoader",
+          "boolean"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.StripedBuffer",
+    "fields": [
+      {
+        "name": "tableBusy"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.BBHeader$ReadCounterRef",
+    "fields": [
+      {
+        "name": "readCounter"
+      }
+    ]
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.BBHeader$ReadAndWriteCounterRef",
+    "fields": [
+      {
+        "name": "writeCounter"
+      }
+    ]
+  },
+  {
+    "name":"java.lang.Thread",
+    "fields":[{"name":"threadLocalRandomProbe"}]
+  }
+]

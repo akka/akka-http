@@ -13,6 +13,7 @@
 * [extensions](extensions.md)
 * [technologies](technologies.md)
 * [tips](tipsandtricks.md)
+* [Native Image](native-image.md)
 * [contributing](contributing.md)
 * [reference](reference.md)
 * [Release Notes](release-notes/index.md)
