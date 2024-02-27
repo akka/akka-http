@@ -37,7 +37,7 @@ jobs:
 
       - name: Gather version
         run: |-
-          echo `git describe --tags | sed -e "s/v\(.*\)-\([0-9][0-9]*\).*/\\1+\\2-/"``git rev-parse HEAD | head -c8`-SNAPSHOT > ~/.version
+          echo `git describe --tags | sed -e "s/v\(.*\)-\([0-9][0-9]*\).*/\\1+\\2-/"``git rev-parse HEAD | head -c8` > ~/.version
           cat ~/.version
 
       - name: Publish artifacts locally
