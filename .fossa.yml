@@ -6,3 +6,4 @@ paths:
   exclude:
     - akka-http-bench-jmh
     - akka-http-compatibility-tests
+    - akka-http-scalafix
