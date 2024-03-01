@@ -9,6 +9,7 @@ import java.io.InputStream
 import java.security.{ KeyStore, SecureRandom }
 import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
 import akka.actor.ActorSystem
+import akka.http.scaladsl.common.SSLContextUtils
 import akka.http.scaladsl.server.{ Directives, Route }
 import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
 import akka.pki.pem.DERPrivateKeyLoader
@@ -81,6 +82,17 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
     Http().newServerAt("127.0.0.1", 8080).enableHttps(https).bind(routes)
     //#bind-low-level-context
 
+    {
+      //#convenience-cert-loading
+      // FIXME should we abstract further and have a config file block/Settings class?
+      val https: HttpsConnectionContext = ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(
+        certificatePath = Paths.get("/some/path/server.crt"),
+        privateKeyPath = Paths.get("/some/path/server.key"),
+        caCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
+      ))
+      //#convenience-cert-loading
+      Http().newServerAt("127.0.0.1", 443).enableHttps(https).bind(commonRoutes)
+    }
     system.terminate()
   }
 
@@ -107,116 +119,16 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
     val routes: Route = ???
 
     //#rotate-certs
-    case class CachedContext(cached: SSLContext, expires: Deadline)
-    class RefreshableSSLContextReader(certPath: Path, caCertPaths: Seq[Path], keyPath: Path, refreshPeriod: FiniteDuration) {
-
-      private val rng = new SecureRandom()
-
-      // accessed from different threads so important that this cache is thread safe
-      private val contextRef = new AtomicReference[Option[CachedContext]](None)
-
-      def getContext: SSLContext =
-        contextRef.get() match {
-          case Some(CachedContext(_, expired)) if expired.isOverdue() =>
-            val context = constructContext()
-            contextRef.set(Some(CachedContext(context, refreshPeriod.fromNow)))
-            context
-          case Some(CachedContext(cached, _)) => cached
-          case None =>
-            val context = constructContext()
-            contextRef.set(Some(CachedContext(context, refreshPeriod.fromNow)))
-            context
-        }
-
-      private def constructContext(): SSLContext =
-        try {
-          val certChain = readCerts(certPath)
-          val caCertChain = caCertPaths.flatMap(readCerts)
-
-          val keyStore = KeyStore.getInstance("JKS")
-          keyStore.load(null)
-          // Load the private key
-          val privateKey =
-            DERPrivateKeyLoader.load(PEMDecoder.decode(Files.readString(keyPath)))
-
-          (certChain ++ caCertChain).zipWithIndex.foreach {
-            case (cert, idx) =>
-              keyStore.setCertificateEntry(s"cert-$idx", cert)
-          }
-          keyStore.setKeyEntry(
-            "private-key",
-            privateKey,
-            "changeit".toCharArray,
-            (certChain ++ caCertChain).toArray
+    val https = ConnectionContext.httpsServer(
+      SSLContextUtils.refreshingSSLEngineProvider(5.minutes) {
+        () =>
+          SSLContextUtils.constructSSLContext(
+            certificatePath = Paths.get("/some/path/server.crt"),
+            privateKeyPath = Paths.get("/some/path/server.key"),
+            caCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
           )
-
-          val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-          kmf.init(keyStore, "changeit".toCharArray)
-          val keyManagers = kmf.getKeyManagers
-
-          val ctx = SSLContext.getInstance("TLS")
-          ctx.init(keyManagers, Array(), rng)
-          ctx
-        } catch {
-          case e: FileNotFoundException =>
-            throw new RuntimeException(
-              "SSL context could not be loaded because a cert or key file could not be found",
-              e
-            )
-          case e: IOException =>
-            throw new RuntimeException(
-              "SSL context could not be loaded due to error reading cert or key file",
-              e
-            )
-          case e: GeneralSecurityException =>
-            throw new RuntimeException("SSL context could not be loaded", e)
-          case e: IllegalArgumentException =>
-            throw new RuntimeException("SSL context could not be loaded", e)
-        }
-
-      def readCerts(path: Path): Seq[X509Certificate] = {
-        val certFactory = CertificateFactory.getInstance("X.509")
-        val is = new BufferedInputStream(new FileInputStream(path.toFile))
-
-        def hasAnotherCertificate(is: InputStream): Boolean = {
-          // Read up to 16 characters, in practice, a maximum of two whitespace characters (CRLF) will be present
-          is.mark(16)
-          var char = is.read()
-          while (char >= 0 && char.asInstanceOf[Char].isWhitespace)
-            char = is.read()
-          is.reset()
-          char >= 0
-        }
-
-        try {
-          var certs = Seq.empty[X509Certificate]
-          while (hasAnotherCertificate(is)) {
-            val cert = certFactory.generateCertificate(is).asInstanceOf[X509Certificate]
-            certs :+= cert
-          }
-          if (certs.isEmpty)
-            throw new IllegalArgumentException(s"Empty certificate file $path")
-          certs
-        } finally is.close()
-      }
-    }
-
-    // Important: defined outside the factory function
-    // to be a single shared instance
-    val refreshableSSLContextReader = new RefreshableSSLContextReader(
-      certPath = Paths.get("/some/path/server.crt"),
-      caCertPaths = Seq(Paths.get("/some/path/serverCA.crt")),
-      keyPath = Paths.get("/some/path/server.key"),
-      refreshPeriod = 5.minutes
-    )
-    val https = ConnectionContext.httpsServer(() => {
-      val context = refreshableSSLContextReader.getContext
-      val engine = context.createSSLEngine()
-      engine.setUseClientMode(false)
-      engine
-    })
+      })
     Http().newServerAt("127.0.0.1", 8080).enableHttps(https).bind(routes)
-
     //#rotate-certs
   }
 }

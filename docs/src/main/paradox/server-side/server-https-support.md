@@ -35,13 +35,26 @@ Once you have obtained the server certificate, using it is as simple as preparin
 and passing it to `enableHttps` when binding the server.
 
 The below example shows how setting up HTTPS works.
-First, you create and configure an instance of @apidoc[HttpsConnectionContext] :
+First, you create and configure an instance of @apidoc[HttpsConnectionContext].
+
+If you have certificate files in PEM-files (often with extensions `.pem`, `.key` and `.crt`), you can use a convenience
+factory for loading them:
+
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #convenience-cert-loading }
+
+Java
+:  @@snip [HttpsServerExampleTest.scala](/docs/src/test/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #convenience-cert-loading }
+
+If there are more low level aspects you need to configure, or if you are loading certificates from a Java key store:
 
 Scala
 :  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #imports #low-level-default }
 
 Java
 :  @@snip [SimpleServerApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
+
+
 
 After that you can pass it to `enableHttps`, like displayed below:
 
@@ -84,8 +97,8 @@ HTTP through the @scala[`ConnectionContext.httpsServer(() => SSLEngine)`]@java[`
 `ConnectionContext` factory. The function passed to `httpsServer` will be invoked on each connection so can return differently
 configured `SSLEngine`s over time.
 
-Here is an example providing a cached `SSLEngine` that is periodically reloaded to pick up updated certificates. Note that it
-uses the Akka core `akka-pki` module to get access to `CertificateReader` and `DERPrivateKeyLoader` read and parse `.pem` files:
+The function for creating the `SSLEngine` can be manually implemented, but for convenience a few utilities are provided in the @apidoc[SSLContextUtils$] class.
+Here is an example using those utilities providing a cached `SSLEngine` that is periodically reloaded to pick up updated certificates:
 
 Scala
 :  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #rotate-certs }
