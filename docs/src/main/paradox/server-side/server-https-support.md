@@ -77,6 +77,23 @@ For further (custom) certificate checks, you can access the `javax.net.ssl.SSLSe
 At this point dynamic renegotiation of the certificates to be used is not implemented. For details see [issue #18351](https://github.com/akka/akka/issues/18351)
 and some preliminary work in [PR #19787](https://github.com/akka/akka/pull/19787).
 
+## Rotating certificates
+
+It is often important to rotate the certificates without having to redeploy/restart a server. This is possible with Akka
+HTTP through the @scala[`ConnectionContext.httpsServer(() => SSLEngine)`]@java[`ConnectionContext.httpsServer(akka.japi.function.Creator[SSLEngine])`]
+`ConnectionContext` factory. The function passed to `httpsServer` will be invoked on each connection so can return differently
+configured `SSLEngine`s over time.
+
+Here is an example providing a cached `SSLEngine` that is periodically reloaded to pick up updated certificates. Note that it
+uses the Akka core `akka-pki` module to get access to `CertificateReader` and `DERPrivateKeyLoader` read and parse `.pem` files:
+
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #rotate-certs }
+
+FIXME Java
+
+
+
 ## Further reading
 
 The topic of properly configuring HTTPS for your web server is an always changing one,
