@@ -84,12 +84,19 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
 
     {
       //#convenience-cert-loading
-      // FIXME should we abstract further and have a config file block/Settings class?
       val https: HttpsConnectionContext = ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(
         certificatePath = Paths.get("/some/path/server.crt"),
         privateKeyPath = Paths.get("/some/path/server.key"),
         caCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
       ))
+
+      // or from a config block
+      // my-server {
+      //   certificate = "/some/path/server.crt"
+      //   private-key = "/some/path/server.key"
+      //   ca-certs = ["/some/path/serverCA.crt"]
+      // }
+      ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(system.settings.config.getConfig("my-server")))
       //#convenience-cert-loading
       Http().newServerAt("127.0.0.1", 443).enableHttps(https).bind(commonRoutes)
     }

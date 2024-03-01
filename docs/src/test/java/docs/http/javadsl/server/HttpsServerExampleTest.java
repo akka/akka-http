@@ -61,12 +61,21 @@ public class HttpsServerExampleTest extends JUnitSuite {
   }
 
   void convenienceCertLoad() {
+    final ActorSystem system = ActorSystem.create();
     //#convenience-cert-loading
     HttpsConnectionContext https = ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(
         Paths.get("/some/path/server.crt"),
         Paths.get("/some/path/server.key"),
         List.of(Paths.get("/some/path/serverCA.crt"))
     ));
+
+    // or from a config block
+    // my-server {
+    //   certificate = "/some/path/server.crt"
+    //   private-key = "/some/path/server.key"
+    //   ca-certs = ["/some/path/serverCA.crt"]
+    // }
+    ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(system.settings().config().getConfig("my-server")));
     //#convenience-cert-loading
   }
 

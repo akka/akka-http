@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2009-2024 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.common
 
 import akka.annotation.ApiMayChange
 import akka.pki.pem.DERPrivateKeyLoader
 import akka.pki.pem.PEMDecoder
+import com.typesafe.config.Config
 
 import java.io.BufferedInputStream
 import java.io.FileInputStream
@@ -25,10 +27,26 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object SSLContextUtils {
 
   private final val defaultSecureRandom = new SecureRandom()
+
+  /**
+   * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
+   * CA-certificate files defined in config. The provided `Config` is required to have the field `certificate` containing
+   * a path to a certificate file, `private-key` containing the path to a private key, and the key `ca-certificates`
+   * containing a list of zero to many paths to CA certificate files.
+   *
+   * Example usage: `constructSSLContext(system.settings.config.getConfig("my-server"))`
+   */
+  def constructSSLContext(config: Config): SSLContext = {
+    val certificatePath = Path.of(config.getString("certificate"))
+    val privateKeyPath = Path.of(config.getString("private-key"))
+    val caCertificates = config.getStringList("ca-certificates").asScala.toSeq.map(path => Path.of(path))
+    constructSSLContext(certificatePath, privateKeyPath, caCertificates)
+  }
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
