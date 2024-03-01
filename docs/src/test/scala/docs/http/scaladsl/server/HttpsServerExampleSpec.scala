@@ -112,7 +112,7 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
 
       private val rng = new SecureRandom()
 
-      // invoked from different threads so important that this cache is thread safe
+      // accessed from different threads so important that this cache is thread safe
       private val contextRef = new AtomicReference[Option[CachedContext]](None)
 
       def getContext: SSLContext =
@@ -201,8 +201,8 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
       }
     }
 
-    // defined outside of the factory function to be a single
-    // shared instance
+    // Important: defined outside the factory function
+    // to be a single shared instance
     val refreshableSSLContextReader = new RefreshableSSLContextReader(
       certPath = Paths.get("/some/path/server.crt"),
       caCertPaths = Seq(Paths.get("/some/path/serverCA.crt")),

@@ -90,8 +90,8 @@ uses the Akka core `akka-pki` module to get access to `CertificateReader` and `D
 Scala
 :  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #rotate-certs }
 
-FIXME Java
-
+Java
+:  @@snip [HttpsServerExampleTest.scala](/docs/src/test/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #rotate-certs }
 
 
 ## Further reading
