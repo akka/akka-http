@@ -31,6 +31,9 @@ Scala
     akka.http.scaladsl.OutgoingConnectionBuilder#managedPersistentHttp2WithPriorKnowledge
     akka.http.scaladsl.settings.ServerSentEventSettings
     akka.http.scaladsl.settings.CorsSettings
+    akka.http.scaladsl.common.SSLContextUtils#refreshingSSLEngineProvider
+    akka.http.scaladsl.common.SSLContextUtils#constructSSLContext
+    akka.http.scaladsl.common.SSLContextUtils#refreshingSSLContextProvider
     ```
 
 Java
@@ -47,6 +50,9 @@ Java
     akka.http.javadsl.OutgoingConnectionBuilder#managedPersistentHttp2
     akka.http.javadsl.settings.ServerSentEventSettings
     akka.http.javadsl.settings.CorsSettings
+    akka.http.javadsl.common.SSLContextUtils#refreshingSSLEngineProvider
+    akka.http.javadsl.common.SSLContextUtils#refreshingSSLContextProvider
+    akka.http.javadsl.common.SSLContextUtils#constructSSLContext
     ```    
 
 #### akka-http-caching
