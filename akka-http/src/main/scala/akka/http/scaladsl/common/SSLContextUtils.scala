@@ -35,9 +35,14 @@ object SSLContextUtils {
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
-   * CA-certificate files defined in config. The provided `Config` is required to have the field `certificate` containing
+   * CA-certificate files defined in config.
+   *
+   * The provided `Config` is required to have the field `certificate` containing
    * a path to a certificate file, `private-key` containing the path to a private key, and the key `ca-certificates`
-   * containing a list of zero to many paths to CA certificate files.
+   * containing a list of zero to many paths to CA certificate files. All files must contain PEM encoded certificates or keys.
+   *
+   * Note that the paths are filesystem paths, not class path,
+   * certificate files packaged in the JAR cannot be loaded using this method.
    *
    * Example usage: `constructSSLContext(system.settings.config.getConfig("my-server"))`
    */
@@ -50,7 +55,10 @@ object SSLContextUtils {
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
-   * CA-certificate files.
+   * CA-certificate files. All files must contain PEM encoded certificates or keys.
+   *
+   * Note that the paths are filesystem paths, not class path,
+   * certificate files packaged in the JAR cannot be loaded using this method.
    */
   @ApiMayChange
   def constructSSLContext(
@@ -60,7 +68,10 @@ object SSLContextUtils {
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
-   * CA-certificate files.
+   * CA-certificate files. All files must contain PEM encoded certificates or keys.
+   *
+   * Note that the paths are filesystem paths, not class path,
+   * certificate files packaged in the JAR cannot be loaded using this method.
    *
    * @param secureRandom a secure random to use for the SSL context
    */
@@ -71,12 +82,21 @@ object SSLContextUtils {
     caCertificatePaths: Seq[Path],
     secureRandom:       SecureRandom): SSLContext = {
     try {
+      if (!Files.exists(certificatePath))
+        throw new FileNotFoundException(s"Certificate file [$certificatePath] does not exist")
       val certChain = readCerts(certificatePath)
-      val caCertChain = caCertificatePaths.flatMap(readCerts)
+
+      val caCertChain = caCertificatePaths.flatMap { caCertPath =>
+        if (!Files.exists(caCertPath))
+          throw new FileNotFoundException(s"CA certificate file [$caCertPath] does not exist")
+        readCerts(caCertPath)
+      }
 
       val keyStore = KeyStore.getInstance("JKS")
       keyStore.load(null)
 
+      if (!Files.exists(privateKeyPath))
+        throw new FileNotFoundException(s"Private key file [$privateKeyPath] does not exist")
       val privateKey =
         DERPrivateKeyLoader.load(
           PEMDecoder.decode(Files.readString(privateKeyPath))

@@ -94,7 +94,7 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
       // my-server {
       //   certificate = "/some/path/server.crt"
       //   private-key = "/some/path/server.key"
-      //   ca-certs = ["/some/path/serverCA.crt"]
+      //   ca-certificates = ["/some/path/serverCA.crt"]
       // }
       ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(system.settings.config.getConfig("my-server")))
       //#convenience-cert-loading
