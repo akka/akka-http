@@ -19,7 +19,8 @@ For detailed documentation for client-side HTTPS support refer to @ref[Client-Si
 ## Obtaining SSL/TLS Certificates
 
 In order to run an HTTPS server a certificate has to be provided, which usually is either obtained from a signing
-authority or created by yourself for local or staging environment purposes.
+authority or created by yourself for local or staging environment purposes. You can either use PEM-files or Java keystores
+with certificate and private key.
 
 Signing authorities often provide instructions on how to create a Java keystore (typically with reference to Tomcat
 configuration). If you want to generate your own certificates, the official Oracle documentation on how to generate a
