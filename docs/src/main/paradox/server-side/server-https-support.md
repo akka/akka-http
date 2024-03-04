@@ -98,7 +98,7 @@ HTTP through the @scala[`ConnectionContext.httpsServer(() => SSLEngine)`]@java[`
 `ConnectionContext` factory. The function passed to `httpsServer` will be invoked on each connection so can return differently
 configured `SSLEngine`s over time.
 
-The function for creating the `SSLEngine` can be manually implemented, but for convenience a few utilities are provided in the @apidoc[SSLContextUtils$] class.
+The function for creating the `SSLEngine` can be manually implemented, but for convenience a few utilities are provided in the @apidoc[SSLContextFactory$] class.
 Here is an example using those utilities providing a cached `SSLEngine` that is periodically reloaded to pick up updated certificates:
 
 Scala
