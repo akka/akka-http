@@ -26,10 +26,10 @@ import javax.net.ssl.TrustManagerFactory
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class SSLContextUtilsSpec extends AkkaSpec with Matchers {
+class SSLContextFactorySpec extends AkkaSpec with Matchers {
   "The SSLContextUtils" should {
     "conveniently load pem files" in {
-      SSLContextUtils.constructSSLContext(ConfigFactory.parseString(
+      SSLContextFactory.createSSLContextFromPem(ConfigFactory.parseString(
         """
            my-server {
              certificate = "akka-http-tests/src/test/resources/certs/example.com.crt"
@@ -38,7 +38,7 @@ class SSLContextUtilsSpec extends AkkaSpec with Matchers {
            }
           """).getConfig("my-server"))
 
-      SSLContextUtils.constructSSLContext(
+      SSLContextFactory.createSSLContextFromPem(
         Path.of("akka-http-tests/src/test/resources/certs/example.com.crt"),
         Path.of("akka-http-tests/src/test/resources/certs/example.com.key"),
         Seq(Path.of("akka-http-tests/src/test/resources/certs/exampleca.crt"))
@@ -47,9 +47,9 @@ class SSLContextUtilsSpec extends AkkaSpec with Matchers {
 
     "create a refreshing context provider" in {
       val probe = TestProbe()
-      val provider = SSLContextUtils.refreshingSSLEngineProvider(10.millis) { () =>
+      val provider = SSLContextFactory.refreshingSSLEngineProvider(10.millis) { () =>
         probe.ref ! "Constructed"
-        SSLContextUtils.constructSSLContext(
+        SSLContextFactory.createSSLContextFromPem(
           Path.of("akka-http-tests/src/test/resources/certs/example.com.crt"),
           Path.of("akka-http-tests/src/test/resources/certs/example.com.key"),
           Seq(Path.of("akka-http-tests/src/test/resources/certs/exampleca.crt"))
@@ -64,8 +64,8 @@ class SSLContextUtilsSpec extends AkkaSpec with Matchers {
     }
 
     "Work for usage when running HTTPS server" in {
-      val https = ConnectionContext.httpsServer(SSLContextUtils.refreshingSSLEngineProvider(50.millis) { () =>
-        SSLContextUtils.constructSSLContext(
+      val https = ConnectionContext.httpsServer(SSLContextFactory.refreshingSSLEngineProvider(50.millis) { () =>
+        SSLContextFactory.createSSLContextFromPem(
           Path.of("akka-http-tests/src/test/resources/certs/example.com.crt"),
           Path.of("akka-http-tests/src/test/resources/certs/example.com.key"),
           Seq(Path.of("akka-http-tests/src/test/resources/certs/exampleca.crt"))

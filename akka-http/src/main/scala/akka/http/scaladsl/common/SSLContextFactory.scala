@@ -29,7 +29,7 @@ import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-object SSLContextUtils {
+object SSLContextFactory {
 
   private final val defaultSecureRandom = new SecureRandom()
 
@@ -44,13 +44,16 @@ object SSLContextUtils {
    * Note that the paths are filesystem paths, not class path,
    * certificate files packaged in the JAR cannot be loaded using this method.
    *
-   * Example usage: `constructSSLContext(system.settings.config.getConfig("my-server"))`
+   * Example usage: `createSSLContextFromPem(system.settings.config.getConfig("my-server"))`
+   *
+   * API May Change
    */
-  def constructSSLContext(config: Config): SSLContext = {
+  @ApiMayChange
+  def createSSLContextFromPem(config: Config): SSLContext = {
     val certificatePath = Path.of(config.getString("certificate"))
     val privateKeyPath = Path.of(config.getString("private-key"))
     val caCertificates = config.getStringList("ca-certificates").asScala.toSeq.map(path => Path.of(path))
-    constructSSLContext(certificatePath, privateKeyPath, caCertificates)
+    createSSLContextFromPem(certificatePath, privateKeyPath, caCertificates)
   }
 
   /**
@@ -59,12 +62,14 @@ object SSLContextUtils {
    *
    * Note that the paths are filesystem paths, not class path,
    * certificate files packaged in the JAR cannot be loaded using this method.
+   *
+   * API May Change
    */
   @ApiMayChange
-  def constructSSLContext(
+  def createSSLContextFromPem(
     certificatePath:    Path,
     privateKeyPath:     Path,
-    caCertificatePaths: Seq[Path]): SSLContext = constructSSLContext(certificatePath, privateKeyPath, caCertificatePaths, defaultSecureRandom)
+    caCertificatePaths: Seq[Path]): SSLContext = createSSLContextFromPem(certificatePath, privateKeyPath, caCertificatePaths, defaultSecureRandom)
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
@@ -74,9 +79,11 @@ object SSLContextUtils {
    * certificate files packaged in the JAR cannot be loaded using this method.
    *
    * @param secureRandom a secure random to use for the SSL context
+   *
+   * API May Change
    */
   @ApiMayChange
-  def constructSSLContext(
+  def createSSLContextFromPem(
     certificatePath:    Path,
     privateKeyPath:     Path,
     caCertificatePaths: Seq[Path],
@@ -190,6 +197,8 @@ object SSLContextUtils {
    * @param refreshAfter Keep a created context around this long, then recreate it
    * @param construct A factory method to create the context when recreating is needed
    * @return An SSLEngine provider function to use with Akka HTTP `ConnectionContext.httpsServer()` and `ConnectionContext.httpsClient`.
+   *
+   * API May Change
    */
   @ApiMayChange
   def refreshingSSLEngineProvider(refreshAfter: FiniteDuration)(construct: () => SSLContext): () => SSLEngine = {
@@ -209,6 +218,8 @@ object SSLContextUtils {
    * @param refreshAfter Keep a created context around this long, then recreate it
    * @param construct A factory method to create the context when recreating is needed
    * @return An SSLEngine provider function to use with Akka HTTP `ConnectionContext.httpsServer()` and `ConnectionContext.httpsClient`.
+   *
+   * API May Change
    */
   @ApiMayChange
   def refreshingSSLContextProvider(refreshAfter: FiniteDuration)(construct: () => SSLContext): () => SSLContext = {

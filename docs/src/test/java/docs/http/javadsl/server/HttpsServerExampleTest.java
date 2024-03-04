@@ -8,33 +8,15 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.HttpsConnectionContext;
-import akka.http.javadsl.common.SSLContextUtils;
+import akka.http.javadsl.common.SSLContextFactory;
 import akka.http.javadsl.server.Route;
-import akka.japi.Creator;
-import akka.pki.pem.DERPrivateKeyLoader;
-import akka.pki.pem.PEMDecoder;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
 import javax.net.ssl.*;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 /* COMPILE ONLY TEST */
 public class HttpsServerExampleTest extends JUnitSuite {
@@ -63,7 +45,7 @@ public class HttpsServerExampleTest extends JUnitSuite {
   void convenienceCertLoad() {
     final ActorSystem system = ActorSystem.create();
     //#convenience-cert-loading
-    HttpsConnectionContext https = ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(
+    HttpsConnectionContext https = ConnectionContext.httpsServer(SSLContextFactory.createSSLContextFromPem(
         Paths.get("/some/path/server.crt"),
         Paths.get("/some/path/server.key"),
         List.of(Paths.get("/some/path/serverCA.crt"))
@@ -75,7 +57,7 @@ public class HttpsServerExampleTest extends JUnitSuite {
     //   private-key = "/some/path/server.key"
     //   ca-certificates = ["/some/path/serverCA.crt"]
     // }
-    ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(system.settings().config().getConfig("my-server")));
+    ConnectionContext.httpsServer(SSLContextFactory.createSSLContextFromPem(system.settings().config().getConfig("my-server")));
     //#convenience-cert-loading
   }
 
@@ -84,10 +66,10 @@ public class HttpsServerExampleTest extends JUnitSuite {
     final Route routes = null;
 
     //#rotate-certs
-    HttpsConnectionContext https = ConnectionContext.httpsServer(SSLContextUtils.refreshingSSLEngineProvider(
+    HttpsConnectionContext https = ConnectionContext.httpsServer(SSLContextFactory.refreshingSSLEngineProvider(
         Duration.ofMinutes(5),
         () ->
-          SSLContextUtils.constructSSLContext(
+          SSLContextFactory.createSSLContextFromPem(
             Paths.get("/some/path/server.crt"),
             Paths.get("/some/path/server.key"),
             List.of(Paths.get("/some/path/serverCA.crt")))));

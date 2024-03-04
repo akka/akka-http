@@ -9,7 +9,7 @@ import akka.annotation.ApiMayChange
 import java.nio.file.Path
 import javax.net.ssl.SSLContext
 import java.util.{ List => JList }
-import akka.http.scaladsl.common.{ SSLContextUtils => ScalaSSLContextUtils }
+import akka.http.scaladsl.common.{ SSLContextFactory => ScalaSSLContextFactory }
 import akka.util.JavaDurationConverters.JavaDurationOps
 import com.typesafe.config.Config
 
@@ -18,7 +18,7 @@ import java.time.Duration
 import javax.net.ssl.SSLEngine
 import scala.jdk.CollectionConverters._
 
-object SSLContextUtils {
+object SSLContextFactory {
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
@@ -29,9 +29,12 @@ object SSLContextUtils {
    * Note that the paths are filesystem paths, not class path,
    * certificate files packaged in the JAR cannot be loaded using this method.
    *
-   * Example usage: `constructSSLContext(system.settings().config().getConfig("my-server"))`
+   * Example usage: `createSSLContextFromPem(system.settings().config().getConfig("my-server"))`
+   *
+   * API May Change
    */
-  def constructSSLContext(config: Config): SSLContext = ScalaSSLContextUtils.constructSSLContext(config)
+  @ApiMayChange
+  def createSSLContextFromPem(config: Config): SSLContext = ScalaSSLContextFactory.createSSLContextFromPem(config)
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
@@ -40,13 +43,14 @@ object SSLContextUtils {
    * Note that the paths are filesystem paths, not class path,
    * certificate files packaged in the JAR cannot be loaded using this method.
    *
+   * API May Change
    */
   @ApiMayChange
-  def constructSSLContext(
+  def createSSLContextFromPem(
     certificatePath:    Path,
     privateKeyPath:     Path,
     caCertificatePaths: JList[Path]): SSLContext =
-    ScalaSSLContextUtils.constructSSLContext(certificatePath, privateKeyPath, caCertificatePaths.asScala.toVector)
+    ScalaSSLContextFactory.createSSLContextFromPem(certificatePath, privateKeyPath, caCertificatePaths.asScala.toVector)
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
@@ -56,14 +60,16 @@ object SSLContextUtils {
    * certificate files packaged in the JAR cannot be loaded using this method.
    *
    * @param secureRandom a secure random to use for the SSL context
+   *
+   * API May Change
    */
   @ApiMayChange
-  def constructSSLContext(
+  def createSSLContextFromPem(
     certificatePath:    Path,
     privateKeyPath:     Path,
     caCertificatePaths: JList[Path],
     secureRandom:       SecureRandom): SSLContext =
-    ScalaSSLContextUtils.constructSSLContext(certificatePath, privateKeyPath, caCertificatePaths.asScala.toVector, secureRandom)
+    ScalaSSLContextFactory.createSSLContextFromPem(certificatePath, privateKeyPath, caCertificatePaths.asScala.toVector, secureRandom)
 
   /**
    * Keeps a created SSLContext around for a `refreshAfter` period, sharing it among connections, then creates a new
@@ -72,10 +78,12 @@ object SSLContextUtils {
    * @param refreshAfter Keep a created context around this long, then recreate it
    * @param construct A factory method to create the context when recreating is needed
    * @return An SSLEngine provider function to use with Akka HTTP `ConnectionContext.httpsServer()` and `ConnectionContext.httpsClient`.
+   *
+   * API May Change
    */
   @ApiMayChange
   def refreshingSSLEngineProvider(refreshAfter: Duration)(construct: akka.japi.function.Creator[SSLContext]): akka.japi.function.Creator[SSLEngine] =
-    () => ScalaSSLContextUtils.refreshingSSLEngineProvider(refreshAfter.asScala)(construct.create _)()
+    () => ScalaSSLContextFactory.refreshingSSLEngineProvider(refreshAfter.asScala)(construct.create _)()
 
   /**
    * Keeps a created SSLContext around for a `refreshAfter` period, sharing it among connections, then creates a new
@@ -85,8 +93,10 @@ object SSLContextUtils {
    * @param refreshAfter Keep a created context around this long, then recreate it
    * @param construct A factory method to create the context when recreating is needed
    * @return An SSLEngine provider function to use with Akka HTTP `ConnectionContext.httpsServer()` and `ConnectionContext.httpsClient`.
+   *
+   * API May Change
    */
   @ApiMayChange
   def refreshingSSLContextProvider(refreshAfter: Duration)(construct: akka.japi.function.Creator[SSLContext]): akka.japi.function.Creator[SSLContext] =
-    () => ScalaSSLContextUtils.refreshingSSLContextProvider(refreshAfter.asScala)(construct.create _)()
+    () => ScalaSSLContextFactory.refreshingSSLContextProvider(refreshAfter.asScala)(construct.create _)()
 }

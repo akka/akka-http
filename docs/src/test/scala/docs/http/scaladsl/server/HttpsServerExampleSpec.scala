@@ -9,7 +9,7 @@ import java.io.InputStream
 import java.security.{ KeyStore, SecureRandom }
 import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
 import akka.actor.ActorSystem
-import akka.http.scaladsl.common.SSLContextUtils
+import akka.http.scaladsl.common.SSLContextFactory
 import akka.http.scaladsl.server.{ Directives, Route }
 import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
 import akka.pki.pem.DERPrivateKeyLoader
@@ -84,7 +84,7 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
 
     {
       //#convenience-cert-loading
-      val https: HttpsConnectionContext = ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(
+      val https: HttpsConnectionContext = ConnectionContext.httpsServer(SSLContextFactory.createSSLContextFromPem(
         certificatePath = Paths.get("/some/path/server.crt"),
         privateKeyPath = Paths.get("/some/path/server.key"),
         caCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
@@ -96,7 +96,7 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
       //   private-key = "/some/path/server.key"
       //   ca-certificates = ["/some/path/serverCA.crt"]
       // }
-      ConnectionContext.httpsServer(SSLContextUtils.constructSSLContext(system.settings.config.getConfig("my-server")))
+      ConnectionContext.httpsServer(SSLContextFactory.createSSLContextFromPem(system.settings.config.getConfig("my-server")))
       //#convenience-cert-loading
       Http().newServerAt("127.0.0.1", 443).enableHttps(https).bind(commonRoutes)
     }
@@ -127,9 +127,9 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
 
     //#rotate-certs
     val https = ConnectionContext.httpsServer(
-      SSLContextUtils.refreshingSSLEngineProvider(5.minutes) {
+      SSLContextFactory.refreshingSSLEngineProvider(5.minutes) {
         () =>
-          SSLContextUtils.constructSSLContext(
+          SSLContextFactory.createSSLContextFromPem(
             certificatePath = Paths.get("/some/path/server.crt"),
             privateKeyPath = Paths.get("/some/path/server.key"),
             caCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
