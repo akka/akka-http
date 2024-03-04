@@ -290,6 +290,10 @@ object RejectionHandler {
         val causes = rejections.map(_.description).mkString(", ")
         rejectRequestEntityAndComplete((BadRequest, s"CORS: $causes"))
       }
+      .handle {
+        case ClientCertMissingRejection() =>
+          rejectRequestEntityAndComplete((Unauthorized, "No client certificate found"))
+      }
       .handle { case x => sys.error("Unhandled rejection: " + x) }
       .handleNotFound { rejectRequestEntityAndComplete((NotFound, "The requested resource could not be found.")) }
       .result()

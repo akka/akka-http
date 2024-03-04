@@ -344,3 +344,5 @@ final case class RejectionError(rejection: Rejection) extends RuntimeException(r
  * Rejection created by the CORS directives.
  */
 final case class CorsRejection(description: String) extends jserver.CorsRejection with Rejection
+
+final case class ClientCertMissingRejection() extends Rejection

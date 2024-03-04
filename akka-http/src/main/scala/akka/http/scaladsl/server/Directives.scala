@@ -39,6 +39,7 @@ trait Directives extends RouteConcatenation
   with FramedEntityStreamingDirectives
   with AttributeDirectives
   with CorsDirectives
+  with TlsDirectives
 
 /**
  * Collects all default directives into one object for simple importing.
