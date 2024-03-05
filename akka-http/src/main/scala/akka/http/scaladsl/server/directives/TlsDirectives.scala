@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2024 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.server.directives
 
 import akka.http.impl.Rfc2553Parser
