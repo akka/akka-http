@@ -291,7 +291,7 @@ object RejectionHandler {
         rejectRequestEntityAndComplete((BadRequest, s"CORS: $causes"))
       }
       .handle {
-        case ClientCertMissingRejection() =>
+        case TlsClientUnverified() =>
           rejectRequestEntityAndComplete((Unauthorized, "No client certificate found"))
       }
       .handle { case x => sys.error("Unhandled rejection: " + x) }
