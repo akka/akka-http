@@ -46,7 +46,8 @@ object Common extends AutoPlugin {
         // Scala 2.x
         Seq(
           "-Wconf:msg=match may not be exhaustive:s",
-          "-Wconf:cat=lint-infer-any:s")
+          "-Wconf:cat=lint-infer-any:s",
+          "-Wconf:msg=Boolean literals should be passed:s")
       } else {
         // Scala 3
         Seq.empty
