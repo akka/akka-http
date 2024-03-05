@@ -50,10 +50,21 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
       }
     },
     path("require-cn") {
-      requireClientCertificateCN("client1") {
+      requireClientCertificateCN("client1".r) {
+        complete("OK")
+      }
+    },
+    path("require-san-dns") {
+      requireClientCertificateSAN("localhost".r) {
+        complete("OK")
+      }
+    },
+    path("require-san-ip") {
+      requireClientCertificateSAN("""127\.0\..*""".r) {
         complete("OK")
       }
     }
+
   )
 
   override def atStartup(): Unit = {
@@ -101,6 +112,18 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
     "require client CN from a client with no cert" in {
       val (response, _) = sendRequest(HttpRequest(uri = s"$serverUrl/require-cn"), clientConnectionContextWithoutCert)
       response.status should ===(StatusCodes.Unauthorized)
+    }
+
+    "require client dns SAN from a client with trusted cert" in {
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/require-san-dns"), trustedClientConnectionContext)
+      response.status should ===(StatusCodes.OK)
+      body should ===("OK")
+    }
+
+    "require client ip SAN from a client with trusted cert" in {
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/require-san-ip"), trustedClientConnectionContext)
+      response.status should ===(StatusCodes.OK)
+      body should ===("OK")
     }
 
   }

@@ -3,15 +3,16 @@
  */
 package akka.http.scaladsl.server.directives
 
+import akka.http.impl.Rfc2553Parser
 import akka.http.scaladsl.model.headers.`Tls-Session-Info`
-import akka.http.scaladsl.server.TlsClientUnverified
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.ValidationRejection
+import akka.http.scaladsl.server.TlsClientIdentityRejection
+import akka.http.scaladsl.server.TlsClientUnverifiedRejection
 
 import java.security.cert.X509Certificate
-import javax.net.ssl.{SSLPeerUnverifiedException, SSLSession}
-import javax.security.auth.x500.X500Principal
+import javax.net.ssl.SSLPeerUnverifiedException
+import javax.net.ssl.SSLSession
 import scala.util.matching.Regex
 
 /**
@@ -35,7 +36,10 @@ trait TlsDirectives {
     }
 
   /**
-   * Extract the client certificate, or reject the request with a [[TlsClientUnverified]]
+   * Extract the client certificate, or reject the request with a [[TlsClientUnverifiedRejection]].
+   *
+   * Note that the [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
+   * or else every request will be failed.
    */
   def extractClientCertificate: Directive1[X509Certificate] =
     extractSslSession.flatMap { session =>
@@ -46,27 +50,58 @@ trait TlsDirectives {
         }
       } catch {
         case _: SSLPeerUnverifiedException =>
-          reject(TlsClientUnverified())
+          reject(TlsClientUnverifiedRejection())
       }
     }
 
   /**
-   * Require the client to be authenticated, if not reject the request with a [[TlsClientUnverified]], also require
-   * the client certificate to match the given regular expression.
+   * Require the client to be authenticated, if not reject the request with a [[TlsClientUnverifiedRejection]], also require
+   * the client certificate CName to match the given regular expression or reject the request with [[TlsClientIdentityRejection]]
+   *
+   * Note that the [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
+   * or else every request will be failed.
    */
   def requireClientCertificateCN(cnRegex: Regex): Directive0 =
     extractClientCertificate.flatMap { clientCert =>
-      val cn = TlsDirectives.parseCN(clientCert.getSubjectX500Principal)
-      reject(ValidationRejection(
-        s"""
-            |clientCert.getSubjectX500Principal.getName: ${}
-            |clientCert.getSubjectX500Principal.getName: ${clientCert.getSubjectAlternativeNames}
-            """.stripMargin))
+      val cn = Rfc2553Parser.extractCN(clientCert.getSubjectX500Principal)
+      if (cn.exists(cnRegex.matches)) pass
+      else reject(TlsClientIdentityRejection("CN does not fulfill requirement"))
+    }
+
+  /**
+   * Require the client to be authenticated, if not reject the request with a [[TlsClientUnverifiedRejection]], also require
+   * at least one of the client certificate SAN (Subject Alternative Names) to match the given regular expression or reject the
+   * request with [[TlsClientIdentityRejection]].
+   *
+   * Note that the [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
+   * or else every request will be failed.
+   */
+  def requireClientCertificateSAN(cnRegex: Regex): Directive0 =
+    extractClientCertificate.flatMap { clientCert =>
+      val altNames = clientCert.getSubjectAlternativeNames
+      if (altNames == null) reject(TlsClientIdentityRejection("Required SAN but there were none in certificate"))
+      else {
+        val iterator = altNames.iterator()
+        var foundAltNames = List.empty[String]
+        while (iterator.hasNext) {
+          val altName = iterator.next()
+          val entryType = altName.get(0)
+          if (entryType == TlsDirectives.dnsNameType || entryType == TlsDirectives.ipAddressType) {
+            val name = altName.get(1).asInstanceOf[String]
+            foundAltNames = name :: foundAltNames
+          }
+        }
+
+        if (foundAltNames.isEmpty) reject(TlsClientIdentityRejection("Required SAN but there were none in certificate"))
+        else {
+          if (foundAltNames.exists(cnRegex.matches)) pass
+          else reject(TlsClientIdentityRejection("SAN does not fulfill requirement"))
+        }
+      }
     }
 }
 
 object TlsDirectives extends TlsDirectives {
-  private def parseCN(principal: X500Principal): String = {
-    
-  }
+  private val dnsNameType = 2
+  private val ipAddressType = 7
 }

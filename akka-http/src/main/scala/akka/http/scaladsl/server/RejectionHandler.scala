@@ -291,8 +291,11 @@ object RejectionHandler {
         rejectRequestEntityAndComplete((BadRequest, s"CORS: $causes"))
       }
       .handle {
-        case TlsClientUnverified() =>
+        case TlsClientUnverifiedRejection() =>
           rejectRequestEntityAndComplete((Unauthorized, "No client certificate found"))
+        case TlsClientIdentityRejection(description) =>
+          // FIXME is passing a description too much details for a potential attacker?
+          rejectRequestEntityAndComplete((Unauthorized, description))
       }
       .handle { case x => sys.error("Unhandled rejection: " + x) }
       .handleNotFound { rejectRequestEntityAndComplete((NotFound, "The requested resource could not be found.")) }
