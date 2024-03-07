@@ -17,9 +17,6 @@ import javax.net.ssl.SSLSession
 import scala.util.matching.Regex
 
 /**
- * Using these directives requires tls-session info parsing to be enabled:
- * `akka.http.server.parsing.tls-session-info-header = on`
- *
  *
  * @groupname tls TLS directives
  */
@@ -28,6 +25,11 @@ trait TlsDirectives {
   import HeaderDirectives._
   import RouteDirectives._
 
+  /**
+   * Extract the current SSLSession.
+   *
+   * Note: Using this directives requires tls-session info parsing to be enabled: `akka.http.server.parsing.tls-session-info-header = on`
+   */
   def extractSslSession: Directive1[SSLSession] =
     optionalHeaderValueByType(`Tls-Session-Info`).flatMap {
       case Some(sessionInfo) => provide(sessionInfo.session)
@@ -39,7 +41,9 @@ trait TlsDirectives {
   /**
    * Extract the client certificate, or reject the request with a [[TlsClientUnverifiedRejection]].
    *
-   * Note that the [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
+   * Using this directives requires tls-session info parsing to be enabled: `akka.http.server.parsing.tls-session-info-header = on`
+   *
+   * The [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
    * or else every request will be failed.
    */
   def extractClientCertificate: Directive1[X509Certificate] =
@@ -60,7 +64,9 @@ trait TlsDirectives {
    * the one of the client certificate `ip` or `dns` SANs (Subject Alternative Name) or if non exists, the CN (Common Name)
    * to match the given regular expression, if not the request is rejected with a [[TlsClientIdentityRejection]]
    *
-   * Note that the [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
+   * Using this directives requires tls-session info parsing to be enabled: `akka.http.server.parsing.tls-session-info-header = on`
+   *
+   * The [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
    * or else every request will be failed.
    */
   def requireClientCertificateIdentity(cnRegex: Regex): Directive0 =

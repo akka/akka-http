@@ -31,7 +31,7 @@ private[akka] object ClientCertificateUtils {
   // Full RFC https://www.rfc-editor.org/rfc/rfc2253
   // Note: This is not a general purpose RFC 2553 parser but specifically for what the JDK X500Name outputs
   // so no support for semicolon separator
-  def extractCN(rfc2253Name: String): Option[String] = {
+  private[http] def extractCN(rfc2253Name: String): Option[String] = {
     // but let's take shortcuts if possible, we are only interested in CN
     val cnPos = rfc2253Name.indexOf("CN=")
     if (cnPos == -1) None
@@ -49,7 +49,7 @@ private[akka] object ClientCertificateUtils {
     if (altNames == null) Vector.empty
     else {
       val iterator = altNames.iterator()
-      var altNamesBuilder = Vector.newBuilder[String]
+      val altNamesBuilder = Vector.newBuilder[String]
       while (iterator.hasNext) {
         val altName = iterator.next()
         val entryType = altName.get(0)

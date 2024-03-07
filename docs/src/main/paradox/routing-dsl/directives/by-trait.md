@@ -44,6 +44,9 @@ All predefined directives are organized into traits that form one part of the ov
 @ref[FileUploadDirectives](file-upload-directives/index.md)
 :   Handle file uploads.
 
+@ref[TlsDirectives](tls-directives/index.md)
+:   Extract and require aspects of TLS/mTLS connections
+
 <a id="response-directives"></a>
 ## Directives creating or transforming the response
 
@@ -110,5 +113,6 @@ All predefined directives are organized into traits that form one part of the ov
 * [security-directives/index](security-directives/index.md)
 * [websocket-directives/index](websocket-directives/index.md)
 * [timeout-directives/index](timeout-directives/index.md)
+* [tls-directives/index](tls-directives/index.md)
 
 @@@

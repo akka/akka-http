@@ -45,16 +45,20 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
         complete(session.getCipherSuite)
       }
     },
+    // #client-cert
     path("client-cert") {
       extractClientCertificate { clientCert =>
         complete(clientCert.getSubjectX500Principal.getName)
       }
-    },
+    } // #client-cert
+    ,
     path("require-cn") {
       // in the test client1 cert
-      requireClientCertificateIdentity("client1".r) {
+      //#client-cert-identity
+      requireClientCertificateIdentity(".*client1".r) {
         complete("OK")
       }
+      //#client-cert-identity
     },
     path("require-san-dns") {
       // in the test client1 cert dns:localhost
