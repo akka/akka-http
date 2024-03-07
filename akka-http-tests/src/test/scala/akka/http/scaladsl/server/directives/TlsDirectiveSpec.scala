@@ -51,17 +51,20 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
       }
     },
     path("require-cn") {
-      requireClientCertificateCN("client1".r) {
+      // in the test client1 cert
+      requireClientCertificateIdentity("client1".r) {
         complete("OK")
       }
     },
     path("require-san-dns") {
-      requireClientCertificateSAN("localhost".r) {
+      // in the test client1 cert dns:localhost
+      requireClientCertificateIdentity("localhost".r) {
         complete("OK")
       }
     },
     path("require-san-ip") {
-      requireClientCertificateSAN("""127\.0\..*""".r) {
+      // in the test client1 cert ip:127.0.0.1
+      requireClientCertificateIdentity("""127\.0\..*""".r) {
         complete("OK")
       }
     }
@@ -99,9 +102,16 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
       body should ===("CN=client1,OU=Akka Team,O=Lightbend,L=Stockholm,ST=Svealand,C=SE")
     }
 
+    "extract client cert from another client with trusted cert" in {
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/client-cert"), trustedClient2ConnectionContext)
+      response.status should ===(StatusCodes.OK)
+      body should ===("CN=client2,OU=CompanySectionName,O=CompanyName,L=CityName,ST=StateName,C=SE")
+    }
+
     "not extract client cert from a client with no cert" in {
-      val (response, _) = sendRequest(HttpRequest(uri = s"$serverUrl/client-cert"), clientConnectionContextWithoutCert)
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/client-cert"), clientConnectionContextWithoutCert)
       response.status should ===(StatusCodes.Unauthorized)
+      body should ===("No client certificate found or client certificate not trusted")
     }
 
     "require client CN from a client with trusted cert" in {
@@ -110,9 +120,22 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
       body should ===("OK")
     }
 
-    "require client CN from a client with no cert" in {
-      val (response, _) = sendRequest(HttpRequest(uri = s"$serverUrl/require-cn"), clientConnectionContextWithoutCert)
+    "fail required client CN from a client with untrusted cert" in {
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/require-cn"), untrustedClientConnectionContext)
       response.status should ===(StatusCodes.Unauthorized)
+      body should ===("No client certificate found or client certificate not trusted")
+    }
+
+    "fail required client CN from a client with trusted cert but no matching identity" in {
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/require-cn"), trustedClient2ConnectionContext)
+      response.status should ===(StatusCodes.Unauthorized)
+      body should ===("Client certificate does not fulfill identity requirement")
+    }
+
+    "fail required client CN from a client with no cert" in {
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/require-cn"), clientConnectionContextWithoutCert)
+      response.status should ===(StatusCodes.Unauthorized)
+      body should ===("No client certificate found or client certificate not trusted")
     }
 
     "require client dns SAN from a client with trusted cert" in {
@@ -121,14 +144,27 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
       body should ===("OK")
     }
 
+    "fail required client dns SAN from a client with trusted cert but no matching identity" in {
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/require-san-dns"), trustedClient2ConnectionContext)
+      response.status should ===(StatusCodes.Unauthorized)
+      body should ===("Client certificate does not fulfill identity requirement")
+    }
+
     "require client ip SAN from a client with trusted cert" in {
       val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/require-san-ip"), trustedClientConnectionContext)
       response.status should ===(StatusCodes.OK)
       body should ===("OK")
     }
 
+    "fail required client ip SAN from a client with trusted cert but no matching identity" in {
+      val (response, body) = sendRequest(HttpRequest(uri = s"$serverUrl/require-san-ip"), trustedClient2ConnectionContext)
+      response.status should ===(StatusCodes.Unauthorized)
+      body should ===("Client certificate does not fulfill identity requirement")
+    }
+
   }
 
+  // FIXME we can simplify these when the cert rotation/loading simplify PR is merged.
   def trustedClientConnectionContext: HttpsConnectionContext = {
     val clientPrivateKey =
       DERPrivateKeyLoader.load(PEMDecoder.decode(Source.fromResource("certs/client1.key").mkString))
@@ -143,6 +179,42 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
       // No password for our private client key
       new Array[Char](0),
       Array[Certificate](certFactory.generateCertificate(getClass.getResourceAsStream("/certs/client1.crt"))))
+    val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
+    keyManagerFactory.init(keyStore, null)
+    val keyManagers = keyManagerFactory.getKeyManagers
+
+    // trustStore is for what server certs the client trust (any cert signed by the fake CA)
+    val trustStore = KeyStore.getInstance("PKCS12")
+    trustStore.load(null)
+    trustStore.setEntry(
+      "exampleCA",
+      new KeyStore.TrustedCertificateEntry(
+        certFactory.generateCertificate(getClass.getResourceAsStream("/certs/exampleca.crt"))),
+      null)
+    val tmf = TrustManagerFactory.getInstance("SunX509")
+    tmf.init(trustStore)
+    val trustManagers = tmf.getTrustManagers
+
+    val context = SSLContext.getInstance("TLS")
+    context.init(keyManagers, trustManagers, new SecureRandom())
+
+    ConnectionContext.httpsClient(context)
+  }
+
+  def trustedClient2ConnectionContext: HttpsConnectionContext = {
+    val clientPrivateKey =
+      DERPrivateKeyLoader.load(PEMDecoder.decode(Source.fromResource("certs/client2.key").mkString))
+    val certFactory = CertificateFactory.getInstance("X.509")
+
+    // keyStore is for the client cert and private key
+    val keyStore = KeyStore.getInstance("PKCS12")
+    keyStore.load(null)
+    keyStore.setKeyEntry(
+      "private",
+      clientPrivateKey,
+      // No password for our private client key
+      new Array[Char](0),
+      Array[Certificate](certFactory.generateCertificate(getClass.getResourceAsStream("/certs/client2.crt"))))
     val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
     keyManagerFactory.init(keyStore, null)
     val keyManagers = keyManagerFactory.getKeyManagers
@@ -182,6 +254,42 @@ class TlsDirectiveSpec extends AkkaSpec(ConfigFactory.parseString("akka.http.ser
 
     val context = SSLContext.getInstance("TLS")
     context.init(null, trustManagers, new SecureRandom())
+
+    ConnectionContext.httpsClient(context)
+  }
+
+  def untrustedClientConnectionContext: HttpsConnectionContext = {
+    val clientPrivateKey =
+      DERPrivateKeyLoader.load(PEMDecoder.decode(Source.fromResource("certs/untrusted-client1.key").mkString))
+    val certFactory = CertificateFactory.getInstance("X.509")
+
+    // keyStore is for the client cert and private key
+    val keyStore = KeyStore.getInstance("PKCS12")
+    keyStore.load(null)
+    keyStore.setKeyEntry(
+      "private",
+      clientPrivateKey,
+      // No password for our private client key
+      new Array[Char](0),
+      Array[Certificate](certFactory.generateCertificate(getClass.getResourceAsStream("/certs/untrusted-client1.pem"))))
+    val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
+    keyManagerFactory.init(keyStore, null)
+    val keyManagers = keyManagerFactory.getKeyManagers
+
+    // trustStore is for what server certs the client trust (any cert signed by the fake CA)
+    val trustStore = KeyStore.getInstance("PKCS12")
+    trustStore.load(null)
+    trustStore.setEntry(
+      "exampleCA",
+      new KeyStore.TrustedCertificateEntry(
+        certFactory.generateCertificate(getClass.getResourceAsStream("/certs/exampleca.crt"))),
+      null)
+    val tmf = TrustManagerFactory.getInstance("SunX509")
+    tmf.init(trustStore)
+    val trustManagers = tmf.getTrustManagers
+
+    val context = SSLContext.getInstance("TLS")
+    context.init(keyManagers, trustManagers, new SecureRandom())
 
     ConnectionContext.httpsClient(context)
   }

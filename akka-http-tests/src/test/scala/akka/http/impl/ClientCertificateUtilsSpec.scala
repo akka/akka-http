@@ -7,7 +7,7 @@ package akka.http.impl
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class Rfc2553ParserSpec extends AnyWordSpec with Matchers {
+class ClientCertificateUtilsSpec extends AnyWordSpec with Matchers {
 
   // These are possible valid RFC2553 names, but, passing them through the JDK X500Name parser/renderer
   // will actually give us the set below. Using the internal X500Name class is messy though,  just shown here as an
@@ -39,7 +39,7 @@ class Rfc2553ParserSpec extends AnyWordSpec with Matchers {
   )
 
   def parseJavaxX500NameRendering(dname: String): Option[String] =
-    Rfc2553Parser.extractCN(new sun.security.x509.X500Name(dname).getRFC2253Name)
+    ClientCertificateUtils.extractCN(new sun.security.x509.X500Name(dname).getRFC2253Name)
 
   "The RFC2553 parser" should {
 
@@ -47,7 +47,7 @@ class Rfc2553ParserSpec extends AnyWordSpec with Matchers {
       javax500RenderedDnamesAndCnames.foreach {
         case (dname, expectedCname) =>
           withClue(dname) {
-            Rfc2553Parser.extractCN(dname) shouldBe (Some(expectedCname))
+            ClientCertificateUtils.extractCN(dname) shouldBe (Some(expectedCname))
           }
 
       }

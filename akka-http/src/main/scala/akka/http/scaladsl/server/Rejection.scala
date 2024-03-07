@@ -345,5 +345,5 @@ final case class RejectionError(rejection: Rejection) extends RuntimeException(r
  */
 final case class CorsRejection(description: String) extends jserver.CorsRejection with Rejection
 
-final case class TlsClientUnverifiedRejection() extends Rejection
-final case class TlsClientIdentityRejection(description: String) extends Rejection
+final case class TlsClientUnverifiedRejection(description: String) extends Rejection
+final case class TlsClientIdentityRejection(description: String, requiredExpression: String, certificateCN: Option[String], certificateSANs: Seq[String]) extends Rejection

@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.impl.Rfc2553Parser
+import akka.http.impl.ClientCertificateUtils
 import akka.http.scaladsl.model.headers.`Tls-Session-Info`
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directive1
@@ -51,58 +51,29 @@ trait TlsDirectives {
         }
       } catch {
         case _: SSLPeerUnverifiedException =>
-          reject(TlsClientUnverifiedRejection())
+          reject(TlsClientUnverifiedRejection("No client certificate found or client certificate not trusted"))
       }
     }
 
   /**
    * Require the client to be authenticated, if not reject the request with a [[TlsClientUnverifiedRejection]], also require
-   * the client certificate CName to match the given regular expression or reject the request with [[TlsClientIdentityRejection]]
+   * the one of the client certificate `ip` or `dns` SANs (Subject Alternative Name) or if non exists, the CN (Common Name)
+   * to match the given regular expression, if not the request is rejected with a [[TlsClientIdentityRejection]]
    *
    * Note that the [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
    * or else every request will be failed.
    */
-  def requireClientCertificateCN(cnRegex: Regex): Directive0 =
+  def requireClientCertificateIdentity(cnRegex: Regex): Directive0 =
     extractClientCertificate.flatMap { clientCert =>
-      val cn = Rfc2553Parser.extractCN(clientCert.getSubjectX500Principal)
-      if (cn.exists(cnRegex.matches)) pass
-      else reject(TlsClientIdentityRejection("CN does not fulfill requirement"))
-    }
-
-  /**
-   * Require the client to be authenticated, if not reject the request with a [[TlsClientUnverifiedRejection]], also require
-   * at least one of the client certificate SAN (Subject Alternative Names) to match the given regular expression or reject the
-   * request with [[TlsClientIdentityRejection]].
-   *
-   * Note that the [[javax.net.ssl.SSLEngine]] for the server needs to be set up with `setWantClientAuth(true)` or `setNeedClientAuth(true)`
-   * or else every request will be failed.
-   */
-  def requireClientCertificateSAN(cnRegex: Regex): Directive0 =
-    extractClientCertificate.flatMap { clientCert =>
-      val altNames = clientCert.getSubjectAlternativeNames
-      if (altNames == null) reject(TlsClientIdentityRejection("Required SAN but there were none in certificate"))
+      val altNames = ClientCertificateUtils.extractIpAndDnsSANs(clientCert)
+      if (altNames.exists(cnRegex.matches)) pass
       else {
-        val iterator = altNames.iterator()
-        var foundAltNames = List.empty[String]
-        while (iterator.hasNext) {
-          val altName = iterator.next()
-          val entryType = altName.get(0)
-          if (entryType == TlsDirectives.dnsNameType || entryType == TlsDirectives.ipAddressType) {
-            val name = altName.get(1).asInstanceOf[String]
-            foundAltNames = name :: foundAltNames
-          }
-        }
-
-        if (foundAltNames.isEmpty) reject(TlsClientIdentityRejection("Required SAN but there were none in certificate"))
-        else {
-          if (foundAltNames.exists(cnRegex.matches)) pass
-          else reject(TlsClientIdentityRejection("SAN does not fulfill requirement"))
-        }
+        // CN is deprecated but still widely used
+        val cn = ClientCertificateUtils.extractCN(clientCert)
+        if (cn.exists(cnRegex.matches)) pass
+        else reject(TlsClientIdentityRejection("Client certificate does not fulfill identity requirement", cnRegex.regex, cn, altNames))
       }
     }
 }
 
-object TlsDirectives extends TlsDirectives {
-  private val dnsNameType = 2
-  private val ipAddressType = 7
-}
+object TlsDirectives extends TlsDirectives
