@@ -34,8 +34,10 @@ public class HttpsServerExampleTest extends JUnitSuite {
             SSLEngine engine = sslContext.createSSLEngine();
             engine.setUseClientMode(false);
 
+            // to require trusted certs for any client to allow them to connect
             engine.setNeedClientAuth(true);
-            // or: engine.setWantClientAuth(true);
+            // or, for optional client certs:
+            // engine.setWantClientAuth(true);
 
             return engine;
     });

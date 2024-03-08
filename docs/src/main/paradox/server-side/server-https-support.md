@@ -38,14 +38,17 @@ and passing it to `enableHttps` when binding the server.
 The below example shows how setting up HTTPS works.
 First, you create and configure an instance of @apidoc[HttpsConnectionContext].
 
-If you have certificate files in PEM-files (often with extensions `.pem`, `.key` and `.crt`), you can use a convenience
-factory for loading them:
+If you have certificate files in PEM-files (often with extensions `.pem`, `.key` and `.crt`), you can use the convenience
+factories in @apidoc[SSLContextFactory$] for loading them:
 
 Scala
 :  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #convenience-cert-loading }
 
 Java
 :  @@snip [HttpsServerExampleTest.scala](/docs/src/test/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #convenience-cert-loading }
+
+For mTLS (mutual TLS) the trusted CA cert list needs to contain the CA that issues the certs which clients that the server trusts
+connect with.
 
 If there are more low level aspects you need to configure, or if you are loading certificates from a Java key store:
 
@@ -78,7 +81,7 @@ Java
 
 ## Mutual authentication
 
-To require clients to authenticate themselves when connecting, you must set this on the `SSLEngine`:
+To require clients to authenticate themselves when connecting, using mTLS (mutual TLS), you must set this on the `SSLEngine`:
 
 Scala
 :  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #require-client-auth }
