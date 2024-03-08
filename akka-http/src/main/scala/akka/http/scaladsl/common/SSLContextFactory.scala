@@ -25,21 +25,23 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
+import javax.net.ssl.TrustManagerFactory
 import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object SSLContextFactory {
 
-  private final val defaultSecureRandom = new SecureRandom()
+  private lazy val defaultSecureRandom = new SecureRandom()
 
   /**
    * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
    * CA-certificate files defined in config.
    *
    * The provided `Config` is required to have the field `certificate` containing
-   * a path to a certificate file, `private-key` containing the path to a private key, and the key `ca-certificates`
-   * containing a list of zero to many paths to CA certificate files. All files must contain PEM encoded certificates or keys.
+   * a path to a certificate file, `private-key` containing the path to a private key, and the key `trusted-ca-certificates`
+   * either with the value "system" to use the default JDK truststore or containing a list of zero to many paths to CA certificate files
+   * to explicitly list what CA certs to trust. All files must contain PEM encoded certificates or keys.
    *
    * Note that the paths are filesystem paths, not class path,
    * certificate files packaged in the JAR cannot be loaded using this method.
@@ -52,13 +54,20 @@ object SSLContextFactory {
   def createSSLContextFromPem(config: Config): SSLContext = {
     val certificatePath = Path.of(config.getString("certificate"))
     val privateKeyPath = Path.of(config.getString("private-key"))
-    val caCertificates = config.getStringList("ca-certificates").asScala.toSeq.map(path => Path.of(path))
-    createSSLContextFromPem(certificatePath, privateKeyPath, caCertificates)
+
+    config.getAnyRef("trusted-ca-certificates") match {
+      case "system" =>
+        createSSLContextFromPem(certificatePath, privateKeyPath, None, None)
+      case _: String => throw new IllegalArgumentException("trusted-ca-certificate must either be a list of certificate paths or the value 'system'")
+      case _ =>
+        val caCertificates = config.getStringList("trusted-ca-certificates").asScala.toSeq.map(path => Path.of(path))
+        createSSLContextFromPem(certificatePath, privateKeyPath, Some(caCertificates), None)
+    }
   }
 
   /**
-   * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
-   * CA-certificate files. All files must contain PEM encoded certificates or keys.
+   * Convenience factory for constructing an SSLContext out of a certificate file, a private key file but use the
+   * default JDK trust store. All files must contain PEM encoded certificates or keys.
    *
    * Note that the paths are filesystem paths, not class path,
    * certificate files packaged in the JAR cannot be loaded using this method.
@@ -67,37 +76,50 @@ object SSLContextFactory {
    */
   @ApiMayChange
   def createSSLContextFromPem(
-    certificatePath:    Path,
-    privateKeyPath:     Path,
-    caCertificatePaths: Seq[Path]): SSLContext = createSSLContextFromPem(certificatePath, privateKeyPath, caCertificatePaths, defaultSecureRandom)
+    certificatePath: Path,
+    privateKeyPath:  Path): SSLContext = createSSLContextFromPem(certificatePath, privateKeyPath, None, None)
 
   /**
-   * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and zero or more
-   * CA-certificate files. All files must contain PEM encoded certificates or keys.
+   * Convenience factory for constructing an SSLContext out of a certificate file, a private key file but use the
+   * default JDK trust store. All files must contain PEM encoded certificates or keys.
    *
    * Note that the paths are filesystem paths, not class path,
    * certificate files packaged in the JAR cannot be loaded using this method.
-   *
-   * @param secureRandom a secure random to use for the SSL context
    *
    * API May Change
    */
   @ApiMayChange
   def createSSLContextFromPem(
-    certificatePath:    Path,
-    privateKeyPath:     Path,
-    caCertificatePaths: Seq[Path],
-    secureRandom:       SecureRandom): SSLContext = {
+    certificatePath:           Path,
+    privateKeyPath:            Path,
+    trustedCaCertificatePaths: Seq[Path]): SSLContext =
+    createSSLContextFromPem(certificatePath, privateKeyPath, Some(trustedCaCertificatePaths), None)
+
+  /**
+   * Convenience factory for constructing an SSLContext out of a certificate file, a private key file and possibly zero or more
+   * CA-certificate files to trust. All files must contain PEM encoded certificates or keys.
+   *
+   * Note that the paths are filesystem paths, not class path,
+   * certificate files packaged in the JAR cannot be loaded using this method.
+   *
+   * @param certificatePath Path to a PEM encoded certificate file
+   * @param privateKeyPath Path to a PEM encoded key file
+   * @param trustedCaCertificatePaths `None` to use the default system trust store, `Some` with one or more CA certificate paths to
+   *                           explicitly control exactly what CAs are trusted
+   * @param secureRandom a secure random to use for the SSL context or none to use a default instance
+   *
+   * API May Change
+   */
+  @ApiMayChange
+  def createSSLContextFromPem(
+    certificatePath:           Path,
+    privateKeyPath:            Path,
+    trustedCaCertificatePaths: Option[Seq[Path]],
+    secureRandom:              Option[SecureRandom]): SSLContext = {
     try {
       if (!Files.exists(certificatePath))
         throw new FileNotFoundException(s"Certificate file [$certificatePath] does not exist")
       val certChain = readCerts(certificatePath)
-
-      val caCertChain = caCertificatePaths.flatMap { caCertPath =>
-        if (!Files.exists(caCertPath))
-          throw new FileNotFoundException(s"CA certificate file [$caCertPath] does not exist")
-        readCerts(caCertPath)
-      }
 
       val keyStore = KeyStore.getInstance("JKS")
       keyStore.load(null)
@@ -109,7 +131,7 @@ object SSLContextFactory {
           PEMDecoder.decode(Files.readString(privateKeyPath))
         )
 
-      (certChain ++ caCertChain).zipWithIndex.foreach {
+      certChain.zipWithIndex.foreach {
         case (cert, idx) =>
           keyStore.setCertificateEntry(s"cert-$idx", cert)
       }
@@ -118,16 +140,40 @@ object SSLContextFactory {
         "private-key",
         privateKey,
         password,
-        (certChain ++ caCertChain).toArray
+        certChain.toArray
       )
-
       val kmf =
         KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
       kmf.init(keyStore, password)
       val keyManagers = kmf.getKeyManagers
 
+      val tmf = trustedCaCertificatePaths match {
+        case Some(paths) =>
+          // user specified list of CA certs
+          val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
+          trustStore.load(null.asInstanceOf[KeyStore.LoadStoreParameter])
+          val caCerts = paths.flatMap { caCertPath =>
+            if (!Files.exists(caCertPath))
+              throw new FileNotFoundException(s"CA certificate file [$caCertPath] does not exist")
+            readCerts(caCertPath)
+          }
+          caCerts.zipWithIndex.foreach {
+            case (caCert, idx) =>
+              trustStore.setCertificateEntry(s"ca-cert-$idx", caCert)
+          }
+          val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+          tmf.init(trustStore)
+          tmf
+
+        case None =>
+          val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+          // use system trust store
+          tmf.init(null.asInstanceOf[KeyStore])
+          tmf
+      }
+
       val ctx = SSLContext.getInstance("TLS")
-      ctx.init(keyManagers, Array(), secureRandom)
+      ctx.init(keyManagers, tmf.getTrustManagers, secureRandom.getOrElse(defaultSecureRandom))
       ctx
     } catch {
       case e: FileNotFoundException =>

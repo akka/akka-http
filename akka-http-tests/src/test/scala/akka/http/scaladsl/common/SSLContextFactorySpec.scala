@@ -28,13 +28,30 @@ import scala.concurrent.duration.DurationInt
 
 class SSLContextFactorySpec extends AkkaSpec with Matchers {
   "The SSLContextUtils" should {
+    "conveniently load pem files but use the system trust store" in {
+      SSLContextFactory.createSSLContextFromPem(ConfigFactory.parseString(
+        """
+           my-server {
+             certificate = "akka-http-tests/src/test/resources/certs/example.com.crt"
+             private-key = "akka-http-tests/src/test/resources/certs/example.com.key"
+             trusted-ca-certificates = "system"
+           }
+          """).getConfig("my-server"))
+
+      SSLContextFactory.createSSLContextFromPem(
+        Path.of("akka-http-tests/src/test/resources/certs/example.com.crt"),
+        Path.of("akka-http-tests/src/test/resources/certs/example.com.key"),
+        Seq(Path.of("akka-http-tests/src/test/resources/certs/exampleca.crt"))
+      )
+    }
+
     "conveniently load pem files" in {
       SSLContextFactory.createSSLContextFromPem(ConfigFactory.parseString(
         """
            my-server {
              certificate = "akka-http-tests/src/test/resources/certs/example.com.crt"
              private-key = "akka-http-tests/src/test/resources/certs/example.com.key"
-             ca-certificates = ["akka-http-tests/src/test/resources/certs/exampleca.crt"]
+             trusted-ca-certificates = ["akka-http-tests/src/test/resources/certs/exampleca.crt"]
            }
           """).getConfig("my-server"))
 

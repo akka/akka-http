@@ -87,14 +87,16 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
       val https: HttpsConnectionContext = ConnectionContext.httpsServer(SSLContextFactory.createSSLContextFromPem(
         certificatePath = Paths.get("/some/path/server.crt"),
         privateKeyPath = Paths.get("/some/path/server.key"),
-        caCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
+        trustedCaCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
       ))
 
       // or from a config block
       // my-server {
       //   certificate = "/some/path/server.crt"
       //   private-key = "/some/path/server.key"
-      //   ca-certificates = ["/some/path/serverCA.crt"]
+      //   trusted-ca-certificates = ["/some/path/clientCA.crt"]
+      //   # or to use the default trust store
+      //   trusted-ca-certificates = "system"
       // }
       ConnectionContext.httpsServer(SSLContextFactory.createSSLContextFromPem(system.settings.config.getConfig("my-server")))
       //#convenience-cert-loading
@@ -119,7 +121,7 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
   }
 
   "rotate certs" in {
-    // Not actually tested for now
+    // Not actually tested here, see SSLContextFactorySpec for actual test coverage
     assume(false)
     implicit val system = ActorSystem()
     implicit val dispatcher = system.dispatcher
@@ -132,7 +134,7 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
           SSLContextFactory.createSSLContextFromPem(
             certificatePath = Paths.get("/some/path/server.crt"),
             privateKeyPath = Paths.get("/some/path/server.key"),
-            caCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
+            trustedCaCertificatePaths = Seq(Paths.get("/some/path/serverCA.crt"))
           )
       })
     Http().newServerAt("127.0.0.1", 8080).enableHttps(https).bind(routes)

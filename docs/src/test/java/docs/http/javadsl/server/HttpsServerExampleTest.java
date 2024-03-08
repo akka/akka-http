@@ -55,7 +55,9 @@ public class HttpsServerExampleTest extends JUnitSuite {
     // my-server {
     //   certificate = "/some/path/server.crt"
     //   private-key = "/some/path/server.key"
-    //   ca-certificates = ["/some/path/serverCA.crt"]
+    //   trusted-ca-certificates = ["/some/path/clientCA.crt"]
+    //   # or to use the default trust store
+    //   trusted-ca-certificates = "system"
     // }
     ConnectionContext.httpsServer(SSLContextFactory.createSSLContextFromPem(system.settings().config().getConfig("my-server")));
     //#convenience-cert-loading
