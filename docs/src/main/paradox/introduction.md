@@ -239,13 +239,12 @@ Details can be found in sections @ref[Core Server API](server-side/low-level-api
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
 
+
 @@@ div { .group-scala }
 akka-http-spray-json
 : Predefined glue-code for (de)serializing custom types from/to JSON with [spray-json](https://github.com/spray/spray-json)
 Details can be found here: @ref[JSON Support](common/json-support.md)
-@@@
 
-@@@ div { .group-scala }
 akka-http-xml
 : Predefined glue-code for (de)serializing custom types from/to XML with [scala-xml](https://github.com/scala/scala-xml)
 Details can be found here: @ref[XML Support](common/xml-support.md)
