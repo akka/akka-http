@@ -18,8 +18,8 @@ object MiMa extends AutoPlugin {
   override def trigger = allRequirements
 
   // A fork is a branch of the project where new releases are created that are not ancestors of the current release line
-  val forks = Seq("10.2.", "10.4.")
-  val currentFork = "10.5."
+  val forks = Seq("10.2.", "10.4.", "10.5.")
+  val currentFork = "10.6."
 
   // manually maintained list of previous versions to make sure all incompatibilities are found
   // even if so far no files have been been created in this project's mima-filters directory
@@ -41,9 +41,21 @@ object MiMa extends AutoPlugin {
     "10.4.0",
   )
 
+  val `10.5-versions` = Set(
+    "10.5.0",
+    "10.5.1",
+    "10.5.2",
+    "10.5.3",
+  )
+
+  val `10.6-versions` = Set(
+    "10.6.0",
+    "10.6.1"
+  )
+
   val pre3Versions = `10.2-versions` ++ `10.4-versions`
 
-  val post3Versions = Set.empty[String]
+  val post3Versions = `10.5-versions` ++ `10.6-versions`
 
   lazy val latestVersion = pre3Versions.max(versionOrdering)
   lazy val latest102Version = `10.2-versions`.max(versionOrdering)
@@ -52,7 +64,7 @@ object MiMa extends AutoPlugin {
     mimaPreviousArtifacts := {
       val versions =
         if (scalaBinaryVersion.value == "3") post3Versions
-        else pre3Versions
+        else pre3Versions ++ post3Versions
 
       versions.map { version =>
         organization.value %% name.value % version
