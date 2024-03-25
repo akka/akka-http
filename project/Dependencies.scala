@@ -48,6 +48,7 @@ object Dependencies {
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.6"       // ApacheV2
+    val jwtScala    = "com.github.jwt-scala"         %% "jwt-json-common"              % "10.0.0"
 
     // For akka-http-jackson support
     val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind"            % jacksonDatabindVersion // ApacheV2
@@ -100,7 +101,9 @@ object Dependencies {
   )
 
   lazy val httpCore = l ++= Seq(
-    Test.sprayJson, // for WS Autobahn test metadata
+    Compile.jwtScala,
+    Compile.sprayJson,
+    //Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest, Test.scalatestplusScalacheck, Test.scalatestplusJUnit, Test.junit
   )
 
