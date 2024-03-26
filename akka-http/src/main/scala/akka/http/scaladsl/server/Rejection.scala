@@ -18,6 +18,7 @@ import akka.pattern.CircuitBreakerOpenException
 import akka.http.javadsl.model.headers.{ HttpOrigin => JHttpOrigin }
 import akka.http.scaladsl.model.headers.{ HttpOrigin => SHttpOrigin }
 
+import java.util.{ List => JList }
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters
@@ -344,3 +345,10 @@ final case class RejectionError(rejection: Rejection) extends RuntimeException(r
  * Rejection created by the CORS directives.
  */
 final case class CorsRejection(description: String) extends jserver.CorsRejection with Rejection
+
+final case class TlsClientUnverifiedRejection(description: String) extends jserver.TlsClientUnverifiedRejection with Rejection
+final case class TlsClientIdentityRejection(description: String, requiredExpression: String, certificateCN: Option[String], certificateSANs: Seq[String]) extends jserver.TlsClientIdentityRejection with Rejection {
+  override def getCertificateCN: Optional[String] = certificateCN.asJava
+
+  override def getCertificateSANs: JList[String] = certificateSANs.asJava
+}

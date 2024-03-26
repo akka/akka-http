@@ -8,16 +8,17 @@ import akka.http.impl.util.JavaMapping
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server._
 import akka.http.javadsl.model._
-import akka.http.javadsl.model.headers.{ ByteRange, HttpEncoding, HttpChallenge }
+import akka.http.javadsl.model.headers.{ ByteRange, HttpChallenge, HttpEncoding }
+
 import java.util.Optional
 import java.util.function.{ Function => JFunction }
 import java.lang.{ Iterable => JIterable }
-
 import akka.annotation.DoNotInherit
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.pattern.CircuitBreakerOpenException
 
+import java.util.{ List => JList }
 import scala.compat.java8.OptionConverters._
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -456,4 +457,23 @@ object Rejections {
 @DoNotInherit
 trait CorsRejection extends Rejection {
   def description: String
+}
+
+/**
+ * Not for user extension
+ */
+@DoNotInherit
+trait TlsClientUnverifiedRejection extends Rejection {
+  def description: String
+}
+
+/**
+ * Not for user extension
+ */
+@DoNotInherit
+trait TlsClientIdentityRejection extends Rejection {
+  def description: String
+  def requiredExpression: String
+  def getCertificateCN: Optional[String]
+  def getCertificateSANs: JList[String]
 }

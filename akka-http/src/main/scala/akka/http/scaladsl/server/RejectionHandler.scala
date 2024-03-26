@@ -290,6 +290,12 @@ object RejectionHandler {
         val causes = rejections.map(_.description).mkString(", ")
         rejectRequestEntityAndComplete((BadRequest, s"CORS: $causes"))
       }
+      .handle {
+        case TlsClientUnverifiedRejection(description) =>
+          rejectRequestEntityAndComplete((Unauthorized, description))
+        case clientIdentityRejection: TlsClientIdentityRejection =>
+          rejectRequestEntityAndComplete((Unauthorized, clientIdentityRejection.description))
+      }
       .handle { case x => sys.error("Unhandled rejection: " + x) }
       .handleNotFound { rejectRequestEntityAndComplete((NotFound, "The requested resource could not be found.")) }
       .result()
