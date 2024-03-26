@@ -27,7 +27,7 @@ class CorsDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
         `Access-Control-Allow-Origin`(HttpOrigin("http://example.com")),
         `Access-Control-Allow-Methods`(HttpMethods.GET, HttpMethods.POST, HttpMethods.HEAD, HttpMethods.OPTIONS),
         `Access-Control-Max-Age`(1800),
-        `Access-Control-Allow-Credentials`(true)
+        `Access-Control-Allow-Credentials`(allow = true)
       )
     }
 
@@ -36,7 +36,7 @@ class CorsDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
       status shouldEqual OK
       response.headers should contain theSameElementsAs Seq(
         `Access-Control-Allow-Origin`(HttpOrigin("http://example.com")),
-        `Access-Control-Allow-Credentials`(true)
+        `Access-Control-Allow-Credentials`(allow = true)
       )
     }
 
