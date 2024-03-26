@@ -65,6 +65,7 @@ For Scala (sbt)
     sbt new akka/akka-http-quickstart-scala.g8
     ```
 @@@
+
 @@@ div { .group-java }
 For Java (Maven or Gradle)
 :  ```sh
@@ -123,6 +124,7 @@ for details):
 }
 
 @@@
+
 @@@ div { .group-java }
 JSON support is possible in `akka-http` by the use of Jackson, an external artifact (see @ref[JSON Support](common/json-support.md#jackson-support)
 for details):
@@ -240,17 +242,24 @@ akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
 
 @@@ div { .group-scala }
+
 akka-http-spray-json
 : Predefined glue-code for (de)serializing custom types from/to JSON with [spray-json](https://github.com/spray/spray-json)
 Details can be found here: @ref[JSON Support](common/json-support.md)
+
 @@@
 
 @@@ div { .group-scala }
+
 akka-http-xml
 : Predefined glue-code for (de)serializing custom types from/to XML with [scala-xml](https://github.com/scala/scala-xml)
 Details can be found here: @ref[XML Support](common/xml-support.md)
+
 @@@
+
 @@@ div { .group-java }
+
 akka-http-jackson
 : Predefined glue-code for (de)serializing custom types from/to JSON with [jackson](https://github.com/FasterXML/jackson)
+
 @@@
