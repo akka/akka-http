@@ -12,10 +12,10 @@
 
 This directive extracts the client certificate for the client mTLS connection where the request was made.
 
-If there is no client trusted certificate present (can only happen with `setWantClientAuth(true)`) or reject the request with a @apidoc[TlsClientUnverifiedRejection].
+If there is no client trusted certificate present (can only happen with `setWantClientAuth(true)`) the request is rejected with a @apidoc[TlsClientUnverifiedRejection].
 
 @@@ note
-Using this directives requires tls-session info parsing to be enabled: `akka.http.server.parsing.tls-session-info-header = on` and 
+Using this directive requires tls-session info parsing to be enabled: `akka.http.server.parsing.tls-session-info-header = on` and 
 that the server ConnectionContext SSLEngine was set up with either `setWantClientAuth(true)` or `setNeedClientAuth(true)`
 @@@
 

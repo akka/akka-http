@@ -18,7 +18,7 @@ also require that one of the client certificate `ip` or `dns` SANs (Subject Alte
 to match the given regular expression, if not the request is rejected with a @apidoc[TlsClientIdentityRejection].
 
 @@@ note
-Using this directives requires tls-session info parsing to be enabled: `akka.http.server.parsing.tls-session-info-header = on` and
+Using this directive requires tls-session info parsing to be enabled: `akka.http.server.parsing.tls-session-info-header = on` and
 that the server ConnectionContext SSLEngine was set up with either `setWantClientAuth(true)` or `setNeedClientAuth(true)`
 @@@
 
