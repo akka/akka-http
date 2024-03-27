@@ -40,7 +40,10 @@ object ConnectionContext {
   @ApiMayChange
   def httpsServer(createSSLEngine: () => SSLEngine): HttpsConnectionContext =
     new HttpsConnectionContext({
-      case None    => createSSLEngine()
+      case None =>
+        val engine = createSSLEngine()
+        engine.setUseClientMode(false)
+        engine
       case Some(_) => throw new IllegalArgumentException("host and port supplied for connection based on server connection context")
     }: Option[(String, Int)] => SSLEngine)
 
@@ -72,8 +75,11 @@ object ConnectionContext {
   @ApiMayChange
   def httpsClient(createSSLEngine: (String, Int) => SSLEngine): HttpsConnectionContext = // ...
     new HttpsConnectionContext({
-      case None               => throw new IllegalArgumentException("host and port missing for connection based on client connection context")
-      case Some((host, port)) => createSSLEngine(host, port)
+      case None => throw new IllegalArgumentException("host and port missing for connection based on client connection context")
+      case Some((host, port)) =>
+        val engine = createSSLEngine(host, port)
+        engine.setUseClientMode(true)
+        engine
     }: Option[(String, Int)] => SSLEngine)
 
   def noEncryption() = HttpConnectionContext

@@ -54,6 +54,14 @@ The pattern of doing so is documented in the following sub-sections.
 
 @@@
 
+### Convenient loading of key and certificate
+
+For mTLS (mutual TLS) the client needs to provide a certificate that the server trusts to be allowed to connect to the server. 
+
+@apidoc[SSLContextFactory$] provides convenience factories for loading certificate, key and trusted CA certificate files in PEM
+format as well as a certificate rotation.
+
+
 ### Disabling hostname verification
 
 Hostname verification proves that the Akka HTTP client is actually communicating with the server it intended to
