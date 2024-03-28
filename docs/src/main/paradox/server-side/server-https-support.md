@@ -19,7 +19,8 @@ For detailed documentation for client-side HTTPS support refer to @ref[Client-Si
 ## Obtaining SSL/TLS Certificates
 
 In order to run an HTTPS server a certificate has to be provided, which usually is either obtained from a signing
-authority or created by yourself for local or staging environment purposes.
+authority or created by yourself for local or staging environment purposes. You can either use PEM-files or Java keystores
+with certificate and private key.
 
 Signing authorities often provide instructions on how to create a Java keystore (typically with reference to Tomcat
 configuration). If you want to generate your own certificates, the official Oracle documentation on how to generate a
@@ -35,13 +36,29 @@ Once you have obtained the server certificate, using it is as simple as preparin
 and passing it to `enableHttps` when binding the server.
 
 The below example shows how setting up HTTPS works.
-First, you create and configure an instance of @apidoc[HttpsConnectionContext] :
+First, you create and configure an instance of @apidoc[HttpsConnectionContext].
+
+If you have certificate files in PEM-files (often with extensions `.pem`, `.key` and `.crt`), you can use the convenience
+factories in @apidoc[SSLContextFactory$] for loading them:
+
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #convenience-cert-loading }
+
+Java
+:  @@snip [HttpsServerExampleTest.scala](/docs/src/test/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #convenience-cert-loading }
+
+For mTLS (mutual TLS) the trusted CA cert list needs to contain the CA that issues the certs which clients that the server trusts
+connect with.
+
+If there are more low level aspects you need to configure, or if you are loading certificates from a Java key store:
 
 Scala
 :  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #imports #low-level-default }
 
 Java
 :  @@snip [SimpleServerApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
+
+
 
 After that you can pass it to `enableHttps`, like displayed below:
 
@@ -64,7 +81,7 @@ Java
 
 ## Mutual authentication
 
-To require clients to authenticate themselves when connecting, you must set this on the `SSLEngine`:
+To require clients to authenticate themselves when connecting, using mTLS (mutual TLS), you must set this on the `SSLEngine`:
 
 Scala
 :  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #require-client-auth }
@@ -76,6 +93,23 @@ For further (custom) certificate checks, you can access the `javax.net.ssl.SSLSe
 
 At this point dynamic renegotiation of the certificates to be used is not implemented. For details see [issue #18351](https://github.com/akka/akka/issues/18351)
 and some preliminary work in [PR #19787](https://github.com/akka/akka/pull/19787).
+
+## Rotating certificates
+
+It is often important to rotate the certificates without having to redeploy/restart a server. This is possible with Akka
+HTTP through the @scala[`ConnectionContext.httpsServer(() => SSLEngine)`]@java[`ConnectionContext.httpsServer(akka.japi.function.Creator[SSLEngine])`]
+`ConnectionContext` factory. The function passed to `httpsServer` will be invoked on each connection so can return differently
+configured `SSLEngine`s over time.
+
+The function for creating the `SSLEngine` can be manually implemented, but for convenience a few utilities are provided in the @apidoc[SSLContextFactory$] class.
+Here is an example using those utilities providing a cached `SSLEngine` that is periodically reloaded to pick up updated certificates:
+
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #rotate-certs }
+
+Java
+:  @@snip [HttpsServerExampleTest.scala](/docs/src/test/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #rotate-certs }
+
 
 ## Further reading
 
