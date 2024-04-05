@@ -4,6 +4,9 @@ version: 3
 paths:
   # exclude non-distributed projects from dependency scanning
   exclude:
+    - akka-http2-tests
     - akka-http-bench-jmh
     - akka-http-compatibility-tests
     - akka-http-scalafix
+    - akka-http-tests
+    - native-image-tests
