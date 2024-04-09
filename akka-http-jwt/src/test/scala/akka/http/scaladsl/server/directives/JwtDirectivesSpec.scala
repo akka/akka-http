@@ -1,33 +1,37 @@
 /*
  * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
- * Copyright 2016 Lomig Mégard
  */
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
 import akka.http.scaladsl.server.StandardRoute.toDirective
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
-import akka.http.scaladsl.server.util.JwtSprayJson
-import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directive1, InvalidRequiredValueForQueryParamRejection, MalformedQueryParamRejection, MalformedRequestContentRejection, MissingQueryParamRejection, RejectionError, Route, RoutingSpec}
+import akka.http.jwt.util.JwtSprayJson
+import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directives, MalformedQueryParamRejection, MissingQueryParamRejection, Route}
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.testkit._
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.Inside.inside
+import org.scalatest.Suite
+import org.scalatest.concurrent.ScalaFutures
 import spray.json.{JsBoolean, JsNumber, JsObject, JsString, JsValue, enrichAny}
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import java.util.{Base64, NoSuchElementException}
 import scala.util.Success
 
-// This test is based on the akka-http-cors project by Lomig Mégard, licensed under the Apache License, Version 2.0.
-class JwtDirectivesSpec extends RoutingSpec {
-
+class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDirectives with Directives with Matchers {
 
   def secret = "akka is great"
 
   override def testConfigSource =
-     s"""
+    s"""
+       akka.loglevel = DEBUG
        akka.http.jwt {
          dev = off
          secrets: [
@@ -64,7 +68,6 @@ class JwtDirectivesSpec extends RoutingSpec {
 
   val orderGetOrPutWithMethod =
     path("order" / IntNumber) & (get | put) & extractMethod
-
 
   "The jwt() directive" should {
     "extract the claims from a valid bearer token in the Authorization header" in {
@@ -124,16 +127,17 @@ class JwtDirectivesSpec extends RoutingSpec {
   "The claim() directive" should {
 
     "allow for making claims required" in {
-      val extraClaims = basicClaims + ("int" -> JsNumber(42)) + ("float" -> JsNumber(42.42)) + ("long" -> JsNumber(11111111111L)) + ("bool" -> JsBoolean(true))
+      val extraClaims = basicClaims + ("int" -> JsNumber(42)) + ("double" -> JsNumber(42.42)) + ("long" -> JsNumber(11111111111L)) + ("bool" -> JsBoolean(true))
       val routeWithTypedClaims =
-        jwt() { claims: JwtClaims => {
+        jwt() { claims: JwtClaims =>
+          {
             val result = for {
-              sub <- claims.get[String]("sub")
-              int <- claims.get[Int]("int")
-              long <- claims.get[Long]("long")
-              float <- claims.get[Float]("float")
-              bool <- claims.get[Boolean]("bool")
-            } yield s"$sub:$int:$long:$float:$bool"
+              sub <- claims.stringClaim("sub")
+              int <- claims.intClaim("int")
+              long <- claims.longClaim("long")
+              double <- claims.doubleClaim("double")
+              bool <- claims.booleanClaim("bool")
+            } yield s"$sub:$int:$long:$double:$bool"
 
             complete(result)
           }
@@ -153,8 +157,8 @@ class JwtDirectivesSpec extends RoutingSpec {
 
       Get() ~> addHeader(jwtHeader(basicClaims)) ~> {
         jwt() { claims =>
-          val amount = claims.get[Int]("amount", default = 45)
-          onSuccess(amount) { v => complete(v.toString) }
+          val amount = claims.intClaim("amount").getOrElse(45)
+          complete(amount.toString)
         }
       } ~> check {
         responseAs[String] shouldEqual "45"
@@ -164,8 +168,8 @@ class JwtDirectivesSpec extends RoutingSpec {
     "create typed optional parameters that extract Some(value) when present" in {
       Get() ~> addHeader(jwtHeader(basicClaims + ("amount" -> JsNumber(12)))) ~> {
         jwt() { claims =>
-          val amount = claims.getOpt[Int]("amount")
-          onSuccess(amount) { v => complete(v.toString) }
+          val amount = claims.intClaim("amount")
+          complete(amount.toString)
         }
       } ~> check {
         responseAs[String] shouldEqual "Some(12)"
@@ -173,8 +177,8 @@ class JwtDirectivesSpec extends RoutingSpec {
 
       Get() ~> addHeader(jwtHeader(basicClaims + ("id" -> JsString("hello")))) ~> {
         jwt() { claims =>
-          val id = claims.getOpt[String]("id")
-          onSuccess(id) { v => complete(v.toString) }
+          val id = claims.stringClaim("id")
+          complete(id.toString)
         }
       } ~> check {
         responseAs[String] shouldEqual "Some(hello)"
@@ -184,48 +188,24 @@ class JwtDirectivesSpec extends RoutingSpec {
     "create typed optional parameters that extract None when not present" in {
       Get() ~> addHeader(jwtHeader(basicClaims)) ~> {
         jwt() { claims =>
-          val amount = claims.getOpt[Int]("amount")
-          onSuccess(amount) { v => complete(v.toString) }
+          val amount = claims.intClaim("amount")
+          complete(amount.toString)
         }
       } ~> check {
         responseAs[String] shouldEqual "None"
       }
     }
 
-    "cause a MalformedQueryParamRejection on illegal Int values" in {
-      Get() ~> addHeader(jwtHeader(basicClaims + ("amount" -> JsString("x")))) ~> {
-        jwt() { claims =>
-          val amount = claims.getOpt[Int]("amount")
-          onSuccess(amount) { v => complete(v.toString) }
+    "allow for checking the value of the required claim" in {
+      Get() ~> addHeader(jwtHeader(basicClaims)) ~> {
+        jwt() { _.stringClaim("role") match {
+            case Some("admin") => complete(HttpResponse())
+            case _ => reject(MissingQueryParamRejection("role"))
+          }
         }
       } ~> check {
-        inside(rejection) {
-          case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit signed integer value", Some(_)) =>
-        }
+        rejection shouldEqual MissingQueryParamRejection("role")
       }
     }
-/*
-  "The claim() requirement directive" should {
-    "reject the request with a MissingQueryParamRejection if jwt do not contain the required claim" in {
-      Get() ~> addHeader(jwtHeader(basicClaims)) ~> {
-        jwt() {
-          claim("role".requiredValue("admin")) { _ => completeOk }
-        }
-      } ~> check { rejection shouldEqual MissingQueryParamRejection("role") }
-    }
-    "reject the request with a InvalidRequiredValueForQueryParamRejection if the required claim has an unmatching value" in {
-      Get() ~> addHeader(jwtHeader(basicClaims + ("role" -> JsString("viewer")))) ~> {
-        jwt() { implicit claims =>
-          claim("role".requiredValue("admin")) { _ => completeOk }
-        }
-      } ~> check { rejection shouldEqual InvalidRequiredValueForQueryParamRejection("role", "admin", "viewer") }
-    }
-    "let requests pass that contain the required parameter with its required value" in {
-      Get() ~> addHeader(jwtHeader(basicClaims + ("role" -> JsString("admin")))) ~> {
-        jwt() { implicit claims =>
-          claim("role".requiredValue("admin")) { _ => completeOk }
-        }
-      } ~> check { response shouldEqual Ok }
-    }*/
   }
 }

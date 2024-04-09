@@ -1,9 +1,9 @@
-package akka.http.scaladsl.settings
+package akka.http.jwt.scaladsl
 
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.http.impl.settings.{ CorsSettingsImpl, JwtSettingsImpl }
-import akka.http.scaladsl.server.util.JwtSupport.JwtSecret
+import akka.http.jwt.impl.settings.JwtSettingsImpl
+import akka.http.jwt.util.JwtSupport.JwtSecret
 import com.typesafe.config.Config
 
 @ApiMayChange @DoNotInherit

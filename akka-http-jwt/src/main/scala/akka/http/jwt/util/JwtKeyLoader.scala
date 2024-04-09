@@ -2,9 +2,9 @@
  * Copyright 2022 Lightbend Inc.
  */
 
-package akka.http.scaladsl.server.util
+package akka.http.jwt.util
 
-import akka.http.scaladsl.server.util.JwtSupport.{ JwtAsymmetricAlgorithmSecret, JwtNoneAlgorithmSecret }
+import akka.http.jwt.util.JwtSupport.{ JwtAsymmetricAlgorithmSecret, JwtNoneAlgorithmSecret }
 import pdi.jwt.{ JwtAlgorithm, algorithms }
 
 import java.io.File

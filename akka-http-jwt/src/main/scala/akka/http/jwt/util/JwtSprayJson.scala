@@ -2,7 +2,7 @@
  * Copyright 2022 Lightbend Inc.
  */
 
-package akka.http.scaladsl.server.util
+package akka.http.jwt.util
 
 import pdi.jwt.{ JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon }
 

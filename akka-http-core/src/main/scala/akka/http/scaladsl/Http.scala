@@ -67,7 +67,8 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
     "akka-http-marshallers-java",
     "akka-http-spray-json",
     "akka-http-xml",
-    "akka-http-jackson"
+    "akka-http-jackson",
+    "akka-http-jwt"
   )
 
   ManifestInfo(system).checkSameVersion("Akka HTTP", allModules, logWarning = true)

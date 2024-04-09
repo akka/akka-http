@@ -1,14 +1,13 @@
-package akka.http.impl.settings
+package akka.http.jwt.impl.settings
 
 import akka.annotation.InternalApi
 import akka.http.impl.util.SettingsCompanionImpl
-import akka.http.scaladsl.server.util.JwtSupport.{ JwtNoneAlgorithmSecret, JwtSecret }
+import akka.http.jwt.scaladsl.JwtSettings
+import akka.http.jwt.util.JwtSupport.{ JwtNoneAlgorithmSecret, JwtSecret }
 import com.typesafe.config.Config
 
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-
 @InternalApi
-private[akka] case class JwtSettingsImpl(secrets: List[JwtSecret]) extends akka.http.scaladsl.settings.JwtSettings {
+private[akka] case class JwtSettingsImpl(secrets: List[JwtSecret]) extends JwtSettings {
 
 }
 

@@ -69,6 +69,7 @@ lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   httpSprayJson,
   httpXml,
   httpJackson,
+  httpJwt,
   httpScalafixRules, // don't aggregate tests for now as this will break with Scala compiler updates too easily
 )
 lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
@@ -334,6 +335,16 @@ lazy val httpJackson =
     .dependsOn(httpTestkit % "test")
     .settings(Dependencies.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
+
+lazy val httpJwt = project("akka-http-jwt")
+  .settings(commonSettings)
+  .settings(AutomaticModuleName.settings("akka.http.jwt"))
+  .addAkkaModuleDependency("akka-pki", "provided")
+  .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-testkit", "provided")
+  .settings(Dependencies.httpJwt)
+  .dependsOn(http, httpCore, httpTestkit % "test")
+  .enablePlugins(BootstrapGenjavadoc)
 
 lazy val httpCaching = project("akka-http-caching")
   .settings(commonSettings)
