@@ -1,5 +1,6 @@
 package akka.http.scaladsl.server.directives
 
+import akka.event.LoggingAdapter
 import akka.http.impl.util.enhanceString_
 import akka.http.scaladsl.common.{ NameDefaultReceptacle, NameOptionReceptacle, NameReceptacle, RequiredValueReceptacle }
 import akka.http.scaladsl.model.{ AttributeKey, HttpRequest }
@@ -32,21 +33,25 @@ trait JwtDirectives {
   }
 
   private def jwt(settings: Config): Directive1[JwtClaims] = {
-    // FIXME: Should we use this or just manually export the header value? Is there a clever way to extract a realm that makes sense? path?
-    authenticateOAuth2("realm", bearerTokenAuthenticator(settings)).flatMap { claims =>
-      extractRequestContext.flatMap { ctx =>
-        provide(new JwtClaims(ctx, claims))
+    extractLog.flatMap { log =>
+      // FIXME: Should we use this or just manually export the header value? Is there a clever way to extract a realm that makes sense? path?
+      authenticateOAuth2("realm", bearerTokenAuthenticator(settings, log)).flatMap { claims =>
+        extractRequestContext.flatMap { ctx =>
+          provide(new JwtClaims(ctx, claims))
+        }
       }
     }
   }
 
-  private def bearerTokenAuthenticator(settings: Config): Authenticator[JsObject] = {
+  private def bearerTokenAuthenticator(settings: Config, log: LoggingAdapter): Authenticator[JsObject] = {
     case p @ Credentials.Provided(token) =>
       val jwtSupport = JwtSupport.fromConfig(settings)
 
       jwtSupport.validate(token) match {
         case Right(claims) => Some(claims)
-        case Left(ex)      => None // FIXME: how to propagate this?
+        case Left(ex) =>
+          log.debug("The token was rejected: {}", ex.getMessage)
+          None // FIXME: how to propagate this?
       }
   }
 

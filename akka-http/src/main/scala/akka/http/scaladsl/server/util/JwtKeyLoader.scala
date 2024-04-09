@@ -4,15 +4,15 @@
 
 package akka.http.scaladsl.server.util
 
-import akka.http.scaladsl.server.util.JwtSupport.{JwtAsymmetricAlgorithmSecret, JwtNoneAlgorithmSecret}
-import pdi.jwt.{JwtAlgorithm, algorithms}
+import akka.http.scaladsl.server.util.JwtSupport.{ JwtAsymmetricAlgorithmSecret, JwtNoneAlgorithmSecret }
+import pdi.jwt.{ JwtAlgorithm, algorithms }
 
 import java.io.File
 import java.nio.file.Files
-import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
-import java.security.{KeyFactory, KeyPair}
+import java.security.spec.{ PKCS8EncodedKeySpec, X509EncodedKeySpec }
+import java.security.{ KeyFactory, KeyPair }
 import javax.crypto.spec.SecretKeySpec
-import akka.pki.pem.{DERPrivateKeyLoader, PEMDecoder, PEMLoadingException}
+import akka.pki.pem.{ DERPrivateKeyLoader, PEMDecoder, PEMLoadingException }
 
 object JwtKeyLoader {
 
@@ -59,7 +59,7 @@ object JwtKeyLoader {
               try {
                 Some(KeyFactory.getInstance(keyAlgo).generatePrivate(new PKCS8EncodedKeySpec(pem.bytes)))
               } catch {
-                case e: Exception => throw new RuntimeException("Jwt.keyDecodingError(keyId, "private", e.getMessage)
+                case e: Exception => throw new RuntimeException("Jwt.keyDecodingError(keyId, private, e.getMessage)")
               }
 
             case "RSA PRIVATE KEY" =>

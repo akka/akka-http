@@ -4,14 +4,16 @@
 
 package akka.http.scaladsl.server.util
 
+import akka.http.scaladsl.server.JwtRejection
+
 import java.io.File
 import java.security.KeyPair
 import java.util.Base64
-
 import com.typesafe.config.Config
+
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
-import pdi.jwt.{ algorithms, JwtAlgorithm, JwtOptions }
+import pdi.jwt.{ JwtAlgorithm, JwtOptions, algorithms }
 import spray.json.{ JsObject, JsString }
 
 import scala.util.{ Failure, Success, Try }
@@ -134,13 +136,13 @@ object JwtSupport {
                       issuerBasedValidators.find(_.keyId == keyId) match {
                         case Some(matching) => validateToken(token, matching)
                         case None =>
-                          Left(  //FIXME exception
+                          Left( //FIXME exception
                             new RuntimeException("Failed to verify JWT token due to unknown key id"))
                       }
                   }
               }
           }
-        case Failure(e) =>  //FIXME exception
+        case Failure(e) => //FIXME exception
           Left(new RuntimeException(s"Failed to parse JWT token: ${e.getMessage}"))
       }
     }
@@ -206,5 +208,9 @@ object JwtSupport {
   case class JwtSecret(keyId: String, issuer: Option[String], secret: JwtAlgorithmSecret) {
     val header: JsObject = new JsObject(Vector("alg" -> JsString(secret.algorithmName), "kid" -> JsString(keyId)).toMap)
   }
+
+  private def secretLiteralNotSupportedWithAsymmetricAlgorithm(keyId: String, algorithm: String) = JwtRejection(
+    s"Secret literal for key id [$keyId] not supported with asymmetric algorithms: $algorithm." +
+      "Secret literals are only supported with symmetric (HMAC) algorithms.")
 
 }
