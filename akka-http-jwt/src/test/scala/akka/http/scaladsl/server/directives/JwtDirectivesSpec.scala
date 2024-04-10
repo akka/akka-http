@@ -4,12 +4,12 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.jwt.impl.settings.JwtSprayJson
+import akka.http.jwt.internal.JwtSprayJson
+import akka.http.jwt.scaladsl.server.directives.{JwtClaims, JwtDirectives}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
 import akka.http.scaladsl.server.StandardRoute.toDirective
-import akka.http.scaladsl.server.directives.RouteDirectives.reject
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directives, MalformedQueryParamRejection, MissingQueryParamRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.testkit._
@@ -196,9 +196,10 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
 
     "allow for checking the value of the required claim" in {
       Get() ~> addHeader(jwtHeader(basicClaims)) ~> {
-        jwt() { _.stringClaim("role") match {
+        jwt() {
+          _.stringClaim("role") match {
             case Some("admin") => complete(HttpResponse())
-            case _ => reject(MissingQueryParamRejection("role"))
+            case _             => reject(MissingQueryParamRejection("role"))
           }
         }
       } ~> check {

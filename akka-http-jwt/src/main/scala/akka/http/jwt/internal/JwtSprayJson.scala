@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-package akka.http.jwt.impl.settings
+package akka.http.jwt.internal
 
 import pdi.jwt.exceptions.JwtNonStringException
 import pdi.jwt.{ JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon }

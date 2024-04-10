@@ -1,4 +1,8 @@
-package akka.http.jwt.impl.settings
+/*
+ * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.http.jwt.internal
 
 import akka.annotation.InternalApi
 import akka.http.impl.util.SettingsCompanionImpl

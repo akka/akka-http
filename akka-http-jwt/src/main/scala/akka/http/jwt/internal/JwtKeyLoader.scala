@@ -1,6 +1,10 @@
-package akka.http.jwt.impl.settings
+/*
+ * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ */
 
-import akka.http.jwt.impl.settings.JwtSupport.JwtAsymmetricAlgorithmSecret
+package akka.http.jwt.internal
+
+import JwtSupport.JwtAsymmetricAlgorithmSecret
 import akka.pki.pem.{ DERPrivateKeyLoader, PEMDecoder, PEMLoadingException }
 import pdi.jwt.{ JwtAlgorithm, algorithms }
 
