@@ -4,12 +4,12 @@
 
 package akka.http.scaladsl.server.directives
 
+import akka.http.jwt.impl.settings.JwtSprayJson
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
 import akka.http.scaladsl.server.StandardRoute.toDirective
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
-import akka.http.jwt.util.JwtSprayJson
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directives, MalformedQueryParamRejection, MissingQueryParamRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.testkit._

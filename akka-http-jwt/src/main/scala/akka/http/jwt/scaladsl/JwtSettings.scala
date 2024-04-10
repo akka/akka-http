@@ -2,9 +2,7 @@ package akka.http.jwt.scaladsl
 
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.http.jwt.impl.settings.JwtSettingsImpl
-import akka.http.jwt.util.JwtSupport
-import akka.http.jwt.util.JwtSupport.JwtSecret
+import akka.http.jwt.impl.settings.{ JwtSettingsImpl, JwtSupport }
 import com.typesafe.config.Config
 
 @ApiMayChange @DoNotInherit
@@ -15,7 +13,7 @@ trait JwtSettings {
 
 object JwtSettings {
   def apply(system: ClassicActorSystemProvider): JwtSettings =
-    JwtSettingsImpl(system.classicSystem) // FIXME
+    JwtSettingsImpl(system.classicSystem)
   def apply(config: Config): JwtSettings =
-    JwtSettingsImpl(config) // FIXME
+    JwtSettingsImpl(config)
 }

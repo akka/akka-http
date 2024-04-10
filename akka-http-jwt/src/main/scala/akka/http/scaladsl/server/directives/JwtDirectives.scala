@@ -1,8 +1,8 @@
 package akka.http.scaladsl.server.directives
 
 import akka.event.LoggingAdapter
+import akka.http.jwt.impl.settings.JwtSupport
 import akka.http.jwt.scaladsl
-import akka.http.jwt.util.JwtSupport
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.Authenticator
 import akka.http.scaladsl.server.Directives.authenticateOAuth2
@@ -33,7 +33,7 @@ trait JwtDirectives {
         case Right(claims) => Some(claims)
         case Left(ex) =>
           log.debug("The token was rejected: {}", ex.getMessage)
-          None // FIXME: how to propagate this?
+          None // FIXME: should we propagate anything else further?
       }
   }
 
