@@ -31,8 +31,7 @@ object JwtSupport {
 
   private val NoValidationOptions = JwtOptions.DEFAULT.copy(signature = false, expiration = false, notBefore = false)
 
-  def fromConfig(config: Config): JwtSupport = {
-    val jwtConfig = config.getConfig("akka.http.jwt")
+  def fromConfig(jwtConfig: Config): JwtSupport = {
     val devSecret = if (jwtConfig.getBoolean("dev")) {
       Some(JwtSecret("dev", Some(jwtConfig.getString("dev-issuer")).filter(_.nonEmpty), JwtNoneAlgorithmSecret))
     } else None
