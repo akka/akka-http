@@ -4,11 +4,11 @@ import akka.annotation.InternalApi
 import akka.http.impl.util.SettingsCompanionImpl
 import akka.http.jwt.scaladsl.JwtSettings
 import akka.http.jwt.util.JwtSupport
-import akka.http.jwt.util.JwtSupport.{JwtNoneAlgorithmSecret, JwtSecret}
+import akka.http.jwt.util.JwtSupport.{ JwtNoneAlgorithmSecret, JwtSecret }
 import com.typesafe.config.Config
 
 @InternalApi
-private[akka] case class JwtSettingsImpl(jwtSupport: JwtSupport) extends JwtSettings {
+private[akka] case class JwtSettingsImpl(jwtSupport: JwtSupport, realm: String) extends JwtSettings {
 
   override def productPrefix = "JwtSettings"
 }
@@ -22,6 +22,7 @@ private[akka] object JwtSettingsImpl extends SettingsCompanionImpl[JwtSettingsIm
   override def fromSubConfig(root: Config, inner: Config): JwtSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
     new JwtSettingsImpl(
-      JwtSupport.fromConfig(c))
+      JwtSupport.fromConfig(c),
+      c.getString("realm"))
   }
 }

@@ -3,9 +3,10 @@ package akka.http.scaladsl.server.directives
 import akka.event.LoggingAdapter
 import akka.http.jwt.scaladsl
 import akka.http.jwt.util.JwtSupport
-import akka.http.scaladsl.server.{Directive1, ExceptionHandler, InvalidRequiredValueForQueryParamRejection, JwtRejection, MalformedQueryParamRejection, MalformedRequestContentRejection, MissingQueryParamRejection, RequestContext}
-import akka.http.scaladsl.server.Directives.{Authenticator, AuthenticatorPF, authenticateOAuth2, authenticateOAuth2Async, authenticateOAuth2PF, handleExceptions, headerValueByName}
-import spray.json.{JsBoolean, JsNumber, JsObject, JsString, JsValue}
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.Directives.Authenticator
+import akka.http.scaladsl.server.Directives.authenticateOAuth2
+import spray.json.{ JsBoolean, JsNumber, JsObject, JsString }
 
 trait JwtDirectives {
 
@@ -20,8 +21,7 @@ trait JwtDirectives {
 
   def jwt(settings: scaladsl.JwtSettings): Directive1[JwtClaims] = {
     extractLog.flatMap { log =>
-      // FIXME: Should we use this or just manually export the header value? Is there a clever way to extract a realm that makes sense? path?
-      authenticateOAuth2("realm", bearerTokenAuthenticator(settings.jwtSupport, log)).flatMap { claims =>
+      authenticateOAuth2(settings.realm, bearerTokenAuthenticator(settings.jwtSupport, log)).flatMap { claims =>
         provide(new JwtClaims(claims))
       }
     }

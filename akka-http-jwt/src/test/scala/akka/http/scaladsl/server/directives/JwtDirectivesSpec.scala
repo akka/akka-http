@@ -34,6 +34,7 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
        akka.loglevel = DEBUG
        akka.http.jwt {
          dev = off
+         realm = my-realm
          secrets: [
            {
              key-id: my-key
@@ -69,6 +70,8 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
   val orderGetOrPutWithMethod =
     path("order" / IntNumber) & (get | put) & extractMethod
 
+  val credentialsRejected = AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("my-realm"))
+
   "The jwt() directive" should {
     "extract the claims from a valid bearer token in the Authorization header" in {
       Get() ~> addHeader(jwtHeader(basicClaims)) ~> route() ~> check {
@@ -90,7 +93,7 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
     "reject the request if the bearer token is expired" in {
       val expired = basicClaims + ("exp" -> JsNumber(1516239022 - 1))
       Get() ~> addHeader(jwtHeader(expired)) ~> route() ~> check {
-        rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("realm"))
+        rejection shouldEqual credentialsRejected
       }
     }
 
@@ -98,35 +101,35 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
       // notBefore is set to 60 seconds in the future
       val notBefore = basicClaims + ("nbf" -> JsNumber(System.currentTimeMillis() / 1000 + 60))
       Get() ~> addHeader(jwtHeader(notBefore)) ~> route() ~> check {
-        rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("realm"))
+        rejection shouldEqual credentialsRejected
       }
     }
 
     "reject the request if the bearer token uses a wrong secret" in {
       val token = JwtSprayJson.encode(JsObject("alg" -> JsString("HS256")), JsObject(basicClaims), "wrong-secret")
       Get() ~> addHeader(Authorization(OAuth2BearerToken(token))) ~> route() ~> check {
-        rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("realm"))
+        rejection shouldEqual credentialsRejected
       }
     }
 
     "reject the request if the bearer token has a different issuer than the secret configured" in {
       val difIssuer = basicClaims + ("iss" -> JsString("other-issuer"))
       Get() ~> addHeader(jwtHeader(difIssuer)) ~> route() ~> check {
-        rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("realm"))
+        rejection shouldEqual credentialsRejected
       }
     }
 
     "reject the request if the bearer token has a different key-id that the secret configured" in {
       val token = JwtSprayJson.encode(JsObject("alg" -> JsString("HS256"), "kid" -> JsString("other-key")), JsObject(basicClaims), secret)
       Get() ~> addHeader(Authorization(OAuth2BearerToken(token))) ~> route() ~> check {
-        rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("realm"))
+        rejection shouldEqual credentialsRejected
       }
     }
   }
 
   "The claim() directive" should {
 
-    "allow for making claims required" in {
+    "allow for extracting claims with a specific type" in {
       val extraClaims = basicClaims + ("int" -> JsNumber(42)) + ("double" -> JsNumber(42.42)) + ("long" -> JsNumber(11111111111L)) + ("bool" -> JsBoolean(true))
       val routeWithTypedClaims =
         jwt() { claims: JwtClaims =>
@@ -146,11 +149,6 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
       Get() ~> addHeader(jwtHeader(extraClaims)) ~> routeWithTypedClaims ~> check {
         responseAs[String] shouldBe "1234567890:42:11111111111:42.42:true"
       }
-
-      //FIXME: fail when sub claim is not passed
-      //Get() ~> addHeader(jwtHeader(basicClaims - "sub")) ~> routeWithTypedClaims ~> check {
-      //  inside(rejection) { case MissingQueryParamRejection("sub") => }
-      //}
     }
 
     "supply typed default values" in {
