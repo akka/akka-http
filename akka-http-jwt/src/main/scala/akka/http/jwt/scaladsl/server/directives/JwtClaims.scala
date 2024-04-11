@@ -19,5 +19,7 @@ trait JwtClaims {
 
   def booleanClaim(name: String): Option[Boolean]
 
+  def rawClaim(name: String): Option[String]
+
   def toJson: String
 }

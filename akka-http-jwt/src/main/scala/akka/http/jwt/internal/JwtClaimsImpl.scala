@@ -9,6 +9,9 @@ import akka.http.jwt.scaladsl.server.directives.JwtClaims
 import akka.http.jwt.javadsl.server.directives.{ JwtClaims => JavaJwtClaims }
 import spray.json.{ JsBoolean, JsNumber, JsObject, JsString }
 
+import java.util.Optional
+import scala.compat.java8.OptionConverters.RichOptionForJava8
+
 /**
  * INTERNAL API
  *
@@ -29,6 +32,8 @@ private[jwt] final case class JwtClaimsImpl(claims: JsObject) extends JwtClaims 
 
   def booleanClaim(name: String): Option[Boolean] = claims.fields.get(name).collect { case JsBoolean(value) => value }
 
+  def rawClaim(name: String): Option[String] = claims.fields.get(name).map(_.toString())
+
   def toJson: String = claims.toString()
 }
 
@@ -39,14 +44,18 @@ private[jwt] object JwtClaimsImpl {
 
     override def hasClaim(name: String): Boolean = claims.hasClaim(name)
 
-    override def getIntClaim(name: String): Option[Int] = claims.intClaim(name)
+    override def getIntClaim(name: String): Optional[Int] = claims.intClaim(name).asJava
 
-    override def getLongClaim(name: String): Option[Long] = claims.longClaim(name)
+    override def getLongClaim(name: String): Optional[Long] = claims.longClaim(name).asJava
 
-    override def getDoubleClaim(name: String): Option[Double] = claims.doubleClaim(name)
+    override def getDoubleClaim(name: String): Optional[Double] = claims.doubleClaim(name).asJava
 
-    override def getStringClaim(name: String): Option[String] = claims.stringClaim(name)
+    override def getStringClaim(name: String): Optional[String] = claims.stringClaim(name).asJava
 
-    override def getBooleanClaim(name: String): Option[Boolean] = claims.booleanClaim(name)
+    override def getBooleanClaim(name: String): Optional[Boolean] = claims.booleanClaim(name).asJava
+
+    override def getRawClaim(name: String): Optional[String] = claims.rawClaim(name).asJava
+
+    override def toString: String = claims.toJson
   }
 }

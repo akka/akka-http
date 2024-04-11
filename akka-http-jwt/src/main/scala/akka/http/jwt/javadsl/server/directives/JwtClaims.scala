@@ -4,18 +4,23 @@
 
 package akka.http.jwt.javadsl.server.directives
 
+import java.util.Optional
+
 abstract class JwtClaims {
 
   def hasClaim(name: String): Boolean
 
-  def getIntClaim(name: String): Option[Int]
+  def getIntClaim(name: String): Optional[Int]
 
-  def getLongClaim(name: String): Option[Long]
+  def getLongClaim(name: String): Optional[Long]
 
-  def getDoubleClaim(name: String): Option[Double]
+  def getDoubleClaim(name: String): Optional[Double]
 
-  def getStringClaim(name: String): Option[String]
+  def getStringClaim(name: String): Optional[String]
 
-  def getBooleanClaim(name: String): Option[Boolean]
+  def getBooleanClaim(name: String): Optional[Boolean]
 
+  def getRawClaim(name: String): Optional[String]
+
+  def toString: String
 }
