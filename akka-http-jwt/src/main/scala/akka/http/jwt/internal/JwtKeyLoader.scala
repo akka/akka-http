@@ -4,15 +4,16 @@
 
 package akka.http.jwt.internal
 
-import JwtSupport.JwtAsymmetricAlgorithmSecret
+import JwtSupport.{ JwtAsymmetricAlgorithmSecret, PrivateKeyConfig, PublicKeyConfig }
 import akka.annotation.InternalApi
-import akka.pki.pem.{DERPrivateKeyLoader, PEMDecoder, PEMLoadingException}
-import pdi.jwt.{JwtAlgorithm, algorithms}
+import akka.pki.pem.{ DERPrivateKeyLoader, PEMDecoder, PEMLoadingException }
+import com.typesafe.config.Config
+import pdi.jwt.{ JwtAlgorithm, algorithms }
 
 import java.io.File
 import java.nio.file.Files
-import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
-import java.security.{KeyFactory, KeyPair}
+import java.security.spec.{ PKCS8EncodedKeySpec, X509EncodedKeySpec }
+import java.security.{ KeyFactory, KeyPair }
 import javax.crypto.spec.SecretKeySpec
 
 /**
@@ -23,10 +24,10 @@ import javax.crypto.spec.SecretKeySpec
 @InternalApi
 private[jwt] object JwtKeyLoader {
 
-  def loadKey(keyId: String, algorithm: JwtAlgorithm, directory: File): JwtSupport.JwtAlgorithmSecret = {
+  def loadKey(keyId: String, algorithm: JwtAlgorithm, secretConfig: Config): JwtSupport.JwtAlgorithmSecret = {
     algorithm match {
       case symmetric: algorithms.JwtHmacAlgorithm =>
-        val secretKeyFile = new File(directory, "secret.key")
+        val secretKeyFile = new File(secretConfig.getString("secret-path"))
         if (secretKeyFile.exists()) {
           JwtSupport.JwtSymmetricAlgorithmSecret(
             symmetric,
@@ -40,8 +41,8 @@ private[jwt] object JwtKeyLoader {
           case _: algorithms.JwtECDSAAlgorithm => "EC"
           case _: algorithms.JwtEdDSAAlgorithm => "EdDSA"
         }
-        val publicKeyFile = new File(directory, "public.key")
-        val privateKeyFile = new File(directory, "private.key")
+        val publicKeyFile = new File(secretConfig.getString(PublicKeyConfig))
+        val privateKeyFile = new File(secretConfig.getString(PrivateKeyConfig))
 
         val publicKey = if (publicKeyFile.exists()) {
           val pem = loadPem(publicKeyFile, keyId, "public")

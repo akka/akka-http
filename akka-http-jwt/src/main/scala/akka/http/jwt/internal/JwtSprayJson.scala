@@ -22,7 +22,7 @@ package akka.http.jwt.internal
 
 import akka.annotation.InternalApi
 import pdi.jwt.exceptions.JwtNonStringException
-import pdi.jwt.{JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon}
+import pdi.jwt.{ JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon }
 import spray.json._
 
 import java.time.Clock

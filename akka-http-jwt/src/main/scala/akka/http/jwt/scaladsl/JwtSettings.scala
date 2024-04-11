@@ -5,8 +5,8 @@
 package akka.http.jwt.scaladsl
 
 import akka.actor.ClassicActorSystemProvider
-import akka.annotation.{ApiMayChange, DoNotInherit, InternalApi}
-import akka.http.jwt.internal.{JwtSettingsImpl, JwtSupport}
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.http.jwt.internal.{ JwtSettingsImpl, JwtSupport }
 import com.typesafe.config.Config
 
 @ApiMayChange @DoNotInherit

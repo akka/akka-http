@@ -1,9 +1,13 @@
+/*
+ * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.jwt.internal
 
 import akka.annotation.InternalApi
 import akka.http.jwt.scaladsl.server.directives.JwtClaims
-import akka.http.jwt.javadsl.server.directives.{JwtClaims => JavaJwtClaims}
-import spray.json.{JsBoolean, JsNumber, JsObject, JsString}
+import akka.http.jwt.javadsl.server.directives.{ JwtClaims => JavaJwtClaims }
+import spray.json.{ JsBoolean, JsNumber, JsObject, JsString }
 
 /**
  * INTERNAL API

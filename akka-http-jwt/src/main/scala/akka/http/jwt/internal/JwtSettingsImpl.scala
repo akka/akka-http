@@ -23,7 +23,7 @@ import scala.util.{ Failure, Success, Try }
 @InternalApi
 private[jwt] final case class JwtSettingsImpl(
   jwtSupport: JwtSupport,
-  realm: String
+  realm:      String
 ) extends akka.http.jwt.scaladsl.JwtSettings {
 
   override def productPrefix = "JwtSettings"
@@ -63,6 +63,9 @@ private[jwt] object JwtSupport {
 
   private val NoValidationOptions = JwtOptions.DEFAULT.copy(signature = false, expiration = false, notBefore = false)
 
+  private[jwt] val PrivateKeyConfig = "private-key"
+  private[jwt] val PublicKeyConfig = "public-key"
+
   private case class JwtValidationException(msg: String) extends RuntimeException(msg)
 
   def fromConfig(jwtConfig: Config): JwtSupport = {
@@ -79,13 +82,8 @@ private[jwt] object JwtSupport {
           case "none" => JwtNoneAlgorithmSecret
           case alg =>
             val algorithm = JwtAlgorithm.fromString(alg)
-            if (secretConfig.hasPath("secret-dir")) {
-              val dir = new File(secretConfig.getString("secret-dir"))
-              if (!dir.exists() || !dir.isDirectory) {
-                throw new IllegalArgumentException(
-                  s"JWT secret dir for secret <$keyId> does not exist or is not a directory: ${dir.getAbsolutePath}")
-              }
-              JwtKeyLoader.loadKey(keyId, algorithm, dir)
+            if (secretConfig.hasPath(PublicKeyConfig) && secretConfig.hasPath(PrivateKeyConfig)) {
+              JwtKeyLoader.loadKey(keyId, algorithm, secretConfig)
             } else if (secretConfig.hasPath("secret")) {
               algorithm match {
                 case symmetric: algorithms.JwtHmacAlgorithm =>
@@ -97,8 +95,7 @@ private[jwt] object JwtSupport {
               }
             } else {
               throw new IllegalArgumentException(
-                s"JWT secret <$keyId> was not provided with a secret-dir or secret literal." +
-                  s"One or the other must be provided")
+                s"JWT secret <$keyId> was not configured correctly. Depending on the used algorithm, a secret or a pair of private/public keys must be configured.")
             }
         }
         val issuer =
@@ -243,7 +240,7 @@ private[jwt] object JwtSupport {
   }
 
   private def secretLiteralNotSupportedWithAsymmetricAlgorithm(keyId: String, algorithm: String): String =
-    s"Secret literal for key id [$keyId] not supported with asymmetric algorithms: $algorithm." +
+    s"Secret literal for key id [$keyId] not supported with asymmetric algorithms: $algorithm. " +
       "Secret literals are only supported with symmetric (HMAC) algorithms."
 
 }

@@ -1,5 +1,8 @@
-package akka.http.jwt.scaladsl.server.directives
+/*
+ * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ */
 
+package akka.http.jwt.scaladsl.server.directives
 
 // JwtClaims provides utilities to easily assert and extract claims from the JWT token
 trait JwtClaims {

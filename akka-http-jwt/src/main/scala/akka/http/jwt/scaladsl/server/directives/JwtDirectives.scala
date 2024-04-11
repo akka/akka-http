@@ -5,18 +5,15 @@
 package akka.http.jwt.scaladsl.server.directives
 
 import akka.event.LoggingAdapter
-import akka.http.jwt.internal.{JwtClaimsImpl, JwtSupport}
+import akka.http.jwt.internal.{ JwtClaimsImpl, JwtSupport }
 import akka.http.jwt.scaladsl
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.Directives.Authenticator
-import akka.http.scaladsl.server.Directives.authenticateOAuth2
+import akka.http.scaladsl.server.directives.BasicDirectives.{ extractActorSystem, extractLog, provide }
 import akka.http.scaladsl.server.directives.Credentials
-import spray.json.{JsBoolean, JsNumber, JsObject, JsString}
+import akka.http.scaladsl.server.directives.SecurityDirectives.{ Authenticator, authenticateOAuth2 }
+import spray.json.JsObject
 
 trait JwtDirectives {
-
-  import akka.http.scaladsl.server.directives.BasicDirectives._
-  import akka.http.scaladsl.server.directives.RouteDirectives._
 
   def jwt(): Directive1[JwtClaims] = {
     extractActorSystem.flatMap { system =>
@@ -41,8 +38,6 @@ trait JwtDirectives {
           None // FIXME: should we propagate anything else further?
       }
   }
-
-
 
 }
 

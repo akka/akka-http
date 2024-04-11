@@ -2,28 +2,22 @@
  * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.http.scaladsl.server.directives
+package akka.http.jwt.scaladsl.server.directives
 
 import akka.http.jwt.internal.JwtSprayJson
-import akka.http.jwt.scaladsl.server.directives.{JwtClaims, JwtDirectives}
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.jwt.scaladsl.JwtSettings
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
-import akka.http.scaladsl.server.StandardRoute.toDirective
-import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directives, MalformedQueryParamRejection, MissingQueryParamRejection, Route}
+import akka.http.scaladsl.server.{ AuthenticationFailedRejection, Directives, MissingQueryParamRejection, Route }
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.testkit._
-import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.Inside.inside
-import org.scalatest.Suite
-import org.scalatest.concurrent.ScalaFutures
-import spray.json.{JsBoolean, JsNumber, JsObject, JsString, JsValue, enrichAny}
-import org.scalatest.freespec.AnyFreeSpec
+import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import spray.json.{ JsBoolean, JsNumber, JsObject, JsString, JsValue }
 
-import java.util.{Base64, NoSuchElementException}
-import scala.util.Success
+import java.io.File
+import java.util.Base64
 
 class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDirectives with Directives with Matchers {
 
@@ -62,17 +56,26 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
     Authorization(OAuth2BearerToken(token))
   }
 
-  def route(): Route =
-    jwt() { claims: JwtClaims =>
-      complete(claims.toJson)
-    }
-
-  val orderGetOrPutWithMethod =
-    path("order" / IntNumber) & (get | put) & extractMethod
+  def configTemplate(secret: String) = s"""
+          akka.loglevel = DEBUG
+          akka.http.jwt {
+            dev = off
+            realm = my-realm
+            secrets: [
+              $secret
+            ]
+          }
+          """
 
   val credentialsRejected = AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("my-realm"))
 
   "The jwt() directive" should {
+
+    def route(): Route =
+      jwt() { claims: JwtClaims =>
+        complete(claims.toJson)
+      }
+
     "extract the claims from a valid bearer token in the Authorization header" in {
       Get() ~> addHeader(jwtHeader(basicClaims)) ~> route() ~> check {
         responseAs[String] shouldBe """{"iat":1516239022,"name":"John Doe","sub":"1234567890"}"""
@@ -205,6 +208,78 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
       } ~> check {
         rejection shouldEqual MissingQueryParamRejection("role")
       }
+    }
+
+    "validate JWTs using asymmetric keys" in {
+      val asymmetricSecret = configTemplate(
+        s"""
+             {
+               key-id: asymmetric-key
+               issuer: my-issuer
+               algorithm: RS256
+               public-key: "${getClass.getClassLoader.getResource("my-public.key").getPath}"
+               private-key: "${getClass.getClassLoader.getResource("my-private.key").getPath}"
+             }
+          """)
+
+      val config = ConfigFactory.parseString(asymmetricSecret).withFallback(ConfigFactory.load())
+      val route =
+        jwt(settings = JwtSettings.apply(config)) { claims: JwtClaims =>
+          complete(s"${claims.stringClaim("sub").get}:${claims.stringClaim("name").get}")
+        }
+
+      val jwtToken = Authorization(OAuth2BearerToken(
+        read(getClass.getClassLoader.getResource("my-jwt-token.txt").getPath)
+      ))
+      Get() ~> addHeader(jwtToken) ~> route ~> check {
+        responseAs[String] shouldBe "1234567890:John Doe"
+      }
+    }
+
+    "reject when asymmetric secret is not properly configured" in {
+      {
+        val asymmetricUsingSecret = configTemplate(
+          s"""
+             {
+               key-id: asymmetric-key
+               issuer: my-issuer
+               algorithm: RS256
+               secret: "something"
+             }
+          """)
+
+        val wrongConfig = ConfigFactory.parseString(asymmetricUsingSecret).withFallback(ConfigFactory.load())
+
+        intercept[IllegalArgumentException] {
+          Get() ~> jwt(settings = JwtSettings.apply(wrongConfig)) { _ => complete("ok") }
+        }.getMessage should include("Secret literal for key id [asymmetric-key] not supported with asymmetric algorithms")
+      }
+
+      {
+        val asymmetricWithoutPublicKey = configTemplate(
+          s"""
+             {
+               key-id: asymmetric-key
+               issuer: my-issuer
+               algorithm: RS256
+               private-key: "/some/path"
+             }
+          """)
+
+        val wrongConfig = ConfigFactory.parseString(asymmetricWithoutPublicKey).withFallback(ConfigFactory.load())
+        intercept[IllegalArgumentException] {
+          Get() ~> jwt(settings = JwtSettings.apply(wrongConfig)) { _ => complete("ok") }
+        }.getMessage should include("Depending on the used algorithm, a secret or a pair of private/public keys must be configured.")
+      }
+    }
+  }
+
+  private def read(filePath: String): String = {
+    val source = scala.io.Source.fromFile(new File(filePath), "UTF-8")
+    try {
+      source.mkString
+    } finally {
+      source.close()
     }
   }
 }

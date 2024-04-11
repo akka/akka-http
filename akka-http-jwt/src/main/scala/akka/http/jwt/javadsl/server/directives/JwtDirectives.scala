@@ -1,13 +1,16 @@
+/*
+ * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.jwt.javadsl.server.directives
 
 import akka.http.javadsl.server.Route
 import akka.http.javadsl.server.directives.RouteAdapter
 import akka.http.jwt.internal.JwtClaimsImpl
-import akka.http.jwt.scaladsl.server.directives.{JwtDirectives => JD}
+import akka.http.jwt.scaladsl.server.directives.{ JwtDirectives => JD }
 import akka.http.jwt.javadsl.JwtSettings
 
-import java.util.function.{Function => JFunction}
-
+import java.util.function.{ Function => JFunction }
 
 abstract class JwtDirectives {
 

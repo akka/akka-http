@@ -4,8 +4,8 @@
 
 package akka.http.jwt.javadsl
 
-import akka.annotation.{ApiMayChange, DoNotInherit, InternalApi}
-import akka.http.jwt.internal.{JwtSettingsImpl, JwtSupport}
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.http.jwt.internal.{ JwtSettingsImpl, JwtSupport }
 
 @ApiMayChange @DoNotInherit
 abstract class JwtSettings private[akka] { self: JwtSettingsImpl =>
