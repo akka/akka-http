@@ -26,6 +26,7 @@ private[jwt] object JwtKeyLoader {
 
   def loadKey(keyId: String, algorithm: JwtAlgorithm, secretConfig: Config): JwtSupport.JwtAlgorithmSecret = {
     algorithm match {
+
       case symmetric: algorithms.JwtHmacAlgorithm =>
         val secretKeyFile = new File(secretConfig.getString("secret-path"))
         if (secretKeyFile.exists()) {
@@ -33,79 +34,48 @@ private[jwt] object JwtKeyLoader {
             symmetric,
             new SecretKeySpec(Files.readAllBytes(secretKeyFile.toPath), algorithm.fullName))
         } else {
-          throw new IllegalArgumentException(s"Expected a symmetric secret configured for JWT key with id [$keyId]")
+          throwIAE(s"Expected a symmetric secret configured for JWT key with id [$keyId]")
         }
+
       case asymmetric: algorithms.JwtAsymmetricAlgorithm =>
         val keyAlgo = asymmetric match {
           case _: algorithms.JwtRSAAlgorithm   => "RSA"
           case _: algorithms.JwtECDSAAlgorithm => "EC"
           case _: algorithms.JwtEdDSAAlgorithm => "EdDSA"
         }
-        val publicKeyFile = new File(secretConfig.getString(PublicKeyConfig))
-        val privateKeyFile = new File(secretConfig.getString(PrivateKeyConfig))
 
-        val publicKey = if (publicKeyFile.exists()) {
-          val pem = loadPem(publicKeyFile, keyId, "public")
+        val publicKeyFile = new File(secretConfig.getString(PublicKeyConfig))
+        if (publicKeyFile.exists()) {
+          val pem = loadPem(publicKeyFile, keyId)
           pem.label match {
             case "PUBLIC KEY" =>
               try {
-                Some(KeyFactory.getInstance(keyAlgo).generatePublic(new X509EncodedKeySpec(pem.bytes)))
+                val publicKey = KeyFactory.getInstance(keyAlgo).generatePublic(new X509EncodedKeySpec(pem.bytes))
+                JwtAsymmetricAlgorithmSecret(asymmetric, publicKey)
               } catch {
-                case e: Exception => throw new IllegalArgumentException(s"Error decoding JWT public key from key id [$keyId]: ${e.getMessage}", e)
+                case e: Exception => throwIAE(s"Error decoding JWT public key from key id [$keyId]: ${e.getMessage}", e)
               }
-            case _ => throw new IllegalArgumentException(s"Unsupported JWT public key format for key id [$keyId]: ${pem.label}")
+            case _ => throwIAE(s"Unsupported JWT public key format for key id [$keyId]: ${pem.label}")
           }
-        } else None
-
-        val privateKey = if (privateKeyFile.exists()) {
-          val pem = loadPem(privateKeyFile, keyId, "private")
-          pem.label match {
-            case "PRIVATE KEY" =>
-              // PKCS8
-              // One thing we could do is validate that the key type in the pkcs8 spec matches the algorithm to give
-              // a better error message.
-              try {
-                Some(KeyFactory.getInstance(keyAlgo).generatePrivate(new PKCS8EncodedKeySpec(pem.bytes)))
-              } catch {
-                case e: Exception => throw new IllegalArgumentException(
-                  s"Error decoding JWT private key from key id [$keyId]: ${e.getMessage}", e)
-              }
-
-            case "RSA PRIVATE KEY" =>
-              try {
-                Some(DERPrivateKeyLoader.load(pem))
-              } catch {
-                case e: Exception => throw new IllegalArgumentException(
-                  s"Error decoding JWT private key from key id [$keyId]: ${e.getMessage}", e)
-              }
-
-            case "EC PRIVATE KEY" =>
-              throw new IllegalArgumentException(s"Raw ECDSA JWT private key in key id [$keyId] is not supported.")
-
-            case _ =>
-              throw new IllegalArgumentException(s"Unsupported JWT private key format for key id [$keyId]: ${pem.label}")
-          }
-        } else None
-
-        (privateKey, publicKey) match {
-          case (None, None) =>
-            throw new IllegalArgumentException(s"Expected an asymmetric secret configured for JWT key with id [$keyId]")
-          case (maybePriv, maybePub) =>
-            JwtAsymmetricAlgorithmSecret(asymmetric, new KeyPair(maybePub.orNull, maybePriv.orNull))
+        } else {
+          throwIAE(s"Public key configured for JWT key with id [$keyId] could not be found or read.")
         }
+
       case other =>
-        throw new IllegalArgumentException(s"Unknown JWT algorithm for key id [$keyId]: $other")
+        throwIAE(s"Unknown JWT algorithm for key id [$keyId]: $other")
     }
 
   }
 
-  private def loadPem(file: File, keyId: String, name: String) = {
+  private def loadPem(file: File, keyId: String): PEMDecoder.DERData = {
     try {
       PEMDecoder.decode(new String(Files.readAllBytes(file.toPath)))
     } catch {
       case e: PEMLoadingException =>
-        throw new IllegalArgumentException(s"Error PEM decoding JWT $name key from key id [$keyId]: ${e.getMessage}", e)
+        throwIAE(s"Error PEM decoding JWT public key from key id [$keyId]: ${e.getMessage}", e)
     }
   }
+
+  private def throwIAE(msg: String, e: Exception = null): Nothing = throw new IllegalArgumentException(msg, e)
 
 }

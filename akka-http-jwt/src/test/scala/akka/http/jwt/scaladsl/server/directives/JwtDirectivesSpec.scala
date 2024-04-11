@@ -218,7 +218,6 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
                issuer: my-issuer
                algorithm: RS256
                public-key: "${getClass.getClassLoader.getResource("my-public.key").getPath}"
-               private-key: "${getClass.getClassLoader.getResource("my-private.key").getPath}"
              }
           """)
 
@@ -262,14 +261,13 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
                key-id: asymmetric-key
                issuer: my-issuer
                algorithm: RS256
-               private-key: "/some/path"
              }
           """)
 
         val wrongConfig = ConfigFactory.parseString(asymmetricWithoutPublicKey).withFallback(ConfigFactory.load())
         intercept[IllegalArgumentException] {
           Get() ~> jwt(settings = JwtSettings.apply(wrongConfig)) { _ => complete("ok") }
-        }.getMessage should include("Depending on the used algorithm, a secret or a pair of private/public keys must be configured.")
+        }.getMessage should include("Depending on the used algorithm, a secret or a public key must be configured.")
       }
     }
   }

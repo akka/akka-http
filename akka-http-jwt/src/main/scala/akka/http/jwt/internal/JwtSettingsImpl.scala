@@ -6,13 +6,11 @@ package akka.http.jwt.internal
 
 import akka.annotation.InternalApi
 import akka.http.impl.util.SettingsCompanionImpl
-import akka.http.jwt.scaladsl.JwtSettings
 import com.typesafe.config.Config
 import pdi.jwt.{ JwtAlgorithm, JwtOptions, algorithms }
 import spray.json.{ JsObject, JsString }
 
-import java.io.File
-import java.security.KeyPair
+import java.security.PublicKey
 import java.util.Base64
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
@@ -82,7 +80,7 @@ private[jwt] object JwtSupport {
           case "none" => JwtNoneAlgorithmSecret
           case alg =>
             val algorithm = JwtAlgorithm.fromString(alg)
-            if (secretConfig.hasPath(PublicKeyConfig) && secretConfig.hasPath(PrivateKeyConfig)) {
+            if (secretConfig.hasPath(PublicKeyConfig)) {
               JwtKeyLoader.loadKey(keyId, algorithm, secretConfig)
             } else if (secretConfig.hasPath("secret")) {
               algorithm match {
@@ -95,7 +93,7 @@ private[jwt] object JwtSupport {
               }
             } else {
               throw new IllegalArgumentException(
-                s"JWT secret <$keyId> was not configured correctly. Depending on the used algorithm, a secret or a pair of private/public keys must be configured.")
+                s"JWT secret <$keyId> was not configured correctly. Depending on the used algorithm, a secret or a public key must be configured.")
             }
         }
         val issuer =
@@ -193,7 +191,7 @@ private[jwt] object JwtSupport {
     def algorithmName: String
   }
 
-  case class JwtAsymmetricAlgorithmSecret(algorithm: algorithms.JwtAsymmetricAlgorithm, keyPair: KeyPair)
+  case class JwtAsymmetricAlgorithmSecret(algorithm: algorithms.JwtAsymmetricAlgorithm, publicKey: PublicKey)
     extends JwtAlgorithmSecret {
     override def canValidateAlgorithm(alg: JwtAlgorithm): Boolean = {
       canValidate && (alg match {
@@ -208,9 +206,9 @@ private[jwt] object JwtSupport {
       })
     }
 
-    override def canValidate: Boolean = keyPair.getPublic != null
+    override def canValidate: Boolean = publicKey != null
     override def validate(token: String): Try[JsObject] = if (canValidate) {
-      JwtSprayJson.decodeJson(token, keyPair.getPublic)
+      JwtSprayJson.decodeJson(token, publicKey)
     } else {
       // This key should have already been excluded as a candidate for validation
       Failure(JwtValidationException("Key does not have a public component"))
