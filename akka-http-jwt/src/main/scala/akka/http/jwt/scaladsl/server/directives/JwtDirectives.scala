@@ -5,7 +5,7 @@
 package akka.http.jwt.scaladsl.server.directives
 
 import akka.event.LoggingAdapter
-import akka.http.jwt.internal.JwtSupport
+import akka.http.jwt.internal.{JwtClaimsImpl, JwtSupport}
 import akka.http.jwt.scaladsl
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.Authenticator
@@ -27,7 +27,7 @@ trait JwtDirectives {
   def jwt(settings: scaladsl.JwtSettings): Directive1[JwtClaims] = {
     extractLog.flatMap { log =>
       authenticateOAuth2(settings.realm, bearerTokenAuthenticator(settings.jwtSupport, log)).flatMap { claims =>
-        provide(new JwtClaims(claims))
+        provide(new JwtClaimsImpl(claims))
       }
     }
   }

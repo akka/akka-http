@@ -20,19 +20,23 @@
 
 package akka.http.jwt.internal
 
+import akka.annotation.InternalApi
 import pdi.jwt.exceptions.JwtNonStringException
-import pdi.jwt.{ JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon }
+import pdi.jwt.{JwtAlgorithm, JwtClaim, JwtHeader, JwtJsonCommon}
 import spray.json._
 
 import java.time.Clock
 
 /**
+ * INTERNAL API
+ *
  * Implementation of `JwtCore` using `JsObject` from spray-json.
  *
  * This class originally came from jwt-spray-json,
  * but was removed in https://github.com/jwt-scala/jwt-scala/commit/bf1131ce02480103c0b953b97da001105a3ee038
  */
-trait JwtSprayJsonParser[H, C] extends JwtJsonCommon[JsObject, H, C] {
+@InternalApi
+private[jwt] trait JwtSprayJsonParser[H, C] extends JwtJsonCommon[JsObject, H, C] {
   protected def parse(value: String): JsObject = value.parseJson.asJsObject
 
   protected def stringify(value: JsObject): String = value.compactPrint
@@ -47,11 +51,15 @@ trait JwtSprayJsonParser[H, C] extends JwtJsonCommon[JsObject, H, C] {
 
 }
 
-object JwtSprayJson extends JwtSprayJson(Clock.systemUTC) {
+/** INTERNAL API */
+@InternalApi
+private[jwt] object JwtSprayJson extends JwtSprayJson(Clock.systemUTC) {
   def apply(clock: Clock): JwtSprayJson = new JwtSprayJson(clock)
 }
 
-class JwtSprayJson(override val clock: Clock) extends JwtSprayJsonParser[JwtHeader, JwtClaim] {
+/** INTERNAL API */
+@InternalApi
+private[jwt] class JwtSprayJson(override val clock: Clock) extends JwtSprayJsonParser[JwtHeader, JwtClaim] {
 
   import DefaultJsonProtocol._
   override def parseHeader(header: String): JwtHeader = {

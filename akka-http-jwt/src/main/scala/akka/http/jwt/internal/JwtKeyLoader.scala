@@ -5,16 +5,23 @@
 package akka.http.jwt.internal
 
 import JwtSupport.JwtAsymmetricAlgorithmSecret
-import akka.pki.pem.{ DERPrivateKeyLoader, PEMDecoder, PEMLoadingException }
-import pdi.jwt.{ JwtAlgorithm, algorithms }
+import akka.annotation.InternalApi
+import akka.pki.pem.{DERPrivateKeyLoader, PEMDecoder, PEMLoadingException}
+import pdi.jwt.{JwtAlgorithm, algorithms}
 
 import java.io.File
 import java.nio.file.Files
-import java.security.spec.{ PKCS8EncodedKeySpec, X509EncodedKeySpec }
-import java.security.{ KeyFactory, KeyPair }
+import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
+import java.security.{KeyFactory, KeyPair}
 import javax.crypto.spec.SecretKeySpec
 
-object JwtKeyLoader {
+/**
+ * INTERNAL API
+ *
+ * Loads a key from a directory.
+ */
+@InternalApi
+private[jwt] object JwtKeyLoader {
 
   def loadKey(keyId: String, algorithm: JwtAlgorithm, directory: File): JwtSupport.JwtAlgorithmSecret = {
     algorithm match {

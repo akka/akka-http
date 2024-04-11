@@ -19,8 +19,12 @@ import javax.crypto.spec.SecretKeySpec
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{ Failure, Success, Try }
 
+/** INTERNAL API */
 @InternalApi
-private[akka] case class JwtSettingsImpl(jwtSupport: JwtSupport, realm: String) extends JwtSettings {
+private[jwt] final case class JwtSettingsImpl(
+  jwtSupport: JwtSupport,
+  realm: String
+) extends akka.http.jwt.scaladsl.JwtSettings {
 
   override def productPrefix = "JwtSettings"
 }
@@ -29,7 +33,7 @@ private[akka] case class JwtSettingsImpl(jwtSupport: JwtSupport, realm: String) 
  * INTERNAL API
  */
 @InternalApi
-private[akka] object JwtSettingsImpl extends SettingsCompanionImpl[JwtSettingsImpl]("akka.http.jwt") {
+private[jwt] object JwtSettingsImpl extends SettingsCompanionImpl[JwtSettingsImpl]("akka.http.jwt") {
 
   override def fromSubConfig(root: Config, inner: Config): JwtSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
@@ -43,7 +47,7 @@ private[akka] object JwtSettingsImpl extends SettingsCompanionImpl[JwtSettingsIm
  * INTERNAL API
  */
 @InternalApi
-private[akka] trait JwtSupport {
+private[jwt] trait JwtSupport {
 
   def canValidate: Boolean
 
@@ -55,7 +59,7 @@ private[akka] trait JwtSupport {
  * INTERNAL API
  */
 @InternalApi
-private[akka] object JwtSupport {
+private[jwt] object JwtSupport {
 
   private val NoValidationOptions = JwtOptions.DEFAULT.copy(signature = false, expiration = false, notBefore = false)
 

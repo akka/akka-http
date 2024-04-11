@@ -1,21 +1,20 @@
 package akka.http.jwt.scaladsl.server.directives
 
-import spray.json.{JsBoolean, JsNumber, JsObject, JsString}
 
 // JwtClaims provides utilities to easily assert and extract claims from the JWT token
-class JwtClaims(claims: JsObject) {
+trait JwtClaims {
 
-  def hasClaim(name: String): Boolean = claims.fields.contains(name)
+  def hasClaim(name: String): Boolean
 
-  def intClaim(name: String): Option[Int] = claims.fields.get(name).collect { case JsNumber(value) => value.toInt }
+  def intClaim(name: String): Option[Int]
 
-  def longClaim(name: String): Option[Long] = claims.fields.get(name).collect { case JsNumber(value) => value.toLong }
+  def longClaim(name: String): Option[Long]
 
-  def doubleClaim(name: String): Option[Double] = claims.fields.get(name).collect { case JsNumber(value) => value.toDouble }
+  def doubleClaim(name: String): Option[Double]
 
-  def stringClaim(name: String): Option[String] = claims.fields.get(name).collect { case JsString(value) => value }
+  def stringClaim(name: String): Option[String]
 
-  def booleanClaim(name: String): Option[Boolean] = claims.fields.get(name).collect { case JsBoolean(value) => value }
+  def booleanClaim(name: String): Option[Boolean]
 
-  def toJson: String = claims.toString()
+  def toJson: String
 }
