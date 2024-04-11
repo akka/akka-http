@@ -6,8 +6,8 @@ package akka.http.jwt.internal
 
 import akka.annotation.InternalApi
 import akka.http.jwt.scaladsl.server.directives.JwtClaims
-import akka.http.jwt.javadsl.server.directives.{ JwtClaims => JavaJwtClaims }
-import spray.json.{ JsBoolean, JsNumber, JsObject, JsString }
+import akka.http.jwt.javadsl.server.directives.{JwtClaims => JavaJwtClaims}
+import spray.json.{JsBoolean, JsNumber, JsObject, JsString, JsValue}
 
 import java.util.Optional
 import scala.compat.java8.OptionConverters.RichOptionForJava8
@@ -18,44 +18,33 @@ import scala.compat.java8.OptionConverters.RichOptionForJava8
  * JwtClaims provides utilities to easily assert and extract claims from the JWT token
  */
 @InternalApi
-private[jwt] final case class JwtClaimsImpl(claims: JsObject) extends JwtClaims {
+private[jwt] final case class JwtClaimsImpl(claims: JsObject) extends JwtClaims with JavaJwtClaims {
 
-  def hasClaim(name: String): Boolean = claims.fields.contains(name)
+  override def hasClaim(name: String): Boolean = claims.fields.contains(name)
 
-  def intClaim(name: String): Option[Int] = claims.fields.get(name).collect { case JsNumber(value) => value.toInt }
+  override def intClaim(name: String): Option[Int] = claims.fields.get(name).collect { case JsNumber(value) => value.toInt }
 
-  def longClaim(name: String): Option[Long] = claims.fields.get(name).collect { case JsNumber(value) => value.toLong }
+  override def longClaim(name: String): Option[Long] = claims.fields.get(name).collect { case JsNumber(value) => value.toLong }
 
-  def doubleClaim(name: String): Option[Double] = claims.fields.get(name).collect { case JsNumber(value) => value.toDouble }
+  override def doubleClaim(name: String): Option[Double] = claims.fields.get(name).collect { case JsNumber(value) => value.toDouble }
 
-  def stringClaim(name: String): Option[String] = claims.fields.get(name).collect { case JsString(value) => value }
+  override def stringClaim(name: String): Option[String] = claims.fields.get(name).collect { case JsString(value) => value }
 
-  def booleanClaim(name: String): Option[Boolean] = claims.fields.get(name).collect { case JsBoolean(value) => value }
+  override def booleanClaim(name: String): Option[Boolean] = claims.fields.get(name).collect { case JsBoolean(value) => value }
 
-  def rawClaim(name: String): Option[String] = claims.fields.get(name).map(_.toString())
+  override def rawClaim(name: String): Option[JsValue] = claims.fields.get(name)
 
-  def toJson: String = claims.toString()
-}
 
-/** INTERNAL API */
-@InternalApi
-private[jwt] object JwtClaimsImpl {
-  def toJava(claims: JwtClaims): JavaJwtClaims = new JavaJwtClaims {
+  // JAVA API
+  override def getIntClaim(name: String): Optional[Int] = intClaim(name).asJava
 
-    override def hasClaim(name: String): Boolean = claims.hasClaim(name)
+  override def getLongClaim(name: String): Optional[Long] = longClaim(name).asJava
 
-    override def getIntClaim(name: String): Optional[Int] = claims.intClaim(name).asJava
+  override def getDoubleClaim(name: String): Optional[Double] = doubleClaim(name).asJava
 
-    override def getLongClaim(name: String): Optional[Long] = claims.longClaim(name).asJava
+  override def getStringClaim(name: String): Optional[String] = stringClaim(name).asJava
 
-    override def getDoubleClaim(name: String): Optional[Double] = claims.doubleClaim(name).asJava
+  override def getBooleanClaim(name: String): Optional[Boolean] = booleanClaim(name).asJava
 
-    override def getStringClaim(name: String): Optional[String] = claims.stringClaim(name).asJava
-
-    override def getBooleanClaim(name: String): Optional[Boolean] = claims.booleanClaim(name).asJava
-
-    override def getRawClaim(name: String): Optional[String] = claims.rawClaim(name).asJava
-
-    override def toString: String = claims.toJson
-  }
+  override def getRawClaim(name: String): Optional[String] = rawClaim(name).map(_.toString()).asJava
 }

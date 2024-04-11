@@ -4,8 +4,12 @@
 
 package akka.http.jwt.scaladsl.server.directives
 
+import spray.json.{JsObject, JsValue}
+
 // JwtClaims provides utilities to easily assert and extract claims from the JWT token
 trait JwtClaims {
+
+  private[akka] val claims: JsObject
 
   def hasClaim(name: String): Boolean
 
@@ -19,7 +23,6 @@ trait JwtClaims {
 
   def booleanClaim(name: String): Option[Boolean]
 
-  def rawClaim(name: String): Option[String]
+  def rawClaim(name: String): Option[JsValue]
 
-  def toJson: String
 }

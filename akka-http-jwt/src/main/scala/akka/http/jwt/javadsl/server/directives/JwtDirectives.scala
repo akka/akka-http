@@ -17,7 +17,7 @@ abstract class JwtDirectives {
   // Wraps its inner route with support for the JWT mechanism, enabling JWT token validation.
   def jwt(inner: JFunction[JwtClaims, Route]): Route = RouteAdapter {
     JD.jwt() { claims =>
-      inner.apply(JwtClaimsImpl.toJava(claims)).delegate
+      inner.apply(claims.asInstanceOf[JwtClaimsImpl]).delegate
     }
   }
 
@@ -25,7 +25,7 @@ abstract class JwtDirectives {
   // settings.
   def jwt(settings: JwtSettings, inner: JFunction[JwtClaims, Route]): Route = RouteAdapter {
     JD.jwt(settings.asInstanceOf[akka.http.jwt.scaladsl.JwtSettings]) { claims =>
-      inner.apply(JwtClaimsImpl.toJava(claims)).delegate
+      inner.apply(claims.asInstanceOf[JwtClaimsImpl]).delegate
     }
   }
 }

@@ -10,8 +10,6 @@ import akka.http.jwt.internal.{ JwtSettingsImpl, JwtSupport }
 /** Not for user extension */
 @ApiMayChange @DoNotInherit
 abstract class JwtSettings private[akka] { self: JwtSettingsImpl =>
-  /** INTERNAL API */
-  @InternalApi private[akka] def jwtSupport: JwtSupport
 
   def realm: String
 }

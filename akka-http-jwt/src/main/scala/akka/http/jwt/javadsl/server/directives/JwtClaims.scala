@@ -6,7 +6,7 @@ package akka.http.jwt.javadsl.server.directives
 
 import java.util.Optional
 
-abstract class JwtClaims {
+trait JwtClaims {
 
   def hasClaim(name: String): Boolean
 
