@@ -4,17 +4,17 @@
 
 package akka.http.jwt.scaladsl.server.directives
 
-import akka.http.jwt.internal.{JwtClaimsImpl, JwtSprayJson}
+import akka.http.jwt.internal.{ JwtClaimsImpl, JwtSprayJson }
 import akka.http.jwt.scaladsl.JwtSettings
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
-import akka.http.scaladsl.server.{AuthenticationFailedRejection, AuthorizationFailedRejection, Directives, Route}
+import akka.http.scaladsl.server.{ AuthenticationFailedRejection, AuthorizationFailedRejection, Directives, Route }
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue}
+import spray.json.{ JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue }
 
 import java.io.File
 import java.util.Base64
