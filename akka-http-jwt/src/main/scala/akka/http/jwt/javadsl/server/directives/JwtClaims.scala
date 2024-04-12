@@ -18,9 +18,9 @@ trait JwtClaims {
 
   def getStringClaim(name: String): Optional[String]
 
+  def getStringClaims(name: String): java.util.List[String]
+
   def getBooleanClaim(name: String): Optional[Boolean]
 
   def getRawClaim(name: String): Optional[String]
-
-  def toString: String
 }

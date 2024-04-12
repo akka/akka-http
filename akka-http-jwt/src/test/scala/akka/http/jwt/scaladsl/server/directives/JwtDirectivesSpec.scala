@@ -4,17 +4,17 @@
 
 package akka.http.jwt.scaladsl.server.directives
 
-import akka.http.jwt.internal.JwtSprayJson
+import akka.http.jwt.internal.{JwtClaimsImpl, JwtSprayJson}
 import akka.http.jwt.scaladsl.JwtSettings
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
-import akka.http.scaladsl.server.{ AuthenticationFailedRejection, Directives, MissingQueryParamRejection, Route }
+import akka.http.scaladsl.server.{AuthenticationFailedRejection, AuthorizationFailedRejection, Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import spray.json.{ JsBoolean, JsNumber, JsObject, JsString, JsValue }
+import spray.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue}
 
 import java.io.File
 import java.util.Base64
@@ -73,7 +73,7 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
 
     def route(): Route =
       jwt() { claims: JwtClaims =>
-        complete(claims.toJson)
+        complete(claims.asInstanceOf[JwtClaimsImpl].claims.toString())
       }
 
     "extract the claims from a valid bearer token in the Authorization header" in {
@@ -197,16 +197,42 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
       }
     }
 
+    "allow extraction of a raw claim" in {
+      val complexClaim = JsObject("id" -> JsString("abc"), "amount" -> JsNumber(12))
+      Get() ~> addHeader(jwtHeader(basicClaims + ("extra" -> complexClaim))) ~> {
+        jwt() {
+          _.rawClaim("extra") match {
+            case Some(f: JsValue) => complete(f.asJsObject.fields("id").toString())
+          }
+        }
+      } ~> check {
+        responseAs[String] shouldEqual "\"abc\"" // rawClaim returns the raw JSON value
+      }
+    }
+
+    "allow extraction of a list of string claim values" in {
+      Get() ~> addHeader(jwtHeader(basicClaims + ("roles" -> JsArray(JsString("read"), JsString("write"))))) ~> {
+        jwt() {
+          _.stringClaims("roles") match {
+            case elems if elems.contains("read") => complete("ok")
+            case _                               => reject(AuthorizationFailedRejection)
+          }
+        }
+      } ~> check {
+        responseAs[String] shouldEqual "ok"
+      }
+    }
+
     "allow for checking the value of the required claim" in {
       Get() ~> addHeader(jwtHeader(basicClaims)) ~> {
         jwt() {
           _.stringClaim("role") match {
             case Some("admin") => complete(HttpResponse())
-            case _             => reject(MissingQueryParamRejection("role"))
+            case _             => reject(AuthorizationFailedRejection)
           }
         }
       } ~> check {
-        rejection shouldEqual MissingQueryParamRejection("role")
+        rejection shouldEqual AuthorizationFailedRejection
       }
     }
 
