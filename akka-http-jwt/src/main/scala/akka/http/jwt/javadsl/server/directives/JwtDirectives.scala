@@ -12,17 +12,31 @@ import akka.http.jwt.javadsl.JwtSettings
 
 import java.util.function.{ Function => JFunction }
 
+/**
+ * JwtDirectives provides utilities to easily assert and extract claims from a JSON Web Token (JWT).
+ *
+ * For more information about JWTs, see [[https://jwt.io/]] or consult RFC 7519: [[https://datatracker.ietf.org/doc/html/rfc7519]])
+ */
 abstract class JwtDirectives {
 
-  // Wraps its inner route with support for the JWT mechanism, enabling JWT token validation.
+  /**
+   * Wraps its inner route with support for the JWT mechanism, enabling JWT token validation.
+   * JWT token validation is done automatically extracting the token from the Authorization header.
+   * If the token is valid, the inner route is executed and provided the set of claims as [[JwtClaims]],
+   * otherwise a 401 Unauthorized response is returned.
+   */
   def jwt(inner: JFunction[JwtClaims, Route]): Route = RouteAdapter {
     JD.jwt() { claims =>
       inner.apply(claims.asInstanceOf[JwtClaimsImpl]).delegate
     }
   }
 
-  // Wraps its inner route with support for the JWT mechanism, enabling JWT token validation using the given jwt
-  // settings.
+  /**
+   * Wraps its inner route with support for the JWT mechanism, enabling JWT token validation using the given jwt settings.
+   * JWT token validation is done automatically extracting the token from the Authorization header.
+   * If the token is valid, the inner route is executed and provided the set of claims as [[JwtClaims]],
+   * otherwise a 401 Unauthorized response is returned.
+   */
   def jwt(settings: JwtSettings, inner: JFunction[JwtClaims, Route]): Route = RouteAdapter {
     JD.jwt(settings.asInstanceOf[akka.http.jwt.scaladsl.JwtSettings]) { claims =>
       inner.apply(claims.asInstanceOf[JwtClaimsImpl]).delegate

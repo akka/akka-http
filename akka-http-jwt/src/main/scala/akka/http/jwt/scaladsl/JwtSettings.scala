@@ -9,6 +9,9 @@ import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.http.jwt.internal.{ JwtSettingsImpl, JwtSupport }
 import com.typesafe.config.Config
 
+/**
+ * Public API but not intended for subclassing
+ */
 @ApiMayChange @DoNotInherit
 trait JwtSettings extends akka.http.jwt.javadsl.JwtSettings { self: JwtSettingsImpl =>
   /** INTERNAL API */

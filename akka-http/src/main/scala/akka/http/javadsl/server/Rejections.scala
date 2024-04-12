@@ -477,9 +477,3 @@ trait TlsClientIdentityRejection extends Rejection {
   def getCertificateCN: Optional[String]
   def getCertificateSANs: JList[String]
 }
-
-@DoNotInherit
-trait JwtRejection extends Rejection {
-  def description: String
-}
-

@@ -72,7 +72,7 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
   "The jwt() directive" should {
 
     def route(): Route =
-      jwt() { claims: JwtClaims =>
+      jwt() { claims =>
         complete(claims.asInstanceOf[JwtClaimsImpl].claims.toString())
       }
 
@@ -130,7 +130,7 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
     }
   }
 
-  "The claim() directive" should {
+  "The extracted JwtClaims from jwt() directive" should {
 
     "allow for extracting claims with a specific type" in {
       val extraClaims = basicClaims + ("int" -> JsNumber(42)) + ("double" -> JsNumber(42.42)) + ("long" -> JsNumber(11111111111L)) + ("bool" -> JsBoolean(true))

@@ -352,6 +352,3 @@ final case class TlsClientIdentityRejection(description: String, requiredExpress
 
   override def getCertificateSANs: JList[String] = certificateSANs.asJava
 }
-
-final case class JwtRejection(description: String) extends jserver.JwtRejection with Rejection
-
