@@ -253,3 +253,6 @@ Details can be found here: @ref[XML Support](common/xml-support.md)
 akka-http-jackson
 : Predefined glue-code for (de)serializing custom types from/to JSON with [jackson](https://github.com/FasterXML/jackson)
 @@@
+
+akka-http-jwt
+: Provides directives for validating and extracting JSON Web Tokens (JWT) from requests. Details can be found in the section @ref[JWT Directives](routing-dsl/directives/jwt-directives/jwt.md)
