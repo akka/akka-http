@@ -9,6 +9,9 @@ import spray.json.JsValue
 /**
  * JwtClaims provides a utility to access claims extracted from a JWT token.
  */
+ * Not for user extension
+ */
+@DoNotInherit
 trait JwtClaims {
 
   /**

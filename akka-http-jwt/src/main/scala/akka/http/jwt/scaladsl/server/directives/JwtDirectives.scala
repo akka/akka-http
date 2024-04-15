@@ -14,7 +14,7 @@ import akka.http.scaladsl.server.directives.SecurityDirectives.{ Authenticator, 
 import spray.json.JsObject
 
 /**
- * JwtDirectives provides utilities to easily assert and extract claims from a JSON Web Token (JWT).
+ * JwtDirectives provides utilities to assert and extract claims from a JSON Web Token (JWT).
  *
  * For more information about JWTs, see [[https://jwt.io/]] or consult RFC 7519: [[https://datatracker.ietf.org/doc/html/rfc7519]]
  */

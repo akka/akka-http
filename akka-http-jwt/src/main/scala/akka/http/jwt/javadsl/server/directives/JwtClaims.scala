@@ -8,7 +8,9 @@ import java.util.Optional
 
 /**
  * JwtClaims provides a utility to access claims extracted from a JWT token.
+ * Not for user extension
  */
+@DoNotInherit
 trait JwtClaims {
 
   /**
