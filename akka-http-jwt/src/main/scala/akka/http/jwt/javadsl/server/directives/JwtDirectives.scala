@@ -15,7 +15,7 @@ import java.util.function.{ Function => JFunction }
 /**
  * JwtDirectives provides utilities to easily assert and extract claims from a JSON Web Token (JWT).
  *
- * For more information about JWTs, see [[https://jwt.io/]] or consult RFC 7519: [[https://datatracker.ietf.org/doc/html/rfc7519]])
+ * For more information about JWTs, see [[https://jwt.io/]] or consult RFC 7519: [[https://datatracker.ietf.org/doc/html/rfc7519]]
  */
 abstract class JwtDirectives {
 

@@ -448,7 +448,7 @@ lazy val docs = project("docs")
   .addAkkaModuleDependency("akka-stream-testkit", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-testkit-typed", "provided", AkkaDependency.docs)
   .dependsOn(
-    httpCore, http, httpXml, http2Tests, httpMarshallersJava, httpMarshallersScala, httpCaching,
+    httpCore, http, httpXml, http2Tests, httpMarshallersJava, httpMarshallersScala, httpCaching, httpJwt,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test", httpScalafixRules % ScalafixConfig
   )
   .settings(Dependencies.docs)
