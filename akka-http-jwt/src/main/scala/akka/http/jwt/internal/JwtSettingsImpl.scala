@@ -68,7 +68,7 @@ private[jwt] object JwtSupport {
 
   def fromConfig(jwtConfig: Config): JwtSupport = {
     val devSecret = if (jwtConfig.getBoolean("dev")) {
-      Some(JwtSecret("dev", Some(jwtConfig.getString("dev-issuer")).filter(_.nonEmpty), JwtNoneAlgorithmSecret))
+      Some(JwtSecret("dev", None, JwtNoneAlgorithmSecret))
     } else None
 
     val secrets = jwtConfig

@@ -128,6 +128,19 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
         rejection shouldEqual credentialsRejected
       }
     }
+
+    "reject the request if the bearer token is expired even when dev mod is on" in {
+
+      val devModeSettings = "akka.http.jwt.dev = on"
+      val config = ConfigFactory.parseString(devModeSettings).withFallback(ConfigFactory.load())
+      val expired = basicClaims + ("exp" -> JsNumber(1516239022 - 1))
+
+      val route = jwt(settings = JwtSettings.apply(config)) { _ => complete("ok") }
+
+      Get() ~> addHeader(jwtHeader(expired)) ~> route ~> check {
+        rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("akka-http-jwt"))
+      }
+    }
   }
 
   "The extracted JwtClaims from jwt() directive" should {
@@ -296,6 +309,30 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
         }.getMessage should include("Depending on the used algorithm, a secret or a public key must be configured.")
       }
     }
+
+
+    "ignore signature if using dev mode" in {
+      val devModeSettings = "akka.http.jwt.dev = on"
+      val config = ConfigFactory.parseString(devModeSettings).withFallback(ConfigFactory.load())
+
+      val route =
+        jwt(settings = JwtSettings.apply(config)) {
+          _.stringClaim("sub") match {
+            case Some(sub) => complete(sub)
+            case None      => reject(AuthorizationFailedRejection)
+          }
+        }
+
+      // removing the signature part of the JWT token, this makes it invalid unless dev mode is on
+      val jwtTokenNoSignature =
+        read(getClass.getClassLoader.getResource("my-jwt-token.txt").getPath).split('.').take(2).mkString(".")
+
+      val header = Authorization(OAuth2BearerToken(jwtTokenNoSignature))
+      Get() ~> addHeader(header) ~> route ~> check {
+        responseAs[String] shouldBe "1234567890"
+      }
+    }
+
   }
 
   private def read(filePath: String): String = {
