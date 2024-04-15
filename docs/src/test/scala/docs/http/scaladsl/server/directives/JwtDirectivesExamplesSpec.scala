@@ -6,14 +6,15 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.jwt.scaladsl.server.directives.JwtDirectives.jwt
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.{AuthorizationFailedRejection, RoutingSpec}
+import akka.http.scaladsl.server.{ AuthorizationFailedRejection, RoutingSpec }
 import docs.CompileOnlySpec
 
 class JwtDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "jwt" in {
     //#jwt
     val route =
-      jwt() { _.stringClaim("role") match {
+      jwt() {
+        _.stringClaim("role") match {
           case Some("admin") => complete(s"You're in!")
           case None          => reject(AuthorizationFailedRejection)
         }

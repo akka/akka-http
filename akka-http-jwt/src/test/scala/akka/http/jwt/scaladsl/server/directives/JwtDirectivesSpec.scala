@@ -310,7 +310,6 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
       }
     }
 
-
     "ignore signature if using dev mode" in {
       val devModeSettings = "akka.http.jwt.dev = on"
       val config = ConfigFactory.parseString(devModeSettings).withFallback(ConfigFactory.load())
