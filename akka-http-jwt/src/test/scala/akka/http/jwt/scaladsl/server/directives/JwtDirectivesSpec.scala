@@ -41,6 +41,11 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
              issuer: my-secondary-issuer
              algorithm: HS256
              secret: "${Base64.getEncoder.encodeToString("akka is better than great".getBytes)}"
+           },
+           {
+             key-id: my-key-no-issuer
+             algorithm: HS256
+             secret: "${Base64.getEncoder.encodeToString("akka is top".getBytes)}"
            }
          ]
        }
@@ -91,6 +96,13 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
         check {
           responseAs[String] shouldBe """{"iat":1516239022,"iss":"my-secondary-issuer","name":"John Doe","sub":"1234567890"}"""
         }
+    }
+
+    "process the request if there is a matching secret configured with no issuer specified" in {
+      val difIssuer = basicClaims + ("iss" -> JsString("other-issuer"))
+      Get() ~> addHeader(jwtHeader(difIssuer, secret = "akka is top")) ~> route() ~> check {
+        responseAs[String] shouldBe """{"iat":1516239022,"iss":"other-issuer","name":"John Doe","sub":"1234567890"}"""
+      }
     }
 
     "reject the request if the bearer token is expired" in {

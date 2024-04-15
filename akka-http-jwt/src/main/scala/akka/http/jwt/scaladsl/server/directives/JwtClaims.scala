@@ -4,11 +4,11 @@
 
 package akka.http.jwt.scaladsl.server.directives
 
+import akka.annotation.DoNotInherit
 import spray.json.JsValue
 
 /**
  * JwtClaims provides a utility to access claims extracted from a JWT token.
- */
  * Not for user extension
  */
 @DoNotInherit

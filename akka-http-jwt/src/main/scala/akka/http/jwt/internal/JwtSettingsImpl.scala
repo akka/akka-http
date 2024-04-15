@@ -129,9 +129,9 @@ private[jwt] object JwtSupport {
             case Some(issuer) =>
               validatingSecretsByIssuer.get(issuer) match {
                 case Some(secrets) => secrets
-                case None          => Nil
-                //FIXME No secrets for that issuer, just use all secrets
-                //validatingSecrets
+                case None =>
+                  // No secrets for that issuer, try secrets without issuer specified
+                  validatingSecrets.filter(_.issuer.isEmpty)
               }
             case None => validatingSecrets
           }

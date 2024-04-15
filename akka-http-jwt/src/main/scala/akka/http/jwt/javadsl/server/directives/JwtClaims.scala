@@ -4,6 +4,8 @@
 
 package akka.http.jwt.javadsl.server.directives
 
+import akka.annotation.DoNotInherit
+
 import java.util.Optional
 
 /**
