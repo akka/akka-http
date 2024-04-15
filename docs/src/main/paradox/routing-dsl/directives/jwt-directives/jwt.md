@@ -10,7 +10,7 @@
 
 ## Description
 
-This directive provides a way to validate a JSON Web Token (JWT) from a request and extracts its claims for further processing. For details on how what a valid JWT is, see [jwt.io](https://jwt.io/) or consult [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519).
+This directive provides a way to validate a JSON Web Token (JWT) from a request and extracts its claims for further processing. For details on what a valid JWT is, see [jwt.io](https://jwt.io/) or consult [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519).
 
 JWTs are validated against a predefined secret or public key, depending on the used algorithm, and provided by configuration. The directive uses config defined under `akka.http.jwt`, or an explicitly provided `JwtSettings` instance.
 
