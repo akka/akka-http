@@ -78,7 +78,7 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
 
     def route(): Route =
       jwt() { claims =>
-        complete(claims.asInstanceOf[JwtClaimsImpl].claims.toString())
+        complete(claims.asInstanceOf[JwtClaimsImpl].claims.toString)
       }
 
     "extract the claims from a valid bearer token in the Authorization header" in {
@@ -160,7 +160,7 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
     "allow for extracting claims with a specific type" in {
       val extraClaims = basicClaims + ("int" -> JsNumber(42)) + ("double" -> JsNumber(42.42)) + ("long" -> JsNumber(11111111111L)) + ("bool" -> JsBoolean(true))
       val routeWithTypedClaims =
-        jwt() { claims: JwtClaims =>
+        jwt() { claims =>
           {
             val result = for {
               sub <- claims.stringClaim("sub")
@@ -227,7 +227,8 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
       Get() ~> addHeader(jwtHeader(basicClaims + ("extra" -> complexClaim))) ~> {
         jwt() {
           _.rawClaim("extra") match {
-            case Some(f: JsValue) => complete(f.asJsObject.fields("id").toString())
+            case Some(f: JsValue) => complete(f.asJsObject.fields("id").toString)
+            case _                => reject(AuthorizationFailedRejection)
           }
         }
       } ~> check {
@@ -274,7 +275,7 @@ class JwtDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with JwtDire
 
       val config = ConfigFactory.parseString(asymmetricSecret).withFallback(ConfigFactory.load())
       val route =
-        jwt(settings = JwtSettings.apply(config)) { claims: JwtClaims =>
+        jwt(settings = JwtSettings.apply(config)) { claims =>
           complete(s"${claims.stringClaim("sub").get}:${claims.stringClaim("name").get}")
         }
 

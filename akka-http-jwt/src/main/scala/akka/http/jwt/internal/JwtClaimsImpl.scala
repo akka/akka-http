@@ -56,5 +56,5 @@ private[jwt] final case class JwtClaimsImpl(claims: JsObject) extends JwtClaims 
 
   override def getBooleanClaim(name: String): Optional[Boolean] = booleanClaim(name).asJava
 
-  override def getRawClaim(name: String): Optional[String] = rawClaim(name).map(_.toString()).asJava
+  override def getRawClaim(name: String): Optional[String] = rawClaim(name).map(_.toString).asJava
 }

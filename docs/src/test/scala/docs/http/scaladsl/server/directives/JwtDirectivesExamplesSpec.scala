@@ -35,7 +35,7 @@ class JwtDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
       jwt() {
         _.stringClaim("role") match {
           case Some("admin") => complete(s"You're in!")
-          case None          => reject(AuthorizationFailedRejection)
+          case _             => reject(AuthorizationFailedRejection)
         }
       }
 
