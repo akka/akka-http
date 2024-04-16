@@ -9,7 +9,26 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.{ AuthorizationFailedRejection, RoutingSpec }
 import docs.CompileOnlySpec
 
+import java.util.Base64
+
 class JwtDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
+
+  override def testConfigSource =
+    s"""
+       akka.loglevel = DEBUG
+       akka.http.jwt {
+         dev = off
+         secrets: [
+           {
+             key-id: my-key
+             issuer: my-issuer
+             algorithm: HS256
+             secret: "${Base64.getEncoder.encodeToString("my-secret".getBytes)}"
+           }
+         ]
+       }
+      """
+
   "jwt" in {
     //#jwt
     val route =
@@ -26,7 +45,7 @@ class JwtDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     // manually injected valid JWT for test purposes with a claim "role" -> "admin"
     val jwtToken = Authorization(OAuth2BearerToken(
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.Gfx6VO9tcxwk6xqx9yYzSfebfeakZp5JYIgP_edcw_A"))
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicm9sZSI6ImFkbWluIn0.6JBvEPNY4KVZpZYfoG6y5UOh3RLUbG-kPyxKHim_La8"))
 
     Get() ~> addHeader(jwtToken) ~> route ~> check {
       responseAs[String] shouldEqual "You're in!"
