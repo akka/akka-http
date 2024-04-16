@@ -18,6 +18,8 @@ trait JwtSettings extends akka.http.jwt.javadsl.JwtSettings { self: JwtSettingsI
   @InternalApi private[akka] override def jwtSupport: JwtSupport
 
   override def realm: String
+
+  override def devMode: Boolean
 }
 
 object JwtSettings {

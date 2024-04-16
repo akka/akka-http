@@ -21,7 +21,8 @@ import scala.util.{ Failure, Success, Try }
 @InternalApi
 private[jwt] final case class JwtSettingsImpl(
   jwtSupport: JwtSupport,
-  realm:      String
+  realm:      String,
+  devMode:    Boolean
 ) extends akka.http.jwt.scaladsl.JwtSettings {
 
   override def productPrefix = "JwtSettings"
@@ -37,7 +38,8 @@ private[jwt] object JwtSettingsImpl extends SettingsCompanionImpl[JwtSettingsImp
     val c = inner.withFallback(root.getConfig(prefix))
     new JwtSettingsImpl(
       JwtSupport.fromConfig(c),
-      c.getString("realm"))
+      c.getString("realm"),
+      c.getBoolean("dev"))
   }
 }
 

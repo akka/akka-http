@@ -5,13 +5,15 @@
 package akka.http.jwt.scaladsl.server.directives
 
 import akka.event.LoggingAdapter
-import akka.http.jwt.internal.{ JwtClaimsImpl, JwtSupport }
+import akka.http.jwt.internal.{JwtClaimsImpl, JwtSupport}
 import akka.http.jwt.scaladsl
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.directives.BasicDirectives.{ extractActorSystem, extractLog, provide }
+import akka.http.scaladsl.server.directives.BasicDirectives.{extractActorSystem, extractLog, provide}
 import akka.http.scaladsl.server.directives.Credentials
-import akka.http.scaladsl.server.directives.SecurityDirectives.{ Authenticator, authenticateOAuth2 }
+import akka.http.scaladsl.server.directives.SecurityDirectives.{Authenticator, authenticateOAuth2}
 import spray.json.JsObject
+
+import scala.concurrent.duration.DurationInt
 
 /**
  * JwtDirectives provides utilities to assert and extract claims from a JSON Web Token (JWT).
@@ -19,6 +21,8 @@ import spray.json.JsObject
  * For more information about JWTs, see [[https://jwt.io/]] or consult RFC 7519: [[https://datatracker.ietf.org/doc/html/rfc7519]]
  */
 trait JwtDirectives {
+
+  @volatile private var lastWarningTs: Long = 0L
 
   /**
    * Wraps its inner route with support for the JWT mechanism, enabling JWT token validation.
@@ -40,6 +44,12 @@ trait JwtDirectives {
    */
   def jwt(settings: scaladsl.JwtSettings): Directive1[JwtClaims] = {
     extractLog.flatMap { log =>
+      // log once every minute if dev mode is enabled
+      if (settings.devMode && (System.currentTimeMillis() - lastWarningTs) > 1.minute.toMillis) {
+        log.warning("Dev mode is enabled thus JWT signatures are not verified. This must not be used in production. To disable, set config: 'akka.http.jwt.dev = off'")
+        lastWarningTs = System.currentTimeMillis()
+      }
+
       authenticateOAuth2(settings.realm, bearerTokenAuthenticator(settings.jwtSupport, log)).flatMap { claims =>
         provide(JwtClaimsImpl(claims))
       }

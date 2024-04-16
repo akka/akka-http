@@ -14,4 +14,6 @@ import akka.http.jwt.internal.{ JwtSettingsImpl, JwtSupport }
 abstract class JwtSettings private[akka] { self: JwtSettingsImpl =>
 
   def realm: String
+
+  def devMode: Boolean
 }
