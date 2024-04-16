@@ -187,6 +187,23 @@ class WebSocketClientSpec extends AkkaSpecWithMaterializer("akka.http.client.web
       closeNetworkInput()
       expectNetworkClose()
     }
+    "send Ping keep-alive heartbeat" in new TestSetup with ClientProbes {
+      override def settings = {
+        val defaults = super.settings.websocketSettings
+        super.settings.withWebsocketSettings(defaults.withPeriodicKeepAliveMode("ping")
+          .withPeriodicKeepAliveMaxIdle(100.millis))
+      }
+      expectWireData(UpgradeRequestBytes)
+
+      val firstFrame = WSTestUtils.frame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true, mask = false)
+      sendWireData(UpgradeResponseBytes ++ firstFrame)
+      messagesIn.requestNext(TextMessage("Message 1"))
+      Thread.sleep(80)
+      expectMaskedFrameOnNetwork(Protocol.Opcode.Ping, ByteString.empty, fin = true)
+      Thread.sleep(80)
+      expectMaskedFrameOnNetwork(Protocol.Opcode.Ping, ByteString.empty, fin = true)
+    }
+
     "support subprotocols" should {
       "accept if server supports subprotocol" in new TestSetup with ClientEchoes {
         override protected def requestedSubProtocol: Option[String] = Some("v2")
