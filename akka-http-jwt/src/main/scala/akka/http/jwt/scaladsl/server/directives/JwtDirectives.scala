@@ -5,12 +5,12 @@
 package akka.http.jwt.scaladsl.server.directives
 
 import akka.event.LoggingAdapter
-import akka.http.jwt.internal.{JwtClaimsImpl, JwtSupport}
+import akka.http.jwt.internal.{ JwtClaimsImpl, JwtSupport }
 import akka.http.jwt.scaladsl
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.directives.BasicDirectives.{extractActorSystem, extractLog, provide}
+import akka.http.scaladsl.server.directives.BasicDirectives.{ extractActorSystem, extractLog, provide }
 import akka.http.scaladsl.server.directives.Credentials
-import akka.http.scaladsl.server.directives.SecurityDirectives.{Authenticator, authenticateOAuth2}
+import akka.http.scaladsl.server.directives.SecurityDirectives.{ Authenticator, authenticateOAuth2 }
 import spray.json.JsObject
 
 import scala.concurrent.duration.DurationInt
