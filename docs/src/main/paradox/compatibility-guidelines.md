@@ -117,6 +117,18 @@ Java
     akka.http.javadsl.settings.PoolImplementation
     akka.http.javadsl.settings.PreviewServerSettings
     ```
+
+#### akka-http-jwt
+
+Scala
+:   ```scala
+    akka.http.jwt.scaladsl.JwtSettings
+    ```
+
+Java
+:   ```java
+    akka.http.jwt.javadsl.JwtSettings
+    ```
   
 ## Versioning and Compatibility
 

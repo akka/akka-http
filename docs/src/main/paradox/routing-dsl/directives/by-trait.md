@@ -47,6 +47,9 @@ All predefined directives are organized into traits that form one part of the ov
 @ref[TlsDirectives](tls-directives/index.md)
 :   Extract and require aspects of TLS/mTLS connections
 
+@ref[JwtDirectives](jwt-directives/index.md)
+:   Require JWT token and extracts its claims
+
 <a id="response-directives"></a>
 ## Directives creating or transforming the response
 
@@ -101,6 +104,7 @@ All predefined directives are organized into traits that form one part of the ov
 * [future-directives/index](future-directives/index.md)
 * [header-directives/index](header-directives/index.md)
 * [host-directives/index](host-directives/index.md)
+* [jwt-directives/index](jwt-directives/index.md)
 * [marshalling-directives/index](marshalling-directives/index.md)
 * [method-directives/index](method-directives/index.md)
 * [misc-directives/index](misc-directives/index.md)

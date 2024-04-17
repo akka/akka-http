@@ -69,6 +69,7 @@ lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   httpSprayJson,
   httpXml,
   httpJackson,
+  httpJwt,
   httpScalafixRules, // don't aggregate tests for now as this will break with Scala compiler updates too easily
 )
 lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
@@ -335,6 +336,16 @@ lazy val httpJackson =
     .settings(Dependencies.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
+lazy val httpJwt = project("akka-http-jwt")
+  .settings(commonSettings)
+  .settings(AutomaticModuleName.settings("akka.http.jwt"))
+  .addAkkaModuleDependency("akka-pki", "provided")
+  .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-testkit", "provided")
+  .settings(Dependencies.httpJwt)
+  .dependsOn(http, httpCore, httpTestkit % "test")
+  .enablePlugins(BootstrapGenjavadoc)
+
 lazy val httpCaching = project("akka-http-caching")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.caching"))
@@ -437,7 +448,7 @@ lazy val docs = project("docs")
   .addAkkaModuleDependency("akka-stream-testkit", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-testkit-typed", "provided", AkkaDependency.docs)
   .dependsOn(
-    httpCore, http, httpXml, http2Tests, httpMarshallersJava, httpMarshallersScala, httpCaching,
+    httpCore, http, httpXml, http2Tests, httpMarshallersJava, httpMarshallersScala, httpCaching, httpJwt,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test", httpScalafixRules % ScalafixConfig
   )
   .settings(Dependencies.docs)

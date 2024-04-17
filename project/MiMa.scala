@@ -62,9 +62,11 @@ object MiMa extends AutoPlugin {
 
   override val projectSettings = Seq(
     mimaPreviousArtifacts := {
-      val versions =
-        if (scalaBinaryVersion.value == "3") post3Versions
+      val versions = {
+        if (name.value == "akka-http-jwt") Set.empty // FIXME remove this once we have a release of akka-http-jwt
+        else if (scalaBinaryVersion.value == "3") post3Versions
         else pre3Versions ++ post3Versions
+      }
 
       versions.map { version =>
         organization.value %% name.value % version
