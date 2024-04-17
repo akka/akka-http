@@ -64,7 +64,10 @@ object MiMa extends AutoPlugin {
   override val projectSettings = Seq(
     mimaPreviousArtifacts := {
       val versions = {
-        if (scalaBinaryVersion.value == "3") post3Versions
+        if (name.value == "akka-http-jwt") {
+          // Added in 10.6.2
+          `10.6-versions` -- Set("10.6.0", "10.6.1")
+        } else if (scalaBinaryVersion.value == "3") post3Versions
         else pre3Versions ++ post3Versions
       }
 
