@@ -55,7 +55,7 @@ the Routing DSL will look like:
 
 ## Getting started
 
-The project template in @scala[[Akka HTTP Quickstart for Scala](https://developer.lightbend.com/guides/akka-http-quickstart-scala/)]@java[[Akka HTTP Quickstart for Java](https://developer.lightbend.com/guides/akka-http-quickstart-java/)] will help you to get a working Akka HTTP server running.
+The project template in @scala[@ref[Akka HTTP Quickstart for Scala](../quickstart-scala/index.md)]@java[@ef[Akka HTTP Quickstart for Java](../quickstart-java/index.md)] will help you to get a working Akka HTTP server running.
 
 ## Compared with Play framework routes
 

@@ -483,6 +483,10 @@ lazy val docs = project("docs")
         writer = new Writer(serializerPlugins = Writer.defaultPlugins(paradoxDirectives.value)))
     },
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    paradoxRoots := List(
+      "index.html",
+      "quickstart-java/index.html",
+      "quickstart-scala/index.html"),
     Compile / paradoxProperties ++= Map(
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
