@@ -57,12 +57,12 @@ jobs:
       - name: Test akka-http-quickstart-java
         run: |-
           cd samples/akka-http-quickstart-java
-          mvn test -nsu -ntp -Dakka.version=`cat ~/.version`
+          mvn test -nsu -ntp -Dakka-http.version=`cat ~/.version`
 
       - name: Test akka-http-quickstart-scala
         run: |-
           cd samples/akka-http-quickstart-scala
-          sbt test -Dakka.version=`cat ~/.version`
+          sbt test -Dakka-http.version=`cat ~/.version`
 
       - name: Email on failure
         if: ${{ failure() }}
