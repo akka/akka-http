@@ -18,6 +18,7 @@ Key links:
 
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
 - [ ] Update the Change date in the LICENSE file.
+- [ ] Update the Akka HTTP version in the samples to $VERSION$, otherwise the published zip files of the samples will have the old version.
 - [ ] For minor or major versions, add a release notes entry in `docs/src/main/paradox/release-notes/`.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka-http/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka-http/milestones?direction=asc&sort=due_date)
@@ -72,8 +73,7 @@ For minor or major releases:
 - [ ] Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key *of all current compatible branches*.
 - [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies) and version for [Akka module versions](https://doc.akka.io/docs/akka-dependencies/current/) in [akka-dependencies repo](https://github.com/akka/akka-dependencies)
 - [ ] Update [Akka Guide samples](https://github.com/akka/akka-platform-guide)
-- [ ] Update quickstarts:
-  - [ ] [Akka HTTP Java](https://github.com/akka/akka-http-quickstart-java.g8/blob/main/src/main/g8/default.properties)
+- [ ] Update sbt new (g8) template:
   - [ ] [Akka HTTP Scala](https://github.com/akka/akka-http-quickstart-scala.g8/blob/main/src/main/g8/default.properties)
 
 - Close this issue
