@@ -11,7 +11,6 @@ This guide highlights Akka HTTP fundamentals in the context of a simple user reg
 
 * Download the quickstart project and run the app.
 * Follow this guide to explore the code.
-* Integrate the project into IntelliJ. If you prefer a different IDE, the principles should be similar, as long as it supports Scala.
 
 ## Prerequisite
 
