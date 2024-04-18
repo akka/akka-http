@@ -194,6 +194,5 @@ First, let's dissect the backend logic.
 * [JSON](json.md)
 * [Running the application](running-the-application.md)
 * [Testing Routes](testing-routes.md)
-* [IntelliJ IDEA](intellij-idea.md)
 
 @@@

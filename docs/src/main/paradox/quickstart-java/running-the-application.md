@@ -28,4 +28,6 @@ You should get back the message: `User MrX created.`
 
 You should get back the message: `User MrX deleted.`
 
-Now that you've confirmed all of the example functionality, see how to open the project in an IDE.
+## Tutorial done!
+
+Congratulations! You can start building real-world applications that use Akka HTTP. Of course, we didn't have time to cover all Akka HTTP features in this short guide. See the @ref[documentation](../index.md) to learn more.
