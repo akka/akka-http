@@ -1,4 +1,4 @@
-# Building Native Images
+# 9. Building Native Images
 
 
 Building native images with Akka HTTP is supported.

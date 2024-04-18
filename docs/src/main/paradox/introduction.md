@@ -53,29 +53,10 @@ Additionally, add the dependencies as below.
   group3="com.typesafe.akka" artifact3="akka-http_$scala.binary.version$" version3="AkkaHttpVersion"
 }
 
-You may download a packaged version of this project by clicking "Create a project for me!" on the
-@scala[[Lightbend Getting Started page](https://developer.lightbend.com/start/?group=akka&project=akka-http-quickstart-scala)]
-@java[[Lightbend Getting Started page](https://developer.lightbend.com/start/?group=akka&project=akka-http-quickstart-java)].
+You may download a packaged version of this project from:
 
-Alternatively, you can bootstrap a new project with Akka HTTP already configured using the [Giter8](http://www.foundweekends.org/giter8/) template directly via sbt:
-
-@@@ div { .group-scala }
-For Scala (sbt)
-:  ```sh
-    sbt new akka/akka-http-quickstart-scala.g8
-    ```
-@@@
-@@@ div { .group-java }
-For Java (Maven or Gradle)
-:  ```sh
-    sbt new akka/akka-http-quickstart-java.g8
-    ```
-From there on the prepared project can be built using Gradle or Maven.
-@@@
-
-More instructions can be found on the @scala[[template
-project](https://github.com/akka/akka-http-quickstart-scala.g8)]@java[[template
-project](https://github.com/akka/akka-http-quickstart-java.g8)].
+* @ref[Akka HTTP Quickstart for Scala](quickstart-scala/index.md)
+* @ref[Akka HTTP Quickstart for Java](quickstart-java/index.md)
 
 ## Routing DSL for HTTP servers
 

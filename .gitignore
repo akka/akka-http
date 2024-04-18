@@ -19,3 +19,6 @@ target
 *.vim
 .ensime*
 .bsp
+
+# attachments created by scripts/prepare-downloads.sh
+docs/src/main/paradox/attachments
