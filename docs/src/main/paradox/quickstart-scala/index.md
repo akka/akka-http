@@ -19,22 +19,17 @@ Having a basic understanding of Akka actors will make it easier to understand th
 If you are new to Akka, we recommend completing the
 @extref[Akka Quickstart](akka-docs:typed/actors.html#first-example) before this tutorial.
 
-You can run the Akka HTTP example project on Linux, MacOS, or Windows. The only prerequisite is Java 17 or later.
+You can run the Akka HTTP example project on Linux, MacOS, or Windows. The only prerequisite is Java 17 or later,
+and a local installation of [sbt](https://www.scala-sbt.org/download).
 
 ## Downloading the example
 
-The Akka HTTP example for Scala is a zipped project that includes a distribution of the [sbt](http://www.scala-sbt.org) build tool. Download and unzip the example as follows:
+The Akka HTTP example for Scala is a zipped project that includes a sbt build file. Download and unzip the example as follows:
 
 1. Download the project [zip file](../attachments/akka-http-quickstart-scala.zip).
 2. Extract the zip file to a convenient location.
 
-* On Linux and MacOS systems, open a terminal and use the command `unzip` akka-quickstart-scala.zip. Note: On OSX, if you unzip using Archiver, you also have to make the sbt files executable by entering the following two commands:
-
-```
-$ chmod u+x ./sbt
-$ chmod u+x ./sbt-dist/bin/sbt
-```
-
+* On Linux and MacOS systems, open a terminal and use the command `unzip` akka-quickstart-scala.zip.
 * On Windows, use a tool such as File Explorer to extract the project.
 
 Alternatively, you can bootstrap a new project with Akka HTTP already configured using the [Giter8](http://www.foundweekends.org/giter8/) template directly via sbt:
@@ -53,7 +48,7 @@ For example, if you used the default project name, `akka-http-quickstart`, and e
 
 Start sbt:
 
-  * On OSX or Linux systems, enter `./sbt`
+  * On OSX or Linux systems, enter `sbt`
   * On Windows systems, enter `sbt.bat`.
 
 When you run sbt, it downloads project dependencies. The `>` prompt indicates that sbt is running in interactive mode.
