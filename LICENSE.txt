@@ -4,7 +4,7 @@ Parameters
 
 Licensor:             Lightbend, Inc.
 Licensed Work:        Akka HTTP 10.6.2
-		              This license applies to all sub directories and files
+                      This license applies to all sub directories and files
                       UNLESS another license file is present in a sub
                       directory, then that other license applies to all files
                       in its directory and sub directories.
