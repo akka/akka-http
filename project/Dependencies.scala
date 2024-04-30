@@ -12,7 +12,7 @@ object Dependencies {
   import DependencyHelpers._
 
   val jacksonDatabindVersion = "2.15.4"
-  val jacksonXmlVersion = "2.15.4"
+  val jacksonXmlVersion = jacksonDatabindVersion
   val junitVersion = "4.13.2"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
