@@ -17,6 +17,7 @@ Key links:
 ### Cutting the release
 
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
+- [ ] If PRs were merged after EU midnight, trigger the [native-image tests](https://github.com/akka/akka-http/actions/workflows/native-image-tests.yml) and see that they are gr
 - [ ] Update the Change date in the LICENSE file.
 - [ ] Update the Akka HTTP version in the samples to $VERSION$, otherwise the published zip files of the samples will have the old version.
 - [ ] For minor or major versions, add a release notes entry in `docs/src/main/paradox/release-notes/`.
