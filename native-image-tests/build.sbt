@@ -1,5 +1,5 @@
-lazy val akkaHttpVersion = sys.props.getOrElse("akka.http.version", "10.6.1")
-lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.9.2")
+lazy val akkaHttpVersion = sys.props.getOrElse("akka.http.version", "10.6.3")
+lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.9.3")
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
