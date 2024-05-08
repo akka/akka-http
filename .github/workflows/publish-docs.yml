@@ -1,49 +1,50 @@
-name: Publish
+name: Publish docs
 
 on:
   push:
-    branches: [ main ]
-    tags: [ v* ]
+    branches:
+      - main
+      # for testing the GH Action without merging to main,
+      # in some cases
+      - test-publish-snapshots
+      - docs/v*
+    tags: ["*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  publish-artifacts:
-    name: Publish artifacts
+  documentation:
+    name: Documentation
     runs-on: ubuntu-22.04
-    if: github.event.repository.fork == false
+    if: github.repository == 'akka/akka-http'
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
         # v4.1.1
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Cache Coursier cache
-        # https://github.com/coursier/cache-action/releases
-        # v6.4.5
-        uses: coursier/cache-action@1ff273bff02a8787bc9f1877d347948af647956d
-
-      - name: Set up JDK 1.11
+      - name: Set up JDK 11
         # https://github.com/coursier/setup-action/releases
         # v1.3.5
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
-          jvm: temurin:1.11.0.17 # align with akka/akka
+          jvm: temurin:1.11
 
-      - name: Install graphviz
-        run: sudo apt-get install -y graphviz
-
-      - name: Publish Artifacts
-        run: |
-          sbt +publishSigned
+      - name: Publish
+        run: |-
+          scripts/prepare-downloads.sh
+          eval "$(ssh-agent -s)"
+          echo $AKKA_RSYNC_GUSTAV | base64 -d > .github/id_rsa
+          chmod 600 .github/id_rsa
+          ssh-add .github/id_rsa
+          sbt -Dakka.genjavadoc.enabled=true publishRsync
         env:
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PUBLISH_USER: ${{ secrets.PUBLISH_USER }}
-          PUBLISH_PASSWORD: ${{ secrets.PUBLISH_PASSWORD }}
+          AKKA_RSYNC_GUSTAV: ${{ secrets.AKKA_RSYNC_GUSTAV }}
 
       - name: Email on failure
         if: ${{ failure() }}
