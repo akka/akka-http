@@ -22,7 +22,7 @@ that the server ConnectionContext SSLEngine was set up with either `setWantClien
 ## Example
 
 Scala
-:  @@snip [TimeoutDirectivesExamplesSpec.scala](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/directives/TlsDirectiveSpec.scala) { #client-cert }
+:  @@snip [TlsDirectiveSpec.scala](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/directives/TlsDirectiveSpec.scala) { #client-cert }
 
 Java
-:  @@snip [TimeoutDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/TlsDirectivesExamplesTest.java) { #client-cert }
+:  @@snip [TlsDirectivesExamplesTest.java](/docs/src/test/java/docs/http/javadsl/server/directives/TlsDirectivesExamplesTest.java) { #client-cert }
