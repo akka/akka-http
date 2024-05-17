@@ -2,7 +2,7 @@ import akka._
 import akka.ValidatePullRequest._
 import AkkaDependency._
 import Dependencies.{h2specExe, h2specName}
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import java.nio.file.Files
 import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
@@ -51,9 +51,7 @@ inThisBuild(Def.settings(
   onLoad in Global := {
     sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion} on Scala ${(httpCore / scalaVersion).value}")
     (onLoad in Global).value
-  },
-
-  scalafixScalaBinaryVersion := scalaBinaryVersion.value,
+  }
 ))
 
 // When this is updated the set of modules in Http.allModules should also be updated
