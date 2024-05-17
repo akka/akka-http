@@ -4,12 +4,13 @@
 
 package akka
 
-import sbt._, Keys._
-import de.heikoseeberger.sbtheader.{ CommentCreator, HeaderPlugin }
+import sbt.*
+import Keys.*
+import de.heikoseeberger.sbtheader.{CommentCreator, HeaderPlugin}
 
 object CopyrightHeader extends AutoPlugin {
   import HeaderPlugin.autoImport._
-  import ValidatePullRequest.{ additionalTasks, ValidatePR }
+  import akka.AkkaHttpValidatePullRequest.additionalTasks
 
   override def requires = HeaderPlugin
   override def trigger = allRequirements
@@ -27,8 +28,7 @@ object CopyrightHeader extends AutoPlugin {
         )
       )
     },
-    ValidatePR / additionalTasks += Compile / headerCheck,
-    ValidatePR / additionalTasks += Test / headerCheck
+    Def.settings(additionalTasks += Compile / headerCheck, additionalTasks += Test / headerCheck),
   )
 
   // We hard-code this so PR's created in year X will not suddenly in X+1.

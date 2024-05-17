@@ -1,5 +1,4 @@
 import akka._
-import akka.ValidatePullRequest._
 import AkkaDependency._
 import Dependencies.{h2specExe, h2specName}
 import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
@@ -81,7 +80,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation, NoScala3)
+  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, NoScala3) // AggregatePRValidation
   .disablePlugins(
     MimaPlugin,
     com.geirsson.CiReleasePlugin) // we use publishSigned, but use a pgp utility from CiReleasePlugin
@@ -274,7 +273,7 @@ lazy val httpTests = project("akka-http-tests")
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
   .settings(headerSettings(MultiJvm))
-  .settings(ValidatePR / additionalTasks += MultiJvm / headerCheck)
+  .settings(AkkaHttpValidatePullRequest.additionalTasks += MultiJvm / headerCheck)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
   .settings(
@@ -513,7 +512,6 @@ lazy val docs = project("docs")
     ),
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
-    ValidatePR / additionalTasks ++= Seq(Compile / paradox),
     ThisBuild / publishRsyncHost := "akkarepo@gustav.akka.io",
     publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("docs").value),
   )
