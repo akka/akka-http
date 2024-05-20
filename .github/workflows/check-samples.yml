@@ -47,7 +47,7 @@ jobs:
       - name: Gather version
         # some cleanup of the sbt output to get the version sbt will use when publishing below
         run: |-
-          sbt --no-colors "print akka-actor/version" | tail -n 1 | tr -d '\n' > ~/.version
+          sbt --no-colors "print akka-http/version" | tail -n 1 | tr -d '\n' > ~/.version
           echo [$(cat ~/.version)]
           # useful for debugging: hexdump -c ~/.version
 
