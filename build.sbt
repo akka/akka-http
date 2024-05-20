@@ -1,9 +1,7 @@
 import akka._
-import akka.ValidatePullRequest._
 import AkkaDependency._
 import Dependencies.{h2specExe, h2specName}
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
 import java.nio.file.Files
 import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
 
@@ -51,9 +49,7 @@ inThisBuild(Def.settings(
   onLoad in Global := {
     sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion} on Scala ${(httpCore / scalaVersion).value}")
     (onLoad in Global).value
-  },
-
-  scalafixScalaBinaryVersion := scalaBinaryVersion.value,
+  }
 ))
 
 // When this is updated the set of modules in Http.allModules should also be updated
@@ -83,7 +79,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation, NoScala3)
+  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, NoScala3)
   .disablePlugins(
     MimaPlugin,
     com.geirsson.CiReleasePlugin) // we use publishSigned, but use a pgp utility from CiReleasePlugin
@@ -276,7 +272,7 @@ lazy val httpTests = project("akka-http-tests")
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
   .settings(headerSettings(MultiJvm))
-  .settings(ValidatePR / additionalTasks += MultiJvm / headerCheck)
+  .settings(AkkaHttpValidatePullRequest.additionalTasks += MultiJvm / headerCheck)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
   .settings(
@@ -515,7 +511,6 @@ lazy val docs = project("docs")
     ),
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
-    ValidatePR / additionalTasks ++= Seq(Compile / paradox),
     ThisBuild / publishRsyncHost := "akkarepo@gustav.akka.io",
     publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("docs").value),
   )
