@@ -4,35 +4,7 @@
 
 package akka
 
-/*
-import java.io._
-
-import akka.MimaWithPrValidation.{MimaResult, NoErrors, Problems}
-import net.virtualvoid.sbt.graph.ModuleGraph
-import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
-import org.kohsuke.github.GHIssueComment
-import org.kohsuke.github.GitHubBuilder
-import sbt.Keys._
-import sbt._
-import sbt.access.Aggregation
-import sbt.access.Aggregation.Complete
-import sbt.access.Aggregation.KeyValue
-import sbt.access.Aggregation.ShowConfig
-import sbt.internal.util.MainAppender
-import sbt.internal.Act
-import sbt.internal.BuildStructure
-import sbt.std.Transform.DummyTaskMap
-import sbt.util.LogExchange
-import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
-
-import scala.collection.JavaConverters._
-import scala.collection.immutable
-import scala.sys.process._
-import scala.util.Try
-import scala.util.matching.Regex
- */
-import com.hpe.sbt.ValidatePullRequest
-import com.hpe.sbt.ValidatePullRequest.PathGlobFilter
+import com.github.sbt.pullrequestvalidator.ValidatePullRequest
 import com.lightbend.paradox.sbt.ParadoxPlugin
 import com.lightbend.paradox.sbt.ParadoxPlugin.autoImport.paradox
 import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
@@ -66,8 +38,8 @@ object AkkaHttpValidatePullRequest extends AutoPlugin {
   }, additionalTasks := Seq.empty)
 
   override lazy val buildSettings = Seq(
-    validatePullRequest / includeFilter := PathGlobFilter("akka-http-*/**"),
-    validatePullRequestBuildAll / excludeFilter := PathGlobFilter("project/MiMa.scala"),
+    validatePullRequest / includeFilter := ValidatePullRequest.PathGlobFilter("akka-http-*/**"),
+    validatePullRequestBuildAll / excludeFilter := ValidatePullRequest.PathGlobFilter("project/MiMa.scala"),
     prValidatorGithubRepository := Some("akka/akka"),
     prValidatorTargetBranch := "origin/main")
 
@@ -90,12 +62,11 @@ object AkkaHttpValidatePullRequest extends AutoPlugin {
  * when a project has MimaPlugin autoplugin enabled.
  */
 object MimaWithPrValidation extends AutoPlugin {
-  import AkkaHttpValidatePullRequest._
-
   override def trigger = allRequirements
   override def requires = AkkaHttpValidatePullRequest && MimaPlugin
   override lazy val projectSettings =
-    CliOptions.mimaEnabled.ifTrue(additionalTasks += mimaReportBinaryIssues).toList
+    AkkaHttpValidatePullRequest.CliOptions.mimaEnabled.ifTrue(
+      AkkaHttpValidatePullRequest.additionalTasks += mimaReportBinaryIssues).toList
 }
 
 /**
@@ -103,16 +74,12 @@ object MimaWithPrValidation extends AutoPlugin {
  * when a project has ParadoxPlugin autoplugin enabled.
  */
 object ParadoxWithPrValidation extends AutoPlugin {
-  import AkkaHttpValidatePullRequest._
-
   override def trigger = allRequirements
   override def requires = AkkaHttpValidatePullRequest && ParadoxPlugin
-  override lazy val projectSettings = Seq(additionalTasks += Compile / paradox)
+  override lazy val projectSettings = Seq(AkkaHttpValidatePullRequest.additionalTasks += Compile / paradox)
 }
 
 object UnidocWithPrValidation extends AutoPlugin {
-  import AkkaHttpValidatePullRequest._
-
   override def trigger = noTrigger
-  override lazy val projectSettings = Seq(additionalTasks += Compile / unidoc)
+  override lazy val projectSettings = Seq(AkkaHttpValidatePullRequest.additionalTasks += Compile / unidoc)
 }

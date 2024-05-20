@@ -2,7 +2,6 @@ import akka._
 import AkkaDependency._
 import Dependencies.{h2specExe, h2specName}
 import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import java.nio.file.Files
 import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
 
@@ -80,7 +79,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, NoScala3) // AggregatePRValidation
+  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, NoScala3)
   .disablePlugins(
     MimaPlugin,
     com.geirsson.CiReleasePlugin) // we use publishSigned, but use a pgp utility from CiReleasePlugin
