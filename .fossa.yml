@@ -10,3 +10,4 @@ paths:
     - akka-http-scalafix
     - akka-http-tests
     - native-image-tests
+    - samples
