@@ -4,7 +4,7 @@ Test cert files created through:
 $ export PW="verysecret"
 
 # create a fake CA
-$ keytool -genkeypair -v \                                         
+$ keytool -genkeypair -v \
     -alias exampleca \
     -dname "CN=exampleCA, OU=Example Org, O=Example Company, L=San Francisco, ST=California, C=US" \
     -keystore exampleca.jks \
@@ -16,7 +16,7 @@ $ keytool -genkeypair -v \
     -ext BasicConstraints:critical="ca:true" \
     -validity 999900
 
-$ keytool -export -v \                                    
+$ keytool -export -v \
     -alias exampleca \
     -file exampleca.crt \
     -keypass:env PW \
@@ -33,15 +33,15 @@ $ keytool -genkeypair -v \
     -storepass:env PW \
     -keyalg RSA \
     -keysize 2048 \
-    -validity 9999
+    -validity 999900
     
 # create a signing request for the server cert (.csr file)
-$ keytool -certreq -v \                                   
+$ keytool -certreq -v \
     -alias example.com \
     -keypass:env PW \
     -storepass:env PW \
     -keystore example.com.jks \
-    -file example.com.csr   
+    -file example.com.csr
 
 # as the CA, sign the server cert, producing `example.com.crt`
 $ keytool -gencert -v \
@@ -123,7 +123,7 @@ $ keytool -genkeypair -v \
     -storepass:env PW \
     -keyalg RSA \
     -keysize 2048 \
-    -validity 9999
+    -validity 999900
 
 # signing request
 $ keytool -certreq -v \
