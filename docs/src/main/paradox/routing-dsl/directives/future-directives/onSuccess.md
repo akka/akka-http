@@ -12,7 +12,7 @@ def onSuccess(hlistFuture: Future[T_0 :: ... T_i ... :: HNil]): Directive[T_0 ::
 
 The signature shown is simplified and written in pseudo-syntax, the real signature uses magnets. <a id="^1" href="#1">[1]</a>.
 
-> <a id="1" href="#^1">[1]</a> See [The Magnet Pattern](http://spray.io/blog/2012-12-13-the-magnet-pattern/) for an explanation of magnet-based overloading.
+> <a id="1" href="#^1">[1]</a> See [The Magnet Pattern](https://spray.readthedocs.io/en/latest/blog/2012-12-13-the-magnet-pattern.html) for an explanation of magnet-based overloading.
 
 @@@
 

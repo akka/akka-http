@@ -18,7 +18,7 @@ def formFields(fields: <FieldDef[T_0]> :: ... <FieldDef[T_i]> ... :: HNil): Dire
 The signature shown is simplified and written in pseudo-syntax, the real signature uses magnets. <a id="^1" href="#1">[1]</a> The type
 `<FieldDef>` doesn't really exist but consists of the syntactic variants as shown in the description and the examples.
 
-> <a id="1" href="#^1">[1]</a> See [The Magnet Pattern](http://spray.io/blog/2012-12-13-the-magnet-pattern/) for an explanation of magnet-based overloading.
+> <a id="1" href="#^1">[1]</a> See [The Magnet Pattern](https://spray.readthedocs.io/en/latest/blog/2012-12-13-the-magnet-pattern.html) for an explanation of magnet-based overloading.
 
 ## Description
 
