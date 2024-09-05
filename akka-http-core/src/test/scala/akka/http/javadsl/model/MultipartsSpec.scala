@@ -10,15 +10,16 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.jdk.FutureConverters._
+
 import org.scalatest.{ BeforeAndAfterAll, Inside }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.ActorSystem
 import akka.stream.SystemMaterializer
 import akka.stream.javadsl.Source
 import akka.testkit._
-
-import scala.compat.java8.FutureConverters
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class MultipartsSpec extends AnyWordSpec with Matchers with Inside with BeforeAndAfterAll {
 
@@ -35,7 +36,7 @@ class MultipartsSpec extends AnyWordSpec with Matchers with Inside with BeforeAn
         Multiparts.createFormDataBodyPart("foo", HttpEntities.create("FOO")),
         Multiparts.createFormDataBodyPart("bar", HttpEntities.create("BAR")))
       val strictCS = streamed.toStrict(1000, materializer)
-      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
+      val strict = Await.result(strictCS.asScala, 1.second.dilated)
 
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
         Map("foo" -> akka.http.scaladsl.model.HttpEntity("FOO"), "bar" -> akka.http.scaladsl.model.HttpEntity("BAR")))
@@ -46,7 +47,7 @@ class MultipartsSpec extends AnyWordSpec with Matchers with Inside with BeforeAn
         Multiparts.createFormDataBodyPart("bar", HttpEntities.create("BAR"))
       )))
       val strictCS = streamed.toStrict(1000, materializer)
-      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
+      val strict = Await.result(strictCS.asScala, 1.second.dilated)
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
         Map("foo" -> akka.http.scaladsl.model.HttpEntity("FOO"), "bar" -> akka.http.scaladsl.model.HttpEntity("BAR")))
     }
@@ -58,7 +59,7 @@ class MultipartsSpec extends AnyWordSpec with Matchers with Inside with BeforeAn
       fields.put("foo", HttpEntities.create("FOO"))
       val streamed = Multiparts.createFormDataFromFields(fields)
       val strictCS = streamed.toStrict(1000, materializer)
-      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
+      val strict = Await.result(strictCS.asScala, 1.second.dilated)
 
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
         Map("foo" -> akka.http.scaladsl.model.HttpEntity("FOO")))

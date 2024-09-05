@@ -8,7 +8,8 @@ import akka.http.scaladsl.model.ContentRange$;
 
 import java.util.Optional;
 import java.util.OptionalLong;
-import scala.compat.java8.OptionConverters;
+
+import scala.jdk.javaapi.OptionConverters;
 
 public abstract class ContentRange {
     public abstract boolean isByteContentRange();
@@ -30,7 +31,7 @@ public abstract class ContentRange {
     }
     @SuppressWarnings("unchecked")
     public static ContentRange create(long first, long last, OptionalLong instanceLength) {
-        return ContentRange$.MODULE$.apply(first, last, OptionConverters.toScala(instanceLength));
+        return ContentRange$.MODULE$.apply(first, last, OptionConverters.toScala(instanceLength).map(length -> (Object)length));
     }
     public static ContentRange createUnsatisfiable(long length) {
         return new akka.http.scaladsl.model.ContentRange.Unsatisfiable(length);

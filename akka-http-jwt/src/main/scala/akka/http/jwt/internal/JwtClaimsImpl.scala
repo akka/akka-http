@@ -7,11 +7,13 @@ package akka.http.jwt.internal
 import akka.annotation.InternalApi
 import akka.http.jwt.scaladsl.server.directives.JwtClaims
 import akka.http.jwt.javadsl.server.directives.{ JwtClaims => JavaJwtClaims }
+
 import spray.json.{ JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue }
 
 import java.util.Optional
-import scala.compat.java8.OptionConverters.RichOptionForJava8
+
 import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.jdk.OptionConverters._
 
 /**
  * INTERNAL API
@@ -44,17 +46,17 @@ private[jwt] final case class JwtClaimsImpl(claims: JsObject) extends JwtClaims 
   override def rawClaim(name: String): Option[JsValue] = claims.fields.get(name)
 
   // JAVA API
-  override def getIntClaim(name: String): Optional[Int] = intClaim(name).asJava
+  override def getIntClaim(name: String): Optional[Int] = intClaim(name).toJava
 
-  override def getLongClaim(name: String): Optional[Long] = longClaim(name).asJava
+  override def getLongClaim(name: String): Optional[Long] = longClaim(name).toJava
 
-  override def getDoubleClaim(name: String): Optional[Double] = doubleClaim(name).asJava
+  override def getDoubleClaim(name: String): Optional[Double] = doubleClaim(name).toJava
 
-  override def getStringClaim(name: String): Optional[String] = stringClaim(name).asJava
+  override def getStringClaim(name: String): Optional[String] = stringClaim(name).toJava
 
   override def getStringClaims(name: String): java.util.List[String] = stringClaims(name).asJava
 
-  override def getBooleanClaim(name: String): Optional[Boolean] = booleanClaim(name).asJava
+  override def getBooleanClaim(name: String): Optional[Boolean] = booleanClaim(name).toJava
 
-  override def getRawClaim(name: String): Optional[String] = rawClaim(name).map(_.toString).asJava
+  override def getRawClaim(name: String): Optional[String] = rawClaim(name).map(_.toString).toJava
 }

@@ -5,9 +5,11 @@
 package akka.http.scaladsl.model
 
 import java.util.{ OptionalLong, Optional }
+
 import akka.http.impl.util.{ Rendering, ValueRenderable }
 import akka.http.javadsl.{ model => jm }
-import scala.compat.java8.OptionConverters._
+
+import scala.jdk.OptionConverters._
 
 sealed trait ContentRange extends jm.ContentRange with ValueRenderable {
   // default implementations to override
@@ -24,7 +26,7 @@ sealed trait ByteContentRange extends ContentRange {
   /** Java API */
   def isByteContentRange: Boolean = true
   /** Java API */
-  def getInstanceLength: OptionalLong = instanceLength.asPrimitive
+  def getInstanceLength: OptionalLong = instanceLength.toJavaPrimitive
 }
 
 // http://tools.ietf.org/html/rfc7233#section-4.2

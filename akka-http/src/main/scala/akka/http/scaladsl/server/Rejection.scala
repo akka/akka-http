@@ -21,7 +21,7 @@ import akka.http.scaladsl.model.headers.{ HttpOrigin => SHttpOrigin }
 import java.util.{ List => JList }
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.compat.java8.OptionConverters
+import scala.jdk.OptionConverters._
 import scala.runtime.AbstractFunction1
 
 /**
@@ -32,7 +32,7 @@ import scala.runtime.AbstractFunction1
 trait Rejection extends akka.http.javadsl.server.Rejection
 
 trait RejectionWithOptionalCause extends Rejection {
-  final def getCause: Optional[Throwable] = OptionConverters.toJava(cause)
+  final def getCause: Optional[Throwable] = cause.toJava
   def cause: Option[Throwable]
 }
 
@@ -348,7 +348,7 @@ final case class CorsRejection(description: String) extends jserver.CorsRejectio
 
 final case class TlsClientUnverifiedRejection(description: String) extends jserver.TlsClientUnverifiedRejection with Rejection
 final case class TlsClientIdentityRejection(description: String, requiredExpression: String, certificateCN: Option[String], certificateSANs: Seq[String]) extends jserver.TlsClientIdentityRejection with Rejection {
-  override def getCertificateCN: Optional[String] = certificateCN.asJava
+  override def getCertificateCN: Optional[String] = certificateCN.toJava
 
   override def getCertificateSANs: JList[String] = certificateSANs.asJava
 }

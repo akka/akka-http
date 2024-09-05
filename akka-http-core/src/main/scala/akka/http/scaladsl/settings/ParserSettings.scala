@@ -18,7 +18,7 @@ import akka.http.scaladsl.{ settings => js }
 import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters
+import scala.jdk.OptionConverters._
 
 /**
  * Public API but not intended for subclassing
@@ -77,14 +77,22 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def getConflictingContentTypeHeaderProcessingMode = this.conflictingContentTypeHeaderProcessingMode
 
   override def getCustomMethods = new Function[String, Optional[akka.http.javadsl.model.HttpMethod]] {
-    override def apply(t: String) = OptionConverters.toJava(self.customMethods(t))
+    override def apply(t: String) = {
+      val method: Option[akka.http.javadsl.model.HttpMethod] = self.customMethods(t)
+      method.toJava
+    }
   }
   override def getCustomStatusCodes = new Function[Int, Optional[akka.http.javadsl.model.StatusCode]] {
-    override def apply(t: Int) = OptionConverters.toJava(self.customStatusCodes(t))
+    override def apply(t: Int) = {
+      val code: Option[akka.http.javadsl.model.StatusCode] = self.customStatusCodes(t)
+      code.toJava
+    }
   }
   override def getCustomMediaTypes = new akka.japi.function.Function2[String, String, Optional[akka.http.javadsl.model.MediaType]] {
-    override def apply(mainType: String, subType: String): Optional[model.MediaType] =
-      OptionConverters.toJava(self.customMediaTypes(mainType, subType))
+    override def apply(mainType: String, subType: String): Optional[model.MediaType] = {
+      val mediaType: Option[akka.http.javadsl.model.MediaType] = self.customMediaTypes(mainType, subType)
+      mediaType.toJava
+    }
   }
   def getModeledHeaderParsing: Boolean = this.modeledHeaderParsing
 

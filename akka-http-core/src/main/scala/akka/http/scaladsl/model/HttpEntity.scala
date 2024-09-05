@@ -4,16 +4,24 @@
 
 package akka.http.scaladsl.model
 
-import java.util.OptionalLong
 import language.implicitConversions
+
 import java.io.File
 import java.nio.file.{ Files, Path }
 import java.lang.{ Iterable => JIterable }
-import scala.util.control.NonFatal
+import java.util.concurrent.CompletionStage
+import java.util.OptionalLong
+
+import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.util.ByteString
+import scala.jdk.OptionConverters._
+import scala.jdk.FutureConverters._
+import scala.util.control.NonFatal
+
+import akka.actor.ClassicActorSystemProvider
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
@@ -22,15 +30,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.{ JavaMapping, StreamUtils }
 import akka.http.impl.util.JavaMapping.Implicits._
-
-import scala.compat.java8.OptionConverters._
-import scala.compat.java8.FutureConverters._
-import java.util.concurrent.CompletionStage
-import akka.actor.ClassicActorSystemProvider
-import akka.annotation.{ DoNotInherit, InternalApi }
-
-import scala.annotation.nowarn
-import scala.compat.java8.FutureConverters
+import akka.util.ByteString
 
 /**
  * Models the entity (aka "body" or "content") of an HTTP message.
@@ -179,7 +179,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
     stream.javadsl.Source.fromGraph(dataBytes.asInstanceOf[Source[ByteString, AnyRef]])
 
   /** Java API */
-  override def getContentLengthOption: OptionalLong = contentLengthOption.asPrimitive
+  override def getContentLengthOption: OptionalLong = contentLengthOption.toJavaPrimitive
 
   // default implementations, should be overridden
   override def isCloseDelimited: Boolean = false
@@ -190,19 +190,19 @@ sealed trait HttpEntity extends jm.HttpEntity {
 
   /** Java API */
   override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
-    toStrict(timeoutMillis.millis)(materializer).toJava
+    toStrict(timeoutMillis.millis)(materializer).asJava
 
   /** Java API */
   override def toStrict(timeoutMillis: Long, maxBytes: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
-    toStrict(timeoutMillis.millis, maxBytes)(materializer).toJava
+    toStrict(timeoutMillis.millis, maxBytes)(materializer).asJava
 
   /** Java API */
   override def toStrict(timeoutMillis: Long, system: ClassicActorSystemProvider): CompletionStage[jm.HttpEntity.Strict] =
-    toStrict(timeoutMillis.millis)(SystemMaterializer(system).materializer).toJava
+    toStrict(timeoutMillis.millis)(SystemMaterializer(system).materializer).asJava
 
   /** Java API */
   override def toStrict(timeoutMillis: Long, maxBytes: Long, system: ClassicActorSystemProvider): CompletionStage[jm.HttpEntity.Strict] =
-    toStrict(timeoutMillis.millis, maxBytes)(SystemMaterializer(system).materializer).toJava
+    toStrict(timeoutMillis.millis, maxBytes)(SystemMaterializer(system).materializer).asJava
 
   /** Java API */
   override def withContentType(contentType: jm.ContentType): HttpEntity = {
@@ -702,7 +702,7 @@ object HttpEntity {
      * This future completes successfully once the underlying entity stream has been
      * successfully drained (and fails otherwise).
      */
-    def completionStage: CompletionStage[Done] = FutureConverters.toJava(f)
+    def completionStage: CompletionStage[Done] = f.asJava
   }
 
   /** Adds Scala DSL idiomatic methods to [[HttpEntity]], e.g. versions of methods with an implicit [[Materializer]]. */

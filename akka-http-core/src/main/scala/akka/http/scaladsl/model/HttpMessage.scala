@@ -12,11 +12,15 @@ import java.nio.file.Path
 import java.lang.{ Iterable => JIterable }
 import java.util.Optional
 import java.util.concurrent.{ CompletionStage, Executor }
-import scala.compat.java8.FutureConverters
+
+import scala.annotation.tailrec
+import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
+import scala.jdk.FutureConverters._
 import scala.reflect.{ ClassTag, classTag }
+
 import akka.Done
 import akka.actor.ClassicActorSystemProvider
 import akka.parboiled2.CharUtils
@@ -26,11 +30,8 @@ import akka.http.impl.util._
 import akka.http.javadsl.model.headers.CustomHeader
 import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.util.FastFuture._
-import headers._
 
-import scala.annotation.tailrec
-import scala.compat.java8.FutureConverters._
-import scala.concurrent.duration._
+import headers._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -239,21 +240,21 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Java API */
   def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
     val ex = ExecutionContext.fromExecutor(ec)
-    toStrict(timeoutMillis.millis)(ex, materializer).toJava
+    toStrict(timeoutMillis.millis)(ex, materializer).asJava
   }
   /** Java API */
   def toStrict(timeoutMillis: Long, maxBytes: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
     val ex = ExecutionContext.fromExecutor(ec)
-    toStrict(timeoutMillis.millis, maxBytes)(ex, materializer).toJava
+    toStrict(timeoutMillis.millis, maxBytes)(ex, materializer).asJava
   }
 
   /** Java API */
   def toStrict(timeoutMillis: Long, system: ClassicActorSystemProvider): CompletionStage[Self] =
-    toStrict(timeoutMillis.millis)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer).toJava
+    toStrict(timeoutMillis.millis)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer).asJava
 
   /** Java API */
   def toStrict(timeoutMillis: Long, maxBytes: Long, system: ClassicActorSystemProvider): CompletionStage[Self] =
-    toStrict(timeoutMillis.millis, maxBytes)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer).toJava
+    toStrict(timeoutMillis.millis, maxBytes)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer).asJava
 }
 
 object HttpMessage {
@@ -279,7 +280,7 @@ object HttpMessage {
      * This future completes successfully once the underlying entity stream has been
      * successfully drained (and fails otherwise).
      */
-    def completionStage: CompletionStage[Done] = FutureConverters.toJava(f)
+    def completionStage: CompletionStage[Done] = f.asJava
   }
   val AlreadyDiscardedEntity = new DiscardedEntity(Future.successful(Done))
 

@@ -22,8 +22,8 @@ import akka.util.ByteString
 import scala.annotation.nowarn
 
 import scala.collection.JavaConverters._
-import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
+import scala.jdk.FutureConverters._
 
 object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
   implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]): Unmarshaller[A, B] =
@@ -41,7 +41,7 @@ object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
    * Creates an unmarshaller from an asynchronous Java function.
    */
   override def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
-    unmarshalling.Unmarshaller[A, B] { ctx => a => f(a).toScala
+    unmarshalling.Unmarshaller[A, B] { ctx => a => f(a).asScala
     }
 
   /**
@@ -123,7 +123,7 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
   /**
    * Apply this Unmarshaller to the given value.
    */
-  def unmarshal(value: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = asScala.apply(value)(ec, mat).toJava
+  def unmarshal(value: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = asScala.apply(value)(ec, mat).asJava
 
   /**
    * Apply this Unmarshaller to the given value. Uses the default materializer [[ExecutionContext]].
@@ -150,7 +150,7 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
   def thenApply[C](f: java.util.function.Function[B, C]): Unmarshaller[A, C] = asScala.map(f.apply)
 
   def flatMap[C](f: java.util.function.Function[B, CompletionStage[C]]): Unmarshaller[A, C] =
-    asScala.flatMap { ctx => mat => b => f.apply(b).toScala }
+    asScala.flatMap { ctx => mat => b => f.apply(b).asScala }
 
   def flatMap[C](u: Unmarshaller[_ >: B, C]): Unmarshaller[A, C] =
     asScala.flatMap { ctx => mat => b => u.asScala.apply(b)(ctx, mat) }

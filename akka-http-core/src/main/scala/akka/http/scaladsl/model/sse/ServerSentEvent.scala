@@ -7,11 +7,13 @@ package scaladsl
 package model
 package sse
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 import akka.http.javadsl.model
 import akka.util.ByteString
-import java.nio.charset.StandardCharsets.UTF_8
+
 import scala.annotation.tailrec
-import scala.compat.java8.OptionConverters.RichOptionForJava8
+import scala.jdk.OptionConverters._
 
 object ServerSentEvent {
 
@@ -125,9 +127,9 @@ final case class ServerSentEvent(
 
   override def getData = data
 
-  override def getEventType = eventType.asJava
+  override def getEventType = eventType.toJava
 
-  override def getId = id.asJava
+  override def getId = id.toJava
 
-  override def getRetry = retry.asPrimitive
+  override def getRetry = retry.toJavaPrimitive
 }

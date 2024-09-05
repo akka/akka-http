@@ -12,7 +12,7 @@ import akka.util.{ ByteString, ByteStringBuilder }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.compat.java8.FutureConverters._
+import scala.jdk.FutureConverters._
 
 //#message-model
 /**
@@ -48,7 +48,7 @@ sealed trait TextMessage extends akka.http.javadsl.model.ws.TextMessage with Mes
   /** Java API */
   override def getStreamedText: javadsl.Source[String, _] = textStream.asJava
   override def asScala: TextMessage = this
-  override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[TextMessage.Strict] = toStrict(timeoutMillis.millis)(materializer).toJava
+  override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[TextMessage.Strict] = toStrict(timeoutMillis.millis)(materializer).asJava
 }
 //#message-model
 object TextMessage {
@@ -106,7 +106,7 @@ sealed trait BinaryMessage extends akka.http.javadsl.model.ws.BinaryMessage with
   /** Java API */
   override def getStreamedData: javadsl.Source[ByteString, _] = dataStream.asJava
   override def asScala: BinaryMessage = this
-  override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[BinaryMessage.Strict] = toStrict(timeoutMillis.millis)(materializer).toJava
+  override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[BinaryMessage.Strict] = toStrict(timeoutMillis.millis)(materializer).asJava
 }
 //#message-model
 object BinaryMessage {

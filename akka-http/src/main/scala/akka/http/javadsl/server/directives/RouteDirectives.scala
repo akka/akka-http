@@ -23,6 +23,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 
 import scala.concurrent.ExecutionContext
+import scala.jdk.FutureConverters._
 
 abstract class RouteDirectives extends RespondWithDirectives {
   import RoutingJavaMapping.Implicits._

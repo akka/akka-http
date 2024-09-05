@@ -13,7 +13,7 @@ import javax.net.ssl._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
   /** INTERNAL API */

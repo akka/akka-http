@@ -6,14 +6,18 @@ package akka.http.javadsl.server.directives
 
 import java.util.concurrent.CompletionStage
 
+import scala.concurrent.Future
+
 import akka.NotUsed
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider }
 import akka.annotation.InternalApi
+import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.server.{ ExceptionHandler, RejectionHandler, Route }
 import akka.http.scaladsl
+import akka.http.scaladsl.model
 import akka.http.scaladsl.server.RouteConcatenation._
 import akka.japi.function.Function
 import akka.stream.{ Materializer, javadsl }
@@ -27,10 +31,11 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
     scalaFlow(system, materializer).asJava
 
   override def handler(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]] = {
-    import scala.compat.java8.FutureConverters.toJava
+
+    import scala.jdk.FutureConverters._
     import akka.http.impl.util.JavaMapping._
     val scalaFunction = scaladsl.server.Route.toFunction(delegate)(system)
-    request => toJava(scalaFunction(request.asScala))
+    request => scalaFunction(request.asScala).map(_.asJava)(system.classicSystem.dispatcher).asJava
   }
 
   private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {

@@ -4,24 +4,24 @@
 
 package akka.http.javadsl.server
 
+import akka.annotation.DoNotInherit
 import akka.http.impl.util.JavaMapping
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server._
 import akka.http.javadsl.model._
 import akka.http.javadsl.model.headers.{ ByteRange, HttpChallenge, HttpEncoding }
-
-import java.util.Optional
-import java.util.function.{ Function => JFunction }
-import java.lang.{ Iterable => JIterable }
-import akka.annotation.DoNotInherit
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.pattern.CircuitBreakerOpenException
 
+import java.lang.{ Iterable => JIterable }
+import java.util.Optional
+import java.util.function.{ Function => JFunction }
 import java.util.{ List => JList }
-import scala.compat.java8.OptionConverters._
+
 import scala.collection.immutable
 import scala.collection.JavaConverters._
+import scala.jdk.OptionConverters._
 
 /**
  * A rejection encapsulates a specific reason why a Route was not able to handle a request. Rejections are gathered
@@ -368,7 +368,7 @@ object Rejections {
   def malformedQueryParam(parameterName: String, errorMsg: String): MalformedQueryParamRejection =
     s.MalformedQueryParamRejection(parameterName, errorMsg)
   def malformedQueryParam(parameterName: String, errorMsg: String, cause: Optional[Throwable]): MalformedQueryParamRejection =
-    s.MalformedQueryParamRejection(parameterName, errorMsg, cause.asScala)
+    s.MalformedQueryParamRejection(parameterName, errorMsg, cause.toScala)
 
   def missingFormField(fieldName: String): MissingFormFieldRejection =
     s.MissingFormFieldRejection(fieldName)
@@ -376,7 +376,7 @@ object Rejections {
   def malformedFormField(fieldName: String, errorMsg: String): MalformedFormFieldRejection =
     s.MalformedFormFieldRejection(fieldName, errorMsg)
   def malformedFormField(fieldName: String, errorMsg: String, cause: Optional[Throwable]): s.MalformedFormFieldRejection =
-    s.MalformedFormFieldRejection(fieldName, errorMsg, cause.asScala)
+    s.MalformedFormFieldRejection(fieldName, errorMsg, cause.toScala)
 
   def missingHeader(headerName: String): MissingHeaderRejection =
     s.MissingHeaderRejection(headerName)
@@ -384,14 +384,14 @@ object Rejections {
   def malformedHeader(headerName: String, errorMsg: String): MalformedHeaderRejection =
     s.MalformedHeaderRejection(headerName, errorMsg)
   def malformedHeader(headerName: String, errorMsg: String, cause: Optional[Throwable]): s.MalformedHeaderRejection =
-    s.MalformedHeaderRejection(headerName, errorMsg, cause.asScala)
+    s.MalformedHeaderRejection(headerName, errorMsg, cause.toScala)
 
   def unsupportedRequestContentType(
     supported:   java.lang.Iterable[MediaType],
     contentType: Optional[ContentType]): UnsupportedRequestContentTypeRejection =
     s.UnsupportedRequestContentTypeRejection(
       supported = supported.asScala.map((m: MediaType) => scaladsl.model.ContentTypeRange(m.asScala)).toSet,
-      contentType = contentType.asScala.map((c: ContentType) => c.asScala))
+      contentType = contentType.toScala.map((c: ContentType) => c.asScala))
 
   // for backwards compatibility
   def unsupportedRequestContentType(supported: java.lang.Iterable[MediaType]): UnsupportedRequestContentTypeRejection =
@@ -442,7 +442,7 @@ object Rejections {
   def validationRejection(message: String) =
     s.ValidationRejection(message)
   def validationRejection(message: String, cause: Optional[Throwable]) =
-    s.ValidationRejection(message, cause.asScala)
+    s.ValidationRejection(message, cause.toScala)
 
   def transformationRejection(f: java.util.function.Function[java.util.List[Rejection], java.util.List[Rejection]]) =
     s.TransformationRejection(rejections => f.apply(rejections.map(_.asJava).asJava).asScala.toVector.map(_.asScala)) // TODO this is maddness

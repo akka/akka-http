@@ -4,10 +4,11 @@
 
 package akka.http.impl.util;
 
-import scala.compat.java8.OptionConverters;
 import scala.None$;
 import scala.collection.immutable.Map$;
 import scala.collection.immutable.Seq;
+import scala.jdk.javaapi.OptionConverters;
+
 import akka.stream.scaladsl.Source;
 import akka.http.ccompat.MapHelpers;
 

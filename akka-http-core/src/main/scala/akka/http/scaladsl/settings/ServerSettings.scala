@@ -21,8 +21,8 @@ import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.compat.java8.OptionConverters
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.jdk.OptionConverters._
 import scala.language.implicitConversions
 
 /**
@@ -70,12 +70,12 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getResponseHeaderSizeHint = this.responseHeaderSizeHint
   override def getVerboseErrorMessages = this.verboseErrorMessages
   override def getSocketOptions = this.socketOptions.asJava
-  override def getServerHeader = OptionConverters.toJava(this.serverHeader.map(_.asJava))
+  override def getServerHeader = this.serverHeader.map(_.asJava).toJava
   override def getTimeouts = this.timeouts
   override def getRawRequestUriHeader = this.rawRequestUriHeader
   override def getRemoteAddressHeader = this.remoteAddressHeader
   override def getRemoteAddressAttribute: Boolean = this.remoteAddressAttribute
-  override def getLogUnencryptedNetworkBytes = OptionConverters.toJava(this.logUnencryptedNetworkBytes)
+  override def getLogUnencryptedNetworkBytes = this.logUnencryptedNetworkBytes.toJava
   @Deprecated @deprecated("Kept for binary compatibility; Use websocketSettings.getRandomFactory instead", since = "10.2.0")
   override def getWebsocketRandomFactory = new Supplier[Random] {
     override def get(): Random = self.websocketRandomFactory()

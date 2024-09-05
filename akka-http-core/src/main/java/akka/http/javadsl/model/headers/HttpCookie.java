@@ -7,7 +7,8 @@ package akka.http.javadsl.model.headers;
 import akka.annotation.DoNotInherit;
 import akka.http.javadsl.model.DateTime;
 import akka.http.impl.util.Util;
-import scala.compat.java8.OptionConverters;
+
+import scala.jdk.javaapi.OptionConverters;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -62,7 +63,7 @@ public abstract class HttpCookie {
         return new akka.http.scaladsl.model.headers.HttpCookie(
                 name, value,
                 Util.<DateTime, akka.http.scaladsl.model.DateTime>convertOptionalToScala(expires),
-                OptionConverters.toScala(maxAge),
+                OptionConverters.toScala(maxAge).map(age -> (Object)age),
                 OptionConverters.toScala(domain),
                 OptionConverters.toScala(path),
                 secure,
@@ -85,7 +86,7 @@ public abstract class HttpCookie {
         return new akka.http.scaladsl.model.headers.HttpCookie(
                 name, value,
                 Util.<DateTime, akka.http.scaladsl.model.DateTime>convertOptionalToScala(expires),
-                OptionConverters.toScala(maxAge),
+                OptionConverters.toScala(maxAge).map(age -> (Object)age),
                 OptionConverters.toScala(domain),
                 OptionConverters.toScala(path),
                 secure,
