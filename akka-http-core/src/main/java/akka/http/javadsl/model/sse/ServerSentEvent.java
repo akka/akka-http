@@ -28,9 +28,9 @@ import scala.Option;
  */
 public abstract class ServerSentEvent {
 
-    private static final Option<String> stringNone = OptionConverters.toScala(Optional.empty());
+    private static final Option<String> stringNone = Option.empty();
 
-    private static final Option<Object> intNone = OptionConverters.toScala(OptionalInt.empty()).map(emptyIntOption -> (Object)emptyIntOption);
+    private static final Option<Object> intNone = Option.empty();
 
 
     /**

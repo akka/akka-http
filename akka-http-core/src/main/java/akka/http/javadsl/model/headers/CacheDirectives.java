@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.model.headers;
 
+import scala.Some;
 import scala.jdk.javaapi.OptionConverters;
 
 import java.util.Optional;
@@ -19,7 +20,7 @@ public final class CacheDirectives {
         return new akka.http.scaladsl.model.headers.CacheDirectives.max$minusstale(OptionConverters.toScala(Optional.empty()));
     }
     public static CacheDirective MAX_STALE(long deltaSeconds) {
-        return new akka.http.scaladsl.model.headers.CacheDirectives.max$minusstale(OptionConverters.toScala(OptionalLong.of(deltaSeconds)).map(delta -> (Object)delta));
+        return new akka.http.scaladsl.model.headers.CacheDirectives.max$minusstale(new Some<>(deltaSeconds));
     }
     public static CacheDirective MIN_FRESH(long deltaSeconds) {
         return new akka.http.scaladsl.model.headers.CacheDirectives.min$minusfresh(deltaSeconds);
