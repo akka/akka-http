@@ -130,8 +130,8 @@ private[akka] object OutgoingConnectionBuilderImpl {
       new JavaAdapter(actual.logTo(logger).asInstanceOf[Impl])
 
     private def javaFlow(flow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]]): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, CompletionStage[javadsl.OutgoingConnection]] = {
-      import scala.compat.java8.FutureConverters.toJava
-      javaFlowKeepMatVal(flow.mapMaterializedValue(f => toJava(f.map(oc => new javadsl.OutgoingConnection(oc))(ExecutionContexts.parasitic))))
+      import scala.jdk.FutureConverters._
+      javaFlowKeepMatVal(flow.mapMaterializedValue(f => f.map(oc => new javadsl.OutgoingConnection(oc))(ExecutionContexts.parasitic).asJava))
     }
 
     private def javaFlowKeepMatVal[M](flow: Flow[HttpRequest, HttpResponse, M]): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, M] =

@@ -9,7 +9,8 @@ import java.net.InetSocketAddress;
 import java.util.Optional;
 
 import akka.http.javadsl.model.headers.HttpEncodingRanges;
-import scala.compat.java8.OptionConverters;
+
+import scala.jdk.javaapi.OptionConverters;
 
 public abstract class RemoteAddress {
     public abstract boolean isUnknown();

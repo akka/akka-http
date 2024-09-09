@@ -39,11 +39,10 @@ import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import scala.concurrent._
+import scala.concurrent.duration._
+import scala.jdk.FutureConverters._
 import scala.util.{ Success, Try }
 import scala.util.control.NonFatal
-import scala.compat.java8.FutureConverters._
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.duration._
 
 /**
  * Akka extension for HTTP which serves as the main entry point into akka-http.
@@ -1064,7 +1063,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
     private[http] def toJava = new akka.http.javadsl.HostConnectionPool {
       override def setup = HostConnectionPool.this.setup
-      def shutdown(): CompletionStage[Done] = HostConnectionPool.this.shutdown().toJava
+      def shutdown(): CompletionStage[Done] = HostConnectionPool.this.shutdown().asJava
     }
 
     override def productArity: Int = 1

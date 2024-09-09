@@ -10,7 +10,7 @@ import akka.http.javadsl.model.AttributeKey
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.directives.{ AttributeDirectives => D }
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 abstract class AttributeDirectives extends HeaderDirectives {
   import akka.http.impl.util.JavaMapping._
@@ -30,7 +30,7 @@ abstract class AttributeDirectives extends HeaderDirectives {
    */
   def optionalAttribute[T](key: AttributeKey[T], inner: jf.Function[Optional[T], Route]) = RouteAdapter {
     D.optionalAttribute(toScala(key)) { value =>
-      inner.apply(value.asJava).delegate
+      inner.apply(value.toJava).delegate
     }
   }
 

@@ -19,8 +19,8 @@ import akka.http.caching.scaladsl.Cache
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.caching.CacheJavaMapping.Implicits._
 
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.FunctionConverters._
+import scala.jdk.FunctionConverters._
+import scala.jdk.FutureConverters._
 
 @ApiMayChange
 object LfuCache {
@@ -91,19 +91,19 @@ object LfuCache {
   }
 
   def toJavaMappingFunction[K, V](genValue: () => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
-    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) => genValue().toJava.toCompletableFuture)
+    ((k: K, e: Executor) => genValue().asJava.toCompletableFuture).asJavaBiFunction
 
   def toJavaMappingFunction[K, V](loadValue: K => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
-    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) => loadValue(k).toJava.toCompletableFuture)
+    ((k: K, e: Executor) => loadValue(k).asJava.toCompletableFuture).asJavaBiFunction
 }
 
 /** INTERNAL API */
 @InternalApi
 private[caching] class LfuCache[K, V](val store: AsyncCache[K, V]) extends Cache[K, V] {
 
-  def get(key: K): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.toScala)
+  def get(key: K): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.asScala)
 
-  def apply(key: K, genValue: () => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
+  def apply(key: K, genValue: () => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).asScala
 
   /**
    * Multiple call to put method for the same key may result in a race condition,
@@ -114,16 +114,16 @@ private[caching] class LfuCache[K, V](val store: AsyncCache[K, V]) extends Cache
 
     previouslyCacheValue match {
       case None =>
-        store.put(key, toJava(mayBeValue).toCompletableFuture)
+        store.put(key, mayBeValue.asJava.toCompletableFuture)
         mayBeValue
       case _ => mayBeValue.map { value =>
-        store.put(key, toJava(Future.successful(value)).toCompletableFuture)
+        store.put(key, Future.successful(value).asJava.toCompletableFuture)
         value
       }
     }
   }
 
-  def getOrLoad(key: K, loadValue: K => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
+  def getOrLoad(key: K, loadValue: K => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](loadValue)).asScala
 
   def remove(key: K): Unit = store.synchronous().invalidate(key)
 

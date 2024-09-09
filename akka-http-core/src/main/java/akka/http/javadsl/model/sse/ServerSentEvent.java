@@ -18,8 +18,9 @@ package akka.http.javadsl.model.sse;
 
 import java.util.Optional;
 import java.util.OptionalInt;
+
+import scala.jdk.javaapi.OptionConverters;
 import scala.Option;
-import static scala.compat.java8.OptionConverters.toScala;
 
 /**
  * Representation of a server-sent event. According to the specification, an empty data field
@@ -27,9 +28,9 @@ import static scala.compat.java8.OptionConverters.toScala;
  */
 public abstract class ServerSentEvent {
 
-    private static final Option<String> stringNone =  toScala(Optional.empty());
+    private static final Option<String> stringNone = Option.empty();
 
-    private static final Option<Object> intNone = toScala(OptionalInt.empty());
+    private static final Option<Object> intNone = Option.empty();
 
 
     /**
@@ -92,7 +93,7 @@ public abstract class ServerSentEvent {
                                          Optional<String> id,
                                          OptionalInt retry) {
         return akka.http.scaladsl.model.sse.ServerSentEvent.apply(
-                data, toScala(type), toScala(id), toScala(retry)
+                data, OptionConverters.toScala(type), OptionConverters.toScala(id), OptionConverters.toScala(retry).map(retryInt -> (Object) retryInt)
         );
     }
 

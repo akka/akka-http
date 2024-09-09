@@ -13,7 +13,8 @@ import akka.japi.Pair
 import akka.stream.{ FlowShape, Graph, javadsl, scaladsl }
 
 import scala.collection.immutable
-import scala.compat.java8.{ FutureConverters, OptionConverters }
+import scala.jdk.FutureConverters._
+import scala.jdk.OptionConverters._
 import scala.reflect.ClassTag
 import akka.NotUsed
 import akka.annotation.InternalApi
@@ -115,8 +116,8 @@ private[http] object JavaMapping {
     }
   implicit def option[_J, _S](implicit mapping: JavaMapping[_J, _S]): JavaMapping[Optional[_J], Option[_S]] =
     new JavaMapping[Optional[_J], Option[_S]] {
-      def toScala(javaObject: Optional[_J]): Option[_S] = OptionConverters.toScala(javaObject).map(mapping.toScala)
-      def toJava(scalaObject: Option[_S]): Optional[_J] = OptionConverters.toJava(scalaObject.map(mapping.toJava))
+      def toScala(javaObject: Optional[_J]): Option[_S] = javaObject.toScala.map(mapping.toScala)
+      def toJava(scalaObject: Option[_S]): Optional[_J] = scalaObject.map(mapping.toJava).toJava
     }
 
   implicit def flowMapping[JIn, SIn, JOut, SOut, JM, SM](implicit inMapping: JavaMapping[JIn, SIn], outMapping: JavaMapping[JOut, SOut], matValueMapping: JavaMapping[JM, SM]): JavaMapping[javadsl.Flow[JIn, JOut, JM], scaladsl.Flow[SIn, SOut, SM]] =
@@ -161,8 +162,8 @@ private[http] object JavaMapping {
 
   implicit def futureMapping[_J, _S](implicit mapping: JavaMapping[_J, _S], ec: ExecutionContext): JavaMapping[CompletionStage[_J], Future[_S]] =
     new JavaMapping[CompletionStage[_J], Future[_S]] {
-      def toJava(scalaObject: Future[_S]): CompletionStage[_J] = FutureConverters.toJava(scalaObject.map(mapping.toJava))
-      def toScala(javaObject: CompletionStage[_J]): Future[_S] = FutureConverters.toScala(javaObject).map(mapping.toScala)
+      def toJava(scalaObject: Future[_S]): CompletionStage[_J] = scalaObject.map(mapping.toJava).asJava
+      def toScala(javaObject: CompletionStage[_J]): Future[_S] = javaObject.asScala.map(mapping.toScala)
     }
 
   implicit object StringIdentity extends Identity[String]

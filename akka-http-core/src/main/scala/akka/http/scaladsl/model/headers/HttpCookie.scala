@@ -4,16 +4,16 @@
 
 package akka.http.scaladsl.model.headers
 
-import akka.http.impl.model.parser.CharacterClasses
-import akka.parboiled2.CharPredicate
 import java.util.{ Optional, OptionalLong }
 
+import akka.http.impl.model.parser.CharacterClasses
 import akka.http.scaladsl.model.DateTime
 import akka.http.impl.util._
 import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.parboiled2.CharPredicate
 
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 /**
  * for a full definition of the http cookie header fields, see
@@ -163,17 +163,17 @@ final class HttpCookie private[http] (
   }
 
   /** Java API */
-  def getSameSite: Optional[jm.headers.SameSite] = sameSite.map(_.asJava).asJava
+  def getSameSite: Optional[jm.headers.SameSite] = sameSite.map(_.asJava).toJava
   /** Java API */
-  def getExtension: Optional[String] = extension.asJava
+  def getExtension: Optional[String] = extension.toJava
   /** Java API */
-  def getPath: Optional[String] = path.asJava
+  def getPath: Optional[String] = path.toJava
   /** Java API */
-  def getDomain: Optional[String] = domain.asJava
+  def getDomain: Optional[String] = domain.toJava
   /** Java API */
-  def getMaxAge: OptionalLong = maxAge.asPrimitive
+  def getMaxAge: OptionalLong = maxAge.toJavaPrimitive
   /** Java API */
-  def getExpires: Optional[jm.DateTime] = expires.map(_.asJava).asJava
+  def getExpires: Optional[jm.DateTime] = expires.map(_.asJava).toJava
 
   def withName(name: String): HttpCookie = copy(name = name)
   def withValue(value: String): HttpCookie = copy(value = value)
@@ -193,7 +193,7 @@ final class HttpCookie private[http] (
   def withSameSite(sameSite: Option[SameSite]) = copy(sameSite = sameSite)
   /** Java API */
   def withSameSite(sameSite: jm.headers.SameSite): HttpCookie = copy(sameSite = Option(sameSite.asScala()))
-  def withSameSite(sameSite: Optional[jm.headers.SameSite]): HttpCookie = copy(sameSite = sameSite.asScala.map(_.asScala()))
+  def withSameSite(sameSite: Optional[jm.headers.SameSite]): HttpCookie = copy(sameSite = sameSite.toScala.map(_.asScala()))
 
   def withExtension(extension: String): HttpCookie = copy(extension = Some(extension))
 }

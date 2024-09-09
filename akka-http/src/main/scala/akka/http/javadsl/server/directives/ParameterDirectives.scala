@@ -14,7 +14,7 @@ import akka.http.scaladsl.server.directives.ParameterDirectives._
 import akka.http.scaladsl.server.directives.{ ParameterDirectives => D }
 
 import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters._
+import scala.jdk.OptionConverters._
 
 abstract class ParameterDirectives extends MiscDirectives {
 
@@ -26,7 +26,7 @@ abstract class ParameterDirectives extends MiscDirectives {
   @CorrespondsTo("parameter")
   def parameterOptional(name: String, inner: java.util.function.Function[Optional[String], Route]): Route = RouteAdapter(
     D.parameter(name.optional) { value =>
-      inner.apply(value.asJava).delegate
+      inner.apply(value.toJava).delegate
     })
 
   @CorrespondsTo("parameter")
@@ -56,7 +56,7 @@ abstract class ParameterDirectives extends MiscDirectives {
     import t.asScala
     RouteAdapter(
       D.parameter(name.as[T].optional) { value =>
-        inner.apply(value.asJava).delegate
+        inner.apply(value.toJava).delegate
       })
   }
 

@@ -4,14 +4,10 @@
 
 package akka.http.javadsl
 
-import java.util.{ Optional, Collection => JCollection }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.scaladsl
-import akka.japi.Util
-import akka.stream.TLSClientAuth
 
 import javax.net.ssl.{ SSLContext, SSLEngine }
-import scala.compat.java8.OptionConverters
 
 object ConnectionContext {
   //#https-server-context-creation
