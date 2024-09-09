@@ -46,7 +46,7 @@ private[http] object Http2CommonSettings {
     if (pingInterval > Duration.Zero && pingTimeout > Duration.Zero) {
       require(
         pingTimeout <= pingInterval && pingInterval.toMillis % pingTimeout.toMillis == 0,
-        s"ping-timeout must be less than and evenly divisible by the ping-interval ($pingInterval)")
+        s"ping-timeout must be less than or equal to and a divisor of the ping-interval ($pingInterval)")
     }
   }
 }
