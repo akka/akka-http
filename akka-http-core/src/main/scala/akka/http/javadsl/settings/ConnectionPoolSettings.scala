@@ -15,7 +15,6 @@ import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.ClientTransport
-import akka.util.JavaDurationConverters._
 
 /**
  * Public API but not intended for subclassing
@@ -27,7 +26,9 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getMaxRetries: Int = maxRetries
   def getMaxOpenRequests: Int = maxOpenRequests
   def getPipeliningLimit: Int = pipeliningLimit
-  def getMaxConnectionLifetime: JDuration = maxConnectionLifetime.asJava
+  def getMaxConnectionLifetime: JDuration =
+    if (maxConnectionLifetime.isFinite) JDuration.ofNanos(maxConnectionLifetime.toNanos)
+    else JDuration.ZERO
   def getBaseConnectionBackoff: FiniteDuration = baseConnectionBackoff
   def getMaxConnectionBackoff: FiniteDuration = maxConnectionBackoff
   def getIdleTimeout: Duration = idleTimeout

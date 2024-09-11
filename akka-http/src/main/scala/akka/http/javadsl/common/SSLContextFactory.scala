@@ -11,13 +11,13 @@ import java.nio.file.Path
 import javax.net.ssl.SSLContext
 import java.util.{ List => JList }
 import akka.http.scaladsl.common.{ SSLContextFactory => ScalaSSLContextFactory }
-import akka.util.JavaDurationConverters.JavaDurationOps
 import com.typesafe.config.Config
 
 import java.security.SecureRandom
 import java.time.Duration
 import java.util.Optional
 import javax.net.ssl.SSLEngine
+import scala.jdk.DurationConverters._
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 
@@ -107,7 +107,7 @@ object SSLContextFactory {
    */
   @ApiMayChange
   def refreshingSSLEngineProvider(refreshAfter: Duration)(construct: akka.japi.function.Creator[SSLContext]): akka.japi.function.Creator[SSLEngine] =
-    () => ScalaSSLContextFactory.refreshingSSLEngineProvider(refreshAfter.asScala)(construct.create _)()
+    () => ScalaSSLContextFactory.refreshingSSLEngineProvider(refreshAfter.toScala)(construct.create _)()
 
   /**
    * Keeps a created SSLContext around for a `refreshAfter` period, sharing it among connections, then creates a new
@@ -122,5 +122,5 @@ object SSLContextFactory {
    */
   @ApiMayChange
   def refreshingSSLContextProvider(refreshAfter: Duration)(construct: akka.japi.function.Creator[SSLContext]): akka.japi.function.Creator[SSLContext] =
-    () => ScalaSSLContextFactory.refreshingSSLContextProvider(refreshAfter.asScala)(construct.create _)()
+    () => ScalaSSLContextFactory.refreshingSSLContextProvider(refreshAfter.toScala)(construct.create _)()
 }
