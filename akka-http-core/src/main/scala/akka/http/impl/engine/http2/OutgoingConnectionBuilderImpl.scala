@@ -8,7 +8,6 @@ import java.util.concurrent.CompletionStage
 import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.client.PersistentConnection
 import akka.http.scaladsl.Http.OutgoingConnection
@@ -24,6 +23,7 @@ import akka.http.scaladsl.HttpsConnectionContext
 import akka.http.scaladsl.OutgoingConnectionBuilder
 import akka.stream.javadsl.{ Flow => JFlow }
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 /**
@@ -131,7 +131,7 @@ private[akka] object OutgoingConnectionBuilderImpl {
 
     private def javaFlow(flow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]]): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, CompletionStage[javadsl.OutgoingConnection]] = {
       import scala.jdk.FutureConverters._
-      javaFlowKeepMatVal(flow.mapMaterializedValue(f => f.map(oc => new javadsl.OutgoingConnection(oc))(ExecutionContexts.parasitic).asJava))
+      javaFlowKeepMatVal(flow.mapMaterializedValue(f => f.map(oc => new javadsl.OutgoingConnection(oc))(ExecutionContext.parasitic).asJava))
     }
 
     private def javaFlowKeepMatVal[M](flow: Flow[HttpRequest, HttpResponse, M]): JFlow[javadsl.model.HttpRequest, javadsl.model.HttpResponse, M] =

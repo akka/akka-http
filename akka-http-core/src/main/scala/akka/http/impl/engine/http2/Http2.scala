@@ -6,7 +6,6 @@ package akka.http.impl.engine.http2
 
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.server.{ GracefulTerminatorStage, MasterServerTerminator, ServerTerminator, UpgradeToOtherProtocolResponseHeader }
@@ -27,9 +26,9 @@ import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
 import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
 import akka.Done
-
 import javax.net.ssl.SSLEngine
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
@@ -103,7 +102,7 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
                 // See https://github.com/akka/akka/issues/17992
                 case NonFatal(ex) =>
                   Done
-              }(ExecutionContexts.parasitic)
+              }(ExecutionContext.parasitic)
           } catch {
             case NonFatal(e) =>
               log.error(e, "Could not materialize handling flow for {}", incoming)
@@ -121,7 +120,7 @@ private[http] final class Http2Ext(implicit val system: ActorSystem)
     try {
       handler(request).recover {
         case NonFatal(ex) => handleHandlerError(log, ex)
-      }(ExecutionContexts.parasitic)
+      }(ExecutionContext.parasitic)
     } catch {
       case NonFatal(ex) => Future.successful(handleHandlerError(log, ex))
     }

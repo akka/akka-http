@@ -7,11 +7,11 @@ package akka.http.impl.engine.client
 import akka.Done
 import akka.actor.{ Actor, ActorLogging, ActorRef, DeadLetterSuppression, Deploy, ExtendedActorSystem, NoSerializationVerificationNeeded, Props }
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.http.impl.engine.client.PoolInterface.ShutdownReason
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.Materializer
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.{ Future, Promise }
 import scala.util.Failure
 import scala.util.Success
@@ -170,7 +170,7 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
           // to this actor by the pool actor, they will be retried once the shutdown
           // has completed.
           val completed = pool.shutdown()(context.dispatcher)
-          shutdownCompletedPromise.tryCompleteWith(completed.map(_ => Done)(ExecutionContexts.parasitic))
+          shutdownCompletedPromise.tryCompleteWith(completed.map(_ => Done)(ExecutionContext.parasitic))
           statusById += poolId -> PoolInterfaceShuttingDown(shutdownCompletedPromise)
         case Some(PoolInterfaceShuttingDown(formerPromise)) =>
           // Pool is already shutting down, mirror the existing promise.

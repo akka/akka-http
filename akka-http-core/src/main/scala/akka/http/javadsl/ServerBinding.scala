@@ -9,10 +9,10 @@ import java.util.concurrent.{ CompletionStage, TimeUnit }
 
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.DoNotInherit
-import akka.dispatch.ExecutionContexts
 import akka.Done
 
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 import scala.jdk.FutureConverters._
 import scala.jdk.DurationConverters._
 
@@ -78,7 +78,7 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
 
   def terminate(hardDeadline: java.time.Duration): CompletionStage[HttpTerminated] = {
     delegate.terminate(FiniteDuration.apply(hardDeadline.toMillis, TimeUnit.MILLISECONDS))
-      .map(_.asInstanceOf[HttpTerminated])(ExecutionContexts.parasitic)
+      .map(_.asInstanceOf[HttpTerminated])(ExecutionContext.parasitic)
       .asJava
   }
 
@@ -92,7 +92,7 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    */
   def whenTerminationSignalIssued: CompletionStage[java.time.Duration] =
     delegate.whenTerminationSignalIssued
-      .map(deadline => deadline.time.toJava)(ExecutionContexts.parasitic)
+      .map(deadline => deadline.time.toJava)(ExecutionContext.parasitic)
       .asJava
 
   /**
@@ -109,7 +109,7 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    */
   def whenTerminated: CompletionStage[HttpTerminated] =
     delegate.whenTerminated
-      .map(_.asInstanceOf[HttpTerminated])(ExecutionContexts.parasitic)
+      .map(_.asInstanceOf[HttpTerminated])(ExecutionContext.parasitic)
       .asJava
 
   /**

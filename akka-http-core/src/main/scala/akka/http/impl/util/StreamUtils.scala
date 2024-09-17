@@ -7,7 +7,6 @@ package akka.http.impl.util
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter
@@ -72,7 +71,7 @@ private[http] object StreamUtils {
           materializationPromise.trySuccess(())
           killResult.future.value match {
             case Some(res) => handleKill(res)
-            case None      => killResult.future.onComplete(killCallback.invoke)(ExecutionContexts.parasitic)
+            case None      => killResult.future.onComplete(killCallback.invoke)(ExecutionContext.parasitic)
           }
         }
 

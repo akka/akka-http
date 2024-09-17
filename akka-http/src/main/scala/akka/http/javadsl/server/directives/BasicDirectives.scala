@@ -35,11 +35,11 @@ import java.lang.{ Iterable => JIterable }
 import java.util.concurrent.CompletionStage
 import java.util.function.Predicate
 
-import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.javadsl.server
 
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 import scala.jdk.FutureConverters._
 
 abstract class BasicDirectives {
@@ -84,17 +84,17 @@ abstract class BasicDirectives {
 
   def mapRouteResultFuture(f: JFunction[CompletionStage[RouteResult], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
     D.mapRouteResultFuture(stage =>
-      f(stage.fast.map(_.asJava)(ExecutionContexts.parasitic).asJava).asScala.fast.map(_.asScala)(ExecutionContexts.parasitic)) {
+      f(stage.fast.map(_.asJava)(ExecutionContext.parasitic).asJava).asScala.fast.map(_.asScala)(ExecutionContext.parasitic)) {
       inner.get.delegate
     }
   }
 
   def mapRouteResultWith(f: JFunction[RouteResult, CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResultWith(r => f(r.asJava).asScala.fast.map(_.asScala)(ExecutionContexts.parasitic)) { inner.get.delegate }
+    D.mapRouteResultWith(r => f(r.asJava).asScala.fast.map(_.asScala)(ExecutionContext.parasitic)) { inner.get.delegate }
   }
 
   def mapRouteResultWithPF(f: PartialFunction[RouteResult, CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResultWith(r => f(r.asJava).asScala.fast.map(_.asScala)(ExecutionContexts.parasitic)) { inner.get.delegate }
+    D.mapRouteResultWith(r => f(r.asJava).asScala.fast.map(_.asScala)(ExecutionContext.parasitic)) { inner.get.delegate }
   }
 
   /**
@@ -148,7 +148,7 @@ abstract class BasicDirectives {
   }
 
   def recoverRejectionsWith(f: JFunction[JIterable[Rejection], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.recoverRejectionsWith(rs => f.apply(Util.javaArrayList(rs.map(_.asJava))).asScala.fast.map(_.asScala)(ExecutionContexts.parasitic)) { inner.get.delegate }
+    D.recoverRejectionsWith(rs => f.apply(Util.javaArrayList(rs.map(_.asJava))).asScala.fast.map(_.asScala)(ExecutionContext.parasitic)) { inner.get.delegate }
   }
 
   /**

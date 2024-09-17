@@ -6,8 +6,9 @@ package akka.http.impl.engine
 
 import java.util.concurrent.CountDownLatch
 
+import scala.concurrent.ExecutionContext
+
 import akka.actor.ActorSystem
-import akka.dispatch.ExecutionContexts
 import akka.http.CommonBenchmark
 import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
 import akka.stream.scaladsl.Source
@@ -28,7 +29,7 @@ class HttpEntityBenchmark extends CommonBenchmark {
     val latch = new CountDownLatch(1)
     entity.discardBytes()
       .future
-      .onComplete(_ => latch.countDown())(ExecutionContexts.parasitic)
+      .onComplete(_ => latch.countDown())(ExecutionContext.parasitic)
     latch.await()
   }
 
