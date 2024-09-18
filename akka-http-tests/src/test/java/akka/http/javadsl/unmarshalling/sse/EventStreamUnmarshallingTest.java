@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
-import static scala.compat.java8.FutureConverters.toJava;
+import static scala.jdk.javaapi.FutureConverters.asJava;
 
 public class EventStreamUnmarshallingTest extends JUnitSuite {
 
@@ -52,7 +52,7 @@ public class EventStreamUnmarshallingTest extends JUnitSuite {
 
             Assert.assertEquals(events, unmarshalledEvents);
         } finally {
-            toJava(system.terminate()).toCompletableFuture().get(42, TimeUnit.SECONDS);
+            asJava(system.terminate()).toCompletableFuture().get(42, TimeUnit.SECONDS);
         }
     }
 }
