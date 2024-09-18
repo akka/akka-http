@@ -5,7 +5,6 @@
 package akka.http.javadsl.server.directives
 
 import java.util.concurrent.{ CompletionException, CompletionStage }
-import akka.dispatch.ExecutionContexts
 import akka.http.javadsl.marshalling.Marshaller
 
 import scala.annotation.varargs
@@ -29,7 +28,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   import RoutingJavaMapping.Implicits._
 
   // Don't try this at home – we only use it here for the java -> scala conversions
-  private implicit val conversionExecutionContext: ExecutionContext = ExecutionContexts.parasitic
+  private implicit val conversionExecutionContext: ExecutionContext = ExecutionContext.parasitic
 
   /**
    * Java-specific call added so you can chain together multiple alternate routes using comma,

@@ -6,7 +6,6 @@
 package akka.http
 
 import akka.actor.ActorSystem
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpOrigin
 import akka.http.scaladsl.model.headers.Origin
@@ -123,5 +122,5 @@ class CorsBenchmark extends Directives {
   }
 
   private def responseBody(response: Future[HttpResponse]): String =
-    Await.result(response.flatMap(_.entity.toStrict(3.seconds)).map(_.data.utf8String)(ExecutionContexts.parasitic), 3.seconds)
+    Await.result(response.flatMap(_.entity.toStrict(3.seconds)).map(_.data.utf8String)(ExecutionContext.parasitic), 3.seconds)
 }

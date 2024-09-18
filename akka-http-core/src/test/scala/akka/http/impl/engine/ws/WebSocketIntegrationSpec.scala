@@ -25,6 +25,7 @@ import akka.util.ByteString
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit._
 
+import scala.concurrent.ExecutionContext
 import scala.util.{ Failure, Success }
 
 class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
@@ -86,7 +87,7 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
               override def onPull(): Unit = pull(shape.in)
 
               override def preStart(): Unit = {
-                promise.future.foreach(_ => getAsyncCallback[Done](_ => complete(shape.out)).invoke(Done))(akka.dispatch.ExecutionContexts.parasitic)
+                promise.future.foreach(_ => getAsyncCallback[Done](_ => complete(shape.out)).invoke(Done))(ExecutionContext.parasitic)
               }
 
               setHandlers(shape.in, shape.out, this)

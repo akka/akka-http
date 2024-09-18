@@ -6,7 +6,6 @@ package akka.http.impl.engine.http2.client
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCodes }
 import akka.http.scaladsl.settings.Http2ClientSettings
@@ -17,9 +16,11 @@ import akka.stream.{ Attributes, FlowShape, Inlet, Outlet, StreamTcpException }
 import akka.util.PrettyDuration
 
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.DurationLong
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
 
@@ -103,7 +104,7 @@ private[http2] object PersistentConnection {
             onConnected.invoke(())
           case Failure(cause) =>
             onFailed.invoke(cause)
-        })(ExecutionContexts.parasitic)
+        })(ExecutionContext.parasitic)
 
         var requestOutPulled = false
         requestOut.setHandler(new OutHandler {

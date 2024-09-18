@@ -7,7 +7,6 @@ package akka.http.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ClassicActorSystemProvider
-import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model.{ HttpRequest, HttpResponse }
@@ -185,6 +184,6 @@ object ServerBuilder {
     def connectionSource(): Source[IncomingConnection, CompletionStage[ServerBinding]] =
       http.bindImpl(interface, port, context.asScala, settings.asScala, log)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContexts.parasitic).asJava).asJava
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContext.parasitic).asJava).asJava
   }
 }

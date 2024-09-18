@@ -10,7 +10,6 @@ import java.util
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.client.PoolFlow.{ RequestContext, ResponseContext }
 import akka.http.impl.engine.client.pool.SlotState._
@@ -23,6 +22,7 @@ import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
 
+import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -450,7 +450,7 @@ private[client] object NewHostConnectionPool {
                   entityComplete.onComplete(safely {
                     case Success(_)     => withSlot(_.onRequestEntityCompleted())
                     case Failure(cause) => withSlot(_.onRequestEntityFailed(cause))
-                  })(ExecutionContexts.parasitic)
+                  })(ExecutionContext.parasitic)
                   request.withEntity(newEntity)
               }
 
@@ -504,9 +504,9 @@ private[client] object NewHostConnectionPool {
                       ongoingResponseEntity = None
                       ongoingResponseEntityKillSwitch = None
                     }
-                  }(ExecutionContexts.parasitic)
+                  }(ExecutionContext.parasitic)
                 case Failure(_) => throw new IllegalStateException("Should never fail")
-              })(ExecutionContexts.parasitic)
+              })(ExecutionContext.parasitic)
 
               withSlot(_.onResponseReceived(response.withEntity(newEntity)))
             }
@@ -588,7 +588,7 @@ private[client] object NewHostConnectionPool {
                 onConnectionAttemptFailed(currentEmbargoLevel)
                 sl.onConnectionAttemptFailed(cause)
               }
-          })(ExecutionContexts.parasitic)
+          })(ExecutionContext.parasitic)
 
           slotCon
         }

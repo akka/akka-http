@@ -12,7 +12,6 @@ import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.japi.Function
 import akka.event.LoggingAdapter
 import akka.http.ParsingErrorHandler
@@ -35,6 +34,7 @@ import akka.http.scaladsl.model._
 import akka.http.impl.util.LogByteStringTools._
 
 import scala.annotation.nowarn
+import scala.concurrent.ExecutionContext
 import scala.util.Failure
 
 /**
@@ -460,7 +460,7 @@ private[http] object HttpServerBluePrint {
                 case Failure(ex) =>
                   log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
                 case _ => // ignore
-              }(ExecutionContexts.parasitic)
+              }(ExecutionContext.parasitic)
               newEntity
             }
 

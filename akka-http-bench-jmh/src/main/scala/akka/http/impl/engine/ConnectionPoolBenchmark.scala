@@ -8,7 +8,6 @@ import java.net.InetSocketAddress
 import java.util.concurrent.CountDownLatch
 
 import akka.actor.ActorSystem
-import akka.dispatch.ExecutionContexts
 import akka.http.CommonBenchmark
 import akka.http.impl.util.enhanceString_
 import akka.http.scaladsl.model.HttpRequest
@@ -47,7 +46,7 @@ class ConnectionPoolBenchmark extends CommonBenchmark {
         .onComplete {
           case Success(_) => latch.countDown()
           case Failure(_) => throw new IllegalStateException
-        }(ExecutionContexts.parasitic)
+        }(ExecutionContext.parasitic)
     }
 
     latch.await()

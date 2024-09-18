@@ -4,8 +4,9 @@
 
 package akka.http.scaladsl.server.directives
 
+import scala.concurrent.ExecutionContext
+
 import akka.Done
-import akka.dispatch.ExecutionContexts
 import akka.http.javadsl
 import akka.http.scaladsl.model.ContentType
 import akka.http.scaladsl.model.Multipart
@@ -54,7 +55,7 @@ trait FileUploadDirectives {
           val uploadedF: Future[(FileInfo, File)] =
             bytes
               .runWith(FileIO.toPath(dest.toPath))
-              .map(_ => (fileInfo, dest))(ExecutionContexts.parasitic)
+              .map(_ => (fileInfo, dest))(ExecutionContext.parasitic)
               .recoverWith {
                 case ex =>
                   dest.delete()
@@ -90,7 +91,7 @@ trait FileUploadDirectives {
             val dest = destFn(fileInfo)
 
             part.entity.dataBytes.runWith(FileIO.toPath(dest.toPath))
-              .map(_ => (fileInfo, dest))(ExecutionContexts.parasitic)
+              .map(_ => (fileInfo, dest))(ExecutionContext.parasitic)
           }
 
         val uploadedF = uploaded.runWith(Sink.seq[(FileInfo, File)])
