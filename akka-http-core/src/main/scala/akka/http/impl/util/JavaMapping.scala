@@ -110,7 +110,7 @@ private[http] object JavaMapping {
     }
   implicit def map[K, V]: JavaMapping[ju.Map[K, V], immutable.Map[K, V]] =
     new JavaMapping[ju.Map[K, V], immutable.Map[K, V]] {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       def toScala(javaObject: ju.Map[K, V]): immutable.Map[K, V] = javaObject.asScala.toMap
       def toJava(scalaObject: immutable.Map[K, V]): ju.Map[K, V] = scalaObject.asJava
     }

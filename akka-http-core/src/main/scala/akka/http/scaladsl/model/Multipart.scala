@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 import scala.util.{ Failure, Success, Try }
 

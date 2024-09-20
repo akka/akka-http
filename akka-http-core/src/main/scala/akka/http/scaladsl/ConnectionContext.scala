@@ -4,16 +4,8 @@
 
 package akka.http.scaladsl
 
-import java.util.{ Optional, Collection => JCollection }
-
 import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.stream.TLSClientAuth
-import akka.stream.TLSProtocol._
 import javax.net.ssl._
-
-import scala.collection.JavaConverters._
-import scala.collection.immutable
-import scala.jdk.OptionConverters._
 
 trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
   /** INTERNAL API */

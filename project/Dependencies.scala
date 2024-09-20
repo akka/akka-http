@@ -11,7 +11,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonDatabindVersion = "2.15.4"
+  val jacksonDatabindVersion = "2.17.2"
   val jacksonXmlVersion = jacksonDatabindVersion
   val junitVersion = "4.13.2"
   val h2specVersion = "1.5.0"
@@ -56,7 +56,7 @@ object Dependencies {
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.9.3"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.10.0-M1"
 
     val scalafix    = "ch.epfl.scala"                 %% "scalafix-core"               % Dependencies.scalafixVersion // grab from plugin
 

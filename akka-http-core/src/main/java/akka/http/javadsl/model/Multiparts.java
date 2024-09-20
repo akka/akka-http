@@ -145,6 +145,6 @@ public final class Multiparts {
     }
 
     private static scala.collection.Iterable<HttpHeader> toScalaSeq(java.util.List<HttpHeader> _headers) {
-        return scala.collection.JavaConverters.collectionAsScalaIterableConverter(_headers).asScala();
+        return scala.jdk.javaapi.CollectionConverters.asScala(_headers);
     }
 }

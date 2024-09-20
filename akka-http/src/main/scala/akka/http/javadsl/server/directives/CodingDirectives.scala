@@ -7,7 +7,7 @@ package directives
 
 import java.util.function.Supplier
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.coding.Coder
 import akka.http.javadsl.model.headers.HttpEncoding

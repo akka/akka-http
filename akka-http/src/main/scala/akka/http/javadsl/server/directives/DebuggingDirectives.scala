@@ -15,7 +15,7 @@ import akka.http.scaladsl
 import akka.http.scaladsl.server.directives.LoggingMagnet
 import akka.http.scaladsl.server.{ RouteResult, Directives => D }
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 abstract class DebuggingDirectives extends CookieDirectives {
   import akka.http.impl.util.JavaMapping.Implicits._

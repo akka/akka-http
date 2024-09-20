@@ -11,7 +11,7 @@ import java.util.function.Predicate
 import java.util.function.Supplier
 import java.util.regex.Pattern
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import akka.http.javadsl.common.RegexConverters.toScala
 import akka.http.scaladsl.server.{ Directives => D }

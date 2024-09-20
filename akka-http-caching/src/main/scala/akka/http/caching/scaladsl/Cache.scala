@@ -10,9 +10,9 @@ import java.util.concurrent.{ CompletableFuture, CompletionStage }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.japi.{ Creator, Procedure }
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
 /**

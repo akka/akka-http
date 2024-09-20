@@ -1,5 +1,5 @@
 lazy val akkaHttpVersion = sys.props.getOrElse("akka.http.version", "10.6.3")
-lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.9.3")
+lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.10.0-M1")
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
@@ -27,7 +27,7 @@ lazy val root = (project in file("."))
       "com.typesafe.akka" %% "akka-http-caching"        % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-actor-typed"         % akkaVersion,
       "com.typesafe.akka" %% "akka-stream"              % akkaVersion,
-      "ch.qos.logback"    % "logback-classic"           % "1.2.13",
+      "ch.qos.logback"    % "logback-classic"           % "1.5.7",
 
       "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion     % Test,

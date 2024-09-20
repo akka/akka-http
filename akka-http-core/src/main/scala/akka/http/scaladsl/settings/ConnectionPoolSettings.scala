@@ -87,7 +87,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {
 
   override def apply(config: Config): ConnectionPoolSettingsImpl = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     val hostOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.map { cfg =>
       ConnectionPoolSettingsImpl.hostRegex(cfg.getString("host-pattern")) ->

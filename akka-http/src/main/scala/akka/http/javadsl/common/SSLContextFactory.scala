@@ -17,8 +17,8 @@ import java.security.SecureRandom
 import java.time.Duration
 import java.util.Optional
 import javax.net.ssl.SSLEngine
-import scala.jdk.DurationConverters._
 import scala.jdk.CollectionConverters._
+import scala.jdk.DurationConverters._
 import scala.jdk.OptionConverters.RichOptional
 
 object SSLContextFactory {

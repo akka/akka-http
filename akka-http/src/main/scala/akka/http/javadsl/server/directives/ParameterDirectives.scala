@@ -13,7 +13,7 @@ import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.server.directives.ParameterDirectives._
 import akka.http.scaladsl.server.directives.{ ParameterDirectives => D }
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters._
 
 abstract class ParameterDirectives extends MiscDirectives {

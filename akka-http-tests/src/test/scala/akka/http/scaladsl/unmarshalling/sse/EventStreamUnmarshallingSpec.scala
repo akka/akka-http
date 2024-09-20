@@ -15,10 +15,10 @@ import akka.http.scaladsl.settings.ServerSentEventSettings
 import akka.stream.scaladsl.{ Sink, Source }
 
 import java.util.{ List => JList }
-import scala.collection.JavaConverters
-import scala.collection.immutable.Seq
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+
+import scala.jdk.CollectionConverters._
 
 object EventStreamUnmarshallingSpec {
 
@@ -27,7 +27,6 @@ object EventStreamUnmarshallingSpec {
 
   // Also used by EventStreamUnmarshallingTest.java
   val eventsAsJava: JList[javadsl.model.sse.ServerSentEvent] = {
-    import JavaConverters._
     events.map(_.asInstanceOf[javadsl.model.sse.ServerSentEvent]).asJava
   }
 

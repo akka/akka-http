@@ -10,8 +10,8 @@ import java.util.function
 
 import akka.http.javadsl.model.HttpResponse
 
+import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
 
 object RejectionHandler {
   /**

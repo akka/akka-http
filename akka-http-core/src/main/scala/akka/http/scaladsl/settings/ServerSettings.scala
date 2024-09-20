@@ -19,9 +19,9 @@ import akka.http.scaladsl.model.headers.{ Host, Server }
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters._
 import scala.language.implicitConversions
 

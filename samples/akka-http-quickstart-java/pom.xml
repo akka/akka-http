@@ -7,7 +7,7 @@
     <version>1.0</version>
 
     <properties>
-        <akka.version>2.9.3</akka.version>
+        <akka.version>2.10.0-M1</akka.version>
         <akka-http.version>10.6.3</akka-http.version>
         <scala.binary.version>2.13</scala.binary.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.13</version>
+            <version>1.5.7</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>

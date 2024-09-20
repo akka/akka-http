@@ -21,8 +21,8 @@ import akka.http.javadsl.server.{ Rejection, RoutingJavaMapping }
 import RoutingJavaMapping._
 import akka.http.javadsl.model._
 
-import scala.collection.JavaConverters._
 import scala.annotation.varargs
+import scala.jdk.CollectionConverters._
 
 /**
  * A wrapper for route results.

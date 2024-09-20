@@ -55,7 +55,7 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket with WebSocketUpgrade 
     subprotocol: Option[String]                   = None): HttpResponse =
     handleMessages(scaladsl.Flow.fromSinkAndSource(inSink, outSource), subprotocol)
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   /**
    * Java API

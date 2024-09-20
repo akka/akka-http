@@ -19,8 +19,8 @@ import akka.http.javadsl.model.headers.{ HttpOrigin => JHttpOrigin }
 import akka.http.scaladsl.model.headers.{ HttpOrigin => SHttpOrigin }
 
 import java.util.{ List => JList }
-import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters._
 import scala.runtime.AbstractFunction1
 

@@ -15,7 +15,7 @@ import akka.annotation.DoNotInherit
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.annotation.varargs
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import akka.http.javadsl.model.{ HttpMethod, MediaType, StatusCode, Uri }
 import scala.annotation.nowarn
 import com.typesafe.config.Config

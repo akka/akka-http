@@ -9,7 +9,7 @@ import java.io.File
 import akka.http.javadsl.marshalling.Marshaller
 
 import scala.annotation.varargs
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.server.{ Route, RoutingJavaMapping }

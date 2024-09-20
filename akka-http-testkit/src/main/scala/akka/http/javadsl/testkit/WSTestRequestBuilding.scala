@@ -12,8 +12,9 @@ import akka.stream.javadsl.Flow
 import akka.http.scaladsl.{ testkit => st }
 
 import akka.http.impl.util.JavaMapping.Implicits._
-import scala.collection.JavaConverters._
 import akka.stream.{ Materializer, scaladsl }
+
+import scala.jdk.CollectionConverters._
 
 trait WSTestRequestBuilding {
 

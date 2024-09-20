@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.server
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class RejectionSpec extends RoutingSpec {
 

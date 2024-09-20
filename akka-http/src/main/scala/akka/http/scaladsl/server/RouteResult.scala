@@ -12,9 +12,9 @@ import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.stream.{ ActorMaterializerHelper, Materializer }
 import akka.stream.scaladsl.Flow
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
+import scala.jdk.CollectionConverters._
 
 /**
  * The result of handling a request.

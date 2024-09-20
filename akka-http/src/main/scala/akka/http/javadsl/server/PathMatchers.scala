@@ -9,7 +9,7 @@ import java.util.regex.Pattern
 
 import akka.http.scaladsl.model.Uri.Path
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import akka.http.scaladsl.server.{ PathMatcher => SPathMatcher }
 import akka.http.scaladsl.server.{ PathMatchers => SPathMatchers }

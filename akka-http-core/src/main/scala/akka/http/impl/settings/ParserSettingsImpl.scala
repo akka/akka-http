@@ -9,7 +9,7 @@ import akka.http.scaladsl.settings.ParserSettings.{ ConflictingContentTypeHeader
 import akka.util.ConstantFun
 import com.typesafe.config.Config
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import akka.http.scaladsl.settings.ParserSettings
