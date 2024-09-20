@@ -109,7 +109,7 @@ Java
 You can use @apidoc[ClientTransport.withCustomResolver](ClientTransport) to customize host name resolution. The given resolution function will be called for every connection attempt to resolve
 a hostname / port combination (potentially asynchronously) to an `InetSocketAddress`.
 
-As a backend to implement the resolution function you can use Akka's [Async DNS Resolution](https://doc.akka.io/docs/akka/current/io-dns.html#dns-extension).
+As a backend to implement the resolution function you can use Akka's [Async DNS Resolution](https://doc.akka.io/libraries/akka-core/current/io-dns.html#dns-extension).
 
 Potential use cases:
 

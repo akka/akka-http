@@ -2,7 +2,7 @@
   "index_name": "akka_http_docs",
   "start_urls": [
     {
-      "url": "https://doc.akka.io/docs/akka-http/current/",
+      "url": "https://doc.akka.io/libraries/akka-http/current/",
       "extra_attributes": {
         "language": [
           "scala",

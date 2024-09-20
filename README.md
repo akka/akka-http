@@ -21,15 +21,15 @@ Documentation
 -------------
 
 The documentation is available at
-[doc.akka.io](https://doc.akka.io/docs/akka-http/current/), for
-[Scala](https://doc.akka.io/docs/akka-http/current/scala/http/) and
-[Java](https://doc.akka.io/docs/akka-http/current/java/http/).
+[doc.akka.io](https://doc.akka.io/libraries/akka-http/current/), for
+[Scala](https://doc.akka.io/libraries/akka-http/current/scala/http/) and
+[Java](https://doc.akka.io/libraries/akka-http/current/java/http/).
 
 
 Current versions of all Akka libraries
 --------------------------------------
 
-The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/docs/akka-dependencies/current/) page. Releases of the Akka HTTP libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka-http/releases) page.
+The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka HTTP libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka-http/releases) page.
 
 
 Community

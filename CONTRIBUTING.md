@@ -130,7 +130,7 @@ This allows simple and fast iterations on changes that would need to be introduc
 
 ## Binary compatibility
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
-](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html) section of the documentation.
+](https://doc.akka.io/libraries/akka-core/current/common/binary-compatibility-rules.html) section of the documentation.
 
 Akka-http uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/lightbend/migration-manager)) to
 validate binary compatibility of incoming Pull Requests. If your PR fails due to binary compatibility issues, you may see 
@@ -150,7 +150,7 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 - if it is touching any class marked as `private[akka]`, `/** INTERNAL API*/` or similar markers
 - if it is concerning internal classes (often recognizable by package names like `dungeon`, `impl`, `internal` etc.)
 - if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users
-- if it is touching any class marked with the `@InternalApi`, `@DoNotInherit`, and `@ApiMayChange`. See [API stability annotations and comments](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#api-stability-annotations-and-comments)
+- if it is touching any class marked with the `@InternalApi`, `@DoNotInherit`, and `@ApiMayChange`. See [API stability annotations and comments](https://doc.akka.io/libraries/akka-core/current/common/binary-compatibility-rules.html#api-stability-annotations-and-comments)
 - other tricky situations
 
 If it turns out that the change can be safely ignored, please add the filter to a file with the issue number in the filename, placed in the submodule's `src/main/mima-filters/<last-released-version>.backwards.excludes` directory.

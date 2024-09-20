@@ -94,7 +94,7 @@ private[http] object PoolInterface {
     private[this] val PoolOverflowException = new BufferOverflowException( // stack trace cannot be prevented here because `BufferOverflowException` is final
       s"Exceeded configured max-open-requests value of [${poolId.hcps.setup.settings.maxOpenRequests}]. This means that the request queue of this pool (${poolId.hcps}) " +
         s"has completely filled up because the pool currently does not process requests fast enough to handle the incoming request load. " +
-        "Please retry the request later. See https://doc.akka.io/docs/akka-http/current/scala/http/client-side/pool-overflow.html for " +
+        "Please retry the request later. See https://doc.akka.io/libraries/akka-http/current/scala/http/client-side/pool-overflow.html for " +
         "more information.")
 
     val hcps = poolId.hcps
