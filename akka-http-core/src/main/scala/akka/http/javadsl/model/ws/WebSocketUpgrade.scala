@@ -14,7 +14,7 @@ import akka.stream.{ FlowShape, Graph, SinkShape, SourceShape }
  * create a WebSocket handshake response and handle the WebSocket message stream with the given handler.
  *
  * This is a low-level API. You might want to use `handleWebSocketMessages` instead as documented
- * at https://doc.akka.io/docs/akka-http/current/server-side/websocket-support.html#routing-support
+ * at https://doc.akka.io/libraries/akka-http/current/server-side/websocket-support.html#routing-support
  */
 trait WebSocketUpgrade {
   /**

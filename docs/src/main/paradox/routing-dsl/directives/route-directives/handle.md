@@ -14,7 +14,7 @@ Creates a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.htt
 that handles the request using a function or `PartialFunction` from @apidoc[HttpRequest] to a @scala[`Future`]@java[`CompletionStage`] of @apidoc[HttpResponse].
 
 This directive can be used to include external components request processing components defined as a `Function` or `PartialFunction`
-(like [those provided by akka-grpc](https://doc.akka.io/docs/akka-grpc/current/server/walkthrough.html#serving-multiple-services))
+(like [those provided by akka-grpc](https://doc.akka.io/libraries/akka-grpc/current/server/walkthrough.html#serving-multiple-services))
 into a routing tree defined by directives and routes.
 
 For the `PartialFunction` variant, the given list of rejections will be used to reject the request with if the `PartialFunction` is not defined for a request. By default,

@@ -485,12 +485,12 @@ lazy val docs = project("docs")
       "quickstart-scala/index.html"),
     Compile / paradoxProperties ++= Map(
       "project.name" -> "Akka HTTP",
-      "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
+      "canonical.base_url" -> "https://doc.akka.io/libraries/akka-http/current",
       "akka.version" -> AkkaDependency.docs.version,
       "akka.minimum.version" -> AkkaDependency.minimumExpectedAkkaVersion,
       "jackson.xml.version" -> Dependencies.jacksonXmlVersion,
       "scalafix.version" -> _root_.scalafix.sbt.BuildInfo.scalafixVersion, // grab from scalafix plugin directly
-      "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.docs.link}/%s",
+      "extref.akka-docs.base_url" -> s"https://doc.akka.io/libraries/akka-core/${AkkaDependency.docs.link}/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"https://doc.akka.io/japi/akka-http/$v"
