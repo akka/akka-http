@@ -39,7 +39,7 @@ object AkkaDependency {
     }
   }
 
-  // Default version updated only when needed, https://doc.akka.io//docs/akka/current/project/downstream-upgrade-strategy.html
+  // Default version updated only when needed, https://doc.akka.io/libraries/akka-core/current/project/downstream-upgrade-strategy.html
   val minimumExpectedAkkaVersion = "2.9.3"
   val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
   val docs = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
@@ -87,7 +87,7 @@ object AkkaDependency {
     import scala.concurrent.Await
     import scala.concurrent.duration._
 
-    val versionFile = "https://doc.akka.io/docs/akka/snapshot/paradox.json"
+    val versionFile = "https://doc.akka.io/libraries/akka-core/snapshot/paradox.json"
     val body = Await.result(http.run(url(versionFile)), 10.seconds).bodyAsString
     val versionProperty = """"version" : """"
     val i = body.indexOf(versionProperty)
