@@ -16,8 +16,8 @@ import akka.io.Inet.SocketOption
 import akka.http.impl.util.JavaMapping.Implicits._
 import com.typesafe.config.Config
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters._
 
 /**

@@ -11,7 +11,7 @@ import java.util.function.{ Function => JFunction }
 
 import akka.http.javadsl.unmarshalling.Unmarshaller
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import akka.http.javadsl.server.Route

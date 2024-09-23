@@ -49,7 +49,7 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * this is a WebSocket request. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
   def extractOfferedWsProtocols(inner: JFunction[JList[String], Route]): Route = RouteAdapter {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     D.extractOfferedWsProtocols { (list: Seq[String]) =>
       inner.apply(list.asJava).delegate
     }

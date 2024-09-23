@@ -10,7 +10,7 @@ import java.util.function.BooleanSupplier
 import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import akka.http.javadsl.model.RemoteAddress
 import akka.http.javadsl.model.headers.Language

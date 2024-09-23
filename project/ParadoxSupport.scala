@@ -13,8 +13,8 @@ import com.lightbend.paradox.sbt.ParadoxPlugin.autoImport._
 import org.pegdown.Printer
 import org.pegdown.ast.{DirectiveNode, HtmlBlockNode, VerbatimNode, Visitor}
 
-import scala.collection.JavaConverters._
 import scala.io.{Codec, Source}
+import scala.jdk.CollectionConverters._
 
 object ParadoxSupport {
   val paradoxWithCustomDirectives = Seq(

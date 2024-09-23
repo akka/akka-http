@@ -10,9 +10,9 @@ import java.util.function.BiFunction
 import akka.actor.ActorSystem
 import akka.annotation.{ ApiMayChange, InternalApi }
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.jdk.CollectionConverters._
 import com.github.benmanes.caffeine.cache.{ AsyncCache, Caffeine }
 import akka.http.caching.LfuCache.toJavaMappingFunction
 import akka.http.caching.scaladsl.Cache

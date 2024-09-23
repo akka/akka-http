@@ -55,7 +55,7 @@ public abstract class Util {
 
     @SuppressWarnings("unchecked")
     public static <T, U extends T> Seq<U> convertIterable(Iterable<T> els) {
-        return scala.collection.JavaConverters.iterableAsScalaIterableConverter((Iterable<U>)els).asScala().toVector();
+        return scala.jdk.javaapi.CollectionConverters.asScala((Iterable<U>)els).toVector();
     }
     public static <T, U extends T> Seq<U> convertArray(T[] els) {
         return Util.<T, U>convertIterable(Arrays.asList(els));

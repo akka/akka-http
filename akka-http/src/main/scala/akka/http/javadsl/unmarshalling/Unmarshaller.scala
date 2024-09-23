@@ -21,8 +21,8 @@ import akka.stream.{ Materializer, SystemMaterializer }
 import akka.util.ByteString
 import scala.annotation.nowarn
 
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
+import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
 object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {

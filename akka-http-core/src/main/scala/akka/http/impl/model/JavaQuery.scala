@@ -17,7 +17,7 @@ import akka.http.scaladsl.{ model => sm }
 import akka.japi.Pair
 import akka.parboiled2.CharPredicate
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 
 /** INTERNAL API */

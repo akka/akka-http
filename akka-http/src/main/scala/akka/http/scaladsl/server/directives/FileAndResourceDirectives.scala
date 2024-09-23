@@ -20,7 +20,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.http.javadsl
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import JavaMapping.Implicits._
 import akka.http.javadsl.server.RoutingJavaMapping
 

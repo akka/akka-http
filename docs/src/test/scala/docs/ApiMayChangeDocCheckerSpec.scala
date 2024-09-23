@@ -20,7 +20,7 @@ import scala.annotation.nowarn
 
 @nowarn("msg=deprecated") // JavaConverters deprecated
 class ApiMayChangeDocCheckerSpec extends AnyWordSpec with Matchers {
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   def prettifyName(clazz: Class[_]): String = {
     clazz.getCanonicalName.replaceAll("\\$minus", "-").split("\\$")(0)
