@@ -82,7 +82,7 @@ object Dependencies {
       val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.3"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
-      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-16" % (scalaTestVersion + ".0") % "test"
+      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-18" % (scalaTestVersion + ".0") % "test"
       val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
       // HTTP/2
