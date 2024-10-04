@@ -512,7 +512,7 @@ lazy val docs = project("docs")
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     ThisBuild / publishRsyncHost := "akkarepo@gustav.akka.io",
-    publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("docs").value),
+    publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("libraries").value),
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
