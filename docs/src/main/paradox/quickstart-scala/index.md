@@ -31,7 +31,7 @@ The Akka HTTP example for Scala is a zipped project that includes a sbt build fi
 * On Linux and MacOS systems, open a terminal and use the command `unzip` akka-quickstart-scala.zip.
 * On Windows, use a tool such as File Explorer to extract the project.
 
-Alternatively, you can bootstrap a new project with Akka HTTP already configured using the [Giter8](http://www.foundweekends.org/giter8/) template directly via sbt:
+Alternatively, you can bootstrap a new project with Akka HTTP already configured using the [Giter8](https://www.foundweekends.org/giter8/) template directly via sbt:
 
 ```sh
 sbt new akka/akka-http-quickstart-scala.g8

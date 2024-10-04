@@ -31,7 +31,7 @@ To use Akka HTTP TestKit, add the module to your project:
 @@@ div { .group-scala }
 
 Here is an example of what a simple test with the routing testkit might look like using the built-in support for
-[scalatest](http://www.scalatest.org) and [specs2](http://etorreborre.github.io/specs2/):
+[scalatest](https://www.scalatest.org) and [specs2](https://etorreborre.github.io/specs2/):
 
 ScalaTest
 :  @@snip [FullTestKitExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
