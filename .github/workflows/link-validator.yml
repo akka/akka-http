@@ -36,7 +36,7 @@ jobs:
           apps: cs
 
       - name: sbt site
-        run: sbt docs/makeSite
+        run: sbt docs/paradox
 
       - name: Run Link Validator
         run: cs launch net.runne::site-link-validator:0.2.5 -- scripts/link-validator.conf
