@@ -35,7 +35,7 @@ inThisBuild(Def.settings(
     val tagOrBranch =
       if (isSnapshot.value) "main"
       else "v" + version.value
-    Seq(("BUSL-1.1", url(s"https://raw.githubusercontent.com/akka/akka-http/${tagOrBranch}/LICENSE")))
+    Seq(("BUSL-1.1", url(s"https://github.com/akka/akka-http/blob/${tagOrBranch}/LICENSE.txt")))
   },
   description := "Akka Http: Modern, fast, asynchronous, streaming-first HTTP server and client.",
   testOptions ++= Seq(
@@ -512,7 +512,7 @@ lazy val docs = project("docs")
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     ThisBuild / publishRsyncHost := "akkarepo@gustav.akka.io",
-    publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("docs").value),
+    publishRsyncArtifacts := List((Compile / paradox).value -> gustavDir("libraries").value),
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
 

@@ -89,7 +89,7 @@ agent has been dropped in 10.2.0. HTTP/2 support therefore now requires to be ru
 
 The Scalatest dependency for akka-http-testkit was upgraded to version 3.1.0. This version is incompatible with previous
 versions. This is relevant for user code if it uses methods from @scaladoc[ScalatestUtils](akka.http.scaladsl.testkit.ScalatestUtils)
-(which are in scope if your test extends from @scaladoc[ScalaTestRouteTest](akka.http.scaladsl.testkit.ScalaTestRouteTest)).
+(which are in scope if your test extends from @scaladoc[ScalatestRouteTest](akka.http.scaladsl.testkit.ScalatestRouteTest)).
 In this case, the project itself needs to be updated to use Scalatest >= 3.1.0.
 
 ### Providing route settings, exception and rejection handling
@@ -222,7 +222,7 @@ server connections you should create a @apidoc[HttpsConnectionContext] with
 the relevant configuration.
 
 Previously, the SSL configuration was constructed based on the parameters
-you pass to @apidoc[HttpsConnectionContext$] and the logic and configuration
+you pass to @apidoc[HttpsConnectionContext] and the logic and configuration
 used by the [ssl-config](https://lightbend.github.io/ssl-config/) library. This was
 because back then the default JDK SSL configuration was a bad match for HTTP
 connections. Nowadays, however, the JDK defaults are much better and the

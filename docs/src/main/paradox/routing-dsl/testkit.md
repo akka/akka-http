@@ -31,7 +31,7 @@ To use Akka HTTP TestKit, add the module to your project:
 @@@ div { .group-scala }
 
 Here is an example of what a simple test with the routing testkit might look like using the built-in support for
-[scalatest](http://www.scalatest.org) and [specs2](http://etorreborre.github.io/specs2/):
+[scalatest](https://www.scalatest.org) and [specs2](https://etorreborre.github.io/specs2/):
 
 ScalaTest
 :  @@snip [FullTestKitExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
@@ -58,7 +58,7 @@ route structure defined in your service.
 The final element of the `~>` chain is a `check` call, which takes a block of assertions as parameter. In this block
 you define your requirements onto the result produced by your route after having processed the given request. Typically
 you use one of the defined "inspectors" to retrieve a particular element of the routes response and express assertions
-against it using the test DSL provided by your test framework. For example, with [scalatest](http://www.scalatest.org), in order to verify that
+against it using the test DSL provided by your test framework. For example, with [scalatest](https://www.scalatest.org), in order to verify that
 your route responds to the request with a status 200 response, you'd use the `status` inspector and express an
 assertion like this:
 
