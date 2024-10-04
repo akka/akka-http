@@ -1,0 +1,3 @@
+# changed type hierarchy but should not affect users
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.javadsl.model.headers.TlsSessionInfo")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.model.headers.Tls$minusSession$minusInfo")

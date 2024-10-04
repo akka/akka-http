@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model.headers;
 
+import akka.http.scaladsl.model.HttpHeader;
+
 import javax.net.ssl.SSLSession;
 
 /**
@@ -13,7 +15,7 @@ import javax.net.ssl.SSLSession;
  * This header will only be added if it enabled in the configuration by setting
  * <code>akka.http.[client|server].parsing.tls-session-info-header = on</code>.
  */
-public abstract class TlsSessionInfo extends CustomHeader {
+public abstract class TlsSessionInfo extends HttpHeader {
     /**
      * @return the SSLSession this message was received over.
      */
