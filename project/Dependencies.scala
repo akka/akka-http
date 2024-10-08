@@ -26,7 +26,7 @@ object Dependencies {
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
   val scala213Version = "2.13.14"
-  val scala3Version = "3.3.3"
+  val scala3Version = "3.3.4"
   val allScalaVersions = Seq(scala213Version, scala3Version)
 
   val Versions = Seq(
