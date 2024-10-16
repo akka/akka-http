@@ -10,6 +10,7 @@ import scalafix.v1._
 import scala.meta._
 import scala.util.Try
 
+@deprecated(since = "10.7.0")
 class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
 
   override def fix(implicit doc: SemanticDocument): Patch = {

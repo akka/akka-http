@@ -1,3 +1,5 @@
+Deprecated since 10.7.0
+
 The setup of the scalafix module roughly follows the example in https://github.com/scalacenter/scalafix.g8.
 
 ## Adding new rules
