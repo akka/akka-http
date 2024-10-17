@@ -8,7 +8,7 @@
 
     <properties>
         <akka.version>2.10.0</akka.version>
-        <akka-http.version>10.6.3</akka-http.version>
+        <akka-http.version>10.7.0</akka-http.version>
         <scala.binary.version>2.13</scala.binary.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
