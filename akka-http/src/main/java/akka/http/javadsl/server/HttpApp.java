@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server;
@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * DEPRECATED, consider https://developer.lightbend.com/guides/akka-http-quickstart-java/ instead
+ * DEPRECATED, consider https://doc.akka.io/docs/akka-http/current/quickstart-java/ instead
  *
  * Bootstrap trait for Http Server. It helps booting up an akka-http server by only defining the desired routes.
  * It offers additional hooks to modify the default behavior.

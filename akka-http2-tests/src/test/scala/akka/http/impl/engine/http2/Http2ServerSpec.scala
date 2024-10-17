@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -1693,7 +1693,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       override def settings: ServerSettings = super.settings.withHttp2Settings(super.settings.http2Settings.withMaxResets(100).withMaxResetsInterval(2.seconds))
 
-      // covers CVE-2023-44487 with a rapid sequence of RSTs
+      // covers CVE-2024-44487 with a rapid sequence of RSTs
       override def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] = Flow[HttpRequest].buffer(1000, OverflowStrategy.backpressure).mapAsync(300) { req =>
         // never actually reached since rst is in headers
         req.entity.discardBytes()
