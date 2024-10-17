@@ -5,7 +5,7 @@ The source code is Akka HTTP is hosted at https://github.com/akka/akka-http.
 
 This software is licensed under the Business Source License 1.1, see LICENSE.txt
 
-Copyright 2009-2022 Lightbend Inc. [https://www.lightbend.com]
+Copyright 2009-2024 Lightbend Inc. [https://www.lightbend.com]
 
 Also, please refer to each `licenses/LICENSE.<component>.txt` file for the license
 terms of the components that this product depends on.

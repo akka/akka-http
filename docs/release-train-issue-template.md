@@ -73,7 +73,7 @@ For minor or major releases:
 
 - [ ] Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key *of all current compatible branches*.
 - [ ] Update [akka-dependencies bom](https://github.com/lightbend/akka-dependencies) and version for [Akka module versions](https://doc.akka.io/libraries/akka-dependencies/current/) in [akka-dependencies repo](https://github.com/akka/akka-dependencies)
-- [ ] Update [Akka Guide samples](https://github.com/akka/akka-platform-guide)
+- [ ] Update [Akka Guide samples](https://github.com/lightbend/akka-guide)
 - [ ] Update sbt new (g8) template:
   - [ ] [Akka HTTP Scala](https://github.com/akka/akka-http-quickstart-scala.g8/blob/main/src/main/g8/default.properties)
 
