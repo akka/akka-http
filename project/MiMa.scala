@@ -55,9 +55,13 @@ object MiMa extends AutoPlugin {
     "10.6.3"
   )
 
+  val `10.7-versions` = Set(
+    "10.7.0"
+  )
+
   val pre3Versions = `10.2-versions` ++ `10.4-versions`
 
-  val post3Versions = `10.6-versions`
+  val post3Versions = `10.6-versions` ++ `10.7-versions`
 
   lazy val latestVersion = pre3Versions.max(versionOrdering)
   lazy val latest102Version = `10.2-versions`.max(versionOrdering)
