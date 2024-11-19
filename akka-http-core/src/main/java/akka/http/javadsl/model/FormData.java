@@ -19,6 +19,10 @@ public final class FormData {
     this.fields = fields;
   }
 
+  public Query getFields() {
+    return fields;
+  }
+
   /**
    * Converts this FormData to a RequestEntity using UTF8 encoding.
    */
