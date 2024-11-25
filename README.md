@@ -1,6 +1,6 @@
 Akka HTTP
 =========
-The Akka family of projects is managed by teams at [Lightbend](https://lightbend.com/) with help from the community.
+The Akka family of projects is managed by teams at [Akka (formerly Lightbend)](https://akka.io/) with help from the community.
 
 The Akka HTTP modules implement a full server- and client-side HTTP stack on top
 of akka-actor and akka-stream. It's not a web-framework but rather a more
@@ -21,9 +21,7 @@ Documentation
 -------------
 
 The documentation is available at
-[doc.akka.io](https://doc.akka.io/libraries/akka-http/current/), for
-[Scala](https://doc.akka.io/libraries/akka-http/current/scala/http/) and
-[Java](https://doc.akka.io/libraries/akka-http/current/java/http/).
+[doc.akka.io](https://doc.akka.io/libraries/akka-http/current/).
 
 
 Current versions of all Akka libraries
@@ -41,11 +39,10 @@ You can join these groups and chats to discuss and ask Akka related questions:
 - Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues] (Please use the issue
   tracker for bugs and reasonable feature requests. Please ask usage questions on the other channels.)
 
-All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](https://www.lightbend.com/conduct).
+All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](https://akka.io/conduct).
 
 In addition to that, you may enjoy following:
 
-- The [news](https://akka.io/blog/news-archive.html) section of the page, which is updated whenever a new version is released
 - The [Akka Team Blog](https://akka.io/blog)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
 
@@ -67,13 +64,13 @@ and general hints on how to prepare your pull request. You can also ask for clar
 Maintenance
 -----------
 
-This project is maintained by Lightbend's core Akka Team as well as the extended Akka HTTP Team, consisting of excellent and experienced developers who have shown their dedication and knowledge about HTTP and the codebase. This team may grow dynamically, and it is possible to propose new members to it.
+This project is maintained by the core Akka Team as well as the extended Akka HTTP Team, consisting of excellent and experienced developers who have shown their dedication and knowledge about HTTP and the codebase. This team may grow dynamically, and it is possible to propose new members to it.
 
 Joining the extended team in such form gives you, in addition to street-cred, of course committer rights to this repository as well as higher impact onto the roadmap of the project. Come and join us!
 
 License
 -------
 
-Akka is licensed under the Business Source License 1.1, please see the [Akka License FAQ](https://www.lightbend.com/akka/license-faq).
+Akka is licensed under the Business Source License 1.1, please see the [Akka License FAQ](https://akka.io/bsl-license-faq).
 
 Tests and documentation are under a separate license, see the LICENSE file in each documentation and test root directory for details.
