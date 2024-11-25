@@ -175,7 +175,7 @@ by failing requests with a @apidoc[BufferOverflowException] when the internal bu
 exist or too many requests have been issued to the pool.
 
 To mimic the request-level API we can put an explicit queue in front of the pool and decide ourselves what to do when
-this explicit queue overflows. This example shows how to do this. (Thanks go to [kazuhiro's blog for the initial idea](https://kazuhiro.github.io/scala/akka/akka-http/akka-streams/2016/01/31/connection-pooling-with-akka-http-and-source-queue.html).)
+this explicit queue overflows. This example shows how to do this.
 
 You can tweak the `QueueSize` setting according to your memory constraints. In any case, you need to think about a strategy
 about what to do when requests fail because the queue overflowed (e.g. try again later or just fail).
