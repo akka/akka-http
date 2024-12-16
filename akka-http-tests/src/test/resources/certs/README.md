@@ -3,6 +3,8 @@ Test cert files created through:
 ```shell
 $ export PW="verysecret"
 
+# delete the existing jks:es
+$ rm *.jks
 # create a fake CA
 $ keytool -genkeypair -v \
     -alias exampleca \
@@ -195,10 +197,12 @@ $ openssl pkcs12 \
 # drop that intermediate p12 keystore (we may need that later, but for now)
 $ rm client1.p12
 
-# create a client cert that we trust with different CN and SAN (mostly using openssl this time)
-$ openssl genrsa -aes256 -passout pass:"" -out client2.key 4096
+# create a client cert that we trust with different CN and SAN (mostly using openssl this time)    
+$ openssl genrsa -passout pass:"" -out client2.key 4096
 $ openssl req -new -key client2.key -out client2.csr -passin pass:"" \
+    -days 999900 \
     -subj "/C=SE/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=client2/"
+
 $ keytool -gencert -v \
     -alias exampleca \
     -keypass:env PW \
@@ -216,7 +220,7 @@ $ openssl genrsa -aes256 -passout pass:xxxx -out untrustedca.pass.key 4096
 $ openssl rsa -passin pass:xxxx -in untrustedca.pass.key -out untrustedca.key
 $ rm untrustedca.pass.key
 $ openssl req -new -x509 -days 999900 -key untrustedca.key -out untrustedca.pem -subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=CommonNameOrHostname"
-$ openssl genrsa -aes256 -passout pass:"" -out untrusted-client1.key 4096
+$ openssl genrsa -passout pass:"" -out untrusted-client1.key 4096
 # signing request, use the same san and CN as the trusted cert
 $ openssl req -new -key untrusted-client1.key -out untrusted-client1.csr -passin pass:"" \
     -subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=client1/" \
