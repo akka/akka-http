@@ -6,11 +6,11 @@ package akka.http.impl.model.parser
 
 import scala.collection.immutable
 import scala.collection.immutable.TreeMap
-
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.parboiled2._
 import akka.parboiled2.support.hlist._
+import akka.util.ConstantFun
 
 private[parser] trait CommonRules { this: Parser with StringBuilding =>
   protected def maxCommentParsingDepth: Int
@@ -465,7 +465,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
     token ~> { s =>
       HttpMethods.getForKey(s) match {
         case Some(m) => m
-        case None    => HttpMethod.custom(s)
+        case None    => HttpMethod(s, isSafe = false, isIdempotent = false, requestEntityAcceptance = RequestEntityAcceptance.Expected, ConstantFun.anyToTrue)
       }
     }
   }
