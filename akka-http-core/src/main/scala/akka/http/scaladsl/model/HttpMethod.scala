@@ -48,13 +48,21 @@ object HttpMethod {
   // the allowsEntity condition was used to determine what responses provided the Content-Length header, before #4213 was fixed
   private def oldContentLengthCondition(status: StatusCode) = status.allowsEntity
 
+  // See:
+  //  https://www.rfc-editor.org/rfc/rfc9112.html#name-method
+  //  https://www.rfc-editor.org/rfc/rfc9110.html#name-tokens
+  private val httpMethodNameRegex = "[a-zA-Z0-9!#$%&'*+.^_`|~-]+".r
+
+  private def validateHttpMethodName(name: String): Unit =
+    require(httpMethodNameRegex.matches(name), "invalid HTTP method name")
+
   /**
    * Create a custom method type.
    * @deprecated The created method will compute the presence of Content-Length headers based on deprecated logic (before issue #4213).
    */
   @Deprecated
   def custom(name: String, safe: Boolean, idempotent: Boolean, requestEntityAcceptance: RequestEntityAcceptance): HttpMethod = {
-    require(name.nonEmpty, "value must be non-empty")
+    validateHttpMethodName(name)
     require(!safe || idempotent, "An HTTP method cannot be safe without being idempotent")
     apply(name, safe, idempotent, requestEntityAcceptance, oldContentLengthCondition)
   }
@@ -63,7 +71,7 @@ object HttpMethod {
    * Create a custom method type.
    */
   def custom(name: String, safe: Boolean, idempotent: Boolean, requestEntityAcceptance: RequestEntityAcceptance, contentLengthAllowed: Boolean): HttpMethod = {
-    require(name.nonEmpty, "value must be non-empty")
+    validateHttpMethodName(name)
     require(!safe || idempotent, "An HTTP method cannot be safe without being idempotent")
     // use constant functions so custom HttpMethod instances are equal (case class equality) when built with the same parameters
     apply(name, safe, idempotent, requestEntityAcceptance, if (contentLengthAllowed) ConstantFun.anyToTrue else ConstantFun.anyToFalse)
