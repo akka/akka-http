@@ -103,7 +103,7 @@ jobs:
         run: sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 ++${{ matrix.SCALA_VERSION }} mimaReportBinaryIssues test ${{ matrix.extraOpts }}
 
       - name: Upload test results
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v4.6.0
         if: success() || failure()        # run this step even if previous step failed
         with:
           name: 'test-results-${{ matrix.JDK_VERSION }}-${{ matrix.SCALA_VERSION }}'
