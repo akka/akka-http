@@ -37,7 +37,7 @@ jobs:
           jvm: temurin:1.17
 
       - name: Cache Build Target
-        uses: actions/cache@v3.0.11
+        uses: actions/cache@v4.0.0
         with:
           path: project/**/target
           key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
@@ -84,7 +84,7 @@ jobs:
           jvm: ${{ matrix.JVM_NAME }}
 
       - name: Cache Build Target
-        uses: actions/cache@v3.0.11
+        uses: actions/cache@v4.0.0
         with:
           path: project/**/target
           key: build-target-${{ hashFiles('**/*.sbt', 'project/build.properties', 'project/**/*.scala') }}
