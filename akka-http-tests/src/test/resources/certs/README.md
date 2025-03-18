@@ -56,6 +56,7 @@ $ keytool -gencert -v \
     -ext KeyUsage:critical="digitalSignature,keyEncipherment" \
     -ext EKU="serverAuth" \
     -ext SAN="DNS:example.com" \
+    -validity 999900 \
     -rfc
 
 # import the CA cert into a JKS keystore
@@ -115,7 +116,8 @@ $ keytool -import -v \
     -keypass:env PW \
     -storepass changeit \
     -keystore exampletrust.jks
-    
+# enter yes
+
 # create a client cert
 $ keytool -genkeypair -v \
     -alias client1 \
@@ -145,6 +147,7 @@ $ keytool -gencert -v \
     -ext san=ip:127.0.0.1,dns:localhost \
     -infile client1.csr \
     -outfile client1.crt \
+    -validity 999900 \
     -rfc
 
 # import ca to client keystore (needs the full cert chain for importing the cert itself)
@@ -164,7 +167,7 @@ $ keytool -import -v \
     -storetype JKS \
     -storepass:env PW
 
-# FIXME not sure what we do here, we already have the crt file, but dump it out again from that crt
+# dump it out again from jks (to get cert chain included?)
 $ keytool -export -v \
     -alias client1 \
     -file client1.crt \
@@ -200,7 +203,6 @@ $ rm client1.p12
 # create a client cert that we trust with different CN and SAN (mostly using openssl this time)    
 $ openssl genrsa -passout pass:"" -out client2.key 4096
 $ openssl req -new -key client2.key -out client2.csr -passin pass:"" \
-    -days 999900 \
     -subj "/C=SE/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=client2/"
 
 $ keytool -gencert -v \
@@ -211,6 +213,7 @@ $ keytool -gencert -v \
     -ext san=ip:192.168.0.1,dns:some.example.com \
     -infile client2.csr \
     -outfile client2.crt \
+    -validity 999900 \
     -rfc
 # private key to pem
 $ openssl rsa -in client2.key -out client2.key -passin pass:""
@@ -228,4 +231,7 @@ $ openssl req -new -key untrusted-client1.key -out untrusted-client1.csr -passin
 $ openssl x509 -req -days 999900 -in untrusted-client1.csr -CA untrustedca.pem -CAkey untrustedca.key -passin pass:xxxx -set_serial 01 -out untrusted-client1.pem
 # private key to pem
 $ openssl rsa -in untrusted-client1.key -out untrusted-client1.key -passin pass:""
+
+# drop all signing requests
+$ rm *.csr
 ```
