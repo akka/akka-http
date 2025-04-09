@@ -16,7 +16,7 @@ addSbtPlugin("io.akka" % "sbt-paradox-akka" % "24.10.7")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.10.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.32")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.13.0")
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.9.2")
+addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.9.3")
 addSbtPlugin("com.github.sbt" % "sbt-pull-request-validator" % "2.0.0")
 
 // used for @unidoc directive
