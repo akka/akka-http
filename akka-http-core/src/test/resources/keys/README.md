@@ -16,7 +16,7 @@ openssl genrsa -out rootCA.key 2048
 # Self-sign CA:
 
 ```
-openssl req -x509 -new -nodes -key rootCA.key -days 3560 -out rootCA.crt
+openssl req -x509 -new -nodes -key rootCA.key -days 35600 -out rootCA.crt
 ```
 
 # Create server key:
@@ -34,7 +34,7 @@ openssl req -new -key server.key -out server.csr
 # Create server certificate:
 
 ```
-openssl x509 -req -in server.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out server.crt -days 3560
+openssl x509 -req -in server.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out server.crt -days 35600
 ```
 
 # Create certificate chain:
