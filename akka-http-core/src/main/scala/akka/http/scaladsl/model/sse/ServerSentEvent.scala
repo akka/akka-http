@@ -7,8 +7,6 @@ package scaladsl
 package model
 package sse
 
-import akka.annotation.InternalStableApi
-
 import java.nio.charset.StandardCharsets.UTF_8
 import akka.http.javadsl.model
 import akka.util.ByteString
@@ -89,8 +87,7 @@ final case class ServerSentEvent(
   require(id.forall(noNewLine), "id must not contain \\n or \\r!")
   require(retry.forall(_ > 0), "retry must be a positive number!")
 
-  @InternalStableApi
-  private[scaladsl] def encode = {
+  def encode(): ByteString = {
     def s = { // Performance fun fact: change this to val and get an ~30% performance penalty!!!
       // Why 8? "data:" == 5 + \n\n (1 data (at least) and 1 ending) == 2 and then we add 1 extra to allocate
       //        a bigger memory slab than data.length since we're going to add data ("data:" + "\n") per line

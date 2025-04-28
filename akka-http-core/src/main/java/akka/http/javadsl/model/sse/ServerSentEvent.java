@@ -16,16 +16,21 @@
 
 package akka.http.javadsl.model.sse;
 
+import akka.annotation.DoNotInherit;
+import akka.util.ByteString;
+import scala.Option;
+import scala.jdk.javaapi.OptionConverters;
+
 import java.util.Optional;
 import java.util.OptionalInt;
-
-import scala.jdk.javaapi.OptionConverters;
-import scala.Option;
 
 /**
  * Representation of a server-sent event. According to the specification, an empty data field
  * designates an event which is to be ignored which is useful for heartbeats.
+ * <p>
+ * Not for user extension
  */
+@DoNotInherit
 public abstract class ServerSentEvent {
 
     private static final Option<String> stringNone = Option.empty();
@@ -116,4 +121,9 @@ public abstract class ServerSentEvent {
      * Optional reconnection delay in milliseconds.
      */
     public abstract OptionalInt getRetry();
+
+    /**
+     * Encode the event to bytes for use in a response
+     */
+    public abstract ByteString encode();
 }
