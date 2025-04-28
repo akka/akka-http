@@ -1,0 +1,2 @@
+# internal method made public/added in Java DSL
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.sse.ServerSentEvent.encode")
