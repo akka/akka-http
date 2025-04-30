@@ -40,7 +40,7 @@ object AkkaDependency {
   }
 
   // Default version updated only when needed, https://doc.akka.io/libraries/akka-core/current/project/downstream-upgrade-strategy.html
-  val minimumExpectedAkkaVersion = "2.10.0"
+  val minimumExpectedAkkaVersion = "2.10.5"
   val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
   val docs = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
 
