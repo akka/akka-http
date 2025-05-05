@@ -56,7 +56,8 @@ object MiMa extends AutoPlugin {
   )
 
   val `10.7-versions` = Set(
-    "10.7.0"
+    "10.7.0",
+    "10.7.1"
   )
 
   val pre3Versions = `10.2-versions` ++ `10.4-versions`
