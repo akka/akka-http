@@ -12,6 +12,7 @@ import akka.http.scaladsl.model.{ HttpHeader, HttpMethod, HttpMethods }
 import akka.util.{ ConstantFun, OptionVal }
 import com.typesafe.config.Config
 
+import java.util.Locale
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.jdk.CollectionConverters._
 import scala.jdk.DurationConverters._
@@ -37,7 +38,11 @@ private[akka] case class CorsSettingsImpl(
   val originsMatches: Seq[HttpOrigin] => Boolean = HttpOriginMatcher(allowedOrigins)
   val headerNameAllowed: String => Boolean =
     if (allowedHeaders == Set("*")) ConstantFun.anyToTrue
-    else allowedHeaders.contains
+    else {
+      // #4495 case-insensitive header name match
+      val lcAllowed = allowedHeaders.map(_.toLowerCase(Locale.ROOT))
+      name => lcAllowed.contains(name.toLowerCase(Locale.ROOT))
+    }
 
   private def accessControlExposeHeaders: Option[`Access-Control-Expose-Headers`] =
     if (exposedHeaders.nonEmpty)
