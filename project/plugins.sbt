@@ -1,6 +1,8 @@
 resolvers += Classpaths.sbtPluginReleases
 resolvers += Classpaths.typesafeReleases
-resolvers += "Akka library repository".at("https://repo.akka.io/maven")
+
+resolvers += "lightbend-akka".at("https://dl.cloudsmith.io/basic/lightbend/akka/maven/")
+credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
 
 addSbtPlugin("com.github.sbt" % "sbt-multi-jvm" % "0.6.0")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.4")

@@ -6,6 +6,9 @@ on:
     branches: [ main ]
     tags-ignore: [ v* ]
 
+env:
+  CLOUDSMITH_MACHINE_AKKA_CREDS: ${{ secrets.CLOUDSMITH_MACHINE_AKKA_CREDS }}
+
 permissions:
   contents: read
 
@@ -35,6 +38,11 @@ jobs:
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
           jvm: temurin:1.17
+
+      - name: Set  up Akka resolver
+        run: |-
+          mkdir ~/.sbt
+          printf "%s" "$CLOUDSMITH_MACHINE_AKKA_CREDS" > ~/.sbt/.credentials
 
       - name: Cache Build Target
         uses: actions/cache@v4.2.0
@@ -82,6 +90,11 @@ jobs:
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
           jvm: ${{ matrix.JVM_NAME }}
+
+      - name: Set  up Akka resolver
+        run: |-
+          mkdir ~/.sbt
+          printf "%s" "$CLOUDSMITH_MACHINE_AKKA_CREDS" > ~/.sbt/.credentials
 
       - name: Cache Build Target
         uses: actions/cache@v4.2.0
