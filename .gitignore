@@ -22,7 +22,3 @@ target
 
 # attachments created by scripts/prepare-downloads.sh
 docs/src/main/paradox/attachments
-
-# to not share individual tokens
-akka.sbt
-project/akka.sbt
