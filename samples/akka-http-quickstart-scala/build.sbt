@@ -1,5 +1,5 @@
 lazy val akkaHttpVersion = sys.props.getOrElse("akka-http.version", "10.7.1")
-lazy val akkaVersion    = "2.10.0"
+lazy val akkaVersion    = "2.10.5"
 
 ThisBuild / resolvers += "lightbend-akka".at("https://dl.cloudsmith.io/basic/lightbend/akka/maven/")
 ThisBuild / credentials ++= {
