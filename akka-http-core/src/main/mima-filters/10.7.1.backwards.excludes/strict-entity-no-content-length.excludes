@@ -1,0 +1,2 @@
+# javadsl Strict not for user extension
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpEntity#Strict.withoutContentLengthReporting")
