@@ -13,7 +13,7 @@ permissions:
 jobs:
   publish-test-results:
     name: "Publish details with dorny-test-reporter"
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.event.repository.fork == false
     strategy:
       fail-fast: false
