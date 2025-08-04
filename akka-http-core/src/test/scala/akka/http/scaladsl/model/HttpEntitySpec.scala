@@ -49,6 +49,9 @@ class HttpEntitySpec extends AkkaSpecWithMaterializer {
       "Strict" in {
         Strict(tpe, abc).contentLengthOption shouldEqual Some(3)
       }
+      "Strict with no content length" in {
+        Strict(tpe, abc, reportContentLength = false).contentLengthOption shouldEqual None
+      }
       "Default" in {
         Default(tpe, 11, source(abc, de, fgh, ijk)).contentLengthOption shouldEqual Some(11)
       }

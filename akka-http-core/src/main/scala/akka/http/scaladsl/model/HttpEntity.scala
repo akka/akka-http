@@ -5,13 +5,11 @@
 package akka.http.scaladsl.model
 
 import language.implicitConversions
-
 import java.io.File
 import java.nio.file.{ Files, Path }
 import java.lang.{ Iterable => JIterable }
 import java.util.concurrent.CompletionStage
 import java.util.OptionalLong
-
 import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -19,7 +17,6 @@ import scala.collection.immutable
 import scala.jdk.OptionConverters._
 import scala.jdk.FutureConverters._
 import scala.util.control.NonFatal
-
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream.scaladsl._
@@ -31,6 +28,8 @@ import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.{ JavaMapping, StreamUtils }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.util.ByteString
+
+import scala.runtime.AbstractFunction2
 
 /**
  * Models the entity (aka "body" or "content") of an HTTP message.
@@ -336,13 +335,28 @@ object HttpEntity {
   // TODO: re-establish serializability
   // TODO: equal/hashcode ?
 
+  // manual case-class stuff for bin comp
+  object Strict extends AbstractFunction2[ContentType, ByteString, Strict] {
+    def apply(contentType: ContentType, data: ByteString): Strict =
+      new Strict(contentType, data, true)
+
+    def apply(contentType: ContentType, data: ByteString, reportContentLength: Boolean): Strict =
+      new Strict(contentType, data, reportContentLength)
+
+    def unapply(strict: Strict): Option[(ContentType, ByteString)] =
+      Some((strict.contentType, strict.data))
+  }
   /**
    * The model for the entity of a "regular" unchunked HTTP message with known, fixed data.
    */
-  final case class Strict(contentType: ContentType, data: ByteString)
-    extends jm.HttpEntity.Strict with UniversalEntity {
+  final class Strict(val contentType: ContentType, val data: ByteString, val reportContentLength: Boolean)
+    extends jm.HttpEntity.Strict with UniversalEntity with Product with java.io.Serializable {
+
+    def this(contentType: ContentType, data: ByteString) =
+      this(contentType, data, reportContentLength = true)
 
     override def contentLength: Long = data.length
+    override def contentLengthOption: Option[Long] = if (reportContentLength) Some(contentLength) else None
     override def isKnownEmpty: Boolean = data.isEmpty
     override def isStrict: Boolean = true
 
@@ -364,9 +378,11 @@ object HttpEntity {
     override def withoutSizeLimit: UniversalEntity =
       withSizeLimit(SizeLimit.Disabled)
 
-    override def productPrefix = "HttpEntity.Strict"
+    override def withoutContentLengthReporting: HttpEntity.Strict = new Strict(contentType, data, false)
 
-    override def toString = {
+    override def productPrefix: String = "HttpEntity.Strict"
+
+    override def toString: String = {
       val dataSizeStr = s"${data.length} bytes total"
 
       s"$productPrefix($contentType,$dataSizeStr)"
@@ -374,6 +390,36 @@ object HttpEntity {
 
     /** Java API */
     override def getData = data
+
+    // bincomp from case class
+    def copy(contentType: ContentType = contentType, data: ByteString = data) =
+      new Strict(contentType, data)
+
+    override def productArity: Int = 3
+
+    override def productElement(n: Int): Any =
+      n match {
+        case 0 => contentType
+        case 1 => data
+        case 2 => reportContentLength
+        case _ => throw new NoSuchElementException
+      }
+
+    override def canEqual(o: Any): Boolean = o.isInstanceOf[Strict]
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Strict =>
+        contentType == that.contentType &&
+          data == that.data &&
+          reportContentLength == that.reportContentLength
+      case _ => false
+    }
+
+    override def hashCode(): Int = {
+      var state = contentType.hashCode() * 31
+      state = state + data.hashCode() * 31
+      state + reportContentLength.hashCode() * 31
+    }
   }
 
   /**

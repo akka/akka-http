@@ -238,6 +238,7 @@ public interface HttpEntity {
      */
     interface Strict extends UniversalEntity {
         ByteString getData();
+        HttpEntity.Strict withoutContentLengthReporting();
     }
 
     /**
