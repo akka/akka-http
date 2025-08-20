@@ -1,0 +1,14 @@
+# javadsl Strict not for user extension
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpEntity#Strict.withoutContentLengthReporting")
+
+# Scala 3 impossible to evolve from case class to normal class in a bin comp way
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.ordinal")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.model.HttpEntity$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity#Strict.fromProduct")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.model.HttpEntity#Strict.unapply")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.model.HttpEntity$Strict$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ResponseEntity.ordinal")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.model.ResponseEntity$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ResponseEntity.ordinal")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity#Strict._1")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity#Strict._2")
