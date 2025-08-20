@@ -348,6 +348,8 @@ object HttpEntity {
   }
   /**
    * The model for the entity of a "regular" unchunked HTTP message with known, fixed data.
+   *
+   * @param reportContentLength Only applies for HTTP/2 responses, if false, do not produce a Content-Length header
    */
   final class Strict(val contentType: ContentType, val data: ByteString, val reportContentLength: Boolean)
     extends jm.HttpEntity.Strict with UniversalEntity with Product with java.io.Serializable {
@@ -378,6 +380,9 @@ object HttpEntity {
     override def withoutSizeLimit: UniversalEntity =
       withSizeLimit(SizeLimit.Disabled)
 
+    /**
+     * Only applies for HTTP/2 responses, leads to a response without Content-Length header
+     */
     override def withoutContentLengthReporting: HttpEntity.Strict = new Strict(contentType, data, false)
 
     override def productPrefix: String = "HttpEntity.Strict"

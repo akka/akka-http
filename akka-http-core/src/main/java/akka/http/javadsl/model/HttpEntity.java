@@ -238,6 +238,10 @@ public interface HttpEntity {
      */
     interface Strict extends UniversalEntity {
         ByteString getData();
+
+        /**
+         * Only applies for HTTP/2 responses, leads to a response without Content-Length header
+         */
         HttpEntity.Strict withoutContentLengthReporting();
     }
 
