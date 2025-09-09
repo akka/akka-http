@@ -71,7 +71,7 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.outgoingConnection(toHost("akka.io"));
     http.outgoingConnection(toHost("akka.io", 8080));
     http.outgoingConnection(toHost("https://akka.io"));
-    http.outgoingConnection(toHostHttps("akka.io")); // default ssl context (ssl-config)
+    http.outgoingConnection(toHostHttps("akka.io")); // default ssl context
     http.outgoingConnection(toHostHttps("ssh://akka.io")); // throws, we explicitly require https or ""
     http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext));
     http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext());
