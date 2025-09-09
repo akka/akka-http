@@ -26,9 +26,6 @@ Signing authorities often provide instructions on how to create a Java keystore 
 configuration). If you want to generate your own certificates, the official Oracle documentation on how to generate a
 keystore using the JDK keytool utility can be found [here](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html).
 
-SSL-Config provides a more targeted guide on generating certificates, so we recommend you start with the guide
-titled [Generating X.509 Certificates](https://lightbend.github.io/ssl-config/CertificateGeneration.html).
-
 <a id="using-https"></a>
 ## Using HTTPS
 
