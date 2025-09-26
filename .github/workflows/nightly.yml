@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         SCALA_VERSION: [2.13, 3.3]
-        JDK_VERSION: ["1.11", "1.17", "1.21"]
+        JDK_VERSION: ["1.11", "1.17", "1.21", "1.25"]
         include:
           - JDK_VERSION: 1.11
             JVM_NAME: temurin:1.11
@@ -26,6 +26,9 @@ jobs:
             extraOpts: ''
           - JDK_VERSION: 1.21
             JVM_NAME: temurin:1.21.0.2
+            extraOpts: ''
+          - JDK_VERSION: 1.25
+            JVM_NAME: temurin:1.25
             extraOpts: ''
         AKKA_VERSION: [main, default, snapshot]
 
