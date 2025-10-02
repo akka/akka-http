@@ -76,7 +76,7 @@ object AkkaDependency {
                 "com.typesafe.akka" %% module % akkaVersion % config
             },
             resolvers += "Akka library repository".at("https://repo.akka.io/maven/github_actions"),
-            resolvers ++= (if (akkaSnapshot) Seq("Akka library snapshot repository".at("https://repo.akka.io/snapshots")) else Nil)
+            resolvers ++= (if (akkaSnapshot) Seq("Akka library snapshot repository".at("https://repo.akka.io/snapshots/github_actions")) else Nil)
           )
       }
   }
