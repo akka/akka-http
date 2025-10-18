@@ -6,17 +6,25 @@ We follow the standard GitHub [fork & pull](https://help.github.com/en/github/co
 
 For a more detailed description of our process, please refer to the [CONTRIBUTING.md](https://github.com/akka/akka-http/blob/main/CONTRIBUTING.md) page on the github project.
 
+## Build Token
+
+To build locally, you need to fetch a token at https://account.akka.io/token that you have to place into `~/.sbt/1.0/akka-commercial.sbt` file like this:
+
+```
+ThisBuild / resolvers += "lightbend-akka".at("your token resolver here")
+```
+
 ## Snapshots
 
 Testing snapshot versions can help us find bugs before a release. We publish snapshot versions for every commit to the `main` branch.
 
-Snapshot builds are available at https://repo.akka.io/snapshots. All Akka modules that belong to the same build have the same version.
+Snapshot builds are available at YOUR_TOKEN_RESOLVER/snapshots. All Akka modules that belong to the same build have the same version.
 
 ### Configure repository
 
 sbt
 :   ```scala
-    resolvers += "Akka library snapshot repository".at("https://repo.akka.io/snapshots")
+    resolvers += "Akka library snapshot repository".at("YOUR_TOKEN_RESOLVER/snapshots")
     ```
 
 Maven
@@ -28,7 +36,7 @@ Maven
           <repository>
             <id>akka-repository</id>
             <name>Akka library snapshot repository</name>
-            <url>https://repo.akka.io/snapshots</url>
+            <url>YOUR_TOKEN_RESOLVER/snapshots</url>
           </repository>
         </repositories>
       </repositories>
@@ -40,7 +48,7 @@ Gradle
 :   ```gradle
     repositories {
       maven {
-        url  "https://repo.akka.io/snapshots"
+        url  "YOUR_TOKEN_RESOLVER/snapshots"
       }
     }
     ```
