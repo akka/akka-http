@@ -1,7 +1,6 @@
 lazy val akkaHttpVersion = sys.props.getOrElse("akka-http.version", "10.7.2")
 lazy val akkaVersion    = "2.10.5"
 
-ThisBuild / resolvers += "lightbend-akka".at("https://repo.akka.io/maven/github_actions")
 ThisBuild / credentials ++= {
   val path = Path.userHome / ".sbt" / ".credentials"
   if (path.isFile) {
