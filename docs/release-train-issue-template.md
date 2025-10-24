@@ -59,15 +59,7 @@ Key links:
 
 ### Announcements
 
-For important patch releases, and only if critical issues have been fixed:
-
-- [ ] Send a release notification to [Lightbend discuss](https://discuss.akka.io)
-- [ ] Tweet using the [@akkateam](https://twitter.com/akkateam/) account (or ask someone to) about the new release
-- [ ] Announce internally (with links to Tweet, discuss)
-
-For minor or major releases:
-
-- [ ] Include noteworthy features and improvements in Akka umbrella release announcement at akka.io. Coordinate with PM and marketing.
+For important patch releases, and if critical issues have been fixed.
 
 ### Afterwards
 

@@ -256,7 +256,7 @@ class HttpExt @InternalStableApi /* constructor signature is hardcoded in Teleme
               // Ignore incoming errors from the connection as they will cancel the binding.
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
-              // See https://github.com/akka/akka/issues/17992
+              // See https://github.com/akka/akka-core/issues/17992
               case NonFatal(ex) => Done
             }(ExecutionContext.parasitic)
         } catch {
