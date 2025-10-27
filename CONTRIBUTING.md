@@ -59,7 +59,7 @@ Pull Request validation states:
 
 # Akka-http contributing guidelines
 
-These guidelines apply to all Akka projects, by which we mean both the `akka/akka` repository,
+These guidelines apply to all Akka projects, by which we mean both the `akka/akka-core` repository,
 as well as any plugins or additional repos located under the Akka GitHub organisation, e.g. `akka/akka-http` and others.
 
 These guidelines are meant to be a living document that should be changed and adapted as needed.
@@ -313,7 +313,7 @@ There is a number of ways timeouts can be defined in Akka tests. The following w
 
 Special care should be given `expectNoMessage` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`.
 
-You can read up on remaining and friends in [TestKit.scala](https://github.com/akka/akka/blob/main/akka-testkit/src/main/scala/akka/testkit/TestKit.scala)
+You can read up on remaining and friends in [TestKit.scala](https://github.com/akka/akka-core/blob/main/akka-testkit/src/main/scala/akka/testkit/TestKit.scala)
 
 # Supporting infrastructure
 
