@@ -395,7 +395,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         network.sendHEADERS(TheStreamId, endStream = true, Seq(RawHeader(":grpc-status", "0")))
         // This '.request(1)' can be removed when we move to Akka 2.6, since that has
-        // https://github.com/akka/akka/pull/28467
+        // https://github.com/akka/akka-core/pull/28467
         entityDataIn.request(1)
         entityDataIn.expectComplete()
       }

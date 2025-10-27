@@ -6,7 +6,7 @@ about: Suggest an idea for this project
 
 <!--
 Please report issues regarding specific projects in their respective issue trackers, e.g.:
- - Akka: https://github.com/akka/akka/issues
+ - Akka: https://github.com/akka/akka-core/issues
  - Alpakka:   https://github.com/akka/alpakka/issues
  - Akka Persistence Cassandra Plugin: https://github.com/akka/akka-persistence-cassandra/issues
  - ...

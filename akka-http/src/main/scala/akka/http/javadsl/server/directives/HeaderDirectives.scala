@@ -30,7 +30,7 @@ abstract class HeaderDirectives extends FutureDirectives {
    *
    * @group header
    */
-  // TODO When breaking binary compatibility this should become HttpOriginRange.Default, see https://github.com/akka/akka/pull/20776/files#r70049845
+  // TODO When breaking binary compatibility this should become HttpOriginRange.Default, see https://github.com/akka/akka-core/pull/20776/files#r70049845
   def checkSameOrigin(allowed: HttpOriginRange, inner: jf.Supplier[Route]): Route =
     allowed match {
       case HttpOriginRanges.ALL | akka.http.scaladsl.model.headers.HttpOriginRange.`*` => pass(inner)

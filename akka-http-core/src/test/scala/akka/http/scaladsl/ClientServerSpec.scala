@@ -411,7 +411,7 @@ abstract class ClientServerSpecBase(http2: Boolean) extends AkkaSpecWithMaterial
 
     "log materialization errors in `bindFlow`" which {
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
-        // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
+        // FIXME racy feature, needs https://github.com/akka/akka-core/issues/17849 to be fixed
         pending
         val flow = Flow[HttpRequest].map(_ => HttpResponse()).mapMaterializedValue(_ => sys.error("BOOM"))
         val binding = Http(system2).newServerAt("localhost", 0).bindFlow(flow)
@@ -629,7 +629,7 @@ abstract class ClientServerSpecBase(http2: Boolean) extends AkkaSpecWithMaterial
       // https://github.com/akka/akka-http/issues/3963
       if (http2) pending
 
-      // In akka/akka#19542 / akka/akka-http#459 it was observed that when an akka-http closes the connection after
+      // In akka/akka-core#19542 / akka/akka-http#459 it was observed that when an akka-http closes the connection after
       // a request, the TCP connection is sometimes aborted. Aborting means that `socket.close` is called with SO_LINGER = 0
       // which removes the socket immediately from the OS network stack. This might happen with or without having sent
       // a FIN frame first and with or without actively sending a RST frame. However, if the client has not received all data

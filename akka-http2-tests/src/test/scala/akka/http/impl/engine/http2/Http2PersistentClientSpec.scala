@@ -51,7 +51,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
   )
   override protected def isSevere(event: Logging.LogEvent): Boolean =
     event.level <= Logging.WarningLevel &&
-      // fix for https://github.com/akka/akka-http/issues/3732 / https://github.com/akka/akka/issues/29330
+      // fix for https://github.com/akka/akka-http/issues/3732 / https://github.com/akka/akka-core/issues/29330
       !notSevere.exists(cand => event.message.toString.contains(cand))
 
   case class RequestId(id: String) extends RequestResponseAssociation

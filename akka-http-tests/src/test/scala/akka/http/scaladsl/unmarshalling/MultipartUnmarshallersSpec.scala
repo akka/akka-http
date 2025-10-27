@@ -373,7 +373,7 @@ trait MultipartUnmarshallersSpec extends AkkaSpecWithMaterializer {
               RawHeader("Content-Additional-2", "really-anything")))) // verifies order of headers is preserved
       }
       // TODO: reactivate after multipart/form-data unmarshalling integrity verification is implemented
-      // see https://github.com/akka/akka/issues/18908
+      // see https://github.com/akka/akka-core/issues/18908
       //
       //      "reject illegal multipart content" in {
       //        val Left(MalformedContent(msg, _)) = HttpEntity(`multipart/form-data` withBoundary "XYZABC", "--noboundary--").as[MultipartFormData]
