@@ -4,9 +4,9 @@
 
 package akka.http.fix
 
-import org.scalatest.FunSpecLike
+import org.scalatest.funspec.AnyFunSpecLike
 import scalafix.testkit.AbstractSemanticRuleSuite
 
-class RuleSuite extends AbstractSemanticRuleSuite with FunSpecLike {
+class RuleSuite extends AbstractSemanticRuleSuite with AnyFunSpecLike {
   runAllTests()
 }
