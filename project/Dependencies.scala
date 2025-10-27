@@ -42,7 +42,7 @@ object Dependencies {
   }
 
   object Compile {
-    val scalaXml      =  "org.scala-lang.modules" %% "scala-xml" % "2.3.0" // Scala License
+    val scalaXml      =  "org.scala-lang.modules" %% "scala-xml" % "2.4.0" // Scala License
 
 
 
