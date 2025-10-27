@@ -43,7 +43,7 @@ jobs:
         # v1.3.5
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
-          jvm: temurin:1.11.0.17 # align with akka/akka
+          jvm: temurin:1.11.0.17 # align with akka/akka-core
 
       - name: Install graphviz
         run: sudo apt-get install -y graphviz

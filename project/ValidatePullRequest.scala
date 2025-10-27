@@ -40,7 +40,7 @@ object AkkaHttpValidatePullRequest extends AutoPlugin {
   override lazy val buildSettings = Seq(
     validatePullRequest / includeFilter := ValidatePullRequest.PathGlobFilter("akka-http-*/**"),
     validatePullRequestBuildAll / excludeFilter := ValidatePullRequest.PathGlobFilter("project/MiMa.scala"),
-    prValidatorGithubRepository := Some("akka/akka"),
+    prValidatorGithubRepository := Some("akka/akka-core"),
     prValidatorTargetBranch := "origin/main")
 
   override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
