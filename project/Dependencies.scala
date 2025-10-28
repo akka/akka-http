@@ -12,7 +12,7 @@ object Dependencies {
   import DependencyHelpers._
 
   // Default version updated only when needed, https://doc.akka.io/libraries/akka-core/current/project/downstream-upgrade-strategy.html
-  val akkaVersion = "2.10.10"
+  val akkaVersion = "2.10.11"
 
   val jacksonDatabindVersion = "2.18.4"
   val jacksonXmlVersion = jacksonDatabindVersion
