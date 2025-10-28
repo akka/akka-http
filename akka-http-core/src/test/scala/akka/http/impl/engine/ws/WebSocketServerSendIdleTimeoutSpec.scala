@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2024 Lightbend Inc. <https://akka.io>
  */
 
 package akka.http.impl.engine.ws
