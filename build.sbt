@@ -487,7 +487,7 @@ lazy val docs = project("docs")
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/libraries/akka-http/current",
       "akka.version" -> AkkaDependency.docs.version,
-      "akka.minimum.version" -> AkkaDependency.minimumExpectedAkkaVersion,
+      "akka.minimum.version" -> Dependencies.akkaVersion,
       "jackson.xml.version" -> Dependencies.jacksonXmlVersion,
       "scalafix.version" -> _root_.scalafix.sbt.BuildInfo.scalafixVersion, // grab from scalafix plugin directly
       "extref.akka-docs.base_url" -> s"https://doc.akka.io/libraries/akka-core/${AkkaDependency.docs.link}/%s",
