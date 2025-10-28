@@ -39,10 +39,8 @@ object AkkaDependency {
     }
   }
 
-  // Default version updated only when needed, https://doc.akka.io/libraries/akka-core/current/project/downstream-upgrade-strategy.html
-  val minimumExpectedAkkaVersion = "2.10.5"
-  val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
-  val docs = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
+  val default = akkaDependency(defaultVersion = Dependencies.akkaVersion)
+  val docs = akkaDependency(defaultVersion = Dependencies.akkaVersion)
 
   lazy val mainSnapshot = Artifact(determineLatestSnapshot(), true)
 
