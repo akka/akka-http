@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2024 Lightbend Inc. <https://akka.io>
  * Copyright 2016 Lomig Mégard
  */
 

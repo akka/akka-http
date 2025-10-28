@@ -14,7 +14,7 @@ import sbt.librarymanagement.VersionNumber
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
   organizationName := "Lightbend",
-  organizationHomepage := Some(url("https://www.lightbend.com")),
+  organizationHomepage := Some(url("https://akka.io")),
   homepage := Some(url("https://akka.io")),
   apiURL := {
     val apiVersion = if (isSnapshot.value) "current" else version.value
