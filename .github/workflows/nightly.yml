@@ -20,17 +20,12 @@ jobs:
         include:
           - JDK_VERSION: 1.11
             JVM_NAME: temurin:1.11
-            extraOpts: ''
           - JDK_VERSION: 1.17
             JVM_NAME: temurin:1.17
-            extraOpts: ''
           - JDK_VERSION: 1.21
             JVM_NAME: temurin:1.21.0.2
-            extraOpts: ''
           - JDK_VERSION: 1.25
             JVM_NAME: temurin:1.25
-            extraOpts: ''
-        AKKA_VERSION: [main, default, snapshot]
 
     steps:
       - name: Checkout Global Scripts
@@ -73,21 +68,14 @@ jobs:
       - name: Compile everything
         run: |-
           sbt \
-            -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} \
-            mimaReportBinaryIssues Test/compile ${{ matrix.extraOpts }}
+            ++${{ matrix.SCALA_VERSION }} \
+            mimaReportBinaryIssues Test/compile
 
-      - name: Run all tests JDK ${{ matrix.JDK_VERSION }}, Scala ${{ matrix.SCALA_VERSION }}, Akka ${{ matrix.AKKA_VERSION }}
+      - name: Run all tests JDK ${{ matrix.JDK_VERSION }}, Scala ${{ matrix.SCALA_VERSION }}
         run: |-
           sbt -Dakka.http.parallelExecution=false -Dakka.test.timefactor=2 \
-            -Dakka.http.build.akka.version=${{ matrix.AKKA_VERSION }} ++${{ matrix.SCALA_VERSION }} \
-            test ${{ matrix.extraOpts }}
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4.6.0
-        if: success() || failure()        # run this step even if previous step failed
-        with:
-          name: 'test-results-${{ matrix.JDK_VERSION }}-${{ matrix.SCALA_VERSION }}-${{ matrix.AKKA_VERSION }}'
-          path: '**/target/test-reports/*.xml'
+            ++${{ matrix.SCALA_VERSION }} \
+            test
 
       - name: Email on failure
         if: ${{ failure() }}
