@@ -1,6 +1,6 @@
 // note: not important to keep these up to date, CI will always bump to correct versions
 lazy val akkaHttpVersion = sys.props.getOrElse("akka.http.version", "10.7.1")
-lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.10.5")
+lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.10.11")
 
 ThisBuild / resolvers += "lightbend-akka".at("https://repo.akka.io/maven/github_actions")
 ThisBuild / credentials ++= {
