@@ -1,7 +1,17 @@
-Akka HTTP
-=========
-The Akka family of projects is managed by teams at [Akka (formerly Lightbend)](https://akka.io/) with help from the community.
+Akka
+====
+*Akka is a powerful platform that simplifies building and operating highly responsive, resilient, and scalable services.*
 
+
+The platform consists of
+* the [**Akka SDK**](https://doc.akka.io/java/index.html) for straightforward, rapid development with AI assist and automatic clustering. Services built with the Akka SDK are automatically clustered and can be deployed on any infrastructure.
+* and [**Akka Automated Operations**](https://doc.akka.io/operations/akka-platform.html), a managed solution that handles everything for Akka SDK services from auto-elasticity to multi-region high availability running safely within your VPC.
+
+The **Akka SDK** and **Akka Automated Operations** are built upon the foundational [**Akka libraries**](https://doc.akka.io/libraries/akka-dependencies/current/), providing the building blocks for distributed systems.
+
+
+Akka HTTP library
+=================
 The Akka HTTP modules implement a full server- and client-side HTTP stack on top
 of akka-actor and akka-stream. It's not a web-framework but rather a more
 general toolkit for providing and consuming HTTP-based services. While
@@ -15,41 +25,13 @@ have trouble achieving something using a high-level API, there's a good chance
 that you can get it done with a low-level API, which offers more flexibility but
 might require you to write more application code.
 
-Learn more at [akka.io](https://akka.io/).
+Reference Documentation
+-----------------------
 
-Documentation
--------------
+The reference documentation for all Akka libraries is available via [doc.akka.io/libraries/](https://doc.akka.io/libraries/), details for the Akka HTTP library
+for [Scala](https://doc.akka.io/libraries/akka-http/current/?language=scala) and [Java](https://doc.akka.io/libraries/akka-http/current/?language=java).
 
-The documentation is available at
-[doc.akka.io](https://doc.akka.io/libraries/akka-http/current/).
-
-
-Current versions of all Akka libraries
---------------------------------------
-
-The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka HTTP libraries in this repository are listed on the [GitHub releases](https://github.com/akka/akka-http/releases) page.
-
-
-Community
----------
-You can join these groups and chats to discuss and ask Akka related questions:
-
-- Forums: [discuss.akka.io](https://discuss.akka.io)
-- Q&A: [![stackoverflow: #akka-http][stackoverflow-badge]][stackoverflow]
-- Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues] (Please use the issue
-  tracker for bugs and reasonable feature requests. Please ask usage questions on the other channels.)
-
-All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](https://akka.io/conduct).
-
-In addition to that, you may enjoy following:
-
-- The [Akka Team Blog](https://akka.io/blog)
-- [@akkateam](https://twitter.com/akkateam) on Twitter
-
-[stackoverflow-badge]: https://img.shields.io/badge/stackoverflow%3A-akka--http-blue.svg?style=flat-square
-[stackoverflow]:       https://stackoverflow.com/questions/tagged/akka-http
-[github-issues-badge]: https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square
-[github-issues]:       https://github.com/akka/akka-http/issues
+The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka http library in this repository are listed on the [GitHub releases](https://github.com/akka/akka-http/releases) page.
 
 Contributing
 ------------
