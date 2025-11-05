@@ -31,7 +31,7 @@ Reference Documentation
 The reference documentation for all Akka libraries is available via [doc.akka.io/libraries/](https://doc.akka.io/libraries/), details for the Akka HTTP library
 for [Scala](https://doc.akka.io/libraries/akka-http/current/?language=scala) and [Java](https://doc.akka.io/libraries/akka-http/current/?language=java).
 
-The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka http library in this repository are listed on the [GitHub releases](https://github.com/akka/akka-http/releases) page.
+The current versions of all Akka libraries are listed on the [Akka Dependencies](https://doc.akka.io/libraries/akka-dependencies/current/) page. Releases of the Akka HTTP library in this repository are listed on the [GitHub releases](https://github.com/akka/akka-http/releases) page.
 
 Contributing
 ------------
