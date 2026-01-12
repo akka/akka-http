@@ -226,7 +226,7 @@ private[http] object Http2Blueprint {
         Flow[HttpResponse].map(new ResponseRendering(settings, log, dateHeaderRendering)),
         Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs =>
           val headerParser = masterHttpHeaderParser.createShallowCopy()
-          RequestParsing.parseRequest(headerParser, settings, attrs)
+          RequestParsing.parseRequest(headerParser, settings, attrs, log)
         }))
     )
   }
@@ -244,6 +244,11 @@ private[http] object Http2Blueprint {
         Future {
           val response = handler(req)
 
+          req.attribute(AttributeKeys.webSocketUpgrade) match {
+            case Some(_) =>
+              response.foreach(response => println("## websocket upgrade response! " + response))
+            case None =>
+          }
           req.attribute(Http2.streamId) match {
             case Some(streamIdHeader) => response.map(_.addAttribute(Http2.streamId, streamIdHeader)) // add stream id attribute when request had it
             case None                 => response

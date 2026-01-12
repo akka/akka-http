@@ -43,7 +43,7 @@ class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspe
       val encoder = new HPackEncodingSupport {}
       val frame = HeadersFrame(1, data == Source.empty, endHeaders = true, encoder.encodeHeaderPairs(keyValuePairs), None)
 
-      val parseRequest: Http2SubStream => ParseRequestResult = RequestParsing.parseRequest(headerParser, serverSettings, attributes)
+      val parseRequest: Http2SubStream => ParseRequestResult = RequestParsing.parseRequest(headerParser, serverSettings, attributes, log)
 
       Source.single(frame)
         .via(new HeaderDecompression(headerParser, parserSettings))

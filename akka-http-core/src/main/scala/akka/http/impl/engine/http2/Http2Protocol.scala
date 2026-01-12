@@ -233,20 +233,36 @@ private[http] object Http2Protocol {
      */
     case object SETTINGS_MAX_HEADER_LIST_SIZE extends SettingIdentifier(0x6)
 
-    val All =
-      Array( // must start with id = 1 and don't have holes between ids
-        SETTINGS_HEADER_TABLE_SIZE,
-        SETTINGS_ENABLE_PUSH,
-        SETTINGS_MAX_CONCURRENT_STREAMS,
-        SETTINGS_INITIAL_WINDOW_SIZE,
-        SETTINGS_MAX_FRAME_SIZE,
-        SETTINGS_MAX_HEADER_LIST_SIZE).toSeq
+    /**
+     * SETTINGS_ENABLE_CONNECT_PROTOCOL(0x8): Upon receipt of SETTINGS_ENABLE_CONNECT_PROTOCOL with a value of 1, a
+     *    client MAY use the Extended CONNECT as defined in this document when
+     *    creating new streams.  Receipt of this parameter by a server does not
+     *    have any impact.
+     *
+     *    https://www.rfc-editor.org/rfc/rfc8441.html#section-3
+     */
+    case object SETTINGS_ENABLE_CONNECT_PROTOCOL extends SettingIdentifier(0x8)
 
     // make sure that lookup works and `All` ordering isn't broken
-    All.foreach(f => require(OptionVal.Some(f) == byId(f.id), s"SettingIdentifier $f with id ${f.id} must be found"))
+    Seq(
+      SETTINGS_HEADER_TABLE_SIZE,
+      SETTINGS_ENABLE_PUSH,
+      SETTINGS_MAX_CONCURRENT_STREAMS,
+      SETTINGS_INITIAL_WINDOW_SIZE,
+      SETTINGS_MAX_FRAME_SIZE,
+      SETTINGS_MAX_HEADER_LIST_SIZE,
+      SETTINGS_ENABLE_CONNECT_PROTOCOL).foreach(f => require(OptionVal.Some(f) == byId(f.id), s"SettingIdentifier $f with id ${f.id} must be found"))
 
-    def byId(id: Int): OptionVal[SettingIdentifier] =
-      if (id > 0 && id <= All.size) OptionVal.Some(All(id - 1)) else OptionVal.None
+    def byId(id: Int): OptionVal[SettingIdentifier] = id match {
+      case SETTINGS_HEADER_TABLE_SIZE.id       => OptionVal.Some(SETTINGS_HEADER_TABLE_SIZE)
+      case SETTINGS_ENABLE_PUSH.id             => OptionVal.Some(SETTINGS_ENABLE_PUSH)
+      case SETTINGS_MAX_CONCURRENT_STREAMS.id  => OptionVal.Some(SETTINGS_MAX_CONCURRENT_STREAMS)
+      case SETTINGS_INITIAL_WINDOW_SIZE.id     => OptionVal.Some(SETTINGS_INITIAL_WINDOW_SIZE)
+      case SETTINGS_MAX_FRAME_SIZE.id          => OptionVal.Some(SETTINGS_MAX_FRAME_SIZE)
+      case SETTINGS_MAX_HEADER_LIST_SIZE.id    => OptionVal.Some(SETTINGS_MAX_HEADER_LIST_SIZE)
+      case SETTINGS_ENABLE_CONNECT_PROTOCOL.id => OptionVal.Some(SETTINGS_ENABLE_CONNECT_PROTOCOL)
+      case _                                   => OptionVal.None
+    }
   }
 
   sealed abstract class ErrorCode(val id: Int) extends Product

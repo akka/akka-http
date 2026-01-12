@@ -6,6 +6,8 @@ package akka.http.impl.engine.http2
 
 import javax.net.ssl.SSLSession
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
+import akka.http.impl.engine.http2.ws.Handshake
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model
@@ -32,7 +34,7 @@ private[http2] object RequestParsing {
   final case class BadRequest(info: ErrorInfo, streamId: Int) extends ParseRequestResult
 
   @nowarn("msg=use remote-address-attribute instead")
-  def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, streamAttributes: Attributes): Http2SubStream => ParseRequestResult = {
+  def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, streamAttributes: Attributes, log: LoggingAdapter): Http2SubStream => ParseRequestResult = {
 
     val remoteAddressHeader: Option[`Remote-Address`] =
       if (serverSettings.remoteAddressHeader) {
@@ -79,7 +81,8 @@ private[http2] object RequestParsing {
         contentType:     OptionVal[ContentType],
         contentLength:   Long,
         cookies:         StringBuilder,
-        headers:         VectorBuilder[HttpHeader]
+        headersBuilder:  VectorBuilder[HttpHeader],
+        wsProtocol:      Boolean
       ): HttpRequest = {
         // https://httpwg.org/specs/rfc7540.html#rfc.section.8.1.2.3: these pseudo header fields are mandatory for a request
         checkRequiredPseudoHeader(":scheme", scheme)
@@ -88,20 +91,32 @@ private[http2] object RequestParsing {
 
         if (cookies != null) {
           // Compress 'cookie' headers if present
-          headers += parseHeaderPair(httpHeaderParser, "cookie", cookies.toString)
+          headersBuilder += parseHeaderPair(httpHeaderParser, "cookie", cookies.toString)
         }
-        if (remoteAddressHeader.isDefined) headers += remoteAddressHeader.get
+        if (remoteAddressHeader.isDefined) headersBuilder += remoteAddressHeader.get
 
-        if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
+        if (tlsSessionInfoHeader.isDefined) headersBuilder += tlsSessionInfoHeader.get
 
-        val entity = subStream.createEntity(contentLength, contentType)
+        val entity =
+          if (!wsProtocol) subStream.createEntity(contentLength, contentType)
+          else HttpEntity.Empty
 
         val (path, rawQueryString) = pathAndRawQuery
         val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority
         val uri = Uri(scheme, authorityOrDefault, path, rawQueryString)
         val attributes = baseAttributes.updated(Http2.streamId, subStream.streamId)
+        val headers = headersBuilder.result()
 
-        new HttpRequest(method, uri, headers.result(), attributes, entity, HttpProtocols.`HTTP/2.0`)
+        val attributesWithProtocol =
+          if (!wsProtocol) attributes
+          else Handshake.Server.websocketUpgrade(headers, serverSettings.websocketSettings, log) match {
+            case OptionVal.Some(upgrade) =>
+              println("### Adding websocket upgrade")
+              attributes.updated(AttributeKeys.webSocketUpgrade, upgrade)
+            case OptionVal.None => attributes
+          }
+
+        new HttpRequest(method, uri, headers, attributesWithProtocol, entity, HttpProtocols.`HTTP/2.0`)
       }
 
       @tailrec
@@ -116,9 +131,10 @@ private[http2] object RequestParsing {
         contentLength:     Long                         = -1,
         cookies:           StringBuilder                = null,
         seenRegularHeader: Boolean                      = false,
-        headers:           VectorBuilder[HttpHeader]    = new VectorBuilder[HttpHeader]
+        headers:           VectorBuilder[HttpHeader]    = new VectorBuilder[HttpHeader],
+        wsProtocol:        Boolean                      = false
       ): HttpRequest =
-        if (offset == incomingHeaders.size) createRequest(method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, headers)
+        if (offset == incomingHeaders.size) createRequest(method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, headers, wsProtocol)
         else {
           import hpack.Http2HeaderParsing._
           val (name, value) = incomingHeaders(offset)
@@ -126,28 +142,36 @@ private[http2] object RequestParsing {
             case ":scheme" =>
               checkUniquePseudoHeader(":scheme", scheme)
               checkNoRegularHeadersBeforePseudoHeader(":scheme", seenRegularHeader)
-              rec(incomingHeaders, offset + 1, method, Scheme.get(value), authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+              rec(incomingHeaders, offset + 1, method, Scheme.get(value), authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers, wsProtocol)
 
             case ":method" =>
               checkUniquePseudoHeader(":method", method)
               checkNoRegularHeadersBeforePseudoHeader(":method", seenRegularHeader)
 
-              rec(incomingHeaders, offset + 1, Method.get(value), scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+              rec(incomingHeaders, offset + 1, Method.get(value), scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers, wsProtocol)
 
             case ":path" =>
               checkUniquePseudoHeader(":path", pathAndRawQuery)
               checkNoRegularHeadersBeforePseudoHeader(":path", seenRegularHeader)
-              rec(incomingHeaders, offset + 1, method, scheme, authority, PathAndQuery.get(value), contentType, contentLength, cookies, seenRegularHeader, headers)
+              rec(incomingHeaders, offset + 1, method, scheme, authority, PathAndQuery.get(value), contentType, contentLength, cookies, seenRegularHeader, headers, wsProtocol)
 
             case ":authority" =>
               checkUniquePseudoHeader(":authority", authority)
               checkNoRegularHeadersBeforePseudoHeader(":authority", seenRegularHeader)
 
-              rec(incomingHeaders, offset + 1, method, scheme, Authority.get(value), pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers)
+              rec(incomingHeaders, offset + 1, method, scheme, Authority.get(value), pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers, wsProtocol)
+
+            case ":protocol" =>
+              val foundWsProtocol =
+                if (method != HttpMethods.CONNECT) parseError("HTTP message must not contain :protocol header for non CONNECT requests", ":protocol")
+                else if (value.asInstanceOf[String] != "websocket") parseError("Only allowed :protocol header value for CONNECT requests is 'websocket'", ":protocol")
+                else true
+
+              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, seenRegularHeader, headers, foundWsProtocol)
 
             case "content-type" =>
               if (contentType.isEmpty)
-                rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, OptionVal.Some(ContentType.get(value)), contentLength, cookies, true, headers)
+                rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, OptionVal.Some(ContentType.get(value)), contentLength, cookies, true, headers, wsProtocol)
               else
                 parseError("HTTP message must not contain more than one content-type header", "content-type")
 
@@ -158,7 +182,7 @@ private[http2] object RequestParsing {
               if (contentLength == -1) {
                 val contentLengthValue = ContentLength.get(value).toLong
                 if (contentLengthValue < 0) parseError("HTTP message must not contain a negative content-length header", "content-length")
-                rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLengthValue, cookies, true, headers)
+                rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLengthValue, cookies, true, headers, wsProtocol)
               } else parseError("HTTP message must not contain more than one content-length header", "content-length")
 
             case "cookie" =>
@@ -169,10 +193,10 @@ private[http2] object RequestParsing {
                 cookies.append("; ") // Append octets as required by the spec
               }
               cookiesBuilder.append(Cookie.get(value))
-              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookiesBuilder, true, headers)
+              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookiesBuilder, true, headers, wsProtocol)
 
             case _ =>
-              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += OtherHeader.get(value))
+              rec(incomingHeaders, offset + 1, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += OtherHeader.get(value), wsProtocol)
           }
         }
 

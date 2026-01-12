@@ -5,13 +5,14 @@
 package akka.http.scaladsl
 
 import java.nio.file.Paths
-
 import akka.actor.ActorSystem
 import akka.http.impl.util.ExampleHttpContexts
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.Flow
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -50,8 +51,11 @@ object Http2ServerTest extends App {
       HttpResponse(entity = HttpEntity(MediaTypes.`image/jpeg`, FileIO.fromPath(Paths.get("bigimage.jpg"), 100000).mapAsync(1)(slowDown(1))))
     case HttpRequest(GET, Uri(_, _, p, _, _), _, _, _) if p.toString.startsWith("/image2") =>
       HttpResponse(entity = HttpEntity(MediaTypes.`image/jpeg`, FileIO.fromPath(Paths.get("bigimage2.jpg"), 150000).mapAsync(1)(slowDown(2))))
-    case HttpRequest(GET, Uri.Path("/crash"), _, _, _) => sys.error("BOOM!")
-    case _: HttpRequest                                => HttpResponse(404, entity = "Unknown resource!")
+    case HttpRequest(GET, Uri.Path("/crash"), _, _, _)                => sys.error("BOOM!")
+    case req @ HttpRequest(GET, Uri.Path("/websocket.html"), _, _, _) => websocketPage
+    case req @ HttpRequest(GET | CONNECT, Uri.Path("/websocket"), _, _, _) =>
+      req.attribute(AttributeKeys.webSocketUpgrade).get.handleMessages(Flow[Message])
+    case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
   }
 
   val asyncHandler: HttpRequest => Future[HttpResponse] = {
@@ -98,6 +102,7 @@ object Http2ServerTest extends App {
         |      <li><a href="/ping">/ping</a></li>
         |      <li><a href="/image-page">/image-page</a></li>
         |      <li><a href="/crash">/crash</a></li>
+        |      <li><a href="/websocket.html">/websocket.html</a></li>
         |    </ul>
         |    <div>
         |      <form method="post" enctype="multipart/form-data" action="upload">
@@ -126,4 +131,40 @@ object Http2ServerTest extends App {
           |    $imagesBlock
           |  </body>
           |</html>""".stripMargin))
+
+  lazy val websocketPage = HttpResponse(
+    entity = HttpEntity(
+      ContentTypes.`text/html(UTF-8)`,
+      s"""|<!DOCTYPE html>
+          |<html>
+          |<head>
+          |    <title>WebSocket Ping Pong</title>
+          |</head>
+          |<body>
+          |    <h1>WebSocket Ping Pong</h1>
+          |    <input type="text" id="message" placeholder="Enter message"/>
+          |    <button onclick="sendMessage()">Send</button>
+          |    <ul id="messages"></ul>
+          |
+          |    <script>
+          |        var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+          |        var ws = new WebSocket(protocol + "//" + window.location.host + "/websocket");
+          |
+          |        ws.onmessage = function(event) {
+          |            var messages = document.getElementById("messages");
+          |            var message = document.createElement("li");
+          |            var content = document.createTextNode(event.data);
+          |            message.appendChild(content);
+          |            messages.appendChild(message);
+          |        };
+          |
+          |        function sendMessage() {
+          |            var message = document.getElementById("message").value;
+          |            ws.send(message);
+          |            document.getElementById("message").value = "";
+          |        }
+          |    </script>
+          |</body>
+          |</html>""".stripMargin)
+  )
 }

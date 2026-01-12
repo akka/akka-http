@@ -270,10 +270,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       // Send initial settings based on the local application.conf. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
       // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
-      val initialLocalSettings: immutable.Seq[Setting] = immutable.Seq(
+      val initialLocalSettings: immutable.Seq[Setting] = Vector(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams)
       ) ++
-        immutable.Seq(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0)).filter(_ => !isServer) // only on client
+        (if (isServer)
+          // only on server
+          Vector(Setting(SettingIdentifier.SETTINGS_ENABLE_CONNECT_PROTOCOL, 1)) // FIXME toggle in config?
+        else
+          // only on client
+          Vector(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0)))
 
       override def preStart(): Unit = {
         if (initialRemoteSettings.nonEmpty) {
