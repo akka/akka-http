@@ -244,15 +244,24 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       private def triggerTermination(deadline: FiniteDuration): Unit =
         // check if we are already terminating, otherwise start termination
         if (!terminating) {
-          log.debug(s"Termination of this connection was triggered. Sending GOAWAY and waiting for open requests to complete for $deadline.")
-          terminating = true
-          // First GOAWAY per RFC 7540 §6.8: use last-stream-id = Int.MaxValue to signal graceful
-          // shutdown intent. The client must stop initiating new streams, but streams already in
-          // flight before the client receives this frame may still arrive. We accept those during
-          // the grace period by keeping lastIdBeforeTermination at Int.MaxValue for now.
-          multiplexer.pushControlFrame(GoAwayFrame(Int.MaxValue, ErrorCode.NO_ERROR, ByteString("Voluntary connection close.")))
-          lastIdBeforeTermination = Int.MaxValue
-          scheduleOnce(GoAwayGracePeriod, http2Settings.goawayGracePeriod)
+          if (deadline == Duration.Zero) {
+            log.debug("Termination of this connection was triggered. Sending GOAWAY and waiting for open requests to complete for {}.", CompletionTimeout)
+            terminating = true
+            goAwayGracePeriodElapsed = true
+            pushGOAWAY(ErrorCode.NO_ERROR, "Voluntary connection close.")
+            lastIdBeforeTermination = lastStreamId()
+            completeIfDone()
+          } else {
+            log.debug("Termination of this connection was triggered. Sending GOAWAY and waiting for open requests to complete for {}.", deadline)
+            terminating = true
+            // First GOAWAY per RFC 7540 §6.8: use last-stream-id = Int.MaxValue to signal graceful
+            // shutdown intent. The client must stop initiating new streams, but streams already in
+            // flight before the client receives this frame may still arrive. We accept those during
+            // the grace period by keeping lastIdBeforeTermination at Int.MaxValue for now.
+            multiplexer.pushControlFrame(GoAwayFrame(Int.MaxValue, ErrorCode.NO_ERROR, ByteString("Voluntary connection close.")))
+            lastIdBeforeTermination = Int.MaxValue
+            scheduleOnce(GoAwayGracePeriod, http2Settings.goawayGracePeriod)
+          }
           if (!isClosed(frameOut))
             scheduleOnce(CompletionTimeout, deadline)
         }
