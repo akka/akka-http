@@ -34,6 +34,8 @@ private[http] trait Http2CommonSettings {
 
   def pingInterval: FiniteDuration
   def pingTimeout: FiniteDuration
+
+  def goawayGracePeriod: FiniteDuration
 }
 
 /**
@@ -96,6 +98,9 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
 
   def withMaxResetsInterval(interval: FiniteDuration): Http2ServerSettings = copy(maxResetsInterval = interval)
 
+  def goawayGracePeriod: FiniteDuration
+  def withGoawayGracePeriod(duration: FiniteDuration): Http2ServerSettings = copy(goawayGracePeriod = duration)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalServerSettings]
   @InternalApi
@@ -120,6 +125,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     pingTimeout:                       FiniteDuration,
     maxResets:                         Int,
     maxResetsInterval:                 FiniteDuration,
+    goawayGracePeriod:                 FiniteDuration,
     internalSettings:                  Option[Http2InternalServerSettings]
   )
     extends Http2ServerSettings {
@@ -147,6 +153,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       pingTimeout = c.getFiniteDuration("ping-timeout"),
       maxResets = c.getInt("max-resets"),
       maxResetsInterval = c.getFiniteDuration("max-resets-interval"),
+      goawayGracePeriod = c.getFiniteDuration("goaway-grace-period"),
       internalSettings = None, // no possibility to configure internal settings with config
     )
   }
@@ -194,6 +201,9 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
   def completionTimeout: FiniteDuration
   def withCompletionTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(completionTimeout = timeout)
 
+  def goawayGracePeriod: FiniteDuration
+  def withGoawayGracePeriod(duration: FiniteDuration): Http2ClientSettings = copy(goawayGracePeriod = duration)
+
   def baseConnectionBackoff: FiniteDuration
   def withBaseConnectionBackoff(backoff: FiniteDuration): Http2ClientSettings = copy(baseConnectionBackoff = backoff)
 
@@ -225,6 +235,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     completionTimeout:                 FiniteDuration,
     baseConnectionBackoff:             FiniteDuration,
     maxConnectionBackoff:              FiniteDuration,
+    goawayGracePeriod:                 FiniteDuration,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings with javadsl.settings.Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -252,6 +263,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       completionTimeout = c.getFiniteDuration("completion-timeout"),
       baseConnectionBackoff = c.getFiniteDuration("base-connection-backoff"),
       maxConnectionBackoff = c.getFiniteDuration("max-connection-backoff"),
+      goawayGracePeriod = c.getFiniteDuration("goaway-grace-period"),
       internalSettings = None // no possibility to configure internal settings with config
     )
   }

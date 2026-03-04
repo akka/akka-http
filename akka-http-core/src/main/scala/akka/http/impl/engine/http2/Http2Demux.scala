@@ -217,6 +217,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       logic =>
 
       import Http2Demux.CompletionTimeout
+      import Http2Demux.GoAwayGracePeriod
 
       def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart] = stage.wrapTrailingHeaders(headers)
 
@@ -233,6 +234,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       private val terminationPromise = Promise[Http.HttpTerminated]()
       private var terminating: Boolean = false
+      private var goAwayGracePeriodElapsed: Boolean = false
       private var lastIdBeforeTermination: Int = 0
       private val terminateCallback = getAsyncCallback[FiniteDuration](triggerTermination)
       override def terminate(deadline: FiniteDuration)(implicit ex: ExecutionContext): Future[Http.HttpTerminated] = {
@@ -242,11 +244,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       private def triggerTermination(deadline: FiniteDuration): Unit =
         // check if we are already terminating, otherwise start termination
         if (!terminating) {
-          log.debug(s"Termination of this connection was triggered. Sending GOAWAY and waiting for open requests to complete for $CompletionTimeout.")
+          log.debug(s"Termination of this connection was triggered. Sending GOAWAY and waiting for open requests to complete for $deadline.")
           terminating = true
-          pushGOAWAY(ErrorCode.NO_ERROR, "Voluntary connection close.")
-          lastIdBeforeTermination = lastStreamId()
-          completeIfDone()
+          // First GOAWAY per RFC 7540 §6.8: use last-stream-id = Int.MaxValue to signal graceful
+          // shutdown intent. The client must stop initiating new streams, but streams already in
+          // flight before the client receives this frame may still arrive. We accept those during
+          // the grace period by keeping lastIdBeforeTermination at Int.MaxValue for now.
+          multiplexer.pushControlFrame(GoAwayFrame(Int.MaxValue, ErrorCode.NO_ERROR, ByteString("Voluntary connection close.")))
+          lastIdBeforeTermination = Int.MaxValue
+          scheduleOnce(GoAwayGracePeriod, http2Settings.goawayGracePeriod)
           if (!isClosed(frameOut))
             scheduleOnce(CompletionTimeout, deadline)
         }
@@ -297,7 +303,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
         val frame = GoAwayFrame(lastStreamId(), errorCode, ByteString(debug))
         multiplexer.pushControlFrame(frame)
-        // FIXME: handle the connection closing according to the specification
       }
       private[this] var allowReadingIncomingFrames: Boolean = true
       override def allowReadingIncomingFrames(allow: Boolean): Unit = {
@@ -415,7 +420,10 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       private def completeIfDone(): Unit = {
         val noMoreOutgoingStreams = (terminating || isClosed(substreamIn)) && activeStreamCount() == 0
         def allOutgoingDataFlushed = isClosed(frameOut) || multiplexer.hasFlushedAllData
-        if (noMoreOutgoingStreams && allOutgoingDataFlushed) {
+        // When terminating via GOAWAY, delay closure until the grace period has elapsed so the
+        // client has time to receive the GOAWAY frame before we tear down the TCP connection.
+        val gracePeriodDone = !terminating || goAwayGracePeriodElapsed
+        if (noMoreOutgoingStreams && allOutgoingDataFlushed && gracePeriodDone) {
           log.debug("Closing connection after all streams are done and all data has been flushed.")
           if (isServer)
             completeStage()
@@ -488,6 +496,18 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       }
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
+        case GoAwayGracePeriod =>
+          // Second GOAWAY per RFC 7540 §6.8: now that the grace period has elapsed, confirm the
+          // actual last stream ID that was processed. The client must retry any streams above this
+          // value. Only send if the connection is still open — it may have already been closed by
+          // CompletionTimeout or a peer-initiated close during the grace period.
+          if (!isClosed(frameOut)) {
+            lastIdBeforeTermination = lastStreamId()
+            pushGOAWAY(ErrorCode.NO_ERROR, "Voluntary connection close.")
+          }
+          goAwayGracePeriodElapsed = true
+          completeIfDone()
+
         case ConfigurablePing.Tick =>
           // don't do anything unless there are active streams
           if (activeStreamCount() > 0) {
@@ -524,4 +544,5 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 @InternalApi
 private[akka] object Http2Demux {
   case object CompletionTimeout
+  case object GoAwayGracePeriod
 }

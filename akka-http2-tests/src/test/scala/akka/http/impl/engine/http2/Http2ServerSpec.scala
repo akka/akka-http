@@ -59,6 +59,7 @@ import scala.util.Success
 class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
     akka.http.server.http2.log-frames = on
+    akka.http.server.http2.goaway-grace-period = 10ms
   """)
   with Eventually {
   override def failOnSevereMessages: Boolean = true
@@ -1566,7 +1567,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     "support graceful shutdown" should {
       "immediately shutdown when no requests are pending" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         val terminated = serverTerminator.terminate(1.minute)
-        network.expectGOAWAY()
+        network.expectGOAWAY(Int.MaxValue) // first GOAWAY: signal shutdown intent (RFC 7540 §6.8)
+        network.expectGOAWAY() // second GOAWAY: confirm last stream ID (0 — no streams processed)
         network.expectComplete()
         terminated.futureValue
       }
@@ -1581,7 +1583,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val terminated = serverTerminator.terminate(1.minute)
         network.expectWindowUpdate()
         network.expectWindowUpdate()
-        network.expectGOAWAY(1)
+        network.expectGOAWAY(Int.MaxValue) // first GOAWAY: signal shutdown intent
         network.sendDATA(1, endStream = true, ByteString("def"))
         p.expectUtf8EncodedString("def")
         p.expectComplete()
@@ -1589,6 +1591,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         user.emitResponse(1, HttpResponse())
         network.expectDecodedHEADERS(1)
 
+        network.expectGOAWAY(1) // second GOAWAY: confirm last stream ID after grace period
         network.expectComplete()
         terminated.futureValue
       }
@@ -1596,10 +1599,11 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.sendRequest(1, HttpRequest())
         user.expectRequest()
         val terminated = serverTerminator.terminate(1.minute)
-        network.expectGOAWAY(1)
+        network.expectGOAWAY(Int.MaxValue) // first GOAWAY: signal shutdown intent
         user.emitResponse(1, HttpResponse())
         network.expectDecodedHEADERS(1)
 
+        network.expectGOAWAY(1) // second GOAWAY: confirm last stream ID after grace period
         network.expectComplete()
         terminated.futureValue
       }
@@ -1614,28 +1618,34 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.expectDATA(1, endStream = false, ByteString("abc"))
 
         val terminated = serverTerminator.terminate(1.minute)
-        network.expectGOAWAY(1)
+        network.expectGOAWAY(Int.MaxValue) // first GOAWAY: signal shutdown intent
         dataStream.sendNext(ByteString("def"))
         network.expectDATA(1, endStream = false, ByteString("def"))
         dataStream.sendComplete()
         network.expectDATA(1, endStream = true, ByteString.empty)
 
+        network.expectGOAWAY(1) // second GOAWAY: confirm last stream ID after grace period
         network.expectComplete()
         terminated.futureValue
       }
-      "refuse late incoming requests" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+      "refuse streams arriving after the second GOAWAY" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        // Stream 1 is started before terminate() so it keeps the connection alive past the
+        // second GOAWAY, giving us a window to test that a later stream is refused.
         network.sendRequest(1, HttpRequest())
         user.expectRequest()
 
-        // now terminate
         val terminated = serverTerminator.terminate(1.minute)
-        network.expectGOAWAY(1)
+        network.expectGOAWAY(Int.MaxValue) // first GOAWAY: lastIdBeforeTermination = Int.MaxValue
 
-        // send another request
+        // Wait for the grace period (10ms class default) to elapse.  Stream 1 is still active
+        // so the stage stays open: completeIfDone is gated by noMoreOutgoingStreams.
+        network.expectGOAWAY(1) // second GOAWAY: lastIdBeforeTermination = 1
+
+        // Stream 3 arrives after the second GOAWAY: id 3 > lastIdBeforeTermination 1 → refused.
         network.sendRequest(3, HttpRequest())
         network.expectRST_STREAM(3, ErrorCode.REFUSED_STREAM)
 
-        // no complete work on connection
+        // Finish stream 1 to allow the connection to close gracefully.
         user.emitResponse(1, HttpResponse())
         network.expectDecodedHEADERS(1)
 
@@ -1646,9 +1656,10 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.sendRequest(1, HttpRequest())
         user.expectRequest()
 
-        // now terminate
-        val terminated = serverTerminator.terminate(10.millis)
-        network.expectGOAWAY(1)
+        // Deadline (5ms) fires before the grace period (10ms class default), so CompletionTimeout
+        // cancels the GoAwayGracePeriod timer — only the first GOAWAY is sent.
+        val terminated = serverTerminator.terminate(5.millis)
+        network.expectGOAWAY() // only first GOAWAY (Int.MaxValue); no second GOAWAY
 
         network.expectComplete()
         terminated.futureValue
@@ -1660,11 +1671,11 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.sendDATA(1, endStream = false, ByteString("abc"))
         p.expectUtf8EncodedString("abc")
 
-        // now terminate
-        val terminated = serverTerminator.terminate(10.millis)
+        // Deadline (5ms) fires before the grace period — only the first GOAWAY is sent.
+        val terminated = serverTerminator.terminate(5.millis)
         network.expectWindowUpdate()
         network.expectWindowUpdate()
-        network.expectGOAWAY(1)
+        network.expectGOAWAY() // only first GOAWAY (Int.MaxValue); no second GOAWAY
 
         network.expectComplete()
         p.expectError()
@@ -1680,11 +1691,79 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         dataStream.sendNext(ByteString("abc"))
         network.expectDATA(1, endStream = false, ByteString("abc"))
 
-        val terminated = serverTerminator.terminate(10.millis)
-        network.expectGOAWAY(1)
+        // Deadline (5ms) fires before the grace period — only the first GOAWAY is sent.
+        val terminated = serverTerminator.terminate(5.millis)
+        network.expectGOAWAY() // only first GOAWAY (Int.MaxValue); no second GOAWAY
 
         network.expectComplete()
         dataStream.expectCancellation()
+        terminated.futureValue
+      }
+
+      // -----------------------------------------------------------------------
+      // Double-GOAWAY grace period tests (RFC 7540 §6.8)
+      // -----------------------------------------------------------------------
+
+      "send first GOAWAY with Int.MaxValue then a second with the actual last stream ID" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        // Stream 1 is processed before terminate() so the second GOAWAY must lock in lastStreamId = 1.
+        network.sendRequest(1, HttpRequest())
+        user.expectRequest()
+
+        val terminated = serverTerminator.terminate(1.minute)
+
+        // First GOAWAY: per RFC 7540 §6.8 the sender uses last-stream-id = 2^31-1 to signal
+        // graceful-shutdown intent while still accepting streams already in flight.
+        val (firstLastId, firstCode) = network.expectGOAWAY(Int.MaxValue)
+        firstLastId shouldBe Int.MaxValue
+        firstCode shouldBe ErrorCode.NO_ERROR
+
+        user.emitResponse(1, HttpResponse())
+        network.expectDecodedHEADERS(1)
+
+        // Second GOAWAY: after the grace period the server confirms the highest stream it
+        // actually processed, allowing the client to safely retry anything above that.
+        val (secondLastId, secondCode) = network.expectGOAWAY(1)
+        secondLastId shouldBe 1
+        secondCode shouldBe ErrorCode.NO_ERROR
+
+        network.expectComplete()
+        terminated.futureValue
+      }
+
+      "accept streams arriving during the grace period (before second GOAWAY)" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        val terminated = serverTerminator.terminate(1.minute)
+        network.expectGOAWAY(Int.MaxValue) // first GOAWAY: lastIdBeforeTermination = Int.MaxValue
+
+        // Stream 3 arrives while the grace period is still in progress.  Because
+        // lastIdBeforeTermination == Int.MaxValue the server must dispatch it, not refuse it.
+        network.sendRequest(1, HttpRequest())
+        user.expectRequest()
+        network.sendRequest(3, HttpRequest())
+        user.expectRequest()
+
+        user.emitResponse(1, HttpResponse())
+        network.expectDecodedHEADERS(1)
+        user.emitResponse(3, HttpResponse())
+        network.expectDecodedHEADERS(3)
+
+        // After the grace period the second GOAWAY locks in lastStreamId = 3.
+        network.expectGOAWAY(3)
+        network.expectComplete()
+        terminated.futureValue
+      }
+
+      "skip second GOAWAY when the connection is already closed before the grace period fires" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        network.sendRequest(1, HttpRequest())
+        user.expectRequest()
+
+        // Deadline (5ms) is shorter than the class-level grace period (10ms), so
+        // CompletionTimeout fires first and closes the stage.  The GoAwayGracePeriod timer is
+        // cancelled along with the stage, so no second GOAWAY is produced.
+        val terminated = serverTerminator.terminate(5.millis)
+        network.expectGOAWAY() // only the first GOAWAY (Int.MaxValue)
+
+        // Connection is closed by the deadline — no second GOAWAY frame arrives.
+        network.expectComplete()
         terminated.futureValue
       }
     }

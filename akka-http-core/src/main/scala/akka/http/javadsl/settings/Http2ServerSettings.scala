@@ -48,6 +48,10 @@ trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings with akk
 
   def withMaxResetsInterval(interval: Duration): Http2ServerSettings = copy(maxResetsInterval = interval.toMillis.millis)
 
+  def getGoawayGracePeriod: Duration = Duration.ofMillis(goawayGracePeriod.toMillis)
+
+  def withGoawayGracePeriod(duration: Duration): Http2ServerSettings = copy(goawayGracePeriod = duration.toMillis.millis)
+
 }
 object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
   def create(config: Config): Http2ServerSettings = scaladsl.settings.Http2ServerSettings(config)

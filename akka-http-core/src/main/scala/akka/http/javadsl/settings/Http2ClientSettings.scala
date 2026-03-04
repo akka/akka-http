@@ -46,4 +46,7 @@ trait Http2ClientSettings { self: scaladsl.settings.Http2ClientSettings.Http2Cli
   def getMaxConnectionBackoff: Duration = Duration.ofMillis(maxConnectionBackoff.toMillis)
   def withMaxConnectionBackoff(backoff: Duration): Http2ClientSettings = copy(maxConnectionBackoff = backoff.toMillis.millis)
 
+  def getGoawayGracePeriod: Duration = Duration.ofMillis(goawayGracePeriod.toMillis)
+  def withGoawayGracePeriod(duration: Duration): Http2ClientSettings = copy(goawayGracePeriod = duration.toMillis.millis)
+
 }
