@@ -105,7 +105,7 @@ private[http] object Http2Blueprint {
     val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log) // FIXME: reuse for framing
     telemetry.serverConnection atop
       httpLayer(settings, log, dateHeaderRendering) atopKeepRight
-      serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
+      serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded, Some(log)) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding(masterHttpHeaderParser, settings.parserSettings) atop
       framing(settings.http2Settings, log) atop
@@ -197,8 +197,8 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def serverDemux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, ServerTerminator] =
-    BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded))
+  def serverDemux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean, log: Option[LoggingAdapter] = None): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, ServerTerminator] =
+    BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded, log))
 
   /**
    * Creates substreams for every stream and manages stream state machines

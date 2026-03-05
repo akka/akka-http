@@ -264,7 +264,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
       val handlerSetter = Await.result(laterHandler.future, 1.second.dilated)
 
       // now fail the first one, expecting the server-side error message
-      EventFilter[RuntimeException](message = "Response stream for [GET /a] failed with 'Woops, slipped on a slippery slope.'. Aborting connection.", occurrences = 1) intercept {
+      EventFilter.warning(message = "Response stream for [GET /a] failed with 'Woops, slipped on a slippery slope.'. Aborting connection.", occurrences = 1) intercept {
         errorOnConnection1.failure(new RuntimeException("Woops, slipped on a slippery slope."))
       }
 

@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
@@ -57,7 +58,7 @@ private[http2] class Http2ClientDemux(http2Settings: Http2ClientSettings, master
  * INTERNAL API
  */
 @InternalApi
-private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
+private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, override val streamFailureLogOverride: Option[LoggingAdapter] = None)
   extends Http2Demux(http2Settings, initialRemoteSettings, upgraded, isServer = true) {
   // We don't provide access to incoming trailing request headers on the server side
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = None
@@ -211,10 +212,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
   def completionTimeout: FiniteDuration
+  def streamFailureLogOverride: Option[LoggingAdapter] = None
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ServerTerminator) = {
     object Logic extends TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper with ServerTerminator {
       logic =>
+
+      override def streamFailureLog: LoggingAdapter = stage.streamFailureLogOverride.getOrElse(log)
 
       import Http2Demux.CompletionTimeout
       import Http2Demux.GoAwayGracePeriod

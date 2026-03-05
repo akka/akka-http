@@ -942,7 +942,7 @@ class HttpServerSpec extends AkkaSpec(
       netOut.expectComplete()
     })
 
-    "log error and reset connection when the response stream fails" in assertAllStagesStopped(new TestSetup {
+    "log warning and reset connection when the response stream fails" in assertAllStagesStopped(new TestSetup {
 
       send("""POST /inject-meteor HTTP/1.1
              |Host: example.com
@@ -966,7 +966,7 @@ class HttpServerSpec extends AkkaSpec(
       dataOutProbe.sendNext(ByteString("Hello"))
       netOut.expectUtf8EncodedString("5\r\nHello\r\n")
 
-      EventFilter.error("Response stream for [POST /inject-meteor] failed with 'Meteor wiped data center'. Aborting connection.", occurrences = 1).intercept {
+      EventFilter.warning("Response stream for [POST /inject-meteor] failed with 'Meteor wiped data center'. Aborting connection.", occurrences = 1).intercept {
         dataOutProbe.sendError(new RuntimeException("Meteor wiped data center"))
       }
 

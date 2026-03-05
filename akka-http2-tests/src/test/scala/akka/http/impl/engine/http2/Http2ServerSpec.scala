@@ -820,7 +820,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         class MyProblem extends RuntimeException
 
-        EventFilter[MyProblem](pattern = "Substream 1 failed with .*", occurrences = 1).intercept {
+        EventFilter.warning(pattern = "HTTP/2 Response stream for \\[stream 1\\] failed with '.*'. Resetting stream\\.", occurrences = 1).intercept {
           entityDataOut.sendError(new MyProblem)
           network.expectRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
         }

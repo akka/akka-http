@@ -458,7 +458,7 @@ private[http] object HttpServerBluePrint {
               val (newEntity, fut) = HttpEntity.captureTermination(e)
               fut.onComplete {
                 case Failure(ex) =>
-                  log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
+                  log.warning(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
                 case _ => // ignore
               }(ExecutionContext.parasitic)
               newEntity

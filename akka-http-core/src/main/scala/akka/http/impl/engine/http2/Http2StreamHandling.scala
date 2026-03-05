@@ -37,6 +37,8 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
   def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Either[ByteString, Source[Any, Any]], correlationAttributes: Map[AttributeKey[_], _]): Unit
   def isUpgraded: Boolean
+  /** LoggingAdapter to use for response stream failure messages. Defaults to the stage log. */
+  def streamFailureLog: akka.event.LoggingAdapter = log
 
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
 
@@ -799,7 +801,8 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
       }
     }
     override def onUpstreamFailure(ex: Throwable): Unit = {
-      log.error(ex, s"Substream $streamId failed with $ex")
+      val streamKind = if (isServer) "HTTP/2 Response" else "HTTP/2 Request"
+      streamFailureLog.warning(ex, s"$streamKind stream for [stream $streamId] failed with '${ex.getMessage}'. Resetting stream.")
       multiplexer.pushControlFrame(RstStreamFrame(streamId, Http2Protocol.ErrorCode.INTERNAL_ERROR))
       handleOutgoingFailed(streamId, ex)
       cleanupStream()

@@ -524,7 +524,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         requestStream.expectRequest()
       }
       "send RST_STREAM when request entity data stream fails immediately" in new StreamingRequestSent {
-        EventFilter[RuntimeException](pattern = "Substream 1 failed with .*", occurrences = 1).intercept {
+        EventFilter.warning(pattern = "HTTP/2 Request stream for \\[stream 1\\] failed with '.*'. Resetting stream\\.", occurrences = 1).intercept {
           requestStream.sendError(new RuntimeException("boom"))
           network.expectRST_STREAM(streamId, ErrorCode.INTERNAL_ERROR)
         }
@@ -534,7 +534,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         requestStream.sendNext(ByteString("abc"))
         network.expectDATA(streamId, false, ByteString("abc"))
 
-        EventFilter[RuntimeException](pattern = "Substream 1 failed with .*", occurrences = 1).intercept {
+        EventFilter.warning(pattern = "HTTP/2 Request stream for \\[stream 1\\] failed with '.*'. Resetting stream\\.", occurrences = 1).intercept {
           requestStream.sendError(new RuntimeException("boom"))
           network.expectRST_STREAM(streamId, ErrorCode.INTERNAL_ERROR)
         }
