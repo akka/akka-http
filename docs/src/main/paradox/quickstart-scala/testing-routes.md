@@ -26,7 +26,7 @@ First we'll need to extend a number of base traits:
 @@snip [QuickstartServer.scala](/samples/akka-http-quickstart-scala/src/test/scala/com/example/UserRoutesSpec.scala) { #test-top }
 
 Here we're using ScalaTest which provides the testing *style* `WordSpec` and the `Matchers` trait which provides
-the `something should === (somethingElse)` syntax [and more](http://www.scalatest.org/user_guide/using_matchers). 
+the `something should === (somethingElse)` syntax [and more](https://www.scalatest.org/user_guide/using_matchers). 
 Next we inherit the Akka HTTP provided `ScalatestRouteTest` bridge trait that provides Route specific testing facilities, 
 and binds into ScalaTest's lifecycle methods such that the `ActorSystem` is started and stopped automatically for us.
 

@@ -1,7 +1,7 @@
 # Migration Guide to and within Akka HTTP 10.4.x
 
 The license for using Akka HTTP in production has been changed to Business Source License v1.1.
-[Why We Are Changing the License for Akka](https://www.lightbend.com/blog/why-we-are-changing-the-license-for-akka)
+[Why We Are Changing the License for Akka](https://akka.io/blog/why-we-are-changing-the-license-for-akka)
 explains the reasons and a [detailed FAQ](https://www.lightbend.com/akka/license-faq) is available to answer many of
 the questions that you may have about the license change.
 

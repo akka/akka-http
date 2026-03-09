@@ -27,7 +27,7 @@ when using WebSockets for one-way communication may not be what you would expect
 Messages sent and received over a WebSocket can be either @apidoc[TextMessage] s or @apidoc[BinaryMessage] s and each
 of those has two subtypes `Strict` (all data in one chunk) or `Streamed`. In typical applications messages will be `Strict` as
 WebSockets are usually deployed to communicate using small messages not stream data, the protocol does however
-allow this (by not marking the first fragment as final, as described in [RFC 6455 section 5.2](https://tools.ietf.org/html/rfc6455#section-5.2)).
+allow this (by not marking the first fragment as final, as described in [RFC 6455 section 5.2](https://datatracker.ietf.org/doc/html/rfc6455#section-5.2)).
 
 The strict text is available from @scala[`TextMessage.Strict`]@java[`TextMessage.getStrictText`] and strict binary data from
 @scala[`BinaryMessage.Strict`]@java[`BinaryMessage.getStrictData`].
@@ -141,7 +141,7 @@ it is possible to configure the client-side to perform automatic keep-alive usin
 This is supported in a transparent way via configuration by setting the: 
 `akka.http.client.websocket.periodic-keep-alive-max-idle = 1 second` to a specified max idle timeout. The keep-alive triggers
 when no other messages are in-flight during the such configured period. Akka HTTP will then automatically send
-a [`Ping` frame](https://tools.ietf.org/html/rfc6455#section-5.5.2) for each of such idle intervals.
+a [`Ping` frame](https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.2) for each of such idle intervals.
 
 By default, the automatic keep-alive feature is disabled.
 
@@ -162,6 +162,6 @@ Java
 
 A Ping response will always be replied to by the client-side with an appropriate `Pong` reply, carrying the same payload.
 It is also possible to configure the keep-alive mechanism to send `Pong` frames instead of `Ping` frames, 
-which enables an [uni-directional heartbeat](https://tools.ietf.org/html/rfc6455#section-5.5.3) mechanism (in which case 
+which enables an [uni-directional heartbeat](https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.3) mechanism (in which case 
 the client side will *not* reply to such heartbeat). You can configure this mode by setting: 
 `akka.http.client.websocket.periodic-keep-alive-mode = pong`.

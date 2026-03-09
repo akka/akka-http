@@ -43,7 +43,7 @@ for authorization (e.g. a database lookup for retrieving user access rights).
 
 HTTP provides a general framework for access control and authentication, via an extensible set of challenge-response
 authentication schemes, which can be used by a server to challenge a client request and by a client to provide
-authentication information. The general mechanism is defined in [RFC 7235](https://tools.ietf.org/html/rfc7235).
+authentication information. The general mechanism is defined in [RFC 7235](https://datatracker.ietf.org/doc/html/rfc7235).
 
 The "HTTP Authentication Scheme Registry" defines the namespace for the authentication schemes in challenges and
 credentials. You can see the currently registered schemes at [IANA HTTP Authentication Scheme Registry](https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml).
@@ -55,7 +55,7 @@ found here: <https://datatracker.ietf.org/doc/rfc7617/>.
 
 The OAuth2 directives currently provided in Akka HTTP are not a full OAuth2 protocol implementation,
 they are only a means of extracting the so called `Bearer Token` from the @apidoc[Authorization] HTTP Header,
-as defined in [RFC 6750](https://tools.ietf.org/html/rfc6750), and allow users to validate and complete the protocol.
+as defined in [RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750), and allow users to validate and complete the protocol.
 
 <a id="credentials-and-timing-attacks"></a>
 ## Credentials and password timing attacks

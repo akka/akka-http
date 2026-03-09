@@ -35,7 +35,7 @@ The default transport is `ClientTransport.TCP` which simply opens a TCP connecti
 ### HTTP(S) Proxy
 
 A transport that connects to target servers via an HTTP(S) proxy. An HTTP(S) proxy uses the HTTP `CONNECT` method (as
-specified in [RFC 7231 Section 4.3.6](https://tools.ietf.org/html/rfc7231#section-4.3.6)) to create tunnels to target
+specified in [RFC 7231 Section 4.3.6](https://datatracker.ietf.org/doc/html/rfc7231#section-4.3.6)) to create tunnels to target
 servers. The proxy itself should transparently forward data to the target servers so that end-to-end encryption should
 still work (if TLS breaks, then the proxy might be fussing with your data).
 

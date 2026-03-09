@@ -14,7 +14,7 @@
 Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[@scaladoc[Authenticator[T]](akka.http.scaladsl.server.Directives#Authenticator[T]=akka.http.scaladsl.server.directives.Credentials=%3EOption[T])]@java[`Authenticator<T>` - function from `Optional<ProvidedCredentials>` to `Optional<T>`].
 
 Provides support for extracting the so-called "*Bearer Token*" from the @apidoc[Authorization] HTTP Header,
-which is used to initiate an OAuth2 authorization. The directive also supports extracting the Bearer Token from URI query parameter `access_token`, as described in [RFC 6750](https://tools.ietf.org/html/rfc6750).
+which is used to initiate an OAuth2 authorization. The directive also supports extracting the Bearer Token from URI query parameter `access_token`, as described in [RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750).
 
 @@@ warning
 This directive does not implement the complete OAuth2 protocol, but instead enables implementing it,
@@ -30,7 +30,7 @@ variant of this directive which allows it to run without blocking routing layer 
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
-For more information on how OAuth2 works see [RFC 6750](https://tools.ietf.org/html/rfc6750).
+For more information on how OAuth2 works see [RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750).
 
 ## Example
 

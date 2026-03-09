@@ -54,5 +54,5 @@ Thanks, Bastian Ike and Sebastian Rose of AOE for bringing this issue to our att
 ## References
 
  * [CVE-2021-23339](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-23339)
- * [SNYK-JAVA-COMTYPESAFEAKKA-1075043](https://snyk.io/vuln/SNYK-JAVA-COMTYPESAFEAKKA-1075043)
+ * [SNYK-JAVA-COMTYPESAFEAKKA-1075043](https://security.snyk.io/vuln/SNYK-JAVA-COMTYPESAFEAKKA-1075043)
  * [#3754](https://github.com/akka/akka-http/pull/3754)

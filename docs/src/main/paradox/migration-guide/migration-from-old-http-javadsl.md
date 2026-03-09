@@ -63,4 +63,4 @@ This has been made more consistent than previously, across all overloads and Fut
 ## Migration help
 
 For Lightbend subscription owners it is possible to reach out to the core team for help in the migration by asking specific 
-questions via the [Lightbend customer portal](https://portal.lightbend.com/account/login).
+questions via the [Akka customer portal](https://portal.akka.io/account/login).

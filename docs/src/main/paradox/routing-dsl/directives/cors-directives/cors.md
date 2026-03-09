@@ -13,7 +13,7 @@
 CORS (Cross Origin Resource Sharing) is a mechanism to enable cross origin requests by informing browsers about origins
 other than the server itself that the browser can load resources from via HTTP headers.
 
-For an overview on how CORS works, see the [MDN web docs page on CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
+For an overview on how CORS works, see the [MDN web docs page on CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS)
 
 The directive uses config defined under `akka.http.cors`, or an explicitly provided `CorsSettings` instance.
 

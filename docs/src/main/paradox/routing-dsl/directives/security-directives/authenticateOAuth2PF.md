@@ -31,7 +31,7 @@ variant of this directive which allows it to run without blocking routing layer 
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
-For more information on how OAuth2 works see [RFC 6750](https://tools.ietf.org/html/rfc6750).
+For more information on how OAuth2 works see [RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750).
 
 ## Example
 
