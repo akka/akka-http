@@ -769,6 +769,22 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
+    "handle incoming GOAWAY from server" should {
+
+      "close the connection when receiving GOAWAY with no active streams" inAssertAllStagesStopped new TestSetup {
+        user.emitRequest(Get("/"))
+        val streamId = network.expect[HeadersFrame]().streamId
+        network.sendHEADERS(streamId, endStream = true, Seq(RawHeader(":status", "200")))
+        user.expectResponse()
+
+        // Server signals it will not accept more streams
+        network.sendFrame(GoAwayFrame(streamId, ErrorCode.NO_ERROR))
+
+        // Client should close the connection gracefully
+        expectGracefulCompletion()
+      }
+    }
+
     "delay stage completion" should {
 
       "until in-flight responses are received" inAssertAllStagesStopped new TestSetup with NetProbes {

@@ -236,6 +236,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       private var terminating: Boolean = false
       private var goAwayGracePeriodElapsed: Boolean = false
       private var lastIdBeforeTermination: Int = 0
+      // Set when the CLIENT receives a GOAWAY from the server (as opposed to the server sending one).
+      // In this case we do not need to flush pending outgoing data before closing.
+      private var clientReceivedGoAway: Boolean = false
       private val terminateCallback = getAsyncCallback[FiniteDuration](triggerTermination)
       override def terminate(deadline: FiniteDuration)(implicit ex: ExecutionContext): Future[Http.HttpTerminated] = {
         terminateCallback.invoke(deadline)
@@ -329,7 +332,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn)) {
           // While we don't support PUSH_PROMISE there's only capacity control on the client
           if (isServer) pull(substreamIn)
-          else if (hasCapacityToCreateStreams) pull(substreamIn)
+          else if (!terminating && hasCapacityToCreateStreams) pull(substreamIn)
         }
       }
 
@@ -378,6 +381,16 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
               }
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
+
+            case GoAwayFrame(lastStreamId, _, _) if !isServer =>
+              // Server-initiated graceful shutdown: stop creating new streams and close
+              // this connection once all in-progress streams (id <= lastStreamId) complete.
+              info(s"Received GOAWAY from server with lastStreamId=$lastStreamId. Will close connection after in-progress streams complete.")
+              terminating = true
+              lastIdBeforeTermination = lastStreamId
+              goAwayGracePeriodElapsed = true
+              clientReceivedGoAway = true
+              completeIfDone()
 
             case e =>
               debug(s"Got unhandled event $e")
@@ -428,7 +441,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       private def completeIfDone(): Unit = {
         val noMoreOutgoingStreams = (terminating || isClosed(substreamIn)) && activeStreamCount() == 0
-        def allOutgoingDataFlushed = isClosed(frameOut) || multiplexer.hasFlushedAllData
+        // When the client received GOAWAY from the server, skip the data-flush requirement:
+        // the server is closing the connection so flushing our pending outgoing data is pointless.
+        def allOutgoingDataFlushed = isClosed(frameOut) || multiplexer.hasFlushedAllData || clientReceivedGoAway
         // When terminating via GOAWAY, delay closure until the grace period has elapsed so the
         // client has time to receive the GOAWAY frame before we tear down the TCP connection.
         val gracePeriodDone = !terminating || goAwayGracePeriodElapsed
@@ -439,7 +454,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           else {
             cancel(frameIn)
             complete(frameOut)
-            cancel(substreamIn)
 
             // Using complete here (instead of a simpler `completeStage`) will make sure the buffer can be
             // drained by the user before completely shutting down the stage finally.
@@ -448,7 +462,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             // dispatched. However, some of the dispatched responses might still be stuck in the buffer for the user
             // to be fetched. To avoid losing them, we schedule completion here and rely on the final completion of the buffer
             // to terminate the whole stage.
-            bufferedSubStreamOutput.complete()
+            //
+            // We do NOT cancel(substreamIn) here. Completing substreamOut signals PersistentConnection
+            // via responseIn.onUpstreamFinish → onDisconnected(), which in turn calls requestOut.fail()
+            // to close substreamIn from the upstream side. Calling cancel(substreamIn) directly would
+            // instead trigger requestOut.onDownstreamFinish → onDisconnected() while ongoingRequests may
+            // still be populated (if the response element hasn't been processed downstream yet), causing
+            // spurious error responses and a premature cancel of substreamOut.
+            if (!bufferedSubStreamOutput.completed)
+              bufferedSubStreamOutput.complete()
           }
         }
       }
@@ -469,6 +491,17 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             completeIfDone()
             scheduleOnce(CompletionTimeout, completionTimeout)
           }
+
+        override def onUpstreamFailure(ex: Throwable): Unit =
+          if (!isServer && terminating) {
+            // During client-side graceful shutdown (e.g. after receiving a server GOAWAY),
+            // PersistentConnection's onDisconnected() calls requestOut.fail() which propagates here
+            // as an upstream failure. This is expected: all streams are done, all responses have
+            // been dispatched, and the stage is already completing via bufferedSubStreamOutput.
+            // Complete gracefully rather than failing the whole stage.
+            completeStage()
+          } else
+            super.onUpstreamFailure(ex)
       })
 
       /**
