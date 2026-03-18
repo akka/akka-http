@@ -382,7 +382,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             case GoAwayFrame(lastStreamId, _, _) if !isServer =>
               // Server-initiated graceful shutdown: stop creating new streams and close
               // this connection once all in-progress streams (id <= lastStreamId) complete.
-              info(s"Received GOAWAY from server with lastStreamId=$lastStreamId. Will close connection after in-progress streams complete.")
+              debug(s"Received GOAWAY from server with lastStreamId=$lastStreamId. Will close connection after in-progress streams complete.")
               terminating = true
               lastIdBeforeTermination = lastStreamId
               goAwayGracePeriodElapsed = true
