@@ -783,6 +783,24 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // Client should close the connection gracefully
         expectGracefulCompletion()
       }
+
+      "wait for in-progress stream to complete before closing when receiving GOAWAY with active streams" inAssertAllStagesStopped new TestSetup {
+        user.emitRequest(Get("/"))
+        val streamId = network.expect[HeadersFrame]().streamId
+
+        // Server sends GOAWAY *before* the response — stream is still active
+        network.sendFrame(GoAwayFrame(streamId, ErrorCode.NO_ERROR))
+
+        // Connection must NOT be closed yet: the stream is still in flight
+        network.toNet.expectNoBytes(100.millis)
+
+        // Now the server delivers the response for the in-flight stream
+        network.sendHEADERS(streamId, endStream = true, Seq(RawHeader(":status", "200")))
+        user.expectResponse()
+
+        // Only now should the client close the connection gracefully
+        expectGracefulCompletion()
+      }
     }
 
     "delay stage completion" should {
