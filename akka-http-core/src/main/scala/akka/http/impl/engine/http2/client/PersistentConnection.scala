@@ -30,6 +30,9 @@ private[http2] object PersistentConnection {
 
   private case class EmbargoEnded(connectsLeft: Option[Int], embargo: FiniteDuration)
 
+  /** Thrown by [[PersistentConnection]] when it tears down the substream connection during graceful shutdown. */
+  private[http2] final class ConnectionBrokenException extends RuntimeException("connection broken")
+
   /**
    * Wraps a connection flow with transparent reconnection support.
    *
@@ -212,7 +215,7 @@ private[http2] object PersistentConnection {
         def onDisconnected(): Unit = {
           emitMultiple[HttpResponse](responseOut, ongoingRequests.values.map(errorResponse.withAttributes(_)).toVector, () => setHandler(responseOut, Unconnected))
           responseIn.cancel()
-          requestOut.fail(new RuntimeException("connection broken"))
+          requestOut.fail(new ConnectionBrokenException)
 
           if (isClosed(requestIn)) {
             // user closed PersistentConnection before and we were waiting for remaining responses

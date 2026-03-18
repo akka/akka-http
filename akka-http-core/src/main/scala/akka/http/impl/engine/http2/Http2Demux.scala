@@ -11,6 +11,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.engine.http2.client.PersistentConnection
 import akka.http.impl.engine.server.ServerTerminator
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ AttributeKey, HttpEntity, HttpHeader }
@@ -492,13 +493,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         override def onUpstreamFailure(ex: Throwable): Unit =
           if (!isServer && terminating) {
             ex match {
-              case re: RuntimeException if re.getMessage == "connection broken" =>
-                // Special handling of graceful shutdown of PersistentConnection
-                // During client-side graceful shutdown (e.g. after receiving a server GOAWAY),
-                // PersistentConnection's onDisconnected() calls requestOut.fail("connection broken")
-                // which propagates here. This is expected: all streams are done, all responses have
-                // been dispatched, and the stage is already completing via bufferedSubStreamOutput.
-                // Complete gracefully rather than failing the whole stage.
+              case _: PersistentConnection.ConnectionBrokenException =>
+                // PersistentConnection.onDisconnected() signals graceful teardown via this exception.
+                // All streams are done and the stage is already completing — finish cleanly.
                 debug(s"Received expected upstream failure during graceful GOAWAY shutdown: ${ex.getMessage}")
                 completeStage()
               case _ =>
