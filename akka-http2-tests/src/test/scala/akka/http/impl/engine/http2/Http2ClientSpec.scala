@@ -943,6 +943,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // force connection to shutdown (in case it is an invalid state)
         setup.network.fromNet.sendError(new RuntimeException)
         setup.network.toNet.cancel()
+        setup.user.requestOut.sendComplete()
 
         // and then assert that all stages, substreams in particular, are stopped
       }

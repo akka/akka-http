@@ -7,7 +7,6 @@ package akka.http.impl.engine.http2
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
-import akka.http.impl.engine.http2.Http2Protocol
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
@@ -18,7 +17,7 @@ import akka.http.scaladsl.settings.Http2ClientSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{ ClientTransport, Http }
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.{ KillSwitches, StreamTcpException, UniqueKillSwitch }
+import akka.stream.{ Attributes, KillSwitches, StreamTcpException, UniqueKillSwitch }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
@@ -30,7 +29,6 @@ import java.net.InetSocketAddress
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
-import scala.concurrent.ExecutionContext
 
 class Http2PersistentClientTlsSpec extends Http2PersistentClientSpec(true)
 class Http2PersistentClientPlaintextSpec extends Http2PersistentClientSpec(false)
@@ -306,59 +304,30 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       val connectionProbe = TestProbe()
 
       new TestSetup(tls) {
+
+        // Store connections so shutdown() can close its transport for clean termination.
+        @volatile var connections = Seq.empty[RawHttp2Connection]
+
         override def clientSettings: ClientConnectionSettings =
           ClientConnectionSettings(system)
             .mapHttp2Settings(_.withMaxPersistentAttempts(5).withBaseConnectionBackoff(Duration.Zero))
             .withTransport(new ClientTransport {
               override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
-                // outgoingConnectionPriorKnowledge() calls connectTo() once at flow-blueprint
-                // construction time, then PersistentConnection rematerializes that blueprint on
-                // every reconnect.  We must therefore return a *rematerializable* flow: one that
-                // creates a fresh RawHttp2Connection (with fresh TestSubscriber/TestPublisher
-                // probes) on each materialization rather than baking a single instance in.
-                implicit val ec: ExecutionContext = system.dispatcher
                 Flow.fromMaterializer { (_, _) =>
-                  val conn = new RawHttp2Connection()
-                  connectionProbe.ref ! conn
-                  conn.toClientFlow
+                  val connection = new RawHttp2Connection()
+                  connections :+= connection
+                  connectionProbe.ref ! connection
+                  connection.toClientFlow
                 }.mapMaterializedValue(_.flatten)
               }
             })
 
-        // Store conn2 so shutdown() can close its transport for clean termination.
-        var conn2Ref: RawHttp2Connection = null
-
-        // No real server in this test, so we drive both termination signals explicitly.
-        //
-        // We need TWO signals to shut down conn2's Http2Demux cleanly without relying on the
-        // 3-second completion-timeout:
-        //
-        //   1. fromServer.sendComplete() drives the INCOMING side:
-        //        SubSource → parsing pipeline → Http2Demux.frameIn
-        //        → frameIn.onUpstreamFinish() → Http2Demux.completeStage()
-        //        → complete(substreamOut) → PersistentConnection.onDisconnected() → Unconnected
-        //
-        //   2. plainDataProbe.cancel() drives the OUTGOING side:
-        //        TestSubscriber cancel → encoding pipeline (backward cancel)
-        //        → Http2Demux.frameOut.onDownstreamFinish()
-        //        This also unsticks any Detacher stage that has a buffered element
-        //        (e.g. a pending SETTINGS_ACK) and never received an onUpstreamFinish()
-        //        because the GraphInterpreter skips enqueueing Complete when the port is
-        //        in Pulling state at the time complete(frameOut) fires.
-        //
-        // After both signals are processed:
-        //   - Http2Demux has called completeStage() (from signal 1 or signal 2)
-        //   - The encoding pipeline has terminated (signal 2 unsticks the Detacher)
-        //   - PersistentConnection is in Unconnected state (from complete(substreamOut))
-        //   Then requestsOut.sendComplete() → Unconnected.onUpstreamFinish() → completeStage()
-        //   → responseOut complete → responsesIn.expectComplete().
+        // No real server in this test, so we drive termination explicitly.
         override def shutdown(): Unit = {
-          Option(conn2Ref).foreach { c2 =>
-            c2.fromServer.sendComplete()  // close the incoming (server→client) side
-            c2.plainDataProbe.cancel()    // cancel the outgoing (client→server) side
-          }
           client.requestsOut.sendComplete()
-          client.responsesIn.expectComplete()
+          connections.foreach { conn =>
+            conn.close()
+          }
         }
 
         client.sendRequest(
@@ -394,9 +363,8 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
         )
         client.responsesIn.request(1)
 
+        // leads to a new connection
         val conn2 = connectionProbe.expectMsgType[RawHttp2Connection]
-        conn2Ref = conn2
-        conn2 should not be null
 
         conn2.doHandshake()
         val streamId2 = conn2.expect[HeadersFrame]().streamId
@@ -404,8 +372,10 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
         val response2 = client.expectResponse()
         response2.attribute(requestIdAttr).get.id shouldBe "req2"
 
-        // shutdown() will close conn2's transport and wait for the pipeline to drain before
-        // completing requestsOut — see the shutdown() comment above for details.
+        client.requestsOut.sendComplete()
+        conn2.fromServer.expectCancellation()
+        conn2.close()
+        client.responsesIn.expectComplete()
       }
     }
 
@@ -487,7 +457,10 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       // is already queued at connection time, so we don't assert SETTINGS ACK here.
     }
 
-    def close(): Unit = fromServer.sendComplete()
+    def close(): Unit = {
+      fromServer.sendComplete()
+      frameProbe.plainDataProbe.cancel()
+    }
   }
 
   case class ServerRequest(request: HttpRequest, promise: Promise[HttpResponse]) {
@@ -524,6 +497,7 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
               killProbe.ref ! killer
             }
             .viaMat(ClientTransport.TCP.connectTo(server.binding.localAddress.getHostString, server.binding.localAddress.getPort, settings)(system))(Keep.right)
+            .addAttributes(Attributes.name("CustomTransport"))
         }
       })
 

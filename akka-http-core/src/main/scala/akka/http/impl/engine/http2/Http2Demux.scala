@@ -18,10 +18,7 @@ import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.settings.{ Http2ClientSettings, Http2CommonSettings, Http2ServerSettings }
 import akka.macros.LogHelper
-import akka.stream.Attributes
-import akka.stream.BidiShape
-import akka.stream.Inlet
-import akka.stream.Outlet
+import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler, StageLogging, TimerGraphStageLogic }
@@ -494,12 +491,21 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         override def onUpstreamFailure(ex: Throwable): Unit =
           if (!isServer && terminating) {
-            // During client-side graceful shutdown (e.g. after receiving a server GOAWAY),
-            // PersistentConnection's onDisconnected() calls requestOut.fail() which propagates here
-            // as an upstream failure. This is expected: all streams are done, all responses have
-            // been dispatched, and the stage is already completing via bufferedSubStreamOutput.
-            // Complete gracefully rather than failing the whole stage.
-            completeStage()
+            ex match {
+              case re: RuntimeException if re.getMessage == "connection broken" =>
+                // Special handling of graceful shutdown of PersistentConnection
+                // During client-side graceful shutdown (e.g. after receiving a server GOAWAY),
+                // PersistentConnection's onDisconnected() calls requestOut.fail("connection broken")
+                // which propagates here. This is expected: all streams are done, all responses have
+                // been dispatched, and the stage is already completing via bufferedSubStreamOutput.
+                // Complete gracefully rather than failing the whole stage.
+                debug(s"Received expected upstream failure during graceful GOAWAY shutdown: ${ex.getMessage}")
+                completeStage()
+              case _ =>
+                // Unexpected failure type during termination — propagate rather than hiding it.
+                warning(s"Unexpected upstream failure type during graceful GOAWAY shutdown, propagating: $ex")
+                super.onUpstreamFailure(ex)
+            }
           } else
             super.onUpstreamFailure(ex)
       })
