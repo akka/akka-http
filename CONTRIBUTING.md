@@ -366,6 +366,19 @@ the plaintext traffic in Wireshark: you can set its `InterceptorPort` to
 the same value as the `ReturnPort` and then sniff the loopback interface and
 filter on that port.
 
+### h2spec (HTTP/2 conformance testing)
+
+The `H2SpecIntegrationSpec` test uses [h2spec](https://github.com/summerwind/h2spec) to validate
+HTTP/2 conformance. On amd64 platforms, the binary is downloaded automatically. On other architectures
+(e.g. Apple Silicon), you need to install it locally using Go:
+
+```
+go install github.com/summerwind/h2spec/cmd/h2spec@latest
+```
+
+The build checks both `PATH` and `~/go/bin`, so it should be found automatically.
+If h2spec is not available, the tests will be skipped rather than fail.
+
 ### golang
 
 When testing against a Go application, running with the environment variable

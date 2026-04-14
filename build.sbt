@@ -1,6 +1,6 @@
 import akka._
 import AkkaDependency._
-import Dependencies.{h2specExe, h2specName}
+import Dependencies.{h2specExe, h2specExt, h2specName}
 import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
 import java.nio.file.Files
 import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
@@ -211,7 +211,31 @@ lazy val http2Tests = project("akka-http2-tests")
   .settings(Dependencies.http2Tests)
   .settings {
     lazy val h2specPath = Def.task {
-      (Test / target).value / h2specName / h2specExe
+      // Check for a locally installed h2spec (needed for non-amd64 platforms like Apple Silicon)
+      val fromPath: Option[File] = {
+        // Check PATH
+        val onPath = scala.util.Try {
+          val path = scala.sys.process.Process(Seq("which", h2specExe)).!!.trim
+          val f = new File(path)
+          if (f.canExecute) Some(f) else None
+        }.getOrElse(None)
+        // Check common Go bin location
+        onPath.orElse {
+          val goDefault = new File(System.getProperty("user.home"), s"go/bin/$h2specExe")
+          if (goDefault.canExecute) Some(goDefault) else None
+        }
+      }
+
+      // Only fall back to the downloaded amd64 binary when on amd64
+      val isAmd64 = System.getProperty("os.arch") == "amd64" || System.getProperty("os.arch") == "x86_64"
+      fromPath.getOrElse(
+        if (isAmd64) (Test / target).value / h2specName / h2specExe
+        else {
+          streams.value.log.warn("h2spec not found on PATH and no prebuilt binary available for " + System.getProperty("os.arch") + ". " +
+            "Install h2spec locally: go install github.com/summerwind/h2spec/cmd/h2spec@latest")
+          (Test / target).value / "h2spec-not-available"
+        }
+      )
     }
     Seq(
       Test / run / fork := true,
@@ -222,11 +246,20 @@ lazy val http2Tests = project("akka-http2-tests")
         val log = streams.value.log
         val h2spec = h2specPath.value
 
-        if (!h2spec.exists) {
+        if (!h2spec.exists && h2spec.getName != "h2spec-not-available") {
           log.info("Extracting h2spec to " + h2spec)
 
-          for (zip <- (Test / update).value.select(artifact = artifactFilter(name = h2specName, extension = "zip")))
-            IO.unzip(zip, (Test / target).value)
+          val targetDir = (Test / target).value
+          for (archive <- (Test / update).value.select(artifact = artifactFilter(name = h2specName, extension = h2specExt))) {
+            if (h2specExt == "zip")
+              IO.unzip(archive, targetDir)
+            else {
+              // tar.gz: extract into h2specName subdirectory to match expected path
+              val extractDir = targetDir / h2specName
+              IO.createDirectory(extractDir)
+              scala.sys.process.Process(Seq("tar", "xzf", archive.getAbsolutePath, "-C", extractDir.getAbsolutePath)).!
+            }
+          }
 
           // Set the executable bit on the expected path to fail if it doesn't exist
           for (view <- Option(Files.getFileAttributeView(h2spec.toPath, classOf[PosixFileAttributeView]))) {

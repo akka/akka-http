@@ -17,10 +17,13 @@ object Dependencies {
   val jacksonDatabindVersion = "2.18.4"
   val jacksonXmlVersion = jacksonDatabindVersion
   val junitVersion = "4.13.2"
-  val h2specVersion = "1.5.0"
+  val h2specVersion = "2.6.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
-  val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
+  // sbt resolves .tar.gz as extension "gz"
+  val h2specExt = if (DependencyHelpers.osName == "windows") "zip" else "gz"
+  private val h2specArchiveExt = if (DependencyHelpers.osName == "windows") "zip" else "tar.gz"
+  val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.$h2specArchiveExt"
 
   val scalaTestVersion = "3.2.19"
   val specs2Version = "4.10.6"
