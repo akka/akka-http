@@ -91,18 +91,15 @@ class H2SpecIntegrationSpec extends AkkaSpec(
     /** Cases that are known to fail, but we haven't triaged yet */
     val pendingTestCases = Seq(
       "4.2",
-      "4.3",
       "5.1",
       "5.1.1",
       "5.1.2",
       "5.5",
       "6.1",
-      "6.3",
       "6.5",
       "6.5.2",
       "6.9",
       "6.9.1",
-      "6.10",
       "8.1",
       "8.1.2",
       "8.1.2.1",
