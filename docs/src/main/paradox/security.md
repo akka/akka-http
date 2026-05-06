@@ -2,7 +2,7 @@
 
 @@@note
 
-Security announcements has moved to a shared page for all Akka projects and can now be found at [akka.io/security](https://akka.io/security) 
+Security announcements has moved to a shared page for all Akka projects and can now be found at [doc.akka.io/reference/security-announcements/](https://doc.akka.io/reference/security-announcements/) 
 @@@
 
 ## Receiving Security Advisories

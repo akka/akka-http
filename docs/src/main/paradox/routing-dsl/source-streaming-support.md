@@ -37,7 +37,7 @@ Scala
 
 ## Responding with JSON Streams
 
-In this example we implement an API representing an infinite stream of tweets, very much like Twitter's [Streaming API](https://developer.twitter.com/en/docs).
+In this example we implement an API representing an infinite stream of tweets, very much like X's [Streaming API](https://docs.x.com).
 
 @@@ div { .group-scala }
 

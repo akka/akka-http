@@ -89,7 +89,7 @@ Having both a `trailingHeaders` attribute and a `LastChunk` element is not suppo
 
 At this point you should be able to connect, but HTTP/2 may still not be available.
 
-You'll need a recent version of [cURL](https://curl.haxx.se/) compiled with HTTP/2 support (for OSX see [this article](https://simonecarletti.com/blog/2016/01/http2-curl-macosx/)). You can check whether your version supports HTTP2 with `curl  --version`, look for the nghttp2 extension and the HTTP2 feature:
+You'll need a recent version of [cURL](https://curl.se/) compiled with HTTP/2 support (for OSX see [this article](https://simonecarletti.com/blog/2016/01/http2-curl-macosx/)). You can check whether your version supports HTTP2 with `curl  --version`, look for the nghttp2 extension and the HTTP2 feature:
 
 ```
 curl 7.52.1 (x86_64-pc-linux-gnu) libcurl/7.52.1 OpenSSL/1.0.2l zlib/1.2.8 libidn2/0.16 libpsl/0.17.0 (+libidn2/0.16) libssh2/1.8.0 nghttp2/1.23.1 librtmp/2.3

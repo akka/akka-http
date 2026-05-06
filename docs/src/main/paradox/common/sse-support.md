@@ -1,6 +1,6 @@
 # Server-Sent Events Support
 
-Server-Sent Events (SSE) is a lightweight and [standardized](https://www.w3.org/TR/html/)
+Server-Sent Events (SSE) is a lightweight and [standardized](https://html.spec.whatwg.org/multipage/)
 protocol for pushing notifications from an HTTP server to a client. In contrast to WebSocket, which
 offers bi-directional communication, SSE only allows for one-way communication from the server to
 the client. If that's all you need, SSE has the advantages to be much simpler, to rely on HTTP only
