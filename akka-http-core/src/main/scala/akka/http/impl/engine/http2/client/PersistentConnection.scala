@@ -29,6 +29,7 @@ import scala.util.{ Failure, Success }
 private[http2] object PersistentConnection {
 
   private case class EmbargoEnded(connectsLeft: Option[Int], embargo: FiniteDuration)
+  private case class RequestTimedOut(tag: AssociationTag)
 
   /** Thrown by [[PersistentConnection]] when it tears down the substream connection during graceful shutdown. */
   private[http2] final class ConnectionBrokenException extends RuntimeException("connection broken")
@@ -54,7 +55,7 @@ private[http2] object PersistentConnection {
     Flow.fromGraph(new Stage(connectionFlow, settings.maxPersistentAttempts match {
       case 0 => None
       case n => Some(n)
-    }, settings.baseConnectionBackoff, settings.maxConnectionBackoff))
+    }, settings.baseConnectionBackoff, settings.maxConnectionBackoff, settings.persistentConnectionRequestTimeout))
 
   private class AssociationTag extends RequestResponseAssociation
   private val associationTagKey = AttributeKey[AssociationTag]("PersistentConnection.associationTagKey")
@@ -62,17 +63,31 @@ private[http2] object PersistentConnection {
     HttpResponse(
       StatusCodes.BadGateway,
       entity = "The server closed the connection before delivering a response.")
+  private val timeoutResponse =
+    HttpResponse(
+      StatusCodes.GatewayTimeout,
+      entity = "No response from the server within the configured persistent-connection-request-timeout.")
 
-  private class Stage(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], maxAttempts: Option[Int], baseEmbargo: FiniteDuration, _maxBackoff: FiniteDuration) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
+  private class Stage(
+    connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]],
+    maxAttempts:    Option[Int],
+    baseEmbargo:    FiniteDuration,
+    _maxBackoff:    FiniteDuration,
+    requestTimeout: FiniteDuration) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
     val requestIn = Inlet[HttpRequest]("PersistentConnection.requestIn")
     val responseOut = Outlet[HttpResponse]("PersistentConnection.responseOut")
     val maxBaseEmbargo = _maxBackoff / 2 // because we'll add a random component of the same size to the base
 
     val shape: FlowShape[HttpRequest, HttpResponse] = FlowShape(requestIn, responseOut)
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with StageLogging {
+      private var currentState: State = _
+
       become(Unconnected)
 
-      def become(state: State): Unit = setHandlers(requestIn, responseOut, state)
+      def become(state: State): Unit = {
+        currentState = state
+        setHandlers(requestIn, responseOut, state)
+      }
 
       trait State extends InHandler with OutHandler
       object Unconnected extends State {
@@ -184,6 +199,11 @@ private[http2] object PersistentConnection {
           case EmbargoEnded(connectsLeft, nextEmbargo) =>
             log.debug("Reconnecting after backoff")
             connect(connectsLeft, nextEmbargo)
+          case RequestTimedOut(tag) =>
+            currentState match {
+              case c: Connected => c.handleRequestTimedOut(tag)
+              case _            => // already disconnected; nothing to do
+            }
           case other => throw new IllegalArgumentException(s"Unexpected timer key $other") // compiler completeness check pleaser
 
         }
@@ -209,6 +229,7 @@ private[http2] object PersistentConnection {
             val tag = response.attribute(associationTagKey).get
             require(ongoingRequests.contains(tag))
             ongoingRequests -= tag
+            if (requestTimeout > Duration.Zero) cancelTimer(RequestTimedOut(tag))
             push(responseOut, response.removeAttribute(associationTagKey))
           }
 
@@ -222,6 +243,8 @@ private[http2] object PersistentConnection {
           }
         })
         def onDisconnected(): Unit = {
+          // Cancel any outstanding request-timeout timers so they don't fire on a later state.
+          if (requestTimeout > Duration.Zero) ongoingRequests.keysIterator.foreach(tag => cancelTimer(RequestTimedOut(tag)))
           emitMultiple[HttpResponse](responseOut, ongoingRequests.values.map(errorResponse.withAttributes(_)).toVector, () => setHandler(responseOut, Unconnected))
           responseIn.cancel()
           requestOut.fail(new ConnectionBrokenException)
@@ -232,6 +255,7 @@ private[http2] object PersistentConnection {
           } else {
             // become(Unconnected) doesn't work because of using emit
             // so we need to do it more carefully here
+            currentState = Unconnected
             setHandler(requestIn, Unconnected)
             if (isAvailable(responseOut) && !hasBeenPulled(requestIn)) pull(requestIn)
           }
@@ -244,8 +268,19 @@ private[http2] object PersistentConnection {
           ongoingRequests = ongoingRequests.updated(tag, req.attributes.collect({
             case (key, value: RequestResponseAssociation) => key -> value
           }: PartialFunction[(AttributeKey[_], Any), (AttributeKey[_], RequestResponseAssociation)]))
+          if (requestTimeout > Duration.Zero) scheduleOnce(RequestTimedOut(tag), requestTimeout)
           requestOut.push(req.addAttribute(associationTagKey, tag))
         }
+
+        def handleRequestTimedOut(tag: AssociationTag): Unit =
+          ongoingRequests.get(tag) match {
+            case Some(attrs) =>
+              log.warning("HTTP/2 persistent connection request timed out after {}, closing connection", PrettyDuration.format(requestTimeout))
+              ongoingRequests -= tag
+              emit(responseOut, timeoutResponse.withAttributes(attrs), () => onDisconnected())
+            case None =>
+            // already completed via response, ignore
+          }
 
         override def onPush(): Unit = dispatchRequest(grab(requestIn))
         override def onPull(): Unit = responseIn.pull()
