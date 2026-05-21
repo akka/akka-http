@@ -47,7 +47,9 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
   private val notSevere = Set("ChannelReadable", "WriteAck",
     // previous test case shutting stuff down race condition
     // https://github.com/akka/akka-http/issues/4244
-    "Unexpected termination of TLS actor"
+    "Unexpected termination of TLS actor",
+    // Tests intentionally exhaust the connection retry budget; the resulting warning is expected.
+    "HTTP/2 persistent connection failed after"
   )
   override protected def isSevere(event: Logging.LogEvent): Boolean =
     event.level <= Logging.WarningLevel &&

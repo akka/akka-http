@@ -83,6 +83,7 @@ private[http2] object PersistentConnection {
       }
 
       def connect(connectsLeft: Option[Int], lastEmbargo: FiniteDuration): Unit = {
+        log.debug("Establishing HTTP/2 persistent connection")
         val requestOut = new SubSourceOutlet[HttpRequest]("PersistentConnection.requestOut")
         val responseIn = new SubSinkInlet[HttpResponse]("PersistentConnection.responseIn")
         val connection = Promise[OutgoingConnection]()
@@ -129,6 +130,7 @@ private[http2] object PersistentConnection {
         }
 
         val onConnected = getAsyncCallback[Unit] { _ =>
+          log.debug("HTTP/2 persistent connection established")
           val newState = new Connected(requestOut, responseIn)
           become(newState)
           if (requestOutPulled) {
@@ -143,6 +145,7 @@ private[http2] object PersistentConnection {
           requestOut.fail(new StreamTcpException("connection broken"))
 
           if (connectsLeft.contains(0)) {
+            log.warning(cause, "HTTP/2 persistent connection failed after {} attempts, giving up", maxAttempts.getOrElse(0))
             if (isAvailable(requestIn)) {
               // fail the triggering request before failing the stream
               val request = grab(requestIn)
@@ -209,8 +212,14 @@ private[http2] object PersistentConnection {
             push(responseOut, response.removeAttribute(associationTagKey))
           }
 
-          override def onUpstreamFinish(): Unit = onDisconnected()
-          override def onUpstreamFailure(ex: Throwable): Unit = onDisconnected() // FIXME: log error
+          override def onUpstreamFinish(): Unit = {
+            log.debug("HTTP/2 persistent connection closed by peer")
+            onDisconnected()
+          }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            log.debug("HTTP/2 persistent connection upstream failed, will reconnect on next request: {}", ex.toString)
+            onDisconnected()
+          }
         })
         def onDisconnected(): Unit = {
           emitMultiple[HttpResponse](responseOut, ongoingRequests.values.map(errorResponse.withAttributes(_)).toVector, () => setHandler(responseOut, Unconnected))
