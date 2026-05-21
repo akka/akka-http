@@ -472,6 +472,68 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       }
     }
 
+    "respect persistent-connection-max-requests" should {
+      "recycle the connection after the configured number of requests" inAssertAllStagesStopped new TestSetup(tls) {
+        override def clientSettings: ClientConnectionSettings =
+          super.clientSettings.mapHttp2Settings(_.withPersistentConnectionMaxRequests(2))
+
+        def roundTrip(id: String): ServerRequest = {
+          client.sendRequest(
+            HttpRequest(method = HttpMethods.GET, uri = s"/$id")
+              .addAttribute(requestIdAttr, RequestId(id))
+          )
+          client.responsesIn.request(1)
+          val sr = server.expectRequest()
+          server.sendResponseFor(sr, HttpResponse(entity = id))
+          val resp = client.expectResponse()
+          resp.attribute(requestIdAttr).get.id shouldBe id
+          sr
+        }
+
+        // First two requests are served on the same connection.
+        val sr1 = roundTrip("req-1")
+        val firstClientPort = sr1.clientPort
+        val sr2 = roundTrip("req-2")
+        sr2.clientPort shouldBe firstClientPort
+
+        // Third request must land on a fresh connection because the previous one was recycled.
+        val sr3 = roundTrip("req-3")
+        sr3.clientPort should not be firstClientPort
+      }
+    }
+
+    "respect persistent-connection-max-age" should {
+      "recycle the connection after the configured age" inAssertAllStagesStopped new TestSetup(tls) {
+        override def clientSettings: ClientConnectionSettings =
+          super.clientSettings.mapHttp2Settings(_.withPersistentConnectionMaxAge(300.millis))
+
+        client.sendRequest(
+          HttpRequest(method = HttpMethods.GET, uri = "/req-1")
+            .addAttribute(requestIdAttr, RequestId("req-1"))
+        )
+        client.responsesIn.request(1)
+        val sr1 = server.expectRequest()
+        val firstClientPort = sr1.clientPort
+        server.sendResponseFor(sr1, HttpResponse(entity = "pong"))
+        val resp1 = client.expectResponse()
+        resp1.attribute(requestIdAttr).get.id shouldBe "req-1"
+
+        // Wait past the max-age so the timer fires and the (idle) connection is recycled.
+        Thread.sleep(450)
+
+        client.sendRequest(
+          HttpRequest(method = HttpMethods.GET, uri = "/req-2")
+            .addAttribute(requestIdAttr, RequestId("req-2"))
+        )
+        client.responsesIn.request(1)
+        val sr2 = server.expectRequest()
+        sr2.clientPort should not be firstClientPort
+        server.sendResponseFor(sr2, HttpResponse(entity = "pong"))
+        val resp2 = client.expectResponse()
+        resp2.attribute(requestIdAttr).get.id shouldBe "req-2"
+      }
+    }
+
     "not leak any stages if completed" should {
       "when waiting for a response" inAssertAllStagesStopped new TestSetup(tls) {
         client.sendRequest(

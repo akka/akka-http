@@ -52,4 +52,10 @@ trait Http2ClientSettings { self: scaladsl.settings.Http2ClientSettings.Http2Cli
   def getPersistentConnectionRequestTimeout: Duration = Duration.ofMillis(persistentConnectionRequestTimeout.toMillis)
   def withPersistentConnectionRequestTimeout(timeout: Duration): Http2ClientSettings = copy(persistentConnectionRequestTimeout = timeout.toMillis.millis)
 
+  def getPersistentConnectionMaxAge: Duration = Duration.ofMillis(persistentConnectionMaxAge.toMillis)
+  def withPersistentConnectionMaxAge(maxAge: Duration): Http2ClientSettings = copy(persistentConnectionMaxAge = maxAge.toMillis.millis)
+
+  def getPersistentConnectionMaxRequests: Int = persistentConnectionMaxRequests
+  def withPersistentConnectionMaxRequests(maxRequests: Int): Http2ClientSettings = copy(persistentConnectionMaxRequests = maxRequests)
+
 }

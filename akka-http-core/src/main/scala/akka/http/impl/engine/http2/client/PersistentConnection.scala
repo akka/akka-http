@@ -30,6 +30,7 @@ private[http2] object PersistentConnection {
 
   private case class EmbargoEnded(connectsLeft: Option[Int], embargo: FiniteDuration)
   private case class RequestTimedOut(tag: AssociationTag)
+  private case object ConnectionMaxAgeReached
 
   /** Thrown by [[PersistentConnection]] when it tears down the substream connection during graceful shutdown. */
   private[http2] final class ConnectionBrokenException extends RuntimeException("connection broken")
@@ -52,10 +53,17 @@ private[http2] object PersistentConnection {
    *  * custom attribute contains internal error information
    */
   def managedConnection(connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]], settings: Http2ClientSettings): Flow[HttpRequest, HttpResponse, NotUsed] =
-    Flow.fromGraph(new Stage(connectionFlow, settings.maxPersistentAttempts match {
-      case 0 => None
-      case n => Some(n)
-    }, settings.baseConnectionBackoff, settings.maxConnectionBackoff, settings.persistentConnectionRequestTimeout))
+    Flow.fromGraph(new Stage(
+      connectionFlow,
+      settings.maxPersistentAttempts match {
+        case 0 => None
+        case n => Some(n)
+      },
+      settings.baseConnectionBackoff,
+      settings.maxConnectionBackoff,
+      settings.persistentConnectionRequestTimeout,
+      settings.persistentConnectionMaxAge,
+      settings.persistentConnectionMaxRequests))
 
   private class AssociationTag extends RequestResponseAssociation
   private val associationTagKey = AttributeKey[AssociationTag]("PersistentConnection.associationTagKey")
@@ -69,11 +77,13 @@ private[http2] object PersistentConnection {
       entity = "No response from the server within the configured persistent-connection-request-timeout.")
 
   private class Stage(
-    connectionFlow: Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]],
-    maxAttempts:    Option[Int],
-    baseEmbargo:    FiniteDuration,
-    _maxBackoff:    FiniteDuration,
-    requestTimeout: FiniteDuration) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
+    connectionFlow:   Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]],
+    maxAttempts:      Option[Int],
+    baseEmbargo:      FiniteDuration,
+    _maxBackoff:      FiniteDuration,
+    requestTimeout:   FiniteDuration,
+    maxConnectionAge: FiniteDuration,
+    maxRequests:      Int) extends GraphStage[FlowShape[HttpRequest, HttpResponse]] {
     val requestIn = Inlet[HttpRequest]("PersistentConnection.requestIn")
     val responseOut = Outlet[HttpResponse]("PersistentConnection.responseOut")
     val maxBaseEmbargo = _maxBackoff / 2 // because we'll add a random component of the same size to the base
@@ -146,6 +156,7 @@ private[http2] object PersistentConnection {
 
         val onConnected = getAsyncCallback[Unit] { _ =>
           log.debug("HTTP/2 persistent connection established")
+          if (maxConnectionAge > Duration.Zero) scheduleOnce(ConnectionMaxAgeReached, maxConnectionAge)
           val newState = new Connected(requestOut, responseIn)
           become(newState)
           if (requestOutPulled) {
@@ -204,6 +215,11 @@ private[http2] object PersistentConnection {
               case c: Connected => c.handleRequestTimedOut(tag)
               case _            => // already disconnected; nothing to do
             }
+          case ConnectionMaxAgeReached =>
+            currentState match {
+              case c: Connected => c.handleMaxAgeReached()
+              case _            => // already disconnected; nothing to do
+            }
           case other => throw new IllegalArgumentException(s"Unexpected timer key $other") // compiler completeness check pleaser
 
         }
@@ -214,12 +230,18 @@ private[http2] object PersistentConnection {
         responseIn: SubSinkInlet[HttpResponse]
       ) extends State {
         private var ongoingRequests: Map[AssociationTag, Map[AttributeKey[_], RequestResponseAssociation]] = Map.empty
+        private var requestsServed: Int = 0
+        private var recycling: Boolean = false
         responseIn.pull()
 
         requestOut.setHandler(new OutHandler {
           override def onPull(): Unit =
-            if (!isAvailable(requestIn)) pull(requestIn)
-            else dispatchRequest(grab(requestIn))
+            // While recycling we stop pulling new requests so the current connection can drain
+            // its in-flight requests before being torn down. The next request will arrive on a fresh connection.
+            if (!recycling) {
+              if (!isAvailable(requestIn)) pull(requestIn)
+              else dispatchRequest(grab(requestIn))
+            }
 
           override def onDownstreamFinish(cause: Throwable): Unit = onDisconnected()
         })
@@ -231,6 +253,7 @@ private[http2] object PersistentConnection {
             ongoingRequests -= tag
             if (requestTimeout > Duration.Zero) cancelTimer(RequestTimedOut(tag))
             push(responseOut, response.removeAttribute(associationTagKey))
+            if (recycling && ongoingRequests.isEmpty) recycleNow()
           }
 
           override def onUpstreamFinish(): Unit = {
@@ -243,7 +266,8 @@ private[http2] object PersistentConnection {
           }
         })
         def onDisconnected(): Unit = {
-          // Cancel any outstanding request-timeout timers so they don't fire on a later state.
+          // Cancel pending recycle / per-request-timeout timers so they don't fire on a later state.
+          if (maxConnectionAge > Duration.Zero) cancelTimer(ConnectionMaxAgeReached)
           if (requestTimeout > Duration.Zero) ongoingRequests.keysIterator.foreach(tag => cancelTimer(RequestTimedOut(tag)))
           emitMultiple[HttpResponse](responseOut, ongoingRequests.values.map(errorResponse.withAttributes(_)).toVector, () => setHandler(responseOut, Unconnected))
           responseIn.cancel()
@@ -270,6 +294,11 @@ private[http2] object PersistentConnection {
           }: PartialFunction[(AttributeKey[_], Any), (AttributeKey[_], RequestResponseAssociation)]))
           if (requestTimeout > Duration.Zero) scheduleOnce(RequestTimedOut(tag), requestTimeout)
           requestOut.push(req.addAttribute(associationTagKey, tag))
+          requestsServed += 1
+          if (!recycling && maxRequests > 0 && requestsServed >= maxRequests) {
+            log.debug("HTTP/2 persistent connection reached max-requests ({}), will recycle once in-flight requests drain", maxRequests)
+            recycling = true
+          }
         }
 
         def handleRequestTimedOut(tag: AssociationTag): Unit =
@@ -281,6 +310,18 @@ private[http2] object PersistentConnection {
             case None =>
             // already completed via response, ignore
           }
+
+        def handleMaxAgeReached(): Unit =
+          if (!recycling) {
+            log.debug("HTTP/2 persistent connection reached max-age ({}), will recycle once in-flight requests drain", PrettyDuration.format(maxConnectionAge))
+            recycling = true
+            if (ongoingRequests.isEmpty) recycleNow()
+          }
+
+        def recycleNow(): Unit = {
+          log.debug("HTTP/2 persistent connection recycling after {} requests", requestsServed)
+          onDisconnected()
+        }
 
         override def onPush(): Unit = dispatchRequest(grab(requestIn))
         override def onPull(): Unit = responseIn.pull()

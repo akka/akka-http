@@ -213,6 +213,12 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
   def persistentConnectionRequestTimeout: FiniteDuration
   def withPersistentConnectionRequestTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(persistentConnectionRequestTimeout = timeout)
 
+  def persistentConnectionMaxAge: FiniteDuration
+  def withPersistentConnectionMaxAge(maxAge: FiniteDuration): Http2ClientSettings = copy(persistentConnectionMaxAge = maxAge)
+
+  def persistentConnectionMaxRequests: Int
+  override def withPersistentConnectionMaxRequests(maxRequests: Int): Http2ClientSettings = copy(persistentConnectionMaxRequests = maxRequests)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalClientSettings]
   @InternalApi
@@ -240,6 +246,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     maxConnectionBackoff:               FiniteDuration,
     goawayGracePeriod:                  FiniteDuration,
     persistentConnectionRequestTimeout: FiniteDuration,
+    persistentConnectionMaxAge:         FiniteDuration,
+    persistentConnectionMaxRequests:    Int,
     internalSettings:                   Option[Http2InternalClientSettings])
     extends Http2ClientSettings with javadsl.settings.Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -251,6 +259,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     require(completionTimeout > Duration.Zero, "completion-timeout must be > 0")
     require(baseConnectionBackoff <= maxConnectionBackoff, "base-connection-backoff must be <= max-connection-backoff")
     require(persistentConnectionRequestTimeout >= Duration.Zero, "persistent-connection-request-timeout must be >= 0 (0 disables)")
+    require(persistentConnectionMaxAge >= Duration.Zero, "persistent-connection-max-age must be >= 0 (0 disables)")
+    require(persistentConnectionMaxRequests >= 0, "persistent-connection-max-requests must be >= 0 (0 disables)")
     Http2CommonSettings.validate(this)
   }
 
@@ -270,6 +280,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       maxConnectionBackoff = c.getFiniteDuration("max-connection-backoff"),
       goawayGracePeriod = c.getFiniteDuration("goaway-grace-period"),
       persistentConnectionRequestTimeout = c.getFiniteDuration("persistent-connection-request-timeout"),
+      persistentConnectionMaxAge = c.getFiniteDuration("persistent-connection-max-age"),
+      persistentConnectionMaxRequests = c.getInt("persistent-connection-max-requests"),
       internalSettings = None // no possibility to configure internal settings with config
     )
   }
