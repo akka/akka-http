@@ -1,0 +1,6 @@
+# internal api
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.client.PersistentConnection#Stage.this")
+# not for user extension
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.persistentConnectionRequestTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.persistentConnectionMaxAge")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.persistentConnectionMaxRequests")

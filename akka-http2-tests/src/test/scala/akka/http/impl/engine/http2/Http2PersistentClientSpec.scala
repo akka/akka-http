@@ -47,7 +47,11 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
   private val notSevere = Set("ChannelReadable", "WriteAck",
     // previous test case shutting stuff down race condition
     // https://github.com/akka/akka-http/issues/4244
-    "Unexpected termination of TLS actor"
+    "Unexpected termination of TLS actor",
+    // Tests intentionally exhaust the connection retry budget; the resulting warning is expected.
+    "HTTP/2 persistent connection failed after",
+    // Tests intentionally trigger the per-request response timeout; the resulting warning is expected.
+    "HTTP/2 persistent connection request timed out"
   )
   override protected def isSevere(event: Logging.LogEvent): Boolean =
     event.level <= Logging.WarningLevel &&
@@ -410,6 +414,124 @@ abstract class Http2PersistentClientSpec(tls: Boolean) extends AkkaSpecWithMater
       error.status should ===(StatusCodes.ServiceUnavailable)
       client.responsesIn.expectError()
       client.requestsOut.expectCancellation()
+    }
+
+    "respect persistent-connection-request-timeout" should {
+      "fail the request with 504 and tear down the connection when no response arrives in time" inAssertAllStagesStopped new TestSetup(tls) {
+        override def clientSettings: ClientConnectionSettings =
+          super.clientSettings.mapHttp2Settings(_.withPersistentConnectionRequestTimeout(300.millis))
+
+        client.sendRequest(
+          HttpRequest(method = HttpMethods.GET, uri = "/never-responds")
+            .addAttribute(requestIdAttr, RequestId("req-1"))
+        )
+        client.responsesIn.request(1)
+
+        val serverRequest1 = server.expectRequest()
+        val firstClientPort = serverRequest1.clientPort
+        // deliberately do not respond — wait for the request timeout to fire
+
+        val timedOutResponse = client.expectResponse()
+        timedOutResponse.status shouldBe StatusCodes.GatewayTimeout
+        timedOutResponse.attribute(requestIdAttr).get.id shouldBe "req-1"
+
+        // Next request should land on a fresh connection because the old one was torn down.
+        client.sendRequest(
+          HttpRequest(method = HttpMethods.GET, uri = "/after-timeout")
+            .addAttribute(requestIdAttr, RequestId("req-2"))
+        )
+        client.responsesIn.request(1)
+
+        val serverRequest2 = server.expectRequest()
+        serverRequest2.clientPort should not be firstClientPort
+        server.sendResponseFor(serverRequest2, HttpResponse(entity = "pong"))
+
+        val response2 = client.expectResponse()
+        response2.status shouldBe StatusCodes.OK
+        response2.attribute(requestIdAttr).get.id shouldBe "req-2"
+      }
+
+      "not fire the timer when a response arrives within the deadline" inAssertAllStagesStopped new TestSetup(tls) {
+        override def clientSettings: ClientConnectionSettings =
+          super.clientSettings.mapHttp2Settings(_.withPersistentConnectionRequestTimeout(2.seconds))
+
+        client.sendRequest(
+          HttpRequest(method = HttpMethods.GET, uri = "/responds-quickly")
+            .addAttribute(requestIdAttr, RequestId("req-1"))
+        )
+        client.responsesIn.request(1)
+
+        val serverRequest = server.expectRequest()
+        server.sendResponseFor(serverRequest, HttpResponse(entity = "pong"))
+
+        val response = client.expectResponse()
+        response.status shouldBe StatusCodes.OK
+        // Make sure no spurious 504 arrives later
+        client.responsesIn.request(1)
+        client.responsesIn.expectNoMessage(2.5.seconds)
+      }
+    }
+
+    "respect persistent-connection-max-requests" should {
+      "recycle the connection after the configured number of requests" inAssertAllStagesStopped new TestSetup(tls) {
+        override def clientSettings: ClientConnectionSettings =
+          super.clientSettings.mapHttp2Settings(_.withPersistentConnectionMaxRequests(2))
+
+        def roundTrip(id: String): ServerRequest = {
+          client.sendRequest(
+            HttpRequest(method = HttpMethods.GET, uri = s"/$id")
+              .addAttribute(requestIdAttr, RequestId(id))
+          )
+          client.responsesIn.request(1)
+          val sr = server.expectRequest()
+          server.sendResponseFor(sr, HttpResponse(entity = id))
+          val resp = client.expectResponse()
+          resp.attribute(requestIdAttr).get.id shouldBe id
+          sr
+        }
+
+        // First two requests are served on the same connection.
+        val sr1 = roundTrip("req-1")
+        val firstClientPort = sr1.clientPort
+        val sr2 = roundTrip("req-2")
+        sr2.clientPort shouldBe firstClientPort
+
+        // Third request must land on a fresh connection because the previous one was recycled.
+        val sr3 = roundTrip("req-3")
+        sr3.clientPort should not be firstClientPort
+      }
+    }
+
+    "respect persistent-connection-max-age" should {
+      "recycle the connection after the configured age" inAssertAllStagesStopped new TestSetup(tls) {
+        override def clientSettings: ClientConnectionSettings =
+          super.clientSettings.mapHttp2Settings(_.withPersistentConnectionMaxAge(300.millis))
+
+        client.sendRequest(
+          HttpRequest(method = HttpMethods.GET, uri = "/req-1")
+            .addAttribute(requestIdAttr, RequestId("req-1"))
+        )
+        client.responsesIn.request(1)
+        val sr1 = server.expectRequest()
+        val firstClientPort = sr1.clientPort
+        server.sendResponseFor(sr1, HttpResponse(entity = "pong"))
+        val resp1 = client.expectResponse()
+        resp1.attribute(requestIdAttr).get.id shouldBe "req-1"
+
+        // Wait past the max-age so the timer fires and the (idle) connection is recycled.
+        Thread.sleep(450)
+
+        client.sendRequest(
+          HttpRequest(method = HttpMethods.GET, uri = "/req-2")
+            .addAttribute(requestIdAttr, RequestId("req-2"))
+        )
+        client.responsesIn.request(1)
+        val sr2 = server.expectRequest()
+        sr2.clientPort should not be firstClientPort
+        server.sendResponseFor(sr2, HttpResponse(entity = "pong"))
+        val resp2 = client.expectResponse()
+        resp2.attribute(requestIdAttr).get.id shouldBe "req-2"
+      }
     }
 
     "not leak any stages if completed" should {
