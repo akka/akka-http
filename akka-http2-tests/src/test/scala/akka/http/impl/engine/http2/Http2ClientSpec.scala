@@ -22,6 +22,7 @@ import akka.http.scaladsl.model.HttpEntity.Chunked
 import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.http2.PeerClosedStreamException
 import akka.http.scaladsl.model.headers.CacheDirectives._
 import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Cache-Control`, `Content-Length`, `Content-Type` }
 import akka.http.scaladsl.settings.ClientConnectionSettings
@@ -537,6 +538,19 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         EventFilter.warning(pattern = "HTTP/2 Request stream for \\[stream 1\\] failed with '.*'. Resetting stream\\.", occurrences = 1).intercept {
           requestStream.sendError(new RuntimeException("boom"))
           network.expectRST_STREAM(streamId, ErrorCode.INTERNAL_ERROR)
+        }
+      }
+
+      "treat request entity failing with PeerClosedStreamException(NO_ERROR) as a graceful cancellation" in new StreamingRequestSent {
+        requestStream.sendNext(ByteString("abc"))
+        network.expectDATA(streamId, false, ByteString("abc"))
+
+        // The request entity source fails with a NO_ERROR PeerClosedStreamException, i.e. a graceful
+        // "stop sending" signal. That is not an error, so it should not be logged as a warning and
+        // should be forwarded as CANCEL rather than INTERNAL_ERROR.
+        EventFilter.warning(pattern = "HTTP/2 Request stream for \\[stream 1\\] failed with '.*'. Resetting stream\\.", occurrences = 0).intercept {
+          requestStream.sendError(new PeerClosedStreamException(19251, ErrorCode.NO_ERROR))
+          network.expectRST_STREAM(streamId, ErrorCode.CANCEL)
         }
       }
     }

@@ -802,8 +802,15 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     }
     override def onUpstreamFailure(ex: Throwable): Unit = {
       val streamKind = if (isServer) "HTTP/2 Response" else "HTTP/2 Request"
-      streamFailureLog.warning(ex, s"$streamKind stream for [stream $streamId] failed with '${ex.getMessage}'. Resetting stream.")
-      multiplexer.pushControlFrame(RstStreamFrame(streamId, Http2Protocol.ErrorCode.INTERNAL_ERROR))
+      ex match {
+        case pcse: PeerClosedStreamException if pcse.numericErrorCode == Http2Protocol.ErrorCode.NO_ERROR.id =>
+          // peer aborted transmission gracefully (NO_ERROR), cancel the stream rather than treating it as an error
+          streamFailureLog.debug(s"$streamKind stream for [stream $streamId] was cancelled with NO_ERROR. Cancelling stream.")
+          multiplexer.pushControlFrame(RstStreamFrame(streamId, Http2Protocol.ErrorCode.CANCEL))
+        case _ =>
+          streamFailureLog.warning(ex, s"$streamKind stream for [stream $streamId] failed with '${ex.getMessage}'. Resetting stream.")
+          multiplexer.pushControlFrame(RstStreamFrame(streamId, Http2Protocol.ErrorCode.INTERNAL_ERROR))
+      }
       handleOutgoingFailed(streamId, ex)
       cleanupStream()
     }
