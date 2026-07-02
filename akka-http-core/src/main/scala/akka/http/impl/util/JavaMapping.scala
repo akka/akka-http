@@ -28,14 +28,14 @@ import scala.util.Try
 
 /** INTERNAL API */
 @InternalApi
-private[http] trait J2SMapping[J] {
+trait J2SMapping[J] {
   type S
   def toScala(javaObject: J): S
 }
 
 /** INTERNAL API */
 @InternalApi
-private[http] object J2SMapping {
+object J2SMapping {
   implicit def fromJavaMapping[J](implicit mapping: JavaMapping[J, _]): J2SMapping[J] { type S = mapping.S } = mapping
 
   implicit def fromJavaSeqMapping[J](implicit mapping: J2SMapping[J]): J2SMapping[Seq[J]] { type S = immutable.Seq[mapping.S] } =
@@ -47,27 +47,27 @@ private[http] object J2SMapping {
 
 /** INTERNAL API */
 @InternalApi
-private[http] trait S2JMapping[S] {
+trait S2JMapping[S] {
   type J
   def toJava(scalaObject: S): J
 }
 
 /** INTERNAL API */
 @InternalApi
-private[http] object S2JMapping {
+object S2JMapping {
   implicit def fromScalaMapping[S](implicit mapping: JavaMapping[_, S]): S2JMapping[S] { type J = mapping.J } = mapping
 }
 
 /** INTERNAL API */
 @InternalApi
-private[http] trait JavaMapping[_J, _S] extends J2SMapping[_J] with S2JMapping[_S] {
+trait JavaMapping[_J, _S] extends J2SMapping[_J] with S2JMapping[_S] {
   type J = _J
   type S = _S
 }
 
 /** INTERNAL API */
 @InternalApi
-private[http] object JavaMapping {
+object JavaMapping {
   trait AsScala[S] {
     def asScala: S
   }
