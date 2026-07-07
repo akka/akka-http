@@ -212,5 +212,15 @@ class HttpModelIntegrationSpec extends AnyWordSpec with Matchers with BeforeAndA
       ExampleLibrary.contentType(ContentTypes.`text/plain(UTF-8)`)
     }
 
+    "be able to use methods that infer implicit JavaMappings" in {
+      // Scala 3.8+ deprecates (and 3.10+ disallows) inferring implicits that are not
+      // accessible at the call site, so JavaMapping must be public (see #4543)
+      val request = HttpRequest().addAttribute(AttributeKeys.remoteAddress, RemoteAddress.Unknown)
+      request.attribute(AttributeKeys.remoteAddress) shouldEqual Some(RemoteAddress.Unknown)
+
+      // the implicit that is inferred for the call above, explicitly referenced
+      akka.http.impl.util.JavaMapping.attributeKey[RemoteAddress] should not be null
+    }
+
   }
 }
