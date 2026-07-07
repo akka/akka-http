@@ -49,7 +49,8 @@ inThisBuild(Def.settings(
   onLoad in Global := {
     sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion} on Scala ${(httpCore / scalaVersion).value}")
     (onLoad in Global).value
-  }
+  },
+  makeBomIncludeDependencies := true
 ))
 
 // When this is updated the set of modules in Http.allModules should also be updated
@@ -149,6 +150,7 @@ lazy val parsing = project("akka-parsing")
   .settings(scalaMacroSupport)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .enablePlugins(ArtifactBomPlugin)
   .disablePlugins(MimaPlugin)
 
 lazy val httpCore = project("akka-http-core")
@@ -168,6 +170,7 @@ lazy val httpCore = project("akka-http-core")
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .enablePlugins(ArtifactBomPlugin)
   .enablePlugins(Pre213Preprocessor).settings(
     akka.http.sbt.Pre213Preprocessor.pre213Files := Seq(
       "headers.scala", "HttpMessage.scala", "LanguageRange.scala", "CacheDirective.scala", "LinkValue.scala"
@@ -193,6 +196,7 @@ lazy val http = project("akka-http")
   )
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .enablePlugins(ArtifactBomPlugin)
 
 def gustavDir(kind: String) = Def.task {
   val ver =
@@ -292,6 +296,7 @@ lazy val httpTestkit = project("akka-http-testkit")
   )
   .enablePlugins(BootstrapGenjavadoc, MultiNodeScalaTest, ScaladocNoVerificationOfDiagrams)
   .enablePlugins(ReproducibleBuildsPlugin)
+  .enablePlugins(ArtifactBomPlugin)
   .disablePlugins(MimaPlugin) // testkit, no bin compat guaranteed
 
 lazy val httpTests = project("akka-http-tests")
@@ -343,12 +348,14 @@ lazy val httpXml =
     .settings(AutomaticModuleName.settings("akka.http.marshallers.scalaxml"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpXml)
+    .enablePlugins(ArtifactBomPlugin)
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
     .settings(AutomaticModuleName.settings("akka.http.marshallers.sprayjson"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpSprayJson)
+    .enablePlugins(ArtifactBomPlugin)
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .settings(commonSettings)
@@ -364,6 +371,7 @@ lazy val httpJackson =
     .dependsOn(httpTestkit % "test")
     .settings(Dependencies.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
+    .enablePlugins(ArtifactBomPlugin)
 
 lazy val httpJwt = project("akka-http-jwt")
   .settings(commonSettings)
@@ -374,6 +382,7 @@ lazy val httpJwt = project("akka-http-jwt")
   .settings(Dependencies.httpJwt)
   .dependsOn(http, httpCore, httpTestkit % "test")
   .enablePlugins(BootstrapGenjavadoc)
+  .enablePlugins(ArtifactBomPlugin)
 
 lazy val httpCaching = project("akka-http-caching")
   .settings(commonSettings)
@@ -383,6 +392,7 @@ lazy val httpCaching = project("akka-http-caching")
   .settings(Dependencies.httpCaching)
   .dependsOn(http, httpCore, httpTestkit % "test")
   .enablePlugins(BootstrapGenjavadoc)
+  .enablePlugins(ArtifactBomPlugin)
 
 def project(name: String) =
   Project(id = name, base = file(name))

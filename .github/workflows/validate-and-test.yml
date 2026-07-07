@@ -126,3 +126,6 @@ jobs:
         with:
           name: 'test-results-${{ matrix.JDK_VERSION }}-${{ matrix.SCALA_VERSION }}'
           path: '**/target/test-reports/*.xml'
+
+      - name: Artifact BOM validation
+        uses: akka/github-actions-scripts/artifact_bom_validation@main
