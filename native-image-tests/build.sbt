@@ -2,14 +2,6 @@
 lazy val akkaHttpVersion = sys.props.getOrElse("akka.http.version", "10.7.4")
 lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.10.11")
 
-ThisBuild / resolvers += "lightbend-akka".at("https://repo.akka.io/maven/github_actions")
-ThisBuild / credentials ++= {
-  val path = Path.userHome / ".sbt" / ".credentials"
-  if (path.isFile) {
-    Seq(Credentials(path))
-  } else Nil
-}
-
 // Run in a separate JVM, to make sure sbt waits until all threads have
 // finished before returning.
 // If you want to keep the application running while executing other
