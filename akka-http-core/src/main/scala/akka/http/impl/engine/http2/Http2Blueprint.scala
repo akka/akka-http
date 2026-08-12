@@ -159,6 +159,10 @@ private[http] object Http2Blueprint {
         case ex: HttpIdleTimeoutException =>
           // idle timeout stage is propagating this error but since it is already coming back we just propagate without logging
           throw ex
+        case _: client.PersistentConnection.ConnectionBrokenException =>
+          // Voluntary teardown signalled by the persistent-connection layer (e.g. request timeout fired). Not an error.
+          if (log.isDebugEnabled) log.debug("HTTP/2 connection torn down by persistent-connection layer, sending NO_ERROR GOAWAY.")
+          FrameRenderer.render(GoAwayFrame(0, Http2Protocol.ErrorCode.NO_ERROR))
         case NonFatal(ex) =>
           log.error(s"HTTP2 connection failed with error [${ex.getMessage}]. Sending INTERNAL_ERROR and closing connection.")
           FrameRenderer.render(GoAwayFrame(0, Http2Protocol.ErrorCode.INTERNAL_ERROR))
