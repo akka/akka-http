@@ -1335,6 +1335,33 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
     "enforce settings" should {
 
+      // Regression tests for a resource-exhaustion class where a peer keeps sending
+      // CONTINUATION frames without ever setting END_HEADERS, accumulating an unbounded
+      // header block in memory.
+      "reject header block that exceeds max-continuation-frames" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxContinuationFrames(2))
+
+        val fragment = ByteString(Array.fill(10)(0.toByte))
+        network.sendHEADERS(1, endStream = true, endHeaders = false, fragment)
+        network.sendCONTINUATION(1, endHeaders = false, fragment)
+        network.sendCONTINUATION(1, endHeaders = false, fragment)
+        network.sendCONTINUATION(1, endHeaders = false, fragment) // 3rd CONTINUATION exceeds the limit of 2
+
+        val (_, errorCode) = network.expectGOAWAY(0) // no stream was successfully processed
+        errorCode should ===(ErrorCode.ENHANCE_YOUR_CALM)
+      }
+
+      "reject header block that exceeds max-header-block-size" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxHeaderBlockSize(50))
+
+        val fragment = ByteString(Array.fill(40)(0.toByte))
+        network.sendHEADERS(1, endStream = true, endHeaders = false, fragment)
+        network.sendCONTINUATION(1, endHeaders = false, fragment) // 80 bytes accumulated, exceeds the limit of 50
+
+        val (_, errorCode) = network.expectGOAWAY(0) // no stream was successfully processed
+        errorCode should ===(ErrorCode.ENHANCE_YOUR_CALM)
+      }
+
       "reject new substreams when exceeding SETTINGS_MAX_CONCURRENT_STREAMS" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         def maxStreams: Int = 16
         override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxConcurrentStreams(maxStreams))

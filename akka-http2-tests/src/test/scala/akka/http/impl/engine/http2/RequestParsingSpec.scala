@@ -46,7 +46,7 @@ class RequestParsingSpec extends AkkaSpecWithMaterializer with Inside with Inspe
       val parseRequest: Http2SubStream => ParseRequestResult = RequestParsing.parseRequest(headerParser, serverSettings, attributes)
 
       Source.single(frame)
-        .via(new HeaderDecompression(headerParser, parserSettings))
+        .via(new HeaderDecompression(headerParser, parserSettings, serverSettings.http2Settings))
         .map { // emulate demux
           case headers: ParsedHeadersFrame =>
             Http2SubStream(

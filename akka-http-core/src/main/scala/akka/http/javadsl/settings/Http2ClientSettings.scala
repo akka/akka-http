@@ -25,6 +25,12 @@ trait Http2ClientSettings { self: scaladsl.settings.Http2ClientSettings.Http2Cli
   def outgoingControlFrameBufferSize: Int
   def withOutgoingControlFrameBufferSize(newValue: Int): Http2ClientSettings = copy(outgoingControlFrameBufferSize = newValue)
 
+  def maxHeaderBlockSize: Int
+  def withMaxHeaderBlockSize(newValue: Int): Http2ClientSettings = copy(maxHeaderBlockSize = newValue)
+
+  def maxContinuationFrames: Int
+  def withMaxContinuationFrames(newValue: Int): Http2ClientSettings = copy(maxContinuationFrames = newValue)
+
   def logFrames: Boolean
   def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
 

@@ -32,6 +32,9 @@ private[http] trait Http2CommonSettings {
   def maxConcurrentStreams: Int
   def outgoingControlFrameBufferSize: Int
 
+  def maxHeaderBlockSize: Int
+  def maxContinuationFrames: Int
+
   def pingInterval: FiniteDuration
   def pingTimeout: FiniteDuration
 
@@ -81,6 +84,12 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def outgoingControlFrameBufferSize: Int
   override def withOutgoingControlFrameBufferSize(newValue: Int): Http2ServerSettings = copy(outgoingControlFrameBufferSize = newValue)
 
+  def maxHeaderBlockSize: Int
+  def withMaxHeaderBlockSize(newValue: Int): Http2ServerSettings = copy(maxHeaderBlockSize = newValue)
+
+  def maxContinuationFrames: Int
+  def withMaxContinuationFrames(newValue: Int): Http2ServerSettings = copy(maxContinuationFrames = newValue)
+
   def logFrames: Boolean
   override def withLogFrames(shouldLog: Boolean): Http2ServerSettings = copy(logFrames = shouldLog)
 
@@ -120,6 +129,8 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     incomingStreamLevelBufferSize:     Int,
     minCollectStrictEntitySize:        Int,
     outgoingControlFrameBufferSize:    Int,
+    maxHeaderBlockSize:                Int,
+    maxContinuationFrames:             Int,
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
@@ -137,6 +148,8 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     require(minCollectStrictEntitySize <= incomingStreamLevelBufferSize, "min-collect-strict-entity-size <= incoming-stream-level-buffer-size")
     require(minCollectStrictEntitySize <= (incomingConnectionLevelBufferSize / maxConcurrentStreams), "min-collect-strict-entity-size <= incoming-connection-level-buffer-size / max-concurrent-streams")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
+    require(maxHeaderBlockSize > 0, "max-header-block-size must be > 0")
+    require(maxContinuationFrames > 0, "max-continuation-frames must be > 0")
     Http2CommonSettings.validate(this)
   }
 
@@ -148,6 +161,8 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
       minCollectStrictEntitySize = c.getIntBytes("min-collect-strict-entity-size"),
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
+      maxHeaderBlockSize = c.getIntBytes("max-header-block-size"),
+      maxContinuationFrames = c.getInt("max-continuation-frames"),
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
@@ -185,6 +200,12 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
 
   def outgoingControlFrameBufferSize: Int
   override def withOutgoingControlFrameBufferSize(newValue: Int): Http2ClientSettings = copy(outgoingControlFrameBufferSize = newValue)
+
+  def maxHeaderBlockSize: Int
+  override def withMaxHeaderBlockSize(newValue: Int): Http2ClientSettings = copy(maxHeaderBlockSize = newValue)
+
+  def maxContinuationFrames: Int
+  override def withMaxContinuationFrames(newValue: Int): Http2ClientSettings = copy(maxContinuationFrames = newValue)
 
   def logFrames: Boolean
   override def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
@@ -237,6 +258,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     incomingConnectionLevelBufferSize:  Int,
     incomingStreamLevelBufferSize:      Int,
     outgoingControlFrameBufferSize:     Int,
+    maxHeaderBlockSize:                 Int,
+    maxContinuationFrames:              Int,
     logFrames:                          Boolean,
     pingInterval:                       FiniteDuration,
     pingTimeout:                        FiniteDuration,
@@ -255,6 +278,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
+    require(maxHeaderBlockSize > 0, "max-header-block-size must be > 0")
+    require(maxContinuationFrames > 0, "max-continuation-frames must be > 0")
     require(maxPersistentAttempts >= 0, "max-persistent-attempts must be >= 0")
     require(completionTimeout > Duration.Zero, "completion-timeout must be > 0")
     require(baseConnectionBackoff <= maxConnectionBackoff, "base-connection-backoff must be <= max-connection-backoff")
@@ -271,6 +296,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
+      maxHeaderBlockSize = c.getIntBytes("max-header-block-size"),
+      maxContinuationFrames = c.getInt("max-continuation-frames"),
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),

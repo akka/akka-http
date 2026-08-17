@@ -12,7 +12,7 @@ import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.http2._
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.scaladsl.model.ParsingException
-import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.{ Http2CommonSettings, ParserSettings }
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
@@ -28,7 +28,7 @@ import scala.collection.immutable.VectorBuilder
  * Can be used on server and client side.
  */
 @InternalApi
-private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderParser, parserSettings: ParserSettings) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
+private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderParser, parserSettings: ParserSettings, http2Settings: Http2CommonSettings) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val UTF8 = StandardCharsets.UTF_8
   val US_ASCII = StandardCharsets.US_ASCII
 
@@ -39,7 +39,9 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
     val httpHeaderParser = masterHeaderParser.createShallowCopy()
-    val decoder = new akka.http.shaded.com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
+    // bound the decoder's own output size as a backstop, in addition to the raw header block size/frame count
+    // limits enforced below while accumulating CONTINUATION frames (protects against HPACK decompression bombs)
+    val decoder = new akka.http.shaded.com.twitter.hpack.Decoder(http2Settings.maxHeaderBlockSize, Http2Protocol.InitialMaxHeaderTableSize)
 
     become(Idle)
 
@@ -110,10 +112,16 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
     }
     class ReceivingHeaders(streamId: Int, endStream: Boolean, initiallyReceivedData: ByteString, priorityInfo: Option[PriorityFrame]) extends State {
       var receivedData = initiallyReceivedData
+      var continuationFrames = 0
 
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
         case ContinuationFrame(`streamId`, endHeaders, payload) =>
-          if (endHeaders) {
+          continuationFrames += 1
+          if (continuationFrames > http2Settings.maxContinuationFrames)
+            protocolErrorFlood(s"Received more than ${http2Settings.maxContinuationFrames} CONTINUATION frames for stream $streamId")
+          else if (receivedData.size + payload.size > http2Settings.maxHeaderBlockSize)
+            protocolErrorFlood(s"Accumulated header block for stream $streamId exceeded configured maximum of ${http2Settings.maxHeaderBlockSize} bytes")
+          else if (endHeaders) {
             parseAndEmit(streamId, endStream, receivedData ++ payload, priorityInfo)
             become(Idle)
           } else {
@@ -125,5 +133,6 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
     }
 
     def protocolError(msg: String): Unit = failStage(new Http2ProtocolException(msg))
+    def protocolErrorFlood(msg: String): Unit = failStage(new Http2ProtocolException(ErrorCode.ENHANCE_YOUR_CALM, msg))
   }
 }
