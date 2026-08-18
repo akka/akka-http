@@ -1,0 +1,13 @@
+# classes not intended for user extension
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ClientSettings.maxHeaderBlockSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ClientSettings.maxContinuationFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ClientSettings.maxHeaderListSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.withMaxHeaderBlockSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.withMaxContinuationFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.withMaxHeaderListSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.maxHeaderBlockSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.maxContinuationFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.maxHeaderListSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.maxHeaderBlockSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.maxContinuationFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.maxHeaderListSize")

@@ -18,7 +18,7 @@ import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2ClientSettings, Http2ServerSettings, ParserSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2ClientSettings, Http2CommonSettings, Http2ServerSettings, ParserSettings, ServerSettings }
 import akka.stream.{ BidiShape, Graph, StreamTcpException }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Source }
@@ -107,7 +107,7 @@ private[http] object Http2Blueprint {
       httpLayer(settings, log, dateHeaderRendering) atopKeepRight
       serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded, Some(log)) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding(masterHttpHeaderParser, settings.parserSettings) atop
+      hpackCoding(masterHttpHeaderParser, settings.parserSettings, settings.http2Settings) atop
       framing(settings.http2Settings, log) atop
       errorHandling(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
@@ -125,7 +125,7 @@ private[http] object Http2Blueprint {
       httpLayerClient(masterHttpHeaderParser, settings, log) atop
       clientDemux(settings.http2Settings, masterHttpHeaderParser) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding(masterHttpHeaderParser, settings.parserSettings) atop
+      hpackCoding(masterHttpHeaderParser, settings.parserSettings, settings.http2Settings) atop
       framingClient(log) atop
       errorHandling(log) atop
       idleTimeoutIfConfigured(settings.idleTimeout)
@@ -191,10 +191,10 @@ private[http] object Http2Blueprint {
    * TODO: introduce another FrameEvent type that exclude HeadersFrame and ContinuationFrame from
    * reaching the higher-level.
    */
-  def hpackCoding(masterHttpHeaderParser: HttpHeaderParser, parserSettings: ParserSettings): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
+  def hpackCoding(masterHttpHeaderParser: HttpHeaderParser, parserSettings: ParserSettings, http2Settings: Http2CommonSettings): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].via(HeaderCompression),
-      Flow[FrameEvent].via(new HeaderDecompression(masterHttpHeaderParser, parserSettings))
+      Flow[FrameEvent].via(new HeaderDecompression(masterHttpHeaderParser, parserSettings, http2Settings))
     )
 
   /**

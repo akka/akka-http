@@ -1335,6 +1335,59 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
     "enforce settings" should {
 
+      // Bounds on header block processing, see `max-header-block-size`, `max-continuation-frames`
+      // and `max-header-list-size`.
+      "reject a header block split over more than max-continuation-frames CONTINUATION frames" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxContinuationFrames(2))
+
+        val fragment = ByteString(Array.fill(10)(0.toByte))
+        network.sendHEADERS(1, endStream = true, endHeaders = false, fragment)
+        network.sendCONTINUATION(1, endHeaders = false, fragment)
+        network.sendCONTINUATION(1, endHeaders = false, fragment)
+        network.sendCONTINUATION(1, endHeaders = false, fragment) // 3rd CONTINUATION exceeds the limit of 2
+
+        val (_, errorCode) = network.expectGOAWAY(0) // no stream was successfully processed
+        errorCode should ===(ErrorCode.ENHANCE_YOUR_CALM)
+      }
+
+      "reject a header block accumulated over CONTINUATION frames that exceeds max-header-block-size" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxHeaderBlockSize(50))
+
+        val fragment = ByteString(Array.fill(40)(0.toByte))
+        network.sendHEADERS(1, endStream = true, endHeaders = false, fragment)
+        network.sendCONTINUATION(1, endHeaders = false, fragment) // 80 bytes accumulated, exceeds the limit of 50
+
+        val (_, errorCode) = network.expectGOAWAY(0) // no stream was successfully processed
+        errorCode should ===(ErrorCode.ENHANCE_YOUR_CALM)
+      }
+
+      "reject a single HEADERS frame that exceeds max-header-block-size" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxHeaderBlockSize(50))
+
+        network.sendHEADERS(1, endStream = true, endHeaders = true, ByteString(Array.fill(51)(0.toByte)))
+
+        val (_, errorCode) = network.expectGOAWAY(0) // no stream was successfully processed
+        errorCode should ===(ErrorCode.ENHANCE_YOUR_CALM)
+      }
+
+      // The HPACK decoder silently skips header fields once the limit is exceeded, so the risk here is
+      // that a request is passed on to the application with arbitrary headers missing.
+      "reject a header block whose decoded header list exceeds max-header-list-size" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxHeaderListSize(100))
+
+        network.sendRequestHEADERS(1, HttpRequest(uri = "http://www.example.com/", headers = Vector(RawHeader("x-big", "a" * 100))), endStream = true)
+
+        val (_, errorCode) = network.expectGOAWAY(0) // no stream was successfully processed
+        errorCode should ===(ErrorCode.ENHANCE_YOUR_CALM)
+      }
+
+      "advertise max-header-list-size to the peer" in new TestSetupWithoutHandshake with RequestResponseProbes {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxHeaderListSize(4711))
+
+        network.sendBytes(Http2Protocol.ClientConnectionPreface)
+        network.expectSETTINGS().settings should contain(Setting(SettingIdentifier.SETTINGS_MAX_HEADER_LIST_SIZE, 4711))
+      }
+
       "reject new substreams when exceeding SETTINGS_MAX_CONCURRENT_STREAMS" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
         def maxStreams: Int = 16
         override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxConcurrentStreams(maxStreams))

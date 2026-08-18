@@ -31,6 +31,15 @@ trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings with akk
   def getOutgoingControlFrameBufferSize: Int = outgoingControlFrameBufferSize
   def withOutgoingControlFrameBufferSize(newValue: Int): Http2ServerSettings
 
+  def getMaxHeaderBlockSize: Int = maxHeaderBlockSize
+  def withMaxHeaderBlockSize(newValue: Int): Http2ServerSettings
+
+  def getMaxContinuationFrames: Int = maxContinuationFrames
+  def withMaxContinuationFrames(newValue: Int): Http2ServerSettings
+
+  def getMaxHeaderListSize: Int = maxHeaderListSize
+  def withMaxHeaderListSize(newValue: Int): Http2ServerSettings
+
   def logFrames: Boolean
   def withLogFrames(shouldLog: Boolean): Http2ServerSettings
 

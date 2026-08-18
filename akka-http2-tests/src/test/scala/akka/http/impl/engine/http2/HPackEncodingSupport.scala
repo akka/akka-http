@@ -52,6 +52,13 @@ trait HPackEncodingSupport {
   def headerPairsForHeaders(headers: Seq[HttpHeader]): Seq[(String, String)] =
     headers.map(h => h.lowercaseName -> h.value)
 
+  /** Encodes a single header as 'never indexed', so that it does not enter the HPACK dynamic table */
+  def encodeNeverIndexedHeader(name: String, value: String): ByteString = {
+    val bos = new ByteArrayOutputStream()
+    encoder.encodeHeader(bos, name, value, true)
+    ByteString(bos.toByteArray)
+  }
+
   def encodeHeaderPairs(headerPairs: Seq[(String, String)]): ByteString = {
     val bos = new ByteArrayOutputStream()
 

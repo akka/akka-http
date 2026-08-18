@@ -291,7 +291,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       // enforced immediately even before the acknowledgement is received.
       // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
       val initialLocalSettings: immutable.Seq[Setting] = immutable.Seq(
-        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams)
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams),
+        Setting(SettingIdentifier.SETTINGS_MAX_HEADER_LIST_SIZE, http2Settings.maxHeaderListSize)
       ) ++
         immutable.Seq(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0)).filter(_ => !isServer) // only on client
 

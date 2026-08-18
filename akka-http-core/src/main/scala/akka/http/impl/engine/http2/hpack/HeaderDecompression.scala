@@ -12,7 +12,7 @@ import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.http2._
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.scaladsl.model.ParsingException
-import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.{ Http2CommonSettings, ParserSettings }
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
@@ -28,7 +28,7 @@ import scala.collection.immutable.VectorBuilder
  * Can be used on server and client side.
  */
 @InternalApi
-private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderParser, parserSettings: ParserSettings) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
+private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderParser, parserSettings: ParserSettings, http2Settings: Http2CommonSettings) extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val UTF8 = StandardCharsets.UTF_8
   val US_ASCII = StandardCharsets.US_ASCII
 
@@ -39,7 +39,9 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
     val httpHeaderParser = masterHeaderParser.createShallowCopy()
-    val decoder = new akka.http.shaded.com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
+    // bounds the decoded header list, which can be far larger than the compressed header block it came from.
+    // The compressed block itself is bounded separately while accumulating CONTINUATION frames below.
+    val decoder = new akka.http.shaded.com.twitter.hpack.Decoder(http2Settings.maxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
 
     become(Idle)
 
@@ -81,11 +83,15 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)
-        decoder.endHeaderBlock() // TODO: do we have to check the result here?
-
-        push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo, None))
+        // the decoder silently skips header fields once maxHeaderListSize is exceeded and only reports that
+        // here, so not checking would hand a request with arbitrary headers missing to the application
+        if (decoder.endHeaderBlock())
+          headerLimitExceeded(s"Decoded header list for stream $streamId exceeded configured maximum of ${http2Settings.maxHeaderListSize} bytes")
+        else
+          push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo, None))
       } catch {
         case ex: ParsingException =>
+          decoder.endHeaderBlock() // decoding was aborted midway, reset the accumulated header list size
           // push details further and let RequestErrorFlow handle responding with bad request
           push(eventsOut, ParsedHeadersFrame(streamId, endStream, Seq.empty, prioInfo, Some(ex.info)))
         case _: IOException =>
@@ -97,7 +103,9 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
     object Idle extends State {
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
         case HeadersFrame(streamId, endStream, endHeaders, fragment, prioInfo) =>
-          if (endHeaders) parseAndEmit(streamId, endStream, fragment, prioInfo)
+          if (fragment.size > http2Settings.maxHeaderBlockSize)
+            headerBlockSizeExceeded(streamId)
+          else if (endHeaders) parseAndEmit(streamId, endStream, fragment, prioInfo)
           else {
             become(new ReceivingHeaders(streamId, endStream, fragment, prioInfo))
             pull(eventsIn)
@@ -110,10 +118,16 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
     }
     class ReceivingHeaders(streamId: Int, endStream: Boolean, initiallyReceivedData: ByteString, priorityInfo: Option[PriorityFrame]) extends State {
       var receivedData = initiallyReceivedData
+      var continuationFrames = 0
 
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
         case ContinuationFrame(`streamId`, endHeaders, payload) =>
-          if (endHeaders) {
+          continuationFrames += 1
+          if (continuationFrames > http2Settings.maxContinuationFrames)
+            headerLimitExceeded(s"Received more than ${http2Settings.maxContinuationFrames} CONTINUATION frames for stream $streamId")
+          else if (receivedData.size.toLong + payload.size > http2Settings.maxHeaderBlockSize)
+            headerBlockSizeExceeded(streamId)
+          else if (endHeaders) {
             parseAndEmit(streamId, endStream, receivedData ++ payload, priorityInfo)
             become(Idle)
           } else {
@@ -125,5 +139,12 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
     }
 
     def protocolError(msg: String): Unit = failStage(new Http2ProtocolException(msg))
+
+    // connection error rather than stream error: the offending block is either not decoded at all, leaving the
+    // HPACK dynamic table out of sync with the peer, or decoded with fields missing
+    def headerLimitExceeded(msg: String): Unit = failStage(new Http2ProtocolException(ErrorCode.ENHANCE_YOUR_CALM, msg))
+
+    def headerBlockSizeExceeded(streamId: Int): Unit =
+      headerLimitExceeded(s"Header block for stream $streamId exceeded configured maximum of ${http2Settings.maxHeaderBlockSize} bytes")
   }
 }

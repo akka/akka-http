@@ -230,6 +230,19 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         user.expectResponse().headers should be(HPackSpecExamples.FirstResponse.headers)
       }
 
+      "reject a response header block that exceeds max-header-block-size" inAssertAllStagesStopped new TestSetup with NetProbes {
+        override def settings: ClientConnectionSettings = super.settings.mapHttp2Settings(_.withMaxHeaderBlockSize(50))
+
+        user.emitRequest(Get("https://www.example.com/"))
+        network.expect[HeadersFrame]()
+
+        network.sendHEADERS(0x1, endStream = true, endHeaders = false, ByteString(Array.fill(40)(0.toByte)))
+        network.sendCONTINUATION(0x1, endHeaders = false, ByteString(Array.fill(40)(0.toByte)))
+
+        val (_, errorCode) = network.expectGOAWAY(0)
+        errorCode should ===(ErrorCode.ENHANCE_YOUR_CALM)
+      }
+
       "automatically add `date` header" inAssertAllStagesStopped new TestSetup with NetProbes {
         user.emitRequest(Get("https://www.example.com/"))
         network.expectDecodedHEADERS(0x1, endStream = true).headers.exists(_.is("date"))
