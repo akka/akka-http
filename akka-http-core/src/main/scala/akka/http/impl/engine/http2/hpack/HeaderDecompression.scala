@@ -98,8 +98,8 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
           headerLimitExceeded(s"Decoded header list for stream $streamId exceeded configured maximum of ${http2Settings.maxHeaderListSize} bytes")
         else parseError match {
           // push details further and let RequestErrorFlow handle responding with bad request
-          case Some(info) => push(eventsOut, ParsedHeadersFrame(streamId, endStream, Seq.empty, prioInfo, Some(info)))
-          case None       => push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo, None))
+          case Some(_) => push(eventsOut, ParsedHeadersFrame(streamId, endStream, Seq.empty, prioInfo, parseError))
+          case None    => push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo, None))
         }
       } catch {
         case _: IOException =>
