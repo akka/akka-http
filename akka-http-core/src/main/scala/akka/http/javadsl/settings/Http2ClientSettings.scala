@@ -31,6 +31,9 @@ trait Http2ClientSettings { self: scaladsl.settings.Http2ClientSettings.Http2Cli
   def maxContinuationFrames: Int
   def withMaxContinuationFrames(newValue: Int): Http2ClientSettings = copy(maxContinuationFrames = newValue)
 
+  def maxHeaderListSize: Int
+  def withMaxHeaderListSize(newValue: Int): Http2ClientSettings = copy(maxHeaderListSize = newValue)
+
   def logFrames: Boolean
   def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
 

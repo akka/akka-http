@@ -34,6 +34,7 @@ private[http] trait Http2CommonSettings {
 
   def maxHeaderBlockSize: Int
   def maxContinuationFrames: Int
+  def maxHeaderListSize: Int
 
   def pingInterval: FiniteDuration
   def pingTimeout: FiniteDuration
@@ -90,6 +91,9 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def maxContinuationFrames: Int
   def withMaxContinuationFrames(newValue: Int): Http2ServerSettings = copy(maxContinuationFrames = newValue)
 
+  def maxHeaderListSize: Int
+  def withMaxHeaderListSize(newValue: Int): Http2ServerSettings = copy(maxHeaderListSize = newValue)
+
   def logFrames: Boolean
   override def withLogFrames(shouldLog: Boolean): Http2ServerSettings = copy(logFrames = shouldLog)
 
@@ -131,6 +135,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     outgoingControlFrameBufferSize:    Int,
     maxHeaderBlockSize:                Int,
     maxContinuationFrames:             Int,
+    maxHeaderListSize:                 Int,
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
@@ -150,6 +155,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
     require(maxHeaderBlockSize > 0, "max-header-block-size must be > 0")
     require(maxContinuationFrames > 0, "max-continuation-frames must be > 0")
+    require(maxHeaderListSize > 0, "max-header-list-size must be > 0")
     Http2CommonSettings.validate(this)
   }
 
@@ -163,6 +169,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
       maxHeaderBlockSize = c.getIntBytes("max-header-block-size"),
       maxContinuationFrames = c.getInt("max-continuation-frames"),
+      maxHeaderListSize = c.getIntBytes("max-header-list-size"),
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
@@ -206,6 +213,9 @@ trait Http2ClientSettings extends javadsl.settings.Http2ClientSettings with Http
 
   def maxContinuationFrames: Int
   override def withMaxContinuationFrames(newValue: Int): Http2ClientSettings = copy(maxContinuationFrames = newValue)
+
+  def maxHeaderListSize: Int
+  override def withMaxHeaderListSize(newValue: Int): Http2ClientSettings = copy(maxHeaderListSize = newValue)
 
   def logFrames: Boolean
   override def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
@@ -260,6 +270,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     outgoingControlFrameBufferSize:     Int,
     maxHeaderBlockSize:                 Int,
     maxContinuationFrames:              Int,
+    maxHeaderListSize:                  Int,
     logFrames:                          Boolean,
     pingInterval:                       FiniteDuration,
     pingTimeout:                        FiniteDuration,
@@ -280,6 +291,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
     require(maxHeaderBlockSize > 0, "max-header-block-size must be > 0")
     require(maxContinuationFrames > 0, "max-continuation-frames must be > 0")
+    require(maxHeaderListSize > 0, "max-header-list-size must be > 0")
     require(maxPersistentAttempts >= 0, "max-persistent-attempts must be >= 0")
     require(completionTimeout > Duration.Zero, "completion-timeout must be > 0")
     require(baseConnectionBackoff <= maxConnectionBackoff, "base-connection-backoff must be <= max-connection-backoff")
@@ -298,6 +310,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
       maxHeaderBlockSize = c.getIntBytes("max-header-block-size"),
       maxContinuationFrames = c.getInt("max-continuation-frames"),
+      maxHeaderListSize = c.getIntBytes("max-header-list-size"),
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
