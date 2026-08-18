@@ -51,6 +51,28 @@ class HeaderDecompressionSpec extends AkkaSpecWithMaterializer {
       second.keyValuePairs.collectFirst { case ("x-marker", v) => v.toString } shouldBe Some("x-marker: hello")
     }
 
+    "only report the first of several parse errors in a header block, but still process every header" in {
+      val encoder = new HPackEncodingSupport {}
+
+      // both 'connection' and 'transfer-encoding' are forbidden in HTTP/2, each triggers its own
+      // ParsingException while decoding the same block
+      val rejected = encoder.encodeHeaderPairs(
+        pseudoHeaders("/one") ++ Seq("connection" -> "close", "transfer-encoding" -> "chunked", "x-marker" -> "hello"))
+      // encoded almost entirely as references into the dynamic table built up by the block above
+      val accepted = encoder.encodeHeaderPairs(pseudoHeaders("/one") :+ ("x-marker" -> "hello"))
+
+      val Seq(first, second) = decompress(ServerSettings(system), rejected, accepted)
+
+      first.headerParseErrorDetails.map(_.summary) shouldBe
+        Some("Malformed request: Header 'Connection' must not be used with HTTP/2")
+
+      // the dynamic table still reflects every header of the rejected block, including the ones after
+      // the first error, so later blocks referencing them decode correctly
+      second.headerParseErrorDetails shouldBe empty
+      second.keyValuePairs.collectFirst { case (":path", (path, _)) => path.toString } shouldBe Some("/one")
+      second.keyValuePairs.collectFirst { case ("x-marker", v) => v.toString } shouldBe Some("x-marker: hello")
+    }
+
     "not carry the decoded header list size of a rejected header block over to the next block" in {
       val settings = ServerSettings(system).mapHttp2Settings(_.withMaxHeaderListSize(200))
       val encoder = new HPackEncodingSupport {}
