@@ -11,7 +11,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.http2._
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.scaladsl.model.ParsingException
+import akka.http.scaladsl.model.{ ErrorInfo, ParsingException }
 import akka.http.scaladsl.settings.{ Http2CommonSettings, ParserSettings }
 import akka.http.shaded.com.twitter.hpack.HeaderListener
 import akka.stream._
@@ -51,6 +51,7 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
 
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
       val headers = new VectorBuilder[(String, AnyRef)]
+      var parseError: Option[ErrorInfo] = None
       object Receiver extends HeaderListener {
         def addHeader(name: String, value: String, parsed: AnyRef, sensitive: Boolean): AnyRef = {
           if (parsed ne null) {
@@ -63,20 +64,28 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
               parsed
             }
 
-            name match {
-              case "content-type"   => handle(ContentType.parse(name, value, parserSettings))
-              case ":authority"     => handle(Authority.parse(name, value, parserSettings))
-              case ":path"          => handle(PathAndQuery.parse(name, value, parserSettings))
-              case ":method"        => handle(Method.parse(name, value, parserSettings))
-              case ":scheme"        => handle(Scheme.parse(name, value, parserSettings))
-              case "content-length" => handle(ContentLength.parse(name, value, parserSettings))
-              case "cookie"         => handle(Cookie.parse(name, value, parserSettings))
-              case x if x(0) == ':' => handle(value)
-              case _ =>
-                // cannot use OtherHeader.parse because that doesn't has access to header parser
-                val header = parseHeaderPair(httpHeaderParser, name, value)
-                RequestParsing.validateHeader(header)
-                handle(header)
+            try {
+              name match {
+                case "content-type"   => handle(ContentType.parse(name, value, parserSettings))
+                case ":authority"     => handle(Authority.parse(name, value, parserSettings))
+                case ":path"          => handle(PathAndQuery.parse(name, value, parserSettings))
+                case ":method"        => handle(Method.parse(name, value, parserSettings))
+                case ":scheme"        => handle(Scheme.parse(name, value, parserSettings))
+                case "content-length" => handle(ContentLength.parse(name, value, parserSettings))
+                case "cookie"         => handle(Cookie.parse(name, value, parserSettings))
+                case x if x(0) == ':' => handle(value)
+                case _ =>
+                  // cannot use OtherHeader.parse because that doesn't has access to header parser
+                  val header = parseHeaderPair(httpHeaderParser, name, value)
+                  RequestParsing.validateHeader(header)
+                  handle(header)
+              }
+            } catch {
+              case ex: ParsingException =>
+                // the remainder of the block still has to be decoded to keep the HPACK dynamic table in sync
+                // with the peer, so remember the first error rather than letting it abort decoding
+                if (parseError.isEmpty) parseError = Some(ex.info)
+                null // nothing is cached for this header, so a later reference to it fails again
             }
           }
         }
@@ -87,13 +96,12 @@ private[http2] final class HeaderDecompression(masterHeaderParser: HttpHeaderPar
         // here, so not checking would hand a request with arbitrary headers missing to the application
         if (decoder.endHeaderBlock())
           headerLimitExceeded(s"Decoded header list for stream $streamId exceeded configured maximum of ${http2Settings.maxHeaderListSize} bytes")
-        else
-          push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo, None))
-      } catch {
-        case ex: ParsingException =>
-          decoder.endHeaderBlock() // decoding was aborted midway, reset the accumulated header list size
+        else parseError match {
           // push details further and let RequestErrorFlow handle responding with bad request
-          push(eventsOut, ParsedHeadersFrame(streamId, endStream, Seq.empty, prioInfo, Some(ex.info)))
+          case Some(_) => push(eventsOut, ParsedHeadersFrame(streamId, endStream, Seq.empty, prioInfo, parseError))
+          case None    => push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo, None))
+        }
+      } catch {
         case _: IOException =>
           // this is signalled by the decoder when it failed, we want to react to this by rendering a GOAWAY frame
           fail(eventsOut, new Http2Compliance.Http2ProtocolException(ErrorCode.COMPRESSION_ERROR, "Decompression failed."))
