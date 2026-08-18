@@ -122,6 +122,33 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       val response = expectClientResponse()
       response.status should be(StatusCodes.BadRequest)
     }
+
+    "keep the connection usable after a bad request response" in new TestSetup {
+      // Parsing fails on the ':method' pseudo header, but the headers after it still entered the client's
+      // HPACK dynamic table. Unless the server decodes them too, the tables drift apart and every later
+      // request on the connection resolves its indices against the wrong entries.
+      sendClientRequest(HttpRequest(
+        method = HttpMethod.custom("UNKNOWN_TO_SERVER"),
+        uri = "http://www.example.com/test",
+        headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+      ).addAttribute(requestIdAttr, RequestId("bad")))
+      expectClientResponse().status should be(StatusCodes.BadRequest)
+
+      // encoded largely as references into the dynamic table built up by the request above
+      sendClientRequest(HttpRequest(
+        uri = "http://www.example.com/test",
+        headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil
+      ).addAttribute(requestIdAttr, RequestId("good")))
+
+      val serverRequest = expectServerRequest()
+      serverRequest.request.uri.path.toString shouldBe "/test"
+      serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
+      serverRequest.sendResponse(HttpResponse(entity = "pong"))
+
+      val ok = expectClientResponse()
+      ok.attribute(requestIdAttr).get.id shouldBe "good"
+      Unmarshal(ok.entity).to[String].futureValue shouldBe "pong"
+    }
   }
 
   case class ServerRequest(request: HttpRequest, promise: Promise[HttpResponse]) {
