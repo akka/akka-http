@@ -26,7 +26,12 @@ import scala.collection.mutable
 @InternalApi
 private[http2] trait Http2Multiplexer {
   def pushControlFrame(frame: FrameEvent): Unit
-  def updateConnectionLevelWindow(increment: Int): Unit
+
+  /**
+   * @return true if the increment was applied, false if it would have made the connection-level
+   *         window exceed the maximum allowed value (2^31-1), in which case the window was left untouched
+   */
+  def updateConnectionLevelWindow(increment: Int): Boolean
   def updateMaxFrameSize(newMaxFrameSize: Int): Unit
   def updateDefaultWindow(newDefaultWindow: Int): Unit
   def updatePriority(priorityFrame: PriorityFrame): Unit
@@ -103,11 +108,14 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       override def pushControlFrame(frame: FrameEvent): Unit = updateState(_.pushControlFrame(frame))
 
-      def updateConnectionLevelWindow(increment: Int): Unit = {
-        connectionWindowLeft += increment
-        debug(s"Updating outgoing connection window by $increment to $connectionWindowLeft")
-        updateState(_.connectionWindowAvailable())
-      }
+      def updateConnectionLevelWindow(increment: Int): Boolean =
+        if (connectionWindowLeft.toLong + increment > Int.MaxValue) false
+        else {
+          connectionWindowLeft += increment
+          debug(s"Updating outgoing connection window by $increment to $connectionWindowLeft")
+          updateState(_.connectionWindowAvailable())
+          true
+        }
       override def updateMaxFrameSize(newMaxFrameSize: Int): Unit = currentMaxFrameSize = newMaxFrameSize
       override def updateDefaultWindow(newDefaultWindow: Int): Unit = {
         val delta = newDefaultWindow - _currentInitialWindow

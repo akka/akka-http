@@ -1215,6 +1215,80 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         network.expectRST_STREAM(1, ErrorCode.PROTOCOL_ERROR)
       }
 
+      "reject WINDOW_UPDATE for connection that would overflow the window with FLOW_CONTROL_ERROR" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        // RFC 7540 6.9.1: a sender MUST NOT allow a flow-control window to exceed 2^31-1 octets
+        // sent as a raw frame (bypassing network.sendWINDOW_UPDATE) since that helper's own window
+        // bookkeeping isn't overflow-safe and isn't what's under test here
+        network.sendFrame(WindowUpdateFrame(0, Int.MaxValue)) // connection window starts at InitialWindowSize (65535), this overflows it
+
+        val (_, errorCode) = network.expectGOAWAY()
+        errorCode should ===(ErrorCode.FLOW_CONTROL_ERROR)
+      }
+      "reject WINDOW_UPDATE for stream that would overflow the window with FLOW_CONTROL_ERROR" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        // the stream must be in a `Sending` state (i.e. response streaming has started) for the
+        // stream-level WINDOW_UPDATE overflow check to be exercised
+        val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
+        network.sendRequest(1, theRequest)
+        user.expectRequest() shouldBe theRequest
+
+        val entityDataOut = TestPublisher.probe[ByteString]()
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
+        user.emitResponse(1, response)
+        network.expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+
+        // RFC 7540 6.9.1: a sender MUST NOT allow a flow-control window to exceed 2^31-1 octets
+        // sent as a raw frame (bypassing network.sendWINDOW_UPDATE) since that helper's own window
+        // bookkeeping isn't overflow-safe and isn't what's under test here
+        network.sendFrame(WindowUpdateFrame(1, Int.MaxValue)) // stream window starts at InitialWindowSize (65535), this overflows it
+
+        network.expectRST_STREAM(1, ErrorCode.FLOW_CONTROL_ERROR)
+
+        entityDataOut.sendComplete()
+      }
+      "reject WINDOW_UPDATE for stream that would overflow the window with FLOW_CONTROL_ERROR when received before the response was created" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        // the request is fully received (endStream = true) but no response has been emitted yet, so the
+        // stream is in `HalfClosedRemoteWaitingForOutgoingStream`, which has no OutStream yet and instead
+        // accumulates window increments into `extraInitialWindow` until the response is created
+        val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
+        network.sendRequest(1, theRequest)
+        user.expectRequest() shouldBe theRequest
+
+        // RFC 7540 6.9.1: a sender MUST NOT allow a flow-control window to exceed 2^31-1 octets.
+        // Before the response is created, increments are accumulated into `extraInitialWindow` (starting
+        // at 0), so a single Int.MaxValue increment is legal on its own; a second increment on top of it
+        // is what overflows the accumulated window.
+        // sent as raw frames (bypassing network.sendWINDOW_UPDATE) since that helper's own window
+        // bookkeeping isn't overflow-safe and isn't what's under test here
+        network.sendFrame(WindowUpdateFrame(1, Int.MaxValue))
+        network.sendFrame(WindowUpdateFrame(1, 1))
+
+        network.expectRST_STREAM(1, ErrorCode.FLOW_CONTROL_ERROR)
+      }
+      "reject WINDOW_UPDATE for stream that would overflow the window with FLOW_CONTROL_ERROR while bidirectionally open" inAssertAllStagesStopped new TestSetup with RequestResponseProbes {
+        // a response created before the request was fully received puts the stream in `Open` (bidirectional),
+        // which has its own `incrementWindow` override distinct from the `Sending` states covered above
+        val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
+        network.sendRequestHEADERS(1, request, endStream = false)
+        val receivedRequest = user.expectRequest()
+        val entityDataIn = ByteStringSinkProbe()
+        receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
+        entityDataIn.ensureSubscription()
+
+        val entityDataOut = TestPublisher.probe[ByteString]()
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
+        user.emitResponse(1, response)
+        network.expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+
+        // RFC 7540 6.9.1: a sender MUST NOT allow a flow-control window to exceed 2^31-1 octets
+        // sent as a raw frame (bypassing network.sendWINDOW_UPDATE) since that helper's own window
+        // bookkeeping isn't overflow-safe and isn't what's under test here
+        network.sendFrame(WindowUpdateFrame(1, Int.MaxValue)) // stream window starts at InitialWindowSize (65535), this overflows it
+
+        network.expectRST_STREAM(1, ErrorCode.FLOW_CONTROL_ERROR)
+        entityDataIn.expectError()
+        entityDataOut.sendComplete()
+      }
+
       "backpressure incoming frames when outgoing control frame buffer fills" inAssertAllStagesStopped new TestSetup with HandlerFunctionSupport {
         override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withOutgoingControlFrameBufferSize(1))
 
