@@ -28,6 +28,12 @@ abstract class ContentLengthHeaderParserSpec(mode: String, newLine: String) exte
       a[ParsingException] should be thrownBy parse("92233720368547758070") // Long.MaxValue * 10 which is 0 taken overflow into account
       a[ParsingException] should be thrownBy parse("92233720368547758080") // (Long.MaxValue + 1) * 10 which is 0 taken overflow into account
     }
+    "don't accept values wrapping a full 64-bit range" in {
+      a[ParsingException] should be thrownBy parse("18446744073709551616") // 2^64, wraps to 0
+      a[ParsingException] should be thrownBy parse("18446744073709551620") // 2^64 + 4, wraps to 4
+      a[ParsingException] should be thrownBy parse("18446744073709551700") // 2^64 + 84, wraps to 84
+      a[ParsingException] should be thrownBy parse("1844674407370955161642") // 100 * 2^64 + 42, wraps to 42
+    }
   }
 
   def parse(bigint: String): Long = {
