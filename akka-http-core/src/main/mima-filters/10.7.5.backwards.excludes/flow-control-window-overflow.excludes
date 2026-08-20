@@ -1,0 +1,6 @@
+# internal api, changed to allow rejecting a WINDOW_UPDATE that would overflow the flow-control window (RFC 7540 6.9.1)
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#OutStream.increaseWindow")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.http2.Http2StreamHandling#OutStream.streamId")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.http2.Http2StreamHandling#OutStream.increaseWindow")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.http2.Http2StreamHandling#OutStreamImpl.increaseWindow")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.http2.Http2Multiplexer.updateConnectionLevelWindow")
