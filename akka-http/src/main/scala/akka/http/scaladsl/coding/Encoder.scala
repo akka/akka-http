@@ -57,7 +57,7 @@ trait Encoder {
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
     def finish(): ByteString = compressor.finish()
 
-    StreamUtils.byteStringTransformer(encodeChunk, () => finish())
+    StreamUtils.byteStringTransformer(encodeChunk, () => finish(), () => compressor.close())
   }
 }
 
@@ -100,4 +100,11 @@ abstract class Compressor {
   def compressAndFlush(input: ByteString): ByteString
   /** Combines `compress` + `finish` */
   def compressAndFinish(input: ByteString): ByteString
+
+  /**
+   * Releases any native resources held by this Compressor. Called when the encoding stream terminates,
+   * whether by normal completion (in addition to `finish`), cancellation, or failure. Must be safe to call
+   * more than once. Default implementation does nothing.
+   */
+  def close(): Unit = ()
 }

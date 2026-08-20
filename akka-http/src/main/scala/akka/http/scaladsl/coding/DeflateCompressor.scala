@@ -55,6 +55,9 @@ class DeflateCompressor private[coding] (compressionLevel: Int) extends Compress
     res
   }
 
+  /** `Deflater.end()` is safe to call more than once. */
+  override def close(): Unit = deflater.end()
+
   private def newTempBuffer(size: Int = 65536): Array[Byte] = {
     // The default size is somewhat arbitrary, we'd like to guess a better value but Deflater/zlib
     // is buffering in an unpredictable manner.
@@ -92,13 +95,28 @@ private[coding] object DeflateCompressor {
 @InternalApi
 private[coding] class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
 
+  /** Overridable for testing purposes */
+  protected def newInflater(wrapped: Boolean): Inflater = new Inflater(!wrapped)
+
   override def createLogic(attr: Attributes) = new ParsingLogic {
+    // the currently active inflater, i.e. the one created by the most recent examineAndBuildInflater call;
+    // ended in postStop so it is released on all termination paths (completion, cancellation, failure)
+    private[this] var currentInflater: Inflater = _
+
+    override def postStop(): Unit = {
+      if (currentInflater ne null) currentInflater.end()
+      super.postStop()
+    }
+
     /** Step that probes if the deflate stream contains a zlib wrapper */
     case object ProbeWrapping extends ParseStep[ByteString] {
       override def onTruncation(): Unit = completeStage()
 
       override def parse(reader: ByteStringParser.ByteReader): ParseResult[ByteString] = {
+        // re-entered as afterInflate once the previous inflater (if any) is finished(), so it's safe to end it here
+        if (currentInflater ne null) currentInflater.end()
         val inflater = examineAndBuildInflater(reader.remainingData)
+        currentInflater = inflater
         ParseResult(None, new Inflate(inflater, noPostProcessing = true, ProbeWrapping))
       }
     }
@@ -119,7 +137,7 @@ private[coding] class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxByt
      */
     private def examineAndBuildInflater(bytes: ByteString): Inflater = {
       val wrapped = (bytes.head & 0x0F) == 0x08
-      new Inflater(!wrapped)
+      newInflater(wrapped)
     }
 
     startWith(ProbeWrapping)
