@@ -621,6 +621,15 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           |""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
       }
 
+      "with Content-Length wrapping a full 64-bit range" in new Test {
+        // content-length = 2^64 + 4, which is 4 when calculated overflow
+        """PUT /resource/yes HTTP/1.1
+          |Content-length: 18446744073709551620
+          |Host: x
+          |
+          |abcd""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
+      }
+
       "with several conflicting `Content-Type` headers" in new Test {
         """GET /data HTTP/1.1
           |Host: x
