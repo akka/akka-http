@@ -33,7 +33,10 @@ private[http] object StreamUtils {
    * input has been read it will call `finish` once to determine the final ByteString to post to the output.
    * Empty ByteStrings are discarded.
    */
-  def byteStringTransformer(f: ByteString => ByteString, finish: () => ByteString): GraphStage[FlowShape[ByteString, ByteString]] = new SimpleLinearGraphStage[ByteString] {
+  def byteStringTransformer(
+    f:       ByteString => ByteString,
+    finish:  () => ByteString,
+    cleanup: () => Unit               = () => ()): GraphStage[FlowShape[ByteString, ByteString]] = new SimpleLinearGraphStage[ByteString] {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
       override def onPush(): Unit = {
         val data = f(grab(in))
@@ -47,6 +50,12 @@ private[http] object StreamUtils {
         val data = finish()
         if (data.nonEmpty) emit(out, data)
         completeStage()
+      }
+
+      // ensures cleanup also happens on cancellation/failure, not just normal completion (which calls finish())
+      override def postStop(): Unit = {
+        cleanup()
+        super.postStop()
       }
 
       setHandlers(in, out, this)
