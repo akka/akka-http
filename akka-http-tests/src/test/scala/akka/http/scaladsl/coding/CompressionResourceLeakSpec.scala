@@ -28,11 +28,17 @@ import scala.concurrent.duration._
  *
  * These tests drive the stages via TestSource/TestSink so that we can cancel the stream from
  * downstream *before* upstream ever completes, and then assert that the underlying Inflater/
- * Deflater was released. A released instance throws IllegalStateException("... has been closed")
- * from any subsequent call (verified here via `reset()`), so that's used as the release check.
+ * Deflater was released. A released instance throws from any subsequent call (verified here via
+ * `reset()`) - NullPointerException on JDK 11/17, IllegalStateException on newer JDKs - so
+ * either is accepted as proof of release, see `assertReleased` below.
  */
 @nowarn("msg=deprecated .* is internal API")
 class CompressionResourceLeakSpec extends AnyWordSpec with CodecSpecSupport with Eventually with Inspectors {
+  private def assertReleased(action: => Unit): Unit = {
+    val thrown = the[Throwable] thrownBy action
+    thrown should (be(a[NullPointerException]) or be(a[IllegalStateException]))
+  }
+
   "GzipDecompressor" should {
     "end its Inflater when the decode stream is cancelled before upstream finishes" in {
       var captured: Inflater = null
@@ -57,7 +63,7 @@ class CompressionResourceLeakSpec extends AnyWordSpec with CodecSpecSupport with
       sub.cancel()
 
       eventually { captured should not be null }
-      eventually { an[IllegalStateException] should be thrownBy captured.reset() }
+      eventually { assertReleased(captured.reset()) }
     }
   }
 
@@ -85,7 +91,7 @@ class CompressionResourceLeakSpec extends AnyWordSpec with CodecSpecSupport with
       sub.cancel()
 
       eventually { captured should not be null }
-      eventually { an[IllegalStateException] should be thrownBy captured.reset() }
+      eventually { assertReleased(captured.reset()) }
     }
 
     "end every Inflater it creates, not just the last one, when decoding concatenated deflate blocks" in {
@@ -111,7 +117,7 @@ class CompressionResourceLeakSpec extends AnyWordSpec with CodecSpecSupport with
 
       captured.size should be > 1
       forAll(captured) { inflater =>
-        an[IllegalStateException] should be thrownBy inflater.reset()
+        assertReleased(inflater.reset())
       }
     }
   }
@@ -141,7 +147,7 @@ class CompressionResourceLeakSpec extends AnyWordSpec with CodecSpecSupport with
       sub.cancel()
 
       eventually { captured should not be null }
-      eventually { an[IllegalStateException] should be thrownBy captured.currentDeflater.reset() }
+      eventually { assertReleased(captured.currentDeflater.reset()) }
     }
   }
 }
