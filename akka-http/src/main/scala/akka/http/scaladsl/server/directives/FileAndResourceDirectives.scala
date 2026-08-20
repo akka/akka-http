@@ -381,6 +381,32 @@ object DirectoryListing {
       |</html>
       |""".stripMarginWithNewline("\n") split '$'
 
+  private def needsHtmlEscaping(c: Char): Boolean = c match {
+    case '&' | '<' | '>' | '"' | '\'' => true
+    case _                            => false
+  }
+
+  private def escapeHtml(s: String): String = {
+    val firstToEscape = s.indexWhere(needsHtmlEscaping)
+    if (firstToEscape == -1) s
+    else {
+      val sb = new java.lang.StringBuilder(s.length + 16).append(s, 0, firstToEscape)
+      var i = firstToEscape
+      while (i < s.length) {
+        s.charAt(i) match {
+          case '&'  => sb.append("&amp;")
+          case '<'  => sb.append("&lt;")
+          case '>'  => sb.append("&gt;")
+          case '"'  => sb.append("&quot;")
+          case '\'' => sb.append("&#x27;")
+          case c    => sb.append(c)
+        }
+        i += 1
+      }
+      sb.toString
+    }
+  }
+
   def directoryMarshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing] =
     Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`) { listing =>
       val DirectoryListing(path, isRoot, files) = listing
@@ -393,14 +419,15 @@ object DirectoryListing {
       def maxNameLength(seq: Seq[(File, String)]) = if (seq.isEmpty) 0 else seq.map(_._2.length).max
       val maxNameLen = math.max(maxNameLength(directoryFilesAndNames) + 1, maxNameLength(fileFilesAndNames))
       val sb = new java.lang.StringBuilder
-      sb.append(html(0)).append(path).append(html(1)).append(path).append(html(2))
+      val escapedPath = escapeHtml(path)
+      sb.append(html(0)).append(escapedPath).append(html(1)).append(escapedPath).append(html(2))
       if (!isRoot) {
         val secondToLastSlash = path.lastIndexOf('/', path.lastIndexOf('/', path.length - 1) - 1)
-        sb.append("<a href=\"%s/\">../</a>\n" format path.substring(0, secondToLastSlash))
+        sb.append("<a href=\"%s/\">../</a>\n" format escapeHtml(path.substring(0, secondToLastSlash)))
       }
       def lastModified(file: File) = DateTime(file.lastModified).toIsoLikeDateTimeString
       def start(name: String) =
-        sb.append("<a href=\"").append(path + name).append("\">").append(name).append("</a>")
+        sb.append("<a href=\"").append(escapeHtml(path + name)).append("\">").append(escapeHtml(name)).append("</a>")
           .append(" " * (maxNameLen - name.length))
       def renderDirectory(file: File, name: String) =
         start(name + '/').append("        ").append(lastModified(file)).append('\n')
