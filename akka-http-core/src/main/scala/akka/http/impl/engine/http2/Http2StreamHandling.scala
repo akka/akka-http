@@ -404,7 +404,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     }
 
     def increaseWindow(delta: Int): StreamState = {
-      outStream.increaseWindow(delta) // used for SETTINGS_INITIAL_WINDOW_SIZE distribution; overflow ignored here, same as before
+      outStream.increaseWindow(delta) // used for SETTINGS_INITIAL_WINDOW_SIZE distribution
       this
     }
   }
