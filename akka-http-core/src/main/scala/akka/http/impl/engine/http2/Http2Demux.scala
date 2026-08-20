@@ -349,7 +349,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             case _            => pingState.onDataFrameSeen()
           }
           frame match {
-            case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ => multiplexer.updateConnectionLevelWindow(increment)
+            case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ =>
+              if (!multiplexer.updateConnectionLevelWindow(increment))
+                pushGOAWAY(FLOW_CONTROL_ERROR, s"WINDOW_UPDATE increment $increment would overflow the connection-level flow-control window")
             case p: PriorityFrame => multiplexer.updatePriority(p)
             case s: StreamFrameEvent =>
               if (!terminating)

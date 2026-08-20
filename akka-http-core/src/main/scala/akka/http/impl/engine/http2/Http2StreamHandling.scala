@@ -339,18 +339,33 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     }
 
     override protected def onTrailer(parsedHeadersFrame: ParsedHeadersFrame): StreamState = this // trailing headers not supported for requests right now
-    override protected def incrementWindow(delta: Int): StreamState = copy(extraInitialWindow = extraInitialWindow + delta)
+    override protected def incrementWindow(delta: Int): StreamState =
+      // no OutStream exists yet to reject the increment on, so reject here to avoid an overflow later when it is transferred
+      if (extraInitialWindow.toLong + delta > Int.MaxValue) {
+        multiplexer.pushControlFrame(RstStreamFrame(headers.streamId, ErrorCode.FLOW_CONTROL_ERROR))
+        Closed
+      } else copy(extraInitialWindow = extraInitialWindow + delta)
     override protected def onRstStreamFrame(rstStreamFrame: RstStreamFrame): Unit = {} // nothing to do here
   }
   case class OpenReceivingDataFirst(buffer: IncomingStreamBuffer, extraInitialWindow: Int = 0) extends ReceivingDataWithBuffer(HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow)) {
-    override def handleOutgoingCreated(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]): StreamState = {
-      outStream.increaseWindow(extraInitialWindow)
-      Open(buffer, outStream)
-    }
+    override def handleOutgoingCreated(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]): StreamState =
+      if (outStream.increaseWindow(extraInitialWindow)) Open(buffer, outStream)
+      else {
+        outStream.cancelStream()
+        shutdown()
+        multiplexer.pushControlFrame(RstStreamFrame(outStream.streamId, ErrorCode.FLOW_CONTROL_ERROR))
+        Closed
+      }
     override def handleOutgoingCreatedAndFinished(correlationAttributes: Map[AttributeKey[_], _]): StreamState = HalfClosedLocal(buffer)
     override def handleOutgoingEnded(): StreamState = Closed
 
-    override def incrementWindow(delta: Int): StreamState = copy(extraInitialWindow = extraInitialWindow + delta)
+    override def incrementWindow(delta: Int): StreamState =
+      // no OutStream exists yet to reject the increment on, so reject here to avoid an overflow later when it is transferred
+      if (extraInitialWindow.toLong + delta > Int.MaxValue) {
+        shutdown()
+        multiplexer.pushControlFrame(RstStreamFrame(buffer.streamId, ErrorCode.FLOW_CONTROL_ERROR))
+        Closed
+      } else copy(extraInitialWindow = extraInitialWindow + delta)
   }
   trait Sending extends StreamState { self: Product =>
     protected def outStream: OutStream
@@ -373,7 +388,13 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
       (nextState, res)
     }
 
-    def handleWindowUpdate(windowUpdate: WindowUpdateFrame): StreamState = increaseWindow(windowUpdate.windowSizeIncrement)
+    def handleWindowUpdate(windowUpdate: WindowUpdateFrame): StreamState =
+      if (outStream.increaseWindow(windowUpdate.windowSizeIncrement)) this
+      else {
+        outStream.cancelStream()
+        multiplexer.pushControlFrame(RstStreamFrame(windowUpdate.streamId, ErrorCode.FLOW_CONTROL_ERROR))
+        Closed
+      }
 
     override def handleOutgoingFailed(cause: Throwable): StreamState = Closed
 
@@ -383,7 +404,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     }
 
     def increaseWindow(delta: Int): StreamState = {
-      outStream.increaseWindow(delta)
+      outStream.increaseWindow(delta) // used for SETTINGS_INITIAL_WINDOW_SIZE distribution
       this
     }
   }
@@ -487,10 +508,13 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
       super.onRstStreamFrame(rstStreamFrame)
       outStream.cancelStream()
     }
-    override def incrementWindow(delta: Int): StreamState = {
-      outStream.increaseWindow(delta)
-      this
-    }
+    override def incrementWindow(delta: Int): StreamState =
+      if (outStream.increaseWindow(delta)) this
+      else {
+        shutdown()
+        multiplexer.pushControlFrame(RstStreamFrame(outStream.streamId, ErrorCode.FLOW_CONTROL_ERROR))
+        Closed
+      }
   }
   /**
    * We have closed the outgoing stream, but the incoming stream is still going.
@@ -502,15 +526,23 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
   case class HalfClosedRemoteWaitingForOutgoingStream(extraInitialWindow: Int) extends StreamState {
     // FIXME: DRY with below
     override def handle(event: StreamFrameEvent): StreamState = event match {
-      case r: RstStreamFrame    => Closed
-      case w: WindowUpdateFrame => copy(extraInitialWindow = extraInitialWindow + w.windowSizeIncrement)
-      case _                    => receivedUnexpectedFrame(event)
+      case r: RstStreamFrame => Closed
+      case w: WindowUpdateFrame =>
+        // no OutStream exists yet to reject the increment on, so reject here to avoid an overflow later when it is transferred
+        if (extraInitialWindow.toLong + w.windowSizeIncrement > Int.MaxValue) {
+          multiplexer.pushControlFrame(RstStreamFrame(w.streamId, ErrorCode.FLOW_CONTROL_ERROR))
+          Closed
+        } else copy(extraInitialWindow = extraInitialWindow + w.windowSizeIncrement)
+      case _ => receivedUnexpectedFrame(event)
     }
 
-    override def handleOutgoingCreated(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]): StreamState = {
-      outStream.increaseWindow(extraInitialWindow)
-      HalfClosedRemoteSendingData(outStream)
-    }
+    override def handleOutgoingCreated(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]): StreamState =
+      if (outStream.increaseWindow(extraInitialWindow)) HalfClosedRemoteSendingData(outStream)
+      else {
+        outStream.cancelStream()
+        multiplexer.pushControlFrame(RstStreamFrame(outStream.streamId, ErrorCode.FLOW_CONTROL_ERROR))
+        Closed
+      }
     override def handleOutgoingCreatedAndFinished(correlationAttributes: Map[AttributeKey[_], _]): StreamState = Closed
   }
   /**
@@ -547,7 +579,7 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     }
   }
 
-  class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[Any]) extends OutHandler {
+  class IncomingStreamBuffer(val streamId: Int, outlet: SubSourceOutlet[Any]) extends OutHandler {
     private var buffer: ByteString = ByteString.empty
     private var trailingHeaders: Option[HttpEntity.ChunkStreamPart] = None
     private var wasClosed: Boolean = false
@@ -652,11 +684,17 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
   }
 
   trait OutStream {
+    def streamId: Int
     def canSend: Boolean
     def cancelStream(): Unit
     def endStreamIfPossible(): Option[FrameEvent]
     def nextFrame(maxBytesToSend: Int): DataFrame
-    def increaseWindow(delta: Int): Unit
+
+    /**
+     * @return true if the window was increased, false if it would have exceeded the maximum allowed
+     *         value (2^31-1), in which case the window was left untouched
+     */
+    def increaseWindow(delta: Int): Boolean
     def isDone: Boolean
   }
   object OutStream {
@@ -766,11 +804,15 @@ private[http2] trait Http2StreamHandling extends GraphStageLogic with LogHelper 
     }
     def bufferedBytes: Int = buffer.length
 
-    override def increaseWindow(increment: Int): Unit = if (increment >= 0) {
-      outboundWindowLeft += increment
-      debug(s"Updating window for $streamId by $increment to $outboundWindowLeft buffered bytes: $bufferedBytes")
-      enqueueIfPossible()
-    }
+    override def increaseWindow(increment: Int): Boolean =
+      if (increment < 0) true
+      else if (outboundWindowLeft.toLong + increment > Int.MaxValue) false
+      else {
+        outboundWindowLeft += increment
+        debug(s"Updating window for $streamId by $increment to $outboundWindowLeft buffered bytes: $bufferedBytes")
+        enqueueIfPossible()
+        true
+      }
 
     // external callbacks, need to make sure that potential stream state changing events are run through the state machine
     override def onPush(): Unit = {
