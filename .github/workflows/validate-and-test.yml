@@ -15,8 +15,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: Akka-Default
+    outputs:
+      release_prep_only: ${{ steps.filter.outputs.release_prep_only }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Detect release-prep-only changes
+        id: filter
+        uses: ./.github/actions/release-prep-only
+
   formatting-check:
     name: Checks
+    needs: changes
+    if: needs.changes.outputs.release_prep_only != 'true'
     runs-on: Akka-Default
     steps:
       - name: Checkout Global Scripts
@@ -59,6 +75,8 @@ jobs:
 
   compile-and-test:
     name: Compile and test
+    needs: changes
+    if: needs.changes.outputs.release_prep_only != 'true'
     runs-on: Akka-Default
     strategy:
       fail-fast: false
