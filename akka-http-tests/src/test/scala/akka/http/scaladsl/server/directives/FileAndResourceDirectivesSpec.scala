@@ -488,6 +488,21 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       Get() ~> listDirectoryContents(base + "subDirectory/empty.pdf") ~> check { handled shouldEqual false }
     }
 
+    "escape HTML special characters in rendered file names" in {
+      val dir = Files.createTempDirectory("html-escaping-spec").toFile
+      dir.deleteOnExit()
+      val maliciousName = "<script>alert(1)</script>.txt".replace("/", "_")
+      val maliciousFile = new File(dir, maliciousName)
+      writeAllText("harmless", maliciousFile)
+      maliciousFile.deleteOnExit()
+
+      Get() ~> withSettings(settings)(listDirectoryContents(dir.getPath)) ~> check {
+        val body = responseAs[String]
+        body should not include "<script>alert(1)"
+        body should include("&lt;script&gt;alert(1)&lt;")
+      }
+    }
+
     "reject path traversal attempts" in {
       def _listDirectoryContents(directory: String) = listDirectoryContents(new File(testRoot, directory).getCanonicalPath)
       def route(uri: String) =
