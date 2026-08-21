@@ -353,7 +353,8 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/font-woff`                                                     = abin("font-woff", NotCompressible)
   val `application/gnutar`                                                        = abin("gnutar", NotCompressible, "tgz")
   val `application/java-archive`                                                  = abin("java-archive", NotCompressible, "jar", "war", "ear")
-  val `application/javascript`                                                    = awoc("javascript", "js")
+  // .mjs (JavaScript module) files use the same media type as .js, see https://www.rfc-editor.org/rfc/rfc9239.html#section-6.1.1
+  val `application/javascript`                                                    = awoc("javascript", "js", "mjs")
   val `application/json`                                                          = awfc("json", HttpCharsets.`UTF-8`, "json")
   val `application/json-patch+json`                                               = awfc("json-patch+json", HttpCharsets.`UTF-8`)
   val `application/merge-patch+json`                                              = awfc("merge-patch+json", HttpCharsets.`UTF-8`)
