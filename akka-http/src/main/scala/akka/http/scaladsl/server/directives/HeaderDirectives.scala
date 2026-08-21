@@ -80,7 +80,7 @@ trait HeaderDirectives {
    * @group header
    */
   def headerValueByName(headerName: String): Directive1[String] =
-    headerValue(optionalValue(headerName.toLowerCase)) | reject(MissingHeaderRejection(headerName))
+    headerValue(optionalValue(headerName.toRootLowerCase)) | reject(MissingHeaderRejection(headerName))
 
   /**
    * Extracts the first HTTP request header of the given type.

@@ -5,6 +5,7 @@
 package akka.http.scaladsl.testkit
 
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider }
+import akka.http.impl.util._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
@@ -82,7 +83,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   def charset: HttpCharset = charsetOption getOrElse sys.error("Binary entity does not have charset")
   def headers: immutable.Seq[HttpHeader] = rawResponse.headers
   def header[T >: Null <: HttpHeader: ClassTag]: Option[T] = rawResponse.header[T](implicitly[ClassTag[T]])
-  def header(name: String): Option[HttpHeader] = rawResponse.headers.find(_.is(name.toLowerCase))
+  def header(name: String): Option[HttpHeader] = rawResponse.headers.find(_.is(name.toRootLowerCase))
   def status: StatusCode = rawResponse.status
 
   def closingExtension: String = chunks.lastOption match {

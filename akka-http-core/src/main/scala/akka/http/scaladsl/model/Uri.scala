@@ -845,7 +845,7 @@ object Uri {
         if (allowed(c)) verify(ix + 1, `scheme-char`, allLower && !UPPER_ALPHA(c)) else ix
       } else if (allLower) -1 else -2
     verify() match {
-      case -2 => scheme.toLowerCase
+      case -2 => scheme.toRootLowerCase
       case -1 => scheme
       case ix => fail(s"Invalid URI scheme, unexpected character at pos $ix ('${scheme charAt ix}')")
     }

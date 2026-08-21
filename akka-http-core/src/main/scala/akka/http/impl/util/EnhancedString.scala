@@ -122,4 +122,10 @@ private[http] class EnhancedString(val underlying: String) extends AnyVal {
    * See http://bugs.java.com/view_bug.do?bug_id=6208680
    */
   def toRootLowerCase: String = underlying.toLowerCase(Locale.ROOT)
+
+  /**
+   * Provides a default toUpperCase that doesn't suffer from the dreaded turkish-i problem.
+   * See http://bugs.java.com/view_bug.do?bug_id=6208680
+   */
+  def toRootUpperCase: String = underlying.toUpperCase(Locale.ROOT)
 }

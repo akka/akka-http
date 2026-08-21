@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.http.impl.util._
 import akka.http.scaladsl.model.{ StatusCodes, HttpMethod }
 import akka.http.scaladsl.model.HttpMethods._
 
@@ -101,7 +102,7 @@ trait MethodDirectives {
   def overrideMethodWithParameter(paramName: String): Directive0 =
     parameter(paramName.optional) flatMap {
       case Some(method) =>
-        getForKey(method.toUpperCase) match {
+        getForKey(method.toRootUpperCase) match {
           case Some(m) => mapRequest(_.withMethod(m))
           case _       => complete(StatusCodes.NotImplemented)
         }

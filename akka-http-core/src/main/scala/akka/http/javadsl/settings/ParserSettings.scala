@@ -12,6 +12,7 @@ import akka.http.impl.settings.ParserSettingsImpl
 import java.{ util => ju }
 
 import akka.annotation.DoNotInherit
+import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.annotation.varargs
@@ -74,7 +75,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
   def withIncludeSslSessionAttribute(newValue: Boolean): ParserSettings = self.copy(includeSslSessionAttribute = newValue)
   def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
-  def withIgnoreIllegalHeaderFor(newValue: List[String]): ParserSettings = self.copy(ignoreIllegalHeaderFor = newValue.map(_.toLowerCase).toSet)
+  def withIgnoreIllegalHeaderFor(newValue: List[String]): ParserSettings = self.copy(ignoreIllegalHeaderFor = newValue.map(_.toRootLowerCase).toSet)
 
   // special ---
 

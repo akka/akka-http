@@ -6,6 +6,7 @@ package akka.http.scaladsl.model
 
 import StatusCodes.ClientError
 import akka.annotation.InternalApi
+import akka.http.impl.util._
 
 /**
  * Two-level model of error information.
@@ -20,7 +21,7 @@ final class ErrorInfo(
 ) extends scala.Product with scala.Equals with java.io.Serializable {
   def withSummary(newSummary: String) = copy(summary = newSummary)
   def withSummaryPrepended(prefix: String) = withSummary(if (summary.isEmpty) prefix else prefix + ": " + summary)
-  def withErrorHeaderName(headerName: String) = new ErrorInfo(summary, detail, headerName.toLowerCase)
+  def withErrorHeaderName(headerName: String) = new ErrorInfo(summary, detail, headerName.toRootLowerCase)
   def withFallbackSummary(fallbackSummary: String) = if (summary.isEmpty) withSummary(fallbackSummary) else this
   def formatPretty = if (summary.isEmpty) detail else if (detail.isEmpty) summary else summary + ": " + detail
   def format(withDetail: Boolean): String = if (withDetail) formatPretty else summary
