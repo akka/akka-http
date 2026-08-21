@@ -98,7 +98,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
       Uri.ParsingMode(c.getString("uri-parsing-mode")),
       CookieParsingMode(c.getString("cookie-parsing-mode")),
       c.getBoolean("illegal-header-warnings"),
-      c.getStringList("ignore-illegal-header-for").asScala.map(_.toLowerCase).toSet,
+      c.getStringList("ignore-illegal-header-for").asScala.map(_.toRootLowerCase).toSet,
       ErrorLoggingVerbosity(c.getString("error-logging-verbosity")),
       IllegalResponseHeaderNameProcessingMode(c.getString("illegal-response-header-name-processing-mode")),
       IllegalResponseHeaderValueProcessingMode(c.getString("illegal-response-header-value-processing-mode")),

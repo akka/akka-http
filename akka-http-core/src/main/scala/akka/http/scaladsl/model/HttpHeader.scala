@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 
 import scala.util.{ Failure, Success }
 import akka.parboiled2.ParseError
-import akka.http.impl.util.ToStringRenderable
+import akka.http.impl.util._
 import akka.http.impl.model.parser.{ CharacterClasses, HeaderParser }
 import akka.http.javadsl.model.headers.CustomHeader
 import akka.http.javadsl.{ model => jm }
@@ -80,7 +80,7 @@ object HttpHeader {
       val parser = new HeaderParser(value, settings)
       parser.`header-field-value`.run() match {
         case Success(preProcessedValue) =>
-          HeaderParser.parseFull(name.toLowerCase, preProcessedValue, settings) match {
+          HeaderParser.parseFull(name.toRootLowerCase, preProcessedValue, settings) match {
             case HeaderParser.Success(header) => ParsingResult.Ok(header, Nil)
             case HeaderParser.Failure(info) =>
               val errors = info.withSummaryPrepended(s"Illegal HTTP header '$name'") :: Nil

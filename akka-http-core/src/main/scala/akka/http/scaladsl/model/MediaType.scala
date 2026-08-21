@@ -63,7 +63,7 @@ sealed abstract class MediaType(_mainType: String, _subType: String) extends jm.
       case _            => false
     }
 
-  override def hashCode(): Int = value.toLowerCase.hashCode
+  override def hashCode(): Int = value.toRootLowerCase.hashCode
 
   /**
    * JAVA API
@@ -308,12 +308,12 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   private[this] var extensionMap = Map.empty[String, MediaType]
 
-  def forExtensionOption(ext: String): Option[MediaType] = extensionMap.get(ext.toLowerCase)
-  def forExtension(ext: String): MediaType = extensionMap.getOrElse(ext.toLowerCase, `application/octet-stream`)
+  def forExtensionOption(ext: String): Option[MediaType] = extensionMap.get(ext.toRootLowerCase)
+  def forExtension(ext: String): MediaType = extensionMap.getOrElse(ext.toRootLowerCase, `application/octet-stream`)
 
   private def registerFileExtensions[T <: MediaType](mediaType: T): T = {
     mediaType.fileExtensions.foreach { ext =>
-      val lcExt = ext.toLowerCase
+      val lcExt = ext.toRootLowerCase
       require(!extensionMap.contains(lcExt), s"Extension '$ext' clash: media-types '${extensionMap(lcExt)}' and '$mediaType'")
       extensionMap = extensionMap.updated(lcExt, mediaType)
     }
