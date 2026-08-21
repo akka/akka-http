@@ -74,7 +74,7 @@ private[http] class HeaderParser(
     HeaderParser.Failure {
       error match {
         case IllegalUriException(info) => info
-        case NonFatal(e)               => ErrorInfo.fromCompoundString(e.getMessage)
+        case NonFatal(e)               => ErrorInfo.fromCompoundString(if (e.getMessage ne null) e.getMessage else e.toString)
         case ex                        => throw new IllegalStateException("Unexpected error", ex) // compiler completeness check pleaser
       }
     }
