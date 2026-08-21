@@ -841,6 +841,11 @@ class UriSpec extends AnyWordSpec with Matchers {
       uri.withRawQueryString("param1=val%22ue1").toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
       uri.withRawQueryString("param1=val\"ue1").toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
       uri.withRawQueryString("param1=val|ue1").toString shouldEqual "http://host/path?param1=val%7Cue1#fragment"
+
+      // characters that must be percent-encoded because they are separators, not just "invalid": & = ; + and space,
+      // plus control chars and non-ASCII, exercised through Query (not a pre-encoded raw string)
+      uri.withQuery(Query("a&b=c;d+e" -> "f ghé")).toString shouldEqual
+        "http://host/path?a%26b%3Dc%3Bd%2Be=f+g%01h%C3%A9#fragment"
     }
 
     "survive parsing a URI with thousands of path segments" in {
