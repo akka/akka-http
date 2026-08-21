@@ -785,6 +785,11 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       parse("X:", "a") shouldEqual ParsingResult.Error(ErrorInfo("Illegal HTTP header name", "X:"))
       parse(" X", "a") shouldEqual ParsingResult.Error(ErrorInfo("Illegal HTTP header name", " X"))
     }
+    "not throw NPE when a header value parsing rule fails with an exception that has a null message" in {
+      val parser = new HeaderParser("irrelevant")
+      parser.failure(new RuntimeException()) shouldEqual
+        HeaderParser.Failure(ErrorInfo.fromCompoundString(new RuntimeException().toString))
+    }
     "not accept illegal header values" in {
       parse("Foo", "ba\u0000r") shouldEqual ParsingResult.Error(ErrorInfo(
         "Illegal HTTP header value: Invalid input '\\u0000', expected field-value-char, FWS or 'EOI' (line 1, column 3)",
