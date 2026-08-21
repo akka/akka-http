@@ -33,7 +33,7 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
       val byteBuffer = contentType.charset.nioCharset.encode(charBuffer)
       val array = new Array[Byte](byteBuffer.remaining())
       byteBuffer.get(array)
-      HttpEntity(contentType, array)
+      HttpEntity(contentType, ByteString.fromArrayUnsafe(array))
     } else HttpEntity.Empty
 
   implicit val DoneMarshaller: ToEntityMarshaller[akka.Done] =

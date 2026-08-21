@@ -118,6 +118,6 @@ private[http] final class FrameEventRenderer extends GraphStage[FlowShape[FrameE
       data(maskOffset + 3) = ((mask & 0x000000FF) >> 0).toByte
     }
 
-    ByteString(data)
+    ByteString.fromArrayUnsafe(data)
   }
 }
