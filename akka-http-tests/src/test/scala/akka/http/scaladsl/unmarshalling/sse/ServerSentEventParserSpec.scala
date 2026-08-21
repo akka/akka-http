@@ -69,6 +69,14 @@ final class ServerSentEventParserSpec extends AsyncWordSpec with Matchers with B
           )
         )
     }
+    "parse a data field whose payload contains a Unicode line terminator that Java regex `.` doesn't match by default (e.g. U+0085 NEL)" in {
+      val nel = 0x0085.toChar // LineParser only splits on CR/LF, so this is legal mid-line payload content
+      val input = Vector(s"data:foo${nel}bar", "")
+      Source(input)
+        .via(new ServerSentEventParser(1048576, emitEmptyEvents = false))
+        .runWith(Sink.seq)
+        .map(_ shouldBe Vector(ServerSentEvent(s"foo${nel}bar")))
+    }
     "parse ServerSentEvents correctly (and pass empty events)" in {
       val input = """|data: event 1 line 1
                      |data:event 1 line 2

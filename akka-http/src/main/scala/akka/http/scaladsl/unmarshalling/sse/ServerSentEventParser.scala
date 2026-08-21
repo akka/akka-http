@@ -82,7 +82,8 @@ private object ServerSentEventParser {
 
   private final val Retry = "retry"
 
-  private val Field = """([^:]+): ?(.*)""".r
+  // (?s) so `.` also matches U+0085/U+2028/U+2029, which LineParser doesn't split lines on and so are legal payload
+  private val Field = """(?s)([^:]+): ?(.*)""".r
 }
 
 /** INTERNAL API */
