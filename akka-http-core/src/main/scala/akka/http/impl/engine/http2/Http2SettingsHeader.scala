@@ -23,7 +23,7 @@ private[akka] object Http2SettingsHeader {
   val name: String = "http2-settings"
 
   def headerValueToBinary(value: String): ByteString =
-    ByteString(Base64Parsing.base64UrlStringDecoder(value.toCharArray))
+    ByteString.fromArrayUnsafe(Base64Parsing.base64UrlStringDecoder(value.toCharArray))
 
   def parse(value: String, log: LoggingAdapter): Try[immutable.Seq[Setting]] = Try {
     // settings are a base64url encoded Http2 settings frame
