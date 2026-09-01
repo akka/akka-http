@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2026 Lightbend Inc. <https://akka.io>
+ * Copyright (C) 2009-2025 Lightbend Inc. <https://akka.io>
  */
 
 package akka.http.javadsl.server;
