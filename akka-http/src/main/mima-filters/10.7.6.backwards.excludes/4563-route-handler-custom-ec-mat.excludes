@@ -1,0 +1,2 @@
+# Added handler overload allowing custom ExecutionContext/Materializer, akka.http.javadsl.server.Route is @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.server.Route.handler")
