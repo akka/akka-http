@@ -9,12 +9,12 @@
             <dependency>
                 <groupId>com.github.jwt-scala</groupId>
                 <artifactId>jwt-core_2.13</artifactId>
-                <version>10.0.4</version>
+                <version>11.0.4</version>
             </dependency>
             <dependency>
                 <groupId>com.github.jwt-scala</groupId>
                 <artifactId>jwt-json-common_2.13</artifactId>
-                <version>10.0.4</version>
+                <version>11.0.4</version>
             </dependency>
             <dependency>
                 <groupId>com.hierynomus</groupId>
@@ -57,12 +57,12 @@
         <dependency>
             <groupId>com.github.jwt-scala</groupId>
             <artifactId>jwt-core_2.13</artifactId>
-            <version>10.0.4</version>
+            <version>11.0.4</version>
         </dependency>
         <dependency>
             <groupId>com.github.jwt-scala</groupId>
             <artifactId>jwt-json-common_2.13</artifactId>
-            <version>10.0.4</version>
+            <version>11.0.4</version>
         </dependency>
         <dependency>
             <groupId>com.hierynomus</groupId>
