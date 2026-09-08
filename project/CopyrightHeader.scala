@@ -6,7 +6,7 @@ package akka
 
 import sbt.*
 import Keys.*
-import de.heikoseeberger.sbtheader.{CommentCreator, HeaderPlugin}
+import sbtheader.{CommentCreator, HeaderPlugin}
 
 object CopyrightHeader extends AutoPlugin {
   import HeaderPlugin.autoImport._
