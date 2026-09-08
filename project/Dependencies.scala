@@ -25,7 +25,7 @@ object Dependencies {
   private val h2specArchiveExt = if (DependencyHelpers.osName == "windows") "zip" else "tar.gz"
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.$h2specArchiveExt"
 
-  val scalaTestVersion = "3.2.19"
+  val scalaTestVersion = "3.2.20"
   val specs2Version = "4.10.6"
   val scalaCheckVersion = "1.18.1"
 
