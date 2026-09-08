@@ -18,7 +18,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.4")
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.12.1")
 addSbtPlugin("com.github.sbt" % "sbt-pull-request-validator" % "2.0.0")
 // create pom.xml for scanning tools
-addSbtPlugin("io.akka.sbt" % "sbt-artifact-bom" % "0.2.0")
+addSbtPlugin("io.akka.sbt" % "sbt-artifact-bom" % "0.3.0")
 
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "3.1.15"
