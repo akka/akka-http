@@ -215,6 +215,8 @@ lazy val http2Tests = project("akka-http2-tests")
   .settings(Dependencies.http2Tests)
   .settings {
     lazy val h2specPath = Def.task {
+      val log = streams.value.log
+      val testTarget = (Test / target).value
       // Check for a locally installed h2spec (needed for non-amd64 platforms like Apple Silicon)
       val fromPath: Option[File] = {
         // Check PATH
@@ -233,11 +235,11 @@ lazy val http2Tests = project("akka-http2-tests")
       // Only fall back to the downloaded amd64 binary when on amd64
       val isAmd64 = System.getProperty("os.arch") == "amd64" || System.getProperty("os.arch") == "x86_64"
       fromPath.getOrElse(
-        if (isAmd64) (Test / target).value / h2specName / h2specExe
+        if (isAmd64) testTarget / h2specName / h2specExe
         else {
-          streams.value.log.warn("h2spec not found on PATH and no prebuilt binary available for " + System.getProperty("os.arch") + ". " +
+          log.warn("h2spec not found on PATH and no prebuilt binary available for " + System.getProperty("os.arch") + ". " +
             "Install h2spec locally: go install github.com/summerwind/h2spec/cmd/h2spec@latest")
-          (Test / target).value / "h2spec-not-available"
+          testTarget / "h2spec-not-available"
         }
       )
     }
