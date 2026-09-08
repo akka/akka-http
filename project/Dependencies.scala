@@ -31,8 +31,8 @@ object Dependencies {
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
-  val scala213Version = "2.13.17"
-  val scala3Version = "3.3.7"
+  val scala213Version = "2.13.18"
+  val scala3Version = "3.3.8"
   val allScalaVersions = Seq(scala213Version, scala3Version)
 
   val Versions = Seq(
@@ -68,7 +68,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.13.1"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.13.2"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion      % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.10.2"            % "test" // WTFPL
     }
