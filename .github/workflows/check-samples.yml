@@ -72,7 +72,7 @@ jobs:
       - name: Test akka-http-quickstart-scala
         run: |-
           cd samples/akka-http-quickstart-scala
-          sbt "++2.13.17!; test;" -Dakka-http.version=`cat ~/.version`
+          sbt "++2.13.18!; test;" -Dakka-http.version=`cat ~/.version`
           sbt "clean; test;" -Dakka-http.version=`cat ~/.version`
 
       - name: Email on failure
