@@ -4,8 +4,6 @@
 
 package akka
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import scala.language.postfixOps
 
 import sbt.{Def, _}
@@ -33,10 +31,11 @@ object Publish extends AutoPlugin {
 
   lazy val beforePublishTask = taskKey[Unit]("setup before publish")
 
-  lazy val beforePublishDone = new AtomicBoolean(false)
+  private var beforePublishDone = false
 
-  def beforePublish(snapshot: Boolean) = {
-    if (beforePublishDone.compareAndSet(false, true)) {
+  def beforePublish(snapshot: Boolean) = synchronized {
+    if (!beforePublishDone) {
+      beforePublishDone = true
       CiReleasePlugin.setupGpg()
       if (!snapshot)
         cloudsmithCredentials(validate = true)
