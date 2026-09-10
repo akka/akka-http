@@ -60,6 +60,14 @@ object Route {
     Flow[HttpRequest].mapAsync(1)(toFunction(route))
 
   /**
+   * Turns a `Route` into a server flow, like `toFlow`, but allows overriding the `ExecutionContext` and
+   * `Materializer` used to complete requests. Pass `null` for either parameter to keep its default
+   * (`system.dispatcher` and `SystemMaterializer(system).materializer`, respectively).
+   */
+  def toFlow(route: Route, executionContext: ExecutionContextExecutor, materializer: Materializer)(implicit system: ClassicActorSystemProvider): Flow[HttpRequest, HttpResponse, NotUsed] =
+    Flow[HttpRequest].mapAsync(1)(toFunction(route, executionContext, materializer))
+
+  /**
    * Turns a `Route` into a server flow.
    */
   @deprecated("Replaced by `toFlow` that takes an implicit ActorSystem.", "10.2.0")
@@ -73,7 +81,16 @@ object Route {
                                 exceptionHandler: ExceptionHandler         = null): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
 
-  def toFunction(route: Route)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] = {
+  def toFunction(route: Route)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] =
+    toFunction(route, null, null)
+
+  /**
+   * Turns a `Route` into an async handler function, like `toFunction`, but allows overriding the
+   * `ExecutionContext` and `Materializer` used to complete requests, instead of defaulting to
+   * `system.dispatcher` and `SystemMaterializer(system).materializer`. Pass `null` for either
+   * parameter to keep its default.
+   */
+  def toFunction(route: Route, executionContext: ExecutionContextExecutor, materializer: Materializer)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] = {
     val routingLog = RoutingLog(system.classicSystem.log)
     val routingSettings = RoutingSettings(system)
     val parserSettings = ParserSettings.forServer
@@ -85,7 +102,9 @@ object Route {
         .tapply(_ => route)
     }
 
-    createAsyncHandler(sealedRoute, routingLog, routingSettings, parserSettings)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer)
+    val effectiveEc = if (executionContext ne null) executionContext else system.classicSystem.dispatcher
+    val effectiveMat = if (materializer ne null) materializer else SystemMaterializer(system).materializer
+    createAsyncHandler(sealedRoute, routingLog, routingSettings, parserSettings)(effectiveEc, effectiveMat)
   }
 
   /**

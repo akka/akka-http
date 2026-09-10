@@ -23,6 +23,8 @@ import akka.japi.function.Function
 import akka.stream.{ Materializer, javadsl }
 import akka.stream.scaladsl.Flow
 
+import scala.concurrent.ExecutionContextExecutor
+
 /** INTERNAL API */
 @InternalApi
 final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends Route {
@@ -30,17 +32,19 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
   override def flow(system: ActorSystem, materializer: Materializer): javadsl.Flow[HttpRequest, HttpResponse, NotUsed] =
     scalaFlow(system, materializer).asJava
 
-  override def handler(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]] = {
+  override def handler(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]] =
+    handler(system, null, null)
 
+  override def handler(system: ClassicActorSystemProvider, executionContext: ExecutionContextExecutor, materializer: Materializer): Function[HttpRequest, CompletionStage[HttpResponse]] = {
     import scala.jdk.FutureConverters._
-    import akka.http.impl.util.JavaMapping._
-    val scalaFunction = scaladsl.server.Route.toFunction(delegate)(system)
-    request => scalaFunction(request.asScala).map(_.asJava)(system.classicSystem.dispatcher).asJava
+    val effectiveEc = if (executionContext ne null) executionContext else system.classicSystem.dispatcher
+    val scalaFunction = scaladsl.server.Route.toFunction(delegate, executionContext, materializer)(system)
+    request => scalaFunction(request.asScala).map(_.asJava)(effectiveEc).asJava
   }
 
   private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
     implicit val s: ActorSystem = system
-    Flow[HttpRequest].map(_.asScala).via(delegate).map(_.asJava)
+    Flow[HttpRequest].map(_.asScala).via(scaladsl.server.Route.toFlow(delegate, null, materializer)).map(_.asJava)
   }
 
   override def orElse(alternative: Route): Route =

@@ -20,6 +20,8 @@ import akka.stream.SystemMaterializer
 import akka.stream.javadsl.Flow
 import akka.japi.function.Function
 
+import scala.concurrent.ExecutionContextExecutor
+
 /**
  * In the Java DSL, a Route can only consist of combinations of the built-in directives. A Route can not be
  * instantiated directly.
@@ -57,6 +59,13 @@ trait Route extends HandlerProvider {
 
   def function(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]] = handler(system)
   def handler(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]]
+
+  /**
+   * Like `handler(system)`, but allows overriding the `ExecutionContext` and `Materializer` used to
+   * complete requests, instead of defaulting to `system.dispatcher()` and the `SystemMaterializer`.
+   * Pass `null` for either parameter to keep its default.
+   */
+  def handler(system: ClassicActorSystemProvider, executionContext: ExecutionContextExecutor, materializer: Materializer): Function[HttpRequest, CompletionStage[HttpResponse]]
 
   /**
    * Seals a route by wrapping it with default exception handling and rejection conversion.
