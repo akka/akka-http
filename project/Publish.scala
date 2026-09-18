@@ -9,7 +9,6 @@ import scala.language.postfixOps
 import sbt.{Def, _}
 import Keys._
 import com.geirsson.CiReleasePlugin
-import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 
 /**
  * For projects that are not published.
@@ -29,22 +28,22 @@ object Publish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
   override def trigger = AllRequirements
 
-  lazy val beforePublishTask = taskKey[Unit]("setup before publish")
-
-  private var beforePublishDone = false
-
-  def beforePublish(snapshot: Boolean) = synchronized {
-    if (!beforePublishDone) {
-      beforePublishDone = true
-      CiReleasePlugin.setupGpg()
-      if (!snapshot)
-        cloudsmithCredentials(validate = true)
+  // Import the GPG key from `Global / onLoad`, not a task dependency: task-graph based
+  // hooks into publishSigned are fragile, since other plugins (eg. sbt-pgp itself) can
+  // redefine that key later in the settings merge and silently drop the hook.
+  override def globalSettings: Seq[Def.Setting[_]] = Seq(
+    Global / onLoad := (Global / onLoad).value.andThen { state =>
+      if (sys.env.contains("PGP_SECRET")) {
+        CiReleasePlugin.setupGpg()
+        val snapshot = Project.extract(state).get(ThisBuild / isSnapshot)
+        if (!snapshot)
+          cloudsmithCredentials(validate = true)
+      }
+      state
     }
-  }
+  )
 
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
-    beforePublishTask := beforePublish(isSnapshot.value),
-    publishSigned := publishSigned.dependsOn(beforePublishTask).value,
     publishTo :=
       (if (isSnapshot.value)
         Some("Cloudsmith API".at("https://maven.cloudsmith.io/lightbend/akka-snapshots/"))
