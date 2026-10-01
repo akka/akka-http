@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.NotUsed
 
 import scala.concurrent.duration._
-import scala.util.{ Failure, Random }
+import scala.util.Random
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.util.ByteString
@@ -904,8 +904,6 @@ class MessageSpec extends AkkaSpecWithMaterializer(
       }
     }
     "convert any message to strict message" should {
-      import scala.concurrent.ExecutionContext.Implicits.global
-
       val msg = "JKS*s';@"
       val pre = "pre"
       val post = "post"
@@ -952,28 +950,21 @@ class MessageSpec extends AkkaSpecWithMaterializer(
         ) should be(BinaryMessage.Strict(ByteString()))
       }
       "convert streamed text to strict text if stream is infinite" in {
-        val future = Await.ready(
+        // throttled so that the accumulated message stays small until the timeout hits
+        val failure = Await.result(
           TextMessage
-            .Streamed(Source.repeat(msg))
-            .toStrict(1.second), 5.second
+            .Streamed(Source.repeat(msg).throttle(1, 10.millis))
+            .toStrict(1.second).failed, 5.second
         )
-
-        future.onComplete {
-          case Failure(ex) => ex.getClass should be(classOf[TimeoutException])
-          case _           => fail()
-        }
+        failure shouldBe a[TimeoutException]
       }
       "convert streamed binary to strict binary if stream is infinite" in {
-        val future = Await.ready(
+        val failure = Await.result(
           BinaryMessage
-            .Streamed(Source.repeat(ByteString(msg.getBytes("UTF-8"))))
-            .toStrict(1.second), 5.second
+            .Streamed(Source.repeat(ByteString(msg.getBytes("UTF-8"))).throttle(1, 10.millis))
+            .toStrict(1.second).failed, 5.second
         )
-
-        future.onComplete {
-          case Failure(ex) => ex.getClass should be(classOf[TimeoutException])
-          case _           => fail()
-        }
+        failure shouldBe a[TimeoutException]
       }
     }
     "support per-message-compression extension" in pending
