@@ -30,11 +30,16 @@ private[http] object MessageToFrameRenderer {
       }, _ => None) ++ Source.single(FrameEvent.emptyLastContinuationFrame)
 
     Flow[Message]
+      // flatMapConcat fails immediately on upstream failure, cutting off an ongoing streamed message,
+      // lift the close into an element so that it is only rendered after previous messages
+      .recover[AnyRef] { case close: WebSocketCloseException => close }
       .flatMapConcat {
-        case BinaryMessage.Strict(data) => strictFrames(Opcode.Binary, data)
-        case bm: BinaryMessage          => streamedFrames(Opcode.Binary, bm.dataStream)
-        case TextMessage.Strict(text)   => strictFrames(Opcode.Text, ByteString(text, "UTF-8"))
-        case tm: TextMessage            => streamedFrames(Opcode.Text, tm.textStream.via(Utf8Encoder))
+        case BinaryMessage.Strict(data)     => strictFrames(Opcode.Binary, data)
+        case bm: BinaryMessage              => streamedFrames(Opcode.Binary, bm.dataStream)
+        case TextMessage.Strict(text)       => strictFrames(Opcode.Text, ByteString(text, "UTF-8"))
+        case tm: TextMessage                => streamedFrames(Opcode.Text, tm.textStream.via(Utf8Encoder))
+        case close: WebSocketCloseException => Source.failed(close)
+        case other                          => throw new IllegalStateException(s"Unexpected element $other")
       }
   }
 }

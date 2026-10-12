@@ -133,6 +133,16 @@ Scenarios that exist with the two streams in a WebSocket and possible ways to de
 
 <a id="keep-alive-ping"></a>
 
+## Close codes
+
+If the server closes the WebSocket with a close code other than `1000` (normal closure) or `1001` (going away), the
+incoming message stream of the client fails with a @apidoc[PeerClosedConnectionException] containing the close code
+and reason.
+
+The client can close the WebSocket with an application specific close code (in the range 3000-4999) by failing its
+outgoing message stream with a @apidoc[WebSocketCloseException], see
+@ref[Closing with an application close code](../server-side/websocket-support.md#closing-with-an-application-close-code).
+
 ## Automatic keep-alive Ping support
 
 Similar to the @ref[server-side kee-alive Ping support](../server-side/websocket-support.md#keep-alive-ping),

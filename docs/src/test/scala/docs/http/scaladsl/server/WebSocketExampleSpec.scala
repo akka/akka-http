@@ -115,6 +115,20 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
       .onComplete(_ => system.terminate()) // and shutdown when done
   }
 
+  "close-with-code-example" in compileOnlySpec {
+    //#websocket-close-with-code
+    import akka.http.scaladsl.model.ws.{ TextMessage, WebSocketCloseException }
+
+    val handler =
+      Flow[Message].map {
+        case TextMessage.Strict("goodbye") =>
+          // closes the WebSocket with an application specific close code and reason
+          throw new WebSocketCloseException(4000, "client said goodbye")
+        case other => other
+      }
+    //#websocket-close-with-code
+  }
+
   "ping-server-example" in compileOnlySpec {
     implicit val system: ActorSystem = null
     val route = null

@@ -143,6 +143,22 @@ Scala
 Java
 :  @@snip [WebSocketCoreExample.java](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handler }
 
+### Closing with an application close code
+
+To close a WebSocket with an application specific close code (in the range 3000-4999) and reason, fail the
+outgoing message stream of the handler with a @apidoc[WebSocketCloseException]. The close code and reason are sent
+to the peer in the close frame, an Akka HTTP client will see them as a @apidoc[PeerClosedConnectionException] failing its
+incoming message stream.
+
+Scala
+:  @@snip [WebSocketExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-close-with-code }
+
+Java
+:  @@snip [WebSocketCoreExample.java](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-close-with-code }
+
+Note that since this fails the stream, messages buffered in stages after the failing stage may be discarded rather
+than sent to the peer.
+
 @@@ note
 Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts).
 In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
