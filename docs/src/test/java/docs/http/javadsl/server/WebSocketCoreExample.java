@@ -123,7 +123,7 @@ public class WebSocketCoreExample {
   public static Flow<Message, Message, NotUsed> closeOnGoodbye() {
     return Flow.<Message>create()
         .map(msg -> {
-          if (msg.isText() && msg.asTextMessage().isStrict() && msg.asTextMessage().getStrictText().equals("goodbye")) {
+          if (msg.isText() && msg.isStrict() && "goodbye".equals(msg.asTextMessage().getStrictText())) {
             // closes the WebSocket with an application specific close code and reason
             throw WebSocketCloseException.create(4000, "client said goodbye");
           }

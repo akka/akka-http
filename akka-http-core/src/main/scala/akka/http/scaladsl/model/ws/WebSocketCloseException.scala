@@ -11,7 +11,8 @@ import akka.http.javadsl
  * with an application specific close code (3000-4999) and reason. The peer will see the close code and reason
  * (in Akka HTTP as a [[PeerClosedConnectionException]]).
  *
- * Note that failing a stream may discard messages buffered in stages after the stage that failed.
+ * Note that failing a stream may discard messages buffered in stages downstream of the failing stage. An ongoing
+ * streamed message is given the close timeout (3 seconds) to finish before the WebSocket is closed.
  *
  * @param closeCode an application specific close code in the range 3000-4999
  * @param closeReason a reason, at most 123 bytes when UTF-8 encoded

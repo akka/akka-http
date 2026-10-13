@@ -86,10 +86,8 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     private class WaitingForUserHandlerClosed(closeFrame: FrameStart) extends InHandler {
       def onPush() =
         grab(in) match {
-          case UserHandlerCompleted => sendOutLastFrame()
-          case UserHandlerErredOut(_: WebSocketCloseException) =>
-            // peer already closed, so we echo its close frame
-            sendOutLastFrame()
+          // peer already closed, so an application close is not an error, just echo the peer close frame
+          case UserHandlerCompleted | UserHandlerErredOut(_: WebSocketCloseException) => sendOutLastFrame()
           case UserHandlerErredOut(e) =>
             log.error(e, s"Websocket handler failed while waiting for handler completion with ${e.getMessage}")
             sendOutLastFrame()

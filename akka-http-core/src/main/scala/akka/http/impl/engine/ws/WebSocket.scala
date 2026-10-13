@@ -191,7 +191,7 @@ private[http] object WebSocket {
         .named("ws-prepare-messages")
 
     def renderMessages: Flow[Message, FrameStart, NotUsed] =
-      MessageToFrameRenderer.create(serverSide)
+      MessageToFrameRenderer.create(serverSide, closeTimeout)
         .named("ws-render-messages")
 
     BidiFlow.fromGraph(GraphDSL.create() { implicit b =>

@@ -712,7 +712,7 @@ class MessageSpec extends AkkaSpecWithMaterializer(
         netOut.expectComplete()
         netIn.expectCancellation()
       }
-      "send messages emitted before failing with WebSocketCloseException" in new ServerTestSetup {
+      "if user handler fails with WebSocketCloseException during a streamed message" in new ServerTestSetup {
         val pub = TestPublisher.manualProbe[ByteString]()
         pushMessage(BinaryMessage(Source.fromPublisher(pub)))
         val dataSub = pub.expectSubscription()
@@ -728,6 +728,34 @@ class MessageSpec extends AkkaSpecWithMaterializer(
         dataSub.sendComplete()
         expectFrameOnNetwork(Opcode.Continuation, ByteString.empty, fin = true)
         expectCloseCodeOnNetwork(4001) shouldEqual "go away"
+      }
+      "if user handler fails with WebSocketCloseException during a streamed message that does not finish" in new ServerTestSetup {
+        override protected def closeTimeout: FiniteDuration = 300.millis.dilated
+        val pub = TestPublisher.manualProbe[ByteString]()
+        pushMessage(BinaryMessage(Source.fromPublisher(pub)))
+        val dataSub = pub.expectSubscription()
+        val data = ByteString("abc", "ASCII")
+        dataSub.sendNext(data)
+        expectFrameOnNetwork(Opcode.Binary, data, fin = false)
+
+        messageOut.sendError(new WebSocketCloseException(4001, "go away"))
+        expectNoNetworkData()
+
+        // the ongoing message is cut off after the close timeout
+        expectCloseCodeOnNetwork(4001) shouldEqual "go away"
+        dataSub.expectCancellation()
+      }
+      "if a streamed message fails with WebSocketCloseException" in new ServerTestSetup {
+        val pub = TestPublisher.manualProbe[ByteString]()
+        pushMessage(BinaryMessage(Source.fromPublisher(pub)))
+        val dataSub = pub.expectSubscription()
+        val data = ByteString("abc", "ASCII")
+        dataSub.sendNext(data)
+        expectFrameOnNetwork(Opcode.Binary, data, fin = false)
+
+        // closes right away, cutting off the message
+        dataSub.sendError(new WebSocketCloseException(4002, "inner"))
+        expectCloseCodeOnNetwork(4002) shouldEqual "inner"
       }
       "if client user handler fails with WebSocketCloseException" in new ClientTestSetup {
         messageOut.sendError(new WebSocketCloseException(3000))

@@ -143,11 +143,17 @@ Scala
 Java
 :  @@snip [WebSocketCoreExample.java](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handler }
 
+@@@ note
+Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts).
+In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
+'keep-alive' messages regularly.
+@@@
+
 ### Closing with an application close code
 
 To close a WebSocket with an application specific close code (in the range 3000-4999) and reason, fail the
 outgoing message stream of the handler with a @apidoc[WebSocketCloseException]. The close code and reason are sent
-to the peer in the close frame, an Akka HTTP client will see them as a @apidoc[PeerClosedConnectionException] failing its
+to the peer in the close frame. An Akka HTTP client will see them as a @apidoc[PeerClosedConnectionException] failing its
 incoming message stream.
 
 Scala
@@ -156,14 +162,14 @@ Scala
 Java
 :  @@snip [WebSocketCoreExample.java](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-close-with-code }
 
-Note that since this fails the stream, messages buffered in stages after the failing stage may be discarded rather
-than sent to the peer.
+Note that:
 
-@@@ note
-Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts).
-In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
-'keep-alive' messages regularly.
-@@@
+* since this fails the stream, messages buffered in stages downstream of the failing stage may be discarded rather
+  than sent to the peer
+* a streamed message that is being sent is given a few seconds (the close timeout) to finish before the WebSocket is closed
+* the peer will usually echo the close code back, so the incoming message stream of the handler fails with a
+  @apidoc[PeerClosedConnectionException] with the same close code
+* a resuming or restarting supervision strategy on the failing stage swallows the exception, so no close happens
 
 <a id="keep-alive-ping"></a>
 
