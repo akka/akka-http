@@ -66,6 +66,34 @@ class WebSocketIntegrationSpec extends AkkaSpecWithMaterializer(
       binding.unbind()
     }
 
+    "close the connection with an application close code" in Utils.assertAllStagesStopped {
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
+        _.attribute(webSocketUpgrade).get.handleMessages(
+          Flow.fromSinkAndSource(
+            Sink.ignore,
+            Source(List("hello", "close")).map {
+              case "close" => throw new WebSocketCloseException(4001, "go away")
+              case text    => TextMessage(text)
+            }),
+          None)
+      })
+      val binding = Await.result(bindingFuture, 3.seconds.dilated)
+      val myPort = binding.localAddress.getPort
+
+      val (response, (sink, outgoing)) = Http().singleWebSocketRequest(
+        WebSocketRequest("ws://127.0.0.1:" + myPort),
+        Flow.fromSinkAndSourceMat(TestSink[Message](), Source.maybe[Message])(Keep.both))
+      response.futureValue.response.status.isSuccess should ===(true)
+      sink.request(10).expectNext(TextMessage("hello"))
+      val error = sink.expectError().asInstanceOf[PeerClosedConnectionException]
+      error.closeCode should ===(4001)
+      error.closeReason should ===("go away")
+      // otherwise the client keeps the connection until close timeout
+      outgoing.success(None)
+
+      binding.unbind()
+    }
+
     "not reset the connection when no data are flowing and the connection is closed from the client" in Utils.assertAllStagesStopped {
       val source = TestPublisher.probe[Message]()
       val bindingFuture = Http().newServerAt("localhost", 0).bindSync({

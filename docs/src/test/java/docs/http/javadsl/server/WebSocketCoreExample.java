@@ -38,6 +38,7 @@ import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.WebSocket;
+import akka.http.javadsl.model.ws.WebSocketCloseException;
 import akka.util.ByteString;
 
 @SuppressWarnings({"Convert2MethodRef", "ConstantConditions"})
@@ -117,6 +118,19 @@ public class WebSocketCoreExample {
     }
   }
   //#websocket-handler
+
+  //#websocket-close-with-code
+  public static Flow<Message, Message, NotUsed> closeOnGoodbye() {
+    return Flow.<Message>create()
+        .map(msg -> {
+          if (msg.isText() && msg.isStrict() && "goodbye".equals(msg.asTextMessage().getStrictText())) {
+            // closes the WebSocket with an application specific close code and reason
+            throw WebSocketCloseException.create(4000, "client said goodbye");
+          }
+          return msg;
+        });
+  }
+  //#websocket-close-with-code
 
   {
     ActorSystem system = null;

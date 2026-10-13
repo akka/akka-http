@@ -701,6 +701,83 @@ class MessageSpec extends AkkaSpecWithMaterializer(
             netIn.expectCancellation()
           }
       }
+      "if user handler fails with WebSocketCloseException" in new ServerTestSetup {
+        messageOut.sendError(new WebSocketCloseException(4001, "go away"))
+        expectCloseCodeOnNetwork(4001) shouldEqual "go away"
+
+        expectNoNetworkData() // wait for peer to close regularly
+        pushInput(closeFrame(4001, mask = true)) // peer echoes the close code
+
+        expectError(messageIn).asInstanceOf[PeerClosedConnectionException].closeCode shouldEqual 4001
+        netOut.expectComplete()
+        netIn.expectCancellation()
+      }
+      "if user handler fails with WebSocketCloseException during a streamed message" in new ServerTestSetup {
+        val pub = TestPublisher.manualProbe[ByteString]()
+        pushMessage(BinaryMessage(Source.fromPublisher(pub)))
+        val dataSub = pub.expectSubscription()
+        val data = ByteString("abc", "ASCII")
+        dataSub.sendNext(data)
+        expectFrameOnNetwork(Opcode.Binary, data, fin = false)
+
+        messageOut.sendError(new WebSocketCloseException(4001, "go away"))
+        expectNoNetworkData() // the ongoing message is finished before closing
+
+        dataSub.sendNext(data)
+        expectFrameOnNetwork(Opcode.Continuation, data, fin = false)
+        dataSub.sendComplete()
+        expectFrameOnNetwork(Opcode.Continuation, ByteString.empty, fin = true)
+        expectCloseCodeOnNetwork(4001) shouldEqual "go away"
+      }
+      "if user handler fails with WebSocketCloseException during a streamed message that does not finish" in new ServerTestSetup {
+        override protected def closeTimeout: FiniteDuration = 300.millis.dilated
+        val pub = TestPublisher.manualProbe[ByteString]()
+        pushMessage(BinaryMessage(Source.fromPublisher(pub)))
+        val dataSub = pub.expectSubscription()
+        val data = ByteString("abc", "ASCII")
+        dataSub.sendNext(data)
+        expectFrameOnNetwork(Opcode.Binary, data, fin = false)
+
+        messageOut.sendError(new WebSocketCloseException(4001, "go away"))
+        expectNoNetworkData()
+
+        // the ongoing message is cut off after the close timeout
+        expectCloseCodeOnNetwork(4001) shouldEqual "go away"
+        dataSub.expectCancellation()
+      }
+      "if a streamed message fails with WebSocketCloseException" in new ServerTestSetup {
+        val pub = TestPublisher.manualProbe[ByteString]()
+        pushMessage(BinaryMessage(Source.fromPublisher(pub)))
+        val dataSub = pub.expectSubscription()
+        val data = ByteString("abc", "ASCII")
+        dataSub.sendNext(data)
+        expectFrameOnNetwork(Opcode.Binary, data, fin = false)
+
+        // closes right away, cutting off the message
+        dataSub.sendError(new WebSocketCloseException(4002, "inner"))
+        expectCloseCodeOnNetwork(4002) shouldEqual "inner"
+      }
+      "if client user handler fails with WebSocketCloseException" in new ClientTestSetup {
+        messageOut.sendError(new WebSocketCloseException(3000))
+        expectCloseCodeOnNetwork(3000) shouldEqual ""
+
+        expectNoNetworkData() // wait for peer to close regularly
+        pushInput(closeFrame(3000, mask = false)) // peer echoes the close code
+
+        expectError(messageIn).asInstanceOf[PeerClosedConnectionException].closeCode shouldEqual 3000
+        expectNoNetworkData() // client waits for server to close the connection
+        netIn.sendComplete()
+        netOut.expectComplete()
+      }
+      "if user handler fails with WebSocketCloseException after peer closed regularly" in new ServerTestSetup {
+        pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
+        expectComplete(messageIn)
+
+        messageOut.sendError(new WebSocketCloseException(4001, "go away"))
+        expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
+        netOut.expectComplete()
+        netIn.expectCancellation()
+      }
       "if peer closes with invalid close frame" should {
         "close code outside of the valid range" in new ServerTestSetup {
           pushInput(closeFrame(5700, mask = true))
@@ -1089,7 +1166,8 @@ class MessageSpec extends AkkaSpecWithMaterializer(
 
     def expectProtocolErrorOnNetwork(): Unit = expectCloseCodeOnNetwork(Protocol.CloseCodes.ProtocolError)
 
-    def expectCloseCodeOnNetwork(expectedCode: Int): Unit = {
+    /** @return the close reason */
+    def expectCloseCodeOnNetwork(expectedCode: Int): String = {
       val (opcode, length, true, mask) = expectFrameHeaderOnNetwork()
       opcode shouldEqual Opcode.Close
       length should be >= 2.toLong
@@ -1102,6 +1180,7 @@ class MessageSpec extends AkkaSpecWithMaterializer(
 
       val code = ((data(0) & 0xff) << 8) | ((data(1) & 0xff) << 0)
       code shouldEqual expectedCode
+      data.drop(2).utf8String
     }
 
     def expectNoNetworkData(): Unit = netOut.expectNoBytes(100.millis.dilated)
