@@ -10,7 +10,6 @@ import java.nio.file.{ Files, Path }
 import java.lang.{ Iterable => JIterable }
 import java.util.concurrent.CompletionStage
 import java.util.OptionalLong
-import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable
@@ -687,9 +686,9 @@ object HttpEntity {
       private var maxBytes = -1L
       private var bytesLeft = Long.MaxValue
 
-      @nowarn("msg=deprecated") // we need getFirst semantics
       override def preStart(): Unit = {
-        _attributes.getFirst[SizeLimit] match {
+        // least specific limit wins, so the last withSizeLimit/withoutSizeLimit call overrides earlier ones
+        _attributes.filtered[SizeLimit].lastOption match {
           case Some(limit: SizeLimit) if limit.isDisabled =>
           // "no limit"
           case Some(SizeLimit(bytes, cl @ Some(contentLength))) =>

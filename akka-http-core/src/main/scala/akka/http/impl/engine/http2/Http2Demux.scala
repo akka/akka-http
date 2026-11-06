@@ -21,12 +21,10 @@ import akka.http.scaladsl.model.HttpEntity.LastChunk
 import akka.http.scaladsl.settings.{ Http2ClientSettings, Http2CommonSettings, Http2ServerSettings }
 import akka.macros.LogHelper
 import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
-import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler, StageLogging, TimerGraphStageLogic }
 import akka.util.{ ByteString, OptionVal }
 
-import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.concurrent.duration.Duration
@@ -404,7 +402,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           pullFrameIn()
         }
 
-        @nowarn("msg=deprecated")
         override def onUpstreamFailure(ex: Throwable): Unit = {
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
@@ -416,12 +413,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
             case e: Http2Compliance.Http2ProtocolStreamException =>
               resetStream(e.streamId, e.errorCode)
-
-            case e: ParsingException =>
-              e.getCause match {
-                case null  => super.onUpstreamFailure(e) // fail with the raw parsing exception
-                case cause => onUpstreamFailure(cause) // unwrap the cause, which should carry ComplianceException and recurse
-              }
 
             // handle every unhandled exception
             case NonFatal(e) =>

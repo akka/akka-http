@@ -52,9 +52,9 @@ class CompressionResourceLeakSpec extends AnyWordSpec with CodecSpecSupport with
 
       val compressed = new GzipCompressor().compressAndFinish(smallTextBytes)
 
-      val (pub, sub) = TestSource.probe[ByteString]
+      val (pub, sub) = TestSource[ByteString]()
         .via(Flow.fromGraph(new ProbeGzipDecompressor))
-        .toMat(TestSink.probe[ByteString])(Keep.both)
+        .toMat(TestSink[ByteString]())(Keep.both)
         .run()
 
       sub.request(1)
@@ -80,9 +80,9 @@ class CompressionResourceLeakSpec extends AnyWordSpec with CodecSpecSupport with
 
       val compressed = new DeflateCompressor().compressAndFinish(smallTextBytes)
 
-      val (pub, sub) = TestSource.probe[ByteString]
+      val (pub, sub) = TestSource[ByteString]()
         .via(Flow.fromGraph(new ProbeDeflateDecompressor))
-        .toMat(TestSink.probe[ByteString])(Keep.both)
+        .toMat(TestSink[ByteString]())(Keep.both)
         .run()
 
       sub.request(1)
@@ -136,9 +136,9 @@ class CompressionResourceLeakSpec extends AnyWordSpec with CodecSpecSupport with
         }
       }
 
-      val (pub, sub) = TestSource.probe[ByteString]
+      val (pub, sub) = TestSource[ByteString]()
         .via(probeEncoder.encoderFlow)
-        .toMat(TestSink.probe[ByteString])(Keep.both)
+        .toMat(TestSink[ByteString]())(Keep.both)
         .run()
 
       sub.request(1)

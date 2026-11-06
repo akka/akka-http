@@ -24,7 +24,6 @@ import akka.http.javadsl.settings.RoutingSettings;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.server.*;
 import akka.japi.pf.PFBuilder;
-import akka.stream.ActorMaterializerSettings;
 import akka.stream.Materializer;
 import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Sink;
@@ -287,13 +286,10 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     //#extractLog
   }
 
-  // FIXME rewrite to not use deprecated ActorMaterializerSettings/ActorMaterializer and update docs
-  @SuppressWarnings("deprecation")
   @Test
   public void testWithMaterializer() {
     //#withMaterializer
-    final ActorMaterializerSettings settings = ActorMaterializerSettings.create(system());
-    final Materializer special = akka.stream.ActorMaterializer.create(settings, system(), "special");
+    final Materializer special = Materializer.createMaterializer(system());
 
     final Route sample = path("sample", () ->
       extractMaterializer(mat ->

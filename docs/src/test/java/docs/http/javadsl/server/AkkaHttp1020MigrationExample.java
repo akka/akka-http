@@ -5,22 +5,19 @@
 package docs.http.javadsl.server;
 
 import akka.actor.typed.javadsl.Behaviors;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import static akka.http.javadsl.server.Directives.*;
 import akka.http.javadsl.server.Route;
-import akka.stream.Materializer;
 
-@SuppressWarnings("deprecation")
 public class AkkaHttp1020MigrationExample {
     public static void main(String[] args) {
         {
             //#old-binding
             // only worked with classic actor system
-            akka.actor.ActorSystem system = akka.actor.ActorSystem.create("TheSystem");
-            Materializer mat = akka.stream.ActorMaterializer.create(system);
-            Route route = get(() -> complete("Hello World!"));
-            Http.get(system).bindAndHandle(route.flow(system), ConnectHttp.toHost("localhost", 8080), mat);
+            // akka.actor.ActorSystem system = akka.actor.ActorSystem.create("TheSystem");
+            // Materializer mat = akka.stream.ActorMaterializer.create(system);
+            // Route route = get(() -> complete("Hello World!"));
+            // Http.get(system).bindAndHandle(route.flow(system), ConnectHttp.toHost("localhost", 8080), mat);
             //#old-binding
         }
 
