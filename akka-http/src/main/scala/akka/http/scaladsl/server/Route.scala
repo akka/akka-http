@@ -11,7 +11,7 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.util.FastFuture._
 import akka.stream.scaladsl.Flow
-import akka.stream.{ ActorMaterializerHelper, Materializer, SystemMaterializer }
+import akka.stream.{ Materializer, SystemMaterializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
@@ -120,7 +120,7 @@ object Route {
                                  rejectionHandler: RejectionHandler         = RejectionHandler.default,
                                  exceptionHandler: ExceptionHandler         = null): HttpRequest => Future[HttpResponse] = {
     val effectiveEC = if (executionContext ne null) executionContext else materializer.executionContext
-    val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
+    val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(materializer.system)
     createAsyncHandler(seal(route), routingLog, routingSettings, effectiveParserSettings)(effectiveEC, materializer)
   }
 

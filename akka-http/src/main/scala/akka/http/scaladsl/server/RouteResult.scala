@@ -9,7 +9,7 @@ import akka.actor.ClassicActorSystemProvider
 import akka.http.javadsl
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
-import akka.stream.{ ActorMaterializerHelper, Materializer }
+import akka.stream.{ Materializer }
 import akka.stream.scaladsl.Flow
 
 import scala.collection.immutable
@@ -84,6 +84,6 @@ sealed abstract class LowerPriorityRouteResultImplicits {
    */
   @deprecated("make an ActorSystem available implicitly instead", "10.2.0")
   implicit def routeToFlowViaMaterializer(route: Route)(implicit materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] =
-    Route.toFlow(route)(ActorMaterializerHelper.downcast(materializer).system)
+    Route.toFlow(route)(materializer.system)
 
 }

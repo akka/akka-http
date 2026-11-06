@@ -32,7 +32,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 
 import java.util.UUID
-import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -133,11 +132,10 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
 
       val (serverBinding, http2ClientFow) = bindAndConnect(probe)
 
-      @nowarn("msg=deprecated")
       val (requestQueue, _) =
         Source.queue(10, OverflowStrategy.fail)
           .viaMat(http2ClientFow)(Keep.left)
-          .toMat(Sink.actorRef(responseProbe.ref, "done"))(Keep.both)
+          .toMat(Sink.actorRef(responseProbe.ref, "done", t => t))(Keep.both)
           .run()
       requestQueue.offer(HttpRequest())
 
@@ -201,11 +199,10 @@ abstract class TelemetrySpiSpec(useTls: Boolean) extends AkkaSpecWithMaterialize
       telemetryProbe.expectMsg("bind-seen")
 
       val responseProbe = TestProbe()
-      @nowarn("msg=deprecated")
       val (requestQueue, _) =
         Source.queue(10, OverflowStrategy.fail)
           .viaMat(http2ClientFlow)(Keep.left)
-          .toMat(Sink.actorRef(responseProbe.ref, "onCompleteMessage"))(Keep.both)
+          .toMat(Sink.actorRef(responseProbe.ref, "onCompleteMessage", t => t))(Keep.both)
           .run()
       requestQueue.offer(HttpRequest())
 

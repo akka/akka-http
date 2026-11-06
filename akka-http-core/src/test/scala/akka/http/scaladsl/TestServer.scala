@@ -16,7 +16,6 @@ import akka.stream.scaladsl.{ Flow, Source }
 import com.typesafe.config.{ Config, ConfigFactory }
 import HttpMethods._
 
-import scala.annotation.nowarn
 import scala.io.StdIn
 
 object TestServer extends App {
@@ -30,13 +29,7 @@ object TestServer extends App {
     """)
   implicit val system: ActorSystem = ActorSystem("ServerTest", testConf)
 
-  @nowarn("msg=deprecated")
-  val settings = ActorMaterializerSettings(system)
-    .withFuzzing(false)
-    //    .withSyncProcessingLimit(Int.MaxValue)
-    .withInputBuffer(128, 128)
-  @nowarn("msg=deprecated")
-  implicit val fm: ActorMaterializer = ActorMaterializer(settings)
+  implicit val fm: Materializer = Materializer(system)
   try {
     val binding = Http().newServerAt("localhost", 9001).bindSync {
       case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) =>

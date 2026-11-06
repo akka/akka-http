@@ -669,8 +669,7 @@ private[http] object HttpServerBluePrint {
       })
 
       private var activeTimers = 0
-      @nowarn("msg=deprecated")
-      private def timeout = materializer.settings.subscriptionTimeoutSettings.timeout
+      private def timeout = inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
       private def addTimeout(s: SubscriptionTimeout): Unit = {
         if (activeTimers == 0) setKeepGoing(true)
         activeTimers += 1
