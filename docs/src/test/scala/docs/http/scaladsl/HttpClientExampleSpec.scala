@@ -13,9 +13,7 @@ import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-// OverflowStrategy.dropNew has been deprecated in latest Akka versions
-// FIXME: replace with 2.6 queue when 2.5 support is dropped, see #3069
-@nowarn("msg=will not be a runnable program|Use Source.queue")
+@nowarn("msg=will not be a runnable program")
 class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "manual-entity-consume-example-1" in compileOnlySpec {
@@ -174,10 +172,9 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
     import akka.http.scaladsl.model._
     import akka.stream.scaladsl._
 
-    import akka.stream.{ OverflowStrategy, QueueOfferResult }
+    import akka.stream.QueueOfferResult
 
     implicit val system: ActorSystem = ActorSystem()
-    import system.dispatcher // to get an implicit ExecutionContext into scope
 
     val QueueSize = 10
 
@@ -185,7 +182,7 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
     // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
     val poolClientFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]]("akka.io")
     val queue =
-      Source.queue[(HttpRequest, Promise[HttpResponse])](QueueSize, OverflowStrategy.dropNew)
+      Source.queue[(HttpRequest, Promise[HttpResponse])](QueueSize)
         .via(poolClientFlow)
         .to(Sink.foreach({
           case ((Success(resp), p)) => p.success(resp)
@@ -195,7 +192,7 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
 
     def queueRequest(request: HttpRequest): Future[HttpResponse] = {
       val responsePromise = Promise[HttpResponse]()
-      queue.offer(request -> responsePromise).flatMap {
+      queue.offer(request -> responsePromise) match {
         case QueueOfferResult.Enqueued    => responsePromise.future
         case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
         case QueueOfferResult.Failure(ex) => Future.failed(ex)

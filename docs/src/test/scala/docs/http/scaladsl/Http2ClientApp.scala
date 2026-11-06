@@ -11,13 +11,12 @@ import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers
-import akka.stream.OverflowStrategy
+import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import com.typesafe.config.ConfigFactory
 
-import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -68,13 +67,10 @@ object Http2ClientApp extends App {
     .flatMap(_.toStrict(1.second))
     .onComplete(res => println(s"[4] Got favicon: $res"))
 
-  // OverflowStrategy.dropNew has been deprecated in latest Akka versions
-  // FIXME: replace with 2.6 queue when 2.5 support is dropped, see #3069
-  @nowarn("msg=Use Source.queue") //
   //#response-future-association
   def singleRequest(connection: Flow[HttpRequest, HttpResponse, Any], bufferSize: Int = 100): HttpRequest => Future[HttpResponse] = {
     val queue =
-      Source.queue(bufferSize, OverflowStrategy.dropNew)
+      Source.queue(bufferSize)
         .via(connection)
         .to(Sink.foreach { response =>
           // complete the response promise with the response when it arrives
@@ -86,9 +82,13 @@ object Http2ClientApp extends App {
     req => {
       // create a promise of the response for each request and set it as an attribute on the request
       val p = Promise[HttpResponse]()
-      queue.offer(req.addAttribute(ResponsePromise.Key, ResponsePromise(p)))
+      queue.offer(req.addAttribute(ResponsePromise.Key, ResponsePromise(p))) match {
         // return the future response
-        .flatMap(_ => p.future)
+        case QueueOfferResult.Enqueued    => p.future
+        case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
+        case QueueOfferResult.Failure(ex) => Future.failed(ex)
+        case QueueOfferResult.QueueClosed => Future.failed(new RuntimeException("Queue was closed while running the request."))
+      }
     }
   }
   //#response-future-association

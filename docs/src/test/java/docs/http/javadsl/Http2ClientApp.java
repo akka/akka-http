@@ -13,12 +13,12 @@ import akka.http.javadsl.model.ResponseFuture;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
 import akka.stream.Materializer;
-import akka.stream.OverflowStrategy;
+import akka.stream.BoundedSourceQueue;
+import akka.stream.QueueOfferResult;
 import akka.stream.SystemMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.javadsl.SourceQueueWithComplete;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
@@ -77,8 +77,8 @@ public class Http2ClientApp {
 
   // #response-future-association
   private static Function<HttpRequest, CompletionStage<HttpResponse>> singleRequest(ActorSystem system, Flow<HttpRequest, HttpResponse, ?> connection) {
-    SourceQueueWithComplete<HttpRequest> queue =
-        Source.<HttpRequest>queue(100, OverflowStrategy.dropNew())
+    BoundedSourceQueue<HttpRequest> queue =
+        Source.<HttpRequest>queue(100)
             .via(connection)
             .to(Sink.foreach(res -> {
               try {
@@ -95,9 +95,17 @@ public class Http2ClientApp {
       // create a future of the response for each request and set it as an attribute on the request
       CompletableFuture<HttpResponse> future = new CompletableFuture<>();
       ResponseFuture attribute = new ResponseFuture(future);
-      return queue.offer(req.addAttribute(ResponseFuture.KEY(), attribute))
-          // return the future response
-          .thenCompose(__ -> attribute.future());
+      QueueOfferResult result = queue.offer(req.addAttribute(ResponseFuture.KEY(), attribute));
+      if (result == QueueOfferResult.enqueued()) {
+        // return the future response
+        return attribute.future();
+      } else if (result == QueueOfferResult.dropped()) {
+        return CompletableFuture.failedFuture(new RuntimeException("Queue overflowed. Try again later."));
+      } else if (result instanceof QueueOfferResult.Failure) {
+        return CompletableFuture.failedFuture(((QueueOfferResult.Failure) result).cause());
+      } else {
+        return CompletableFuture.failedFuture(new RuntimeException("Queue was closed while running the request."));
+      }
     };
   }
   // #response-future-association
