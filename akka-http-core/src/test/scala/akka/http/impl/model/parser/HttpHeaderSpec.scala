@@ -477,6 +477,12 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       "Strict-Transport-Security: max-age=31536000" =!= `Strict-Transport-Security`(maxAge = 31536000)
       "Strict-Transport-Security: max-age=31536000" =!= `Strict-Transport-Security`(maxAge = 31536000, includeSubDomains = false)
       "Strict-Transport-Security: max-age=31536000; includeSubDomains" =!= `Strict-Transport-Security`(maxAge = 31536000, includeSubDomains = true)
+      "Strict-Transport-Security: max-age=15768000 ; includeSubDomains" =!=
+        `Strict-Transport-Security`(maxAge = 15768000, includeSubDomains = true).renderedTo("max-age=15768000; includeSubDomains")
+      "Strict-Transport-Security: max-age=86400 ; includeSubDomains ; preload" =!=
+        `Strict-Transport-Security`(maxAge = 86400, includeSubDomains = true).renderedTo("max-age=86400; includeSubDomains")
+      "Strict-Transport-Security: includeSubDomains ; max-age=86400" =!=
+        `Strict-Transport-Security`(maxAge = 86400, includeSubDomains = true).renderedTo("max-age=86400; includeSubDomains")
     }
 
     "TE" in {
