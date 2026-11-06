@@ -11,18 +11,16 @@ import akka.http.scaladsl.server.Route
 class AkkaHttp1020MigrationSpec {
   import akka.http.scaladsl.server.Directives._
 
-  {
-    //#old-binding
-    // only worked with classic actor system
-    // implicit val system = akka.actor.ActorSystem("TheSystem")
-    // implicit val mat: Materializer = ActorMaterializer()
-    // val route: Route =
-    //   get {
-    //     complete("Hello world")
-    //   }
-    // Http().bindAndHandle(route, "localhost", 8080)
-    //#old-binding
-  }
+  //#old-binding
+  // only worked with classic actor system
+  // implicit val system = akka.actor.ActorSystem("TheSystem")
+  // implicit val mat: Materializer = ActorMaterializer()
+  // val route: Route =
+  //   get {
+  //     complete("Hello world")
+  //   }
+  // Http().bindAndHandle(route, "localhost", 8080)
+  //#old-binding
 
   {
     //#new-binding
