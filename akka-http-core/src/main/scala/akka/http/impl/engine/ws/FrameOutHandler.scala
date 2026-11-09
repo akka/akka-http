@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.ws.FrameHandler.{ UserHandlerErredOut, _ }
 import akka.http.impl.engine.ws.WebSocket.Tick
+import akka.http.scaladsl.model.ws.WebSocketCloseException
 import akka.stream.scaladsl.Flow
 import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
@@ -61,6 +62,10 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
           case UserHandlerCompleted =>
             setHandler(in, new WaitingForPeerCloseFrame())
             push(out, FrameEvent.closeFrame(Protocol.CloseCodes.Regular))
+          case UserHandlerErredOut(e: WebSocketCloseException) =>
+            if (log.isDebugEnabled) log.debug(s"Websocket handler closing with code ${e.closeCode} '${e.closeReason}'")
+            setHandler(in, new WaitingForPeerCloseFrame())
+            push(out, FrameEvent.closeFrame(e.closeCode, e.closeReason))
           case UserHandlerErredOut(e) =>
             log.error(e, s"Websocket handler failed with ${e.getMessage}")
             setHandler(in, new WaitingForPeerCloseFrame())
@@ -81,7 +86,8 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     private class WaitingForUserHandlerClosed(closeFrame: FrameStart) extends InHandler {
       def onPush() =
         grab(in) match {
-          case UserHandlerCompleted => sendOutLastFrame()
+          // peer already closed, so an application close is not an error, just echo the peer close frame
+          case UserHandlerCompleted | UserHandlerErredOut(_: WebSocketCloseException) => sendOutLastFrame()
           case UserHandlerErredOut(e) =>
             log.error(e, s"Websocket handler failed while waiting for handler completion with ${e.getMessage}")
             sendOutLastFrame()

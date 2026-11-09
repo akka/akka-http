@@ -131,6 +131,16 @@ Scenarios that exist with the two streams in a WebSocket and possible ways to de
 |Infinite incoming stream, no outgoing | @scala[`Flow.fromSinkAndSource(someSink, Source.maybe)`]@java[`Flow.fromSinkAndSource(someSink, Source.maybe())`]    |
 |Infinite outgoing stream, no incoming | @scala[`Flow.fromSinkAndSource(Sink.ignore, yourSource)`]@java[`Flow.fromSinkAndSource(Sink.ignore(), yourSource)`]|
 
+## Close codes
+
+If the server closes the WebSocket with a close code other than `1000` (normal closure) or `1001` (going away), the
+incoming message stream of the client fails with a @apidoc[PeerClosedConnectionException] containing the close code
+and reason.
+
+The client can close the WebSocket with an application specific close code (in the range 3000-4999) by failing its
+outgoing message stream with a @apidoc[WebSocketCloseException], see
+@ref[Closing with an application close code](../server-side/websocket-support.md#closing-with-an-application-close-code).
+
 <a id="keep-alive-ping"></a>
 
 ## Automatic keep-alive Ping support

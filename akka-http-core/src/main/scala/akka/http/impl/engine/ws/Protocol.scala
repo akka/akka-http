@@ -18,6 +18,9 @@ private[http] object Protocol {
   final val RSV2_MASK = 0x20
   final val RSV3_MASK = 0x10
 
+  /** Control frame payload is limited to 125 bytes, two of those are the close code */
+  final val MaxCloseReasonBytes = 123
+
   final val FLAGS_MASK = 0xF0
   final val OP_MASK = 0x0F
 
