@@ -16,10 +16,12 @@ Key links:
 
 ### Cutting the release
 
-- [ ] Check that open PRs and issues assigned to the milestone are reasonable
+- [ ] Check that [open PRs](https://github.com/akka/akka-http/pulls) and [issues assigned to the milestone](https://github.com/akka/akka-http/issues?q=milestone%3A%22$VERSION$%22) are reasonable
 - [ ] If PRs were merged after EU midnight, trigger the [native-image tests](https://github.com/akka/akka-http/actions/workflows/native-image-tests.yml) and see that they are gr
-- [ ] Update the Change date in the LICENSE file.
-- [ ] Update the Akka HTTP version in the samples to $VERSION$, otherwise the published zip files of the samples will have the old version.
+- [ ] Run the release-prep script to update LICENSE.txt (version, copyright year, change date + 3y) and bump the akka-http version in every sample build file. With `--commit-and-pr` it pushes a `wip-release-prep-$VERSION$` branch and opens a PR:
+      ```
+      ./scripts/release-prep.sh --commit-and-pr $VERSION$
+      ```
 - [ ] For minor or major versions, add a release notes entry in `docs/src/main/paradox/release-notes/`.
 - [ ] Create a new milestone for the [next version](https://github.com/akka/akka-http/milestones)
 - [ ] Close the [$VERSION$ milestone](https://github.com/akka/akka-http/milestones?direction=asc&sort=due_date)
@@ -27,7 +29,7 @@ Key links:
 - [ ] For recent dependency updates or changes on a minor release branch the Fossa validation can be triggered from the GitHub actions "Dependency License Scanning" (Manually choosing the release branch)
 - [ ] Update the revision in Fossa in the Akka Group for the Akka umbrella version, e.g. `22.10`. Note that the revisions for the release is udpated by Akka Group > Projects > Edit. For recent dependency updates the Fossa validation can be triggered from the GitHub actions "Dependency License Scanning".
 - [ ] Wait until [main build finished](https://github.com/akka/akka-http/actions) after merging the latest PR
-- [ ] Update the [draft release](https://github.com/akka/akka-http/releases) with the next tag version `v$VERSION$`, title and release description. Use the `Publish release` button, which will create the tag.
+- [ ] Create the [draft release](https://github.com/akka/akka-http/releases/new?tag=v$VERSION$), click `Generate release notes` to get a title and release description. Use the `Publish release` button, which will create the tag.
 - [ ] Check that GitHub Actions release build has executed successfully (GitHub Actions will start a [CI build](https://github.com/akka/akka-http/actions) for the new tag and publish artifacts to https://repo.akka.io/TOKEN/secure)
 
 ### Check availability
