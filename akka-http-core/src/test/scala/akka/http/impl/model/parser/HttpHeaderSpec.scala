@@ -183,6 +183,12 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         `Cache-Control`(`private`("a", "b"), `no-cache`)
       "Cache-Control: private, immutable" =!=
         `Cache-Control`(`private`(), immutableDirective)
+      "Cache-Control: no-store , no-transform , only-if-cached , public , must-revalidate , proxy-revalidate , immutable" =!=
+        `Cache-Control`(`no-store`, `no-transform`, `only-if-cached`, `public`, `must-revalidate`, `proxy-revalidate`, immutableDirective)
+        .renderedTo("no-store, no-transform, only-if-cached, public, must-revalidate, proxy-revalidate, immutable")
+      "Cache-Control: private , no-cache , max-stale , max-age=0" =!=
+        `Cache-Control`(`private`(), `no-cache`, `max-stale`(None), `max-age`(0))
+        .renderedTo("private, no-cache, max-stale, max-age=0")
     }
 
     "Connection" in {
