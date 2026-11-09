@@ -205,7 +205,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   def `strict-transport-security` = {
     def directives =
       rule(
-        ignoreCase("includesubdomains") ~ push(IncludeSubDomains)
+        ignoreCase("includesubdomains") ~ OWS ~ push(IncludeSubDomains)
           | ignoreCase("max-age=") ~ `delta-seconds` ~> (MaxAge(_))
       )
     def ignoredDirective = rule {
