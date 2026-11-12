@@ -1,5 +1,5 @@
 lazy val akkaHttpVersion = sys.props.getOrElse("akka-http.version", "10.8.0")
-lazy val akkaVersion    = "2.10.11"
+lazy val akkaVersion    = "2.11.0"
 
 ThisBuild / credentials ++= {
   val path = Path.userHome / ".sbt" / ".credentials"
