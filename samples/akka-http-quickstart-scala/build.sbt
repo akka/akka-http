@@ -1,4 +1,4 @@
-lazy val akkaHttpVersion = sys.props.getOrElse("akka-http.version", "10.7.6")
+lazy val akkaHttpVersion = sys.props.getOrElse("akka-http.version", "10.8.0")
 lazy val akkaVersion    = "2.10.11"
 
 ThisBuild / credentials ++= {
