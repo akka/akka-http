@@ -12,7 +12,7 @@ object Dependencies {
   import DependencyHelpers._
 
   // Default version updated only when needed, https://doc.akka.io/libraries/akka-core/current/project/downstream-upgrade-strategy.html
-  val akkaVersion = "2.10.11"
+  val akkaVersion = "2.11.0"
 
   val jacksonDatabindVersion = "2.21.8"
   val jacksonXmlVersion = jacksonDatabindVersion
@@ -31,7 +31,7 @@ object Dependencies {
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
-  val scala213Version = "2.13.17"
+  val scala213Version = "2.13.18"
   val scala3Version = "3.3.7"
   val allScalaVersions = Seq(scala213Version, scala3Version)
 
