@@ -27,11 +27,11 @@ object Dependencies {
 
   val scalaTestVersion = "3.2.20"
   val specs2Version = "4.10.6"
-  val scalaCheckVersion = "1.18.1"
+  val scalaCheckVersion = "1.19.0"
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
 
-  val scala213Version = "2.13.17"
+  val scala213Version = "2.13.18"
   val scala3Version = "3.3.7"
   val allScalaVersions = Seq(scala213Version, scala3Version)
 
@@ -88,7 +88,7 @@ object Dependencies {
       val junitIntf    = "com.github.sbt"    % "junit-interface" % "0.13.3"            % "test" // MIT
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
-      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-18" % (scalaTestVersion + ".0") % "test"
+      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-19" % (scalaTestVersion + ".0") % "test"
       val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
       // HTTP/2
