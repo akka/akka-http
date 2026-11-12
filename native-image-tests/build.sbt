@@ -1,6 +1,6 @@
 // note: not important to keep these up to date, CI will always bump to correct versions
 lazy val akkaHttpVersion = sys.props.getOrElse("akka.http.version", "10.7.4")
-lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.10.11")
+lazy val akkaVersion    = sys.props.getOrElse("akka.version", "2.11.0")
 
 // Run in a separate JVM, to make sure sbt waits until all threads have
 // finished before returning.
