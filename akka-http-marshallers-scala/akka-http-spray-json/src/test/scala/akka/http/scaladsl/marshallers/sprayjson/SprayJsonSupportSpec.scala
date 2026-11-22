@@ -9,10 +9,11 @@ import scala.concurrent.ExecutionContext
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.MessageEntity
+import akka.http.scaladsl.model.ws.{ Message, TextMessage }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
-import spray.json.{ JsArray, JsString, JsValue }
+import spray.json.{ JsArray, JsString, JsValue, JsonParser }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import spray.json.RootJsonFormat
@@ -51,6 +52,26 @@ class SprayJsonSupportSpec extends AnyWordSpec with Matchers with ScalaFutures {
       val example = Unmarshal(js).to[Example].futureValue
 
       example should ===(init)
+    }
+    "allow Marshalling case class -> WebSocket Message" in {
+      val init = Example(TestString)
+
+      val message = Marshal(init).to[Message].futureValue
+
+      message match {
+        case TextMessage.Strict(text) => JsonParser(text).convertTo[Example] should ===(init)
+        case other                    => fail(s"Expected a strict TextMessage but got $other")
+      }
+    }
+    "allow Marshalling JsValue -> WebSocket TextMessage" in {
+      val init = JsArray(JsString(TestString))
+
+      val message = Marshal(init).to[TextMessage].futureValue
+
+      message match {
+        case TextMessage.Strict(text) => JsonParser(text) should ===(init)
+        case other                    => fail(s"Expected a strict TextMessage but got $other")
+      }
     }
   }
 }

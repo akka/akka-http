@@ -11,6 +11,7 @@ import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{ FromByteStringUnmarshaller, FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.util.FastFuture
@@ -67,6 +68,19 @@ trait SprayJsonSupport {
     sprayJsValueMarshaller compose writer.write
   implicit def sprayJsValueMarshaller(implicit printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[JsValue] =
     Marshaller.StringMarshaller.wrap(MediaTypes.`application/json`)(printer)
+
+  /**
+   * Marshals any value for which a spray-json `RootJsonWriter` is in scope into a strict WebSocket `TextMessage`,
+   * e.g. `Marshal(myMsg).to[Message]`.
+   */
+  implicit def sprayJsonTextMessageMarshaller[T](implicit writer: RootJsonWriter[T], printer: JsonPrinter = CompactPrinter): Marshaller[T, TextMessage] =
+    sprayJsValueTextMessageMarshaller compose writer.write
+
+  /**
+   * Marshals a `JsValue` into a strict WebSocket `TextMessage`.
+   */
+  implicit def sprayJsValueTextMessageMarshaller(implicit printer: JsonPrinter = CompactPrinter): Marshaller[JsValue, TextMessage] =
+    Marshaller.opaque[JsValue, TextMessage](js => TextMessage.Strict(printer(js)))
 }
 object SprayJsonSupport extends SprayJsonSupport
 
