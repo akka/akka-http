@@ -52,6 +52,14 @@ Scala
 Java
 :   @@snip [WebSocketClientExampleTest.java](/docs/src/test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #single-WebSocket-request }
 
+@@@ note
+In this example the outgoing @apidoc[Source] completes right after the single message has been sent, which
+closes the entire WebSocket connection shortly after, so only the messages the server sends in the meantime
+(here the echo of the sent message) will be printed. If you want to keep the connection open to receive more messages
+from the server, the outgoing @apidoc[Source] must not complete, for example by concatenating
+@scala[`Source.maybe`]@java[`Source.maybe()`] to it, see [Half-Closed WebSockets](#half-closed-client-websockets).
+@@@
+
 The websocket request may also include additional headers, like in this example, HTTP Basic Auth:
 
 Scala
@@ -79,6 +87,14 @@ Scala
 
 Java
 :   @@snip [WebSocketClientExampleTest.java](/docs/src/test/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #WebSocket-client-flow }
+
+@@@ note
+In this example the outgoing @apidoc[Source] completes right after the single message has been sent, which
+closes the entire WebSocket connection shortly after, so only the messages the server sends in the meantime
+(here the echo of the sent message) will be printed. If you want to keep the connection open to receive more messages
+from the server, the outgoing @apidoc[Source] must not complete, for example by concatenating
+@scala[`Source.maybe`]@java[`Source.maybe()`] to it, see [Half-Closed WebSockets](#half-closed-client-websockets).
+@@@
 
 ## webSocketClientLayer
 
