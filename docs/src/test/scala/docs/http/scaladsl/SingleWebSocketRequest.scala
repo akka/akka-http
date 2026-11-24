@@ -27,6 +27,9 @@ object SingleWebSocketRequest {
         // ignore other message types
       }
 
+    // send this as a message over the WebSocket
+    // note: the source completes after this single element, which closes the
+    // whole WebSocket connection (see "Half-Closed WebSockets" in the docs)
     val helloSource: Source[Message, NotUsed] =
       Source.single(TextMessage("hello world!"))
 

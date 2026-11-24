@@ -49,6 +49,8 @@ public class WebSocketClientExampleTest {
       );
 
     // send this as a message over the WebSocket
+    // note: the source completes after this single element, which closes the
+    // whole WebSocket connection (see "Half-Closed WebSockets" in the docs)
     final Source<Message, NotUsed> helloSource =
       Source.single(TextMessage.create("hello world"));
 
@@ -200,6 +202,8 @@ public class WebSocketClientExampleTest {
       );
 
     // send this as a message over the WebSocket
+    // note: the source completes after this single element, which closes the
+    // whole WebSocket connection (see "Half-Closed WebSockets" in the docs)
     Source<Message, NotUsed> helloSource =
       Source.single(TextMessage.create("hello world"));
 
