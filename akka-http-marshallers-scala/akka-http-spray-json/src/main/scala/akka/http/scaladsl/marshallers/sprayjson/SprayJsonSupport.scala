@@ -11,14 +11,17 @@ import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ws.{ BinaryMessage, Message, TextMessage }
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{ FromByteStringUnmarshaller, FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.util.ByteString
 import spray.json._
 
+import scala.concurrent.duration._
 import scala.language.implicitConversions
+import scala.util.Try
 
 /**
  * A trait providing automatic to and from JSON marshalling/unmarshalling using an in-scope *spray-json* protocol.
@@ -67,6 +70,64 @@ trait SprayJsonSupport {
     sprayJsValueMarshaller compose writer.write
   implicit def sprayJsValueMarshaller(implicit printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[JsValue] =
     Marshaller.StringMarshaller.wrap(MediaTypes.`application/json`)(printer)
+
+  /**
+   * Marshals any value for which a spray-json `RootJsonWriter` is in scope into a strict WebSocket `TextMessage`,
+   * e.g. `Marshal(myMsg).to[Message]`.
+   */
+  implicit def sprayJsonTextMessageMarshaller[T](implicit writer: RootJsonWriter[T], printer: JsonPrinter = CompactPrinter): Marshaller[T, TextMessage] =
+    sprayJsValueTextMessageMarshaller compose writer.write
+
+  /**
+   * Marshals a `JsValue` into a strict WebSocket `TextMessage`.
+   */
+  implicit def sprayJsValueTextMessageMarshaller(implicit printer: JsonPrinter = CompactPrinter): Marshaller[JsValue, TextMessage] =
+    Marshaller.opaque[JsValue, TextMessage](js => TextMessage.Strict(printer(js)))
+
+  /**
+   * Maximum time to wait for a streamed WebSocket `TextMessage` to be fully received when unmarshalling it
+   * with the implicit message unmarshallers. Override to change the default of 5 seconds, or use
+   * `sprayJsonMessageUnmarshallerWithTimeout` / `sprayJsValueMessageUnmarshallerWithTimeout`.
+   */
+  protected def sprayJsonMessageStrictTimeout: FiniteDuration = 5.seconds
+
+  /**
+   * Unmarshals a WebSocket `Message` into any value for which a spray-json `RootJsonReader` is in scope,
+   * e.g. `Unmarshal(message).to[MyMsg]`. Both strict and streamed text messages are supported,
+   * streamed messages are collected using `sprayJsonMessageStrictTimeout`. Binary messages are rejected.
+   */
+  implicit def sprayJsonMessageUnmarshaller[T](implicit reader: RootJsonReader[T]): Unmarshaller[Message, T] =
+    sprayJsonMessageUnmarshallerWithTimeout[T](sprayJsonMessageStrictTimeout)
+
+  /**
+   * Unmarshals a WebSocket `Message` into a `JsValue`. Both strict and streamed text messages are supported,
+   * streamed messages are collected using `sprayJsonMessageStrictTimeout`. Binary messages are rejected.
+   */
+  implicit def sprayJsValueMessageUnmarshaller: Unmarshaller[Message, JsValue] =
+    sprayJsValueMessageUnmarshallerWithTimeout(sprayJsonMessageStrictTimeout)
+
+  /**
+   * Like `sprayJsonMessageUnmarshaller` but with an explicit timeout for collecting streamed text messages.
+   */
+  def sprayJsonMessageUnmarshallerWithTimeout[T](timeout: FiniteDuration)(implicit reader: RootJsonReader[T]): Unmarshaller[Message, T] =
+    sprayJsValueMessageUnmarshallerWithTimeout(timeout).map(jsonReader[T].read)
+
+  /**
+   * Like `sprayJsValueMessageUnmarshaller` but with an explicit timeout for collecting streamed text messages.
+   */
+  def sprayJsValueMessageUnmarshallerWithTimeout(timeout: FiniteDuration): Unmarshaller[Message, JsValue] =
+    Unmarshaller.withMaterializer[Message, JsValue](implicit ec => implicit mat => { message =>
+      message match {
+        case TextMessage.Strict(text) =>
+          FastFuture(Try(JsonParser(text)))
+        case streamed: TextMessage =>
+          streamed.toStrict(timeout).flatMap(strict => FastFuture(Try(JsonParser(strict.text))))
+        case binary: BinaryMessage =>
+          // drain the data so the WebSocket stream does not stall
+          binary.dataStream.runWith(Sink.ignore)
+          FastFuture.failed(new IllegalArgumentException("Expected a WebSocket TextMessage containing JSON but got a BinaryMessage"))
+      }
+    })
 }
 object SprayJsonSupport extends SprayJsonSupport
 
