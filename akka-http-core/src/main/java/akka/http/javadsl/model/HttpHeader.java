@@ -55,10 +55,21 @@ public abstract class HttpHeader {
      * @throws IllegalArgumentException if parsing is unsuccessful.
      */
     public static HttpHeader parse(String name, String value) {
-      final akka.http.scaladsl.model.HttpHeader.ParsingResult result =
-        akka.http.scaladsl.model.HttpHeader.parse(name, value,
-          akka.http.impl.model.parser.HeaderParser$.MODULE$.DefaultSettings());
+      return toHeader(akka.http.scaladsl.model.HttpHeader.parse(name, value,
+        akka.http.impl.model.parser.HeaderParser$.MODULE$.DefaultSettings()));
+    }
 
+    /**
+     * Attempts to parse the given header name and value string into a header model instance
+     * using the given parser settings.
+     *
+     * @throws IllegalArgumentException if parsing is unsuccessful.
+     */
+    public static HttpHeader parse(String name, String value, akka.http.javadsl.settings.ParserSettings settings) {
+      return toHeader(akka.http.scaladsl.model.HttpHeader.parse(name, value, settings));
+    }
+
+    private static HttpHeader toHeader(akka.http.scaladsl.model.HttpHeader.ParsingResult result) {
       if (result instanceof akka.http.scaladsl.model.HttpHeader$ParsingResult$Ok) {
         return ((akka.http.scaladsl.model.HttpHeader$ParsingResult$Ok) result).header();
       }

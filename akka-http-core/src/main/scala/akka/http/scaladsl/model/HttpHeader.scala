@@ -13,6 +13,7 @@ import akka.http.impl.model.parser.{ CharacterClasses, HeaderParser }
 import akka.http.javadsl.model.headers.CustomHeader
 import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.settings.ParserSettings
 import akka.util.OptionVal
 
 import scala.collection.immutable
@@ -95,6 +96,15 @@ object HttpHeader {
           ParsingResult.Error(info.withSummaryPrepended(s"Illegal HTTP header value"))
       }
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
+
+  /**
+   * Attempts to parse the given header name and value string into a header model instance using the given
+   * [[akka.http.scaladsl.settings.ParserSettings]] (e.g. to configure custom media types or the URI parsing mode).
+   *
+   * See the other `parse` overload for a description of the possible outcomes.
+   */
+  def parse(name: String, value: String, settings: ParserSettings): ParsingResult =
+    parse(name, value, settings: HeaderParser.Settings)
 
   /** INTERNAL API */
   @InternalApi
