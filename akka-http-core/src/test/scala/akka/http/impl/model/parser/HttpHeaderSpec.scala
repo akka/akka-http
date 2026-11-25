@@ -823,6 +823,12 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       HttpHeader.parse("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
         ParsingResult.Ok(Location(targetUri), Nil)
     }
+    "parse with custom uri parsing mode from public ParserSettings" in {
+      val targetUri = Uri("http://example.org/?abc=def=ghi", Uri.ParsingMode.Relaxed)
+      val parserSettings = akka.http.scaladsl.settings.ParserSettings("").withUriParsingMode(Uri.ParsingMode.Relaxed)
+      HttpHeader.parse("location", "http://example.org/?abc=def=ghi", parserSettings) shouldEqual
+        ParsingResult.Ok(Location(targetUri), Nil)
+    }
     "parse content-type with custom media types" in {
       // Override the application/json media type and give it an open instead of fixed charset.
       // This allows us to support various third-party agents which use an explicit charset.
